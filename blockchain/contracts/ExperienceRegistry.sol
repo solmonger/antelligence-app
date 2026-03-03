@@ -87,13 +87,11 @@ contract ExperienceRegistry {
         string calldata ipfsCid,
         bytes32 dataHash,
         uint256 score,
-        string calldata strategyType,
-        string calldata modelUsed,
-        uint16 nanobotCount,
-        uint16 tumorRadius,
-        bytes32 datasetHash
+        StrategyMeta calldata strategyMeta
     ) external {
-        require(experiences[runHash].timestamp == 0, "Experience already exists");
+        require(experiences[runHash].runHash == bytes32(0), "Experience already exists");
+        require(score > 0, "Score must be positive");
+        require(bytes(ipfsCid).length > 0, "IPFS CID required");
         
         experiences[runHash] = Experience({
             runHash: runHash,
@@ -106,13 +104,7 @@ contract ExperienceRegistry {
             verified: false
         });
         
-        strategies[runHash] = StrategyMeta({
-            strategyType: strategyType,
-            modelUsed: modelUsed,
-            nanobotCount: nanobotCount,
-            tumorRadius: tumorRadius,
-            datasetHash: datasetHash
-        });
+        strategies[runHash] = strategyMeta;
         
         emit ExperienceSubmitted(runHash, ipfsCid, dataHash, score, msg.sender);
     }
@@ -123,58 +115,64 @@ contract ExperienceRegistry {
         uint8 quality,
         string calldata notes
     ) external onlyValidator {
-        require(experiences[runHash].timestamp > 0, "Experience does not exist");
-        require(quality <= 100, "Quality must be 0-100");
+        require(experiences[runHash].runHash != bytes32(0), "Experience not found");
+        require(quality <= 100, "Quality must be <= 100");
+        require(!hasConfirmed(runHash, msg.sender), "Already attested");
         
-        // Check if validator already attested
-        Attestation[] storage existingAttestations = attestations[runHash];
-        for (uint i = 0; i < existingAttestations.length; i++) {
-            require(existingAttestations[i].validator != msg.sender, "Already attested");
-        }
-        
-        attestations[runHash].push(Attestation({
+        Attestation memory attestation = Attestation({
             validator: msg.sender,
             timestamp: uint32(block.timestamp),
             quality: quality,
             notes: notes
-        }));
+        });
         
+        attestations[runHash].push(attestation);
         experiences[runHash].attestations++;
         
-        // Auto-verify if threshold reached and quality is high enough
-        if (experiences[runHash].attestations >= minAttestations) {
-            uint256 avgQuality = calculateAverageQuality(runHash);
-            if (avgQuality >= 70) {
-                experiences[runHash].verified = true;
-                emit ExperienceVerified(runHash, msg.sender);
-            }
-        }
-        
         emit ExperienceAttested(runHash, msg.sender, quality);
+        
+        // Auto-verify if enough attestations
+        if (experiences[runHash].attestations >= minAttestations) {
+            _verifyExperience(runHash);
+        }
     }
     
-    /// @notice Calculate average quality score for an experience
-    function calculateAverageQuality(bytes32 runHash) public view returns (uint256) {
+    /// @notice Verify an experience (can be called manually if conditions met)
+    function verifyExperience(bytes32 runHash) external onlyValidator {
+        require(experiences[runHash].runHash != bytes32(0), "Experience not found");
+        require(!experiences[runHash].verified, "Already verified");
+        require(experiences[runHash].attestations >= minAttestations, "Insufficient attestations");
+        
+        _verifyExperience(runHash);
+    }
+    
+    /// @notice Internal verification logic
+    function _verifyExperience(bytes32 runHash) internal {
+        experiences[runHash].verified = true;
+        emit ExperienceVerified(runHash, msg.sender);
+    }
+    
+    /// @notice Check if validator has already attested
+    function hasConfirmed(bytes32 runHash, address validator) public view returns (bool) {
+        Attestation[] storage atts = attestations[runHash];
+        for (uint i = 0; i < atts.length; i++) {
+            if (atts[i].validator == validator) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    /// @notice Get average quality score for an experience
+    function getAverageQuality(bytes32 runHash) public view returns (uint8) {
         Attestation[] storage atts = attestations[runHash];
         if (atts.length == 0) return 0;
         
-        uint256 sum = 0;
+        uint256 total = 0;
         for (uint i = 0; i < atts.length; i++) {
-            sum += atts[i].quality;
+            total += atts[i].quality;
         }
-        return sum / atts.length;
-    }
-    
-    /// @notice Query top experiences by score for a specific strategy type
-    /// @dev Off-chain indexer should be used for efficient queries
-    function getExperience(bytes32 runHash) external view returns (
-        Experience memory exp,
-        StrategyMeta memory strategy,
-        uint256 avgQuality
-    ) {
-        exp = experiences[runHash];
-        strategy = strategies[runHash];
-        avgQuality = calculateAverageQuality(runHash);
+        return uint8(total / atts.length);
     }
     
     /// @notice Get all attestations for an experience
@@ -182,24 +180,24 @@ contract ExperienceRegistry {
         return attestations[runHash];
     }
     
-    /// @notice Add an authorized validator
+    /// @notice Add a new validator
     function addValidator(address validator) external onlyOwner {
         authorizedValidators[validator] = true;
     }
     
-    /// @notice Remove an authorized validator
+    /// @notice Remove a validator
     function removeValidator(address validator) external onlyOwner {
         authorizedValidators[validator] = false;
     }
     
     /// @notice Update minimum attestations required
-    function setMinAttestations(uint8 min) external onlyOwner {
-        minAttestations = min;
+    function setMinAttestations(uint8 newMin) external onlyOwner {
+        require(newMin > 0, "Minimum must be positive");
+        minAttestations = newMin;
     }
     
-    /// @notice Check if an experience is verified
-    function isVerified(bytes32 runHash) external view returns (bool) {
-        return experiences[runHash].verified;
+    /// @notice Get experience details
+    function getExperience(bytes32 runHash) external view returns (Experience memory, StrategyMeta memory) {
+        return (experiences[runHash], strategies[runHash]);
     }
 }
-
