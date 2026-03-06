@@ -56,6 +56,13 @@ contract TumorIntel {
         address deactivator
     );
 
+    event IntelPriorityUpdated(
+        uint indexed pinId,
+        uint oldPriority,
+        uint newPriority,
+        address updater
+    );
+
     /**
      * @dev Report new intelligence to the battlefield
      * @param x X coordinate in micrometers
@@ -86,117 +93,185 @@ contract TumorIntel {
      * @param pinId ID of the intel pin to confirm
      */
     function confirmIntel(uint pinId) public {
-        require(pinId < intelPins.length, "Pin does not exist");
-        require(intelPins[pinId].isActive, "Pin is no longer active");
+        require(pinId < intelPins.length, "Invalid pin ID");
+        require(intelPins[pinId].isActive, "Intel is no longer active");
         require(!hasConfirmed[pinId][msg.sender], "Already confirmed this intel");
         
         hasConfirmed[pinId][msg.sender] = true;
-        confirmations[pinId]++;
+        confirmations[pinId] += 1;
         
         emit IntelConfirmed(pinId, msg.sender, confirmations[pinId]);
     }
 
     /**
-     * @dev Deactivate an intel pin (e.g., target has been eliminated)
+     * @dev Deactivate an intel report (e.g., when the situation has changed)
      * @param pinId ID of the intel pin to deactivate
      */
     function deactivateIntel(uint pinId) public {
-        require(pinId < intelPins.length, "Pin does not exist");
-        require(intelPins[pinId].isActive, "Pin is already inactive");
+        require(pinId < intelPins.length, "Invalid pin ID");
+        require(intelPins[pinId].isActive, "Intel already deactivated");
+        
+        // Only the original reporter or someone who confirmed can deactivate
+        require(
+            msg.sender == intelPins[pinId].reporter || hasConfirmed[pinId][msg.sender],
+            "Not authorized to deactivate"
+        );
         
         intelPins[pinId].isActive = false;
+        
         emit IntelDeactivated(pinId, msg.sender);
     }
 
     /**
-     * @dev Get the total number of intel pins
+     * @dev Update the priority of an existing intel report
+     * @param pinId ID of the intel pin to update
+     * @param newPriority New priority level (1-10)
      */
-    function getIntelCount() public view returns (uint) {
+    function updateIntelPriority(uint pinId, uint newPriority) public {
+        require(pinId < intelPins.length, "Invalid pin ID");
+        require(intelPins[pinId].isActive, "Intel is no longer active");
+        require(newPriority >= 1 && newPriority <= 10, "Priority must be between 1 and 10");
+        require(
+            msg.sender == intelPins[pinId].reporter || hasConfirmed[pinId][msg.sender],
+            "Not authorized to update priority"
+        );
+        
+        uint oldPriority = intelPins[pinId].priority;
+        intelPins[pinId].priority = newPriority;
+        
+        emit IntelPriorityUpdated(pinId, oldPriority, newPriority, msg.sender);
+    }
+
+    /**
+     * @dev Get the total number of intel pins
+     * @return count Total number of pins
+     */
+    function getPinCount() public view returns (uint) {
         return intelPins.length;
     }
 
     /**
-     * @dev Get active intel pins of a specific type
-     * @param pinType Type of intel to filter by
-     * @return Array of pin IDs matching the criteria
-     */
-    function getActiveIntelByType(PinType pinType) public view returns (uint[] memory) {
-        uint count = 0;
-        
-        // First pass: count matching pins
-        for (uint i = 0; i < intelPins.length; i++) {
-            if (intelPins[i].isActive && intelPins[i].pinType == pinType) {
-                count++;
-            }
-        }
-        
-        // Second pass: collect matching pin IDs
-        uint[] memory result = new uint[](count);
-        uint index = 0;
-        for (uint i = 0; i < intelPins.length; i++) {
-            if (intelPins[i].isActive && intelPins[i].pinType == pinType) {
-                result[index] = i;
-                index++;
-            }
-        }
-        
-        return result;
-    }
-
-    /**
      * @dev Get all active intel pins
-     * @return Array of pin IDs that are currently active
+     * @return activePins Array of active pin IDs
      */
-    function getActiveIntel() public view returns (uint[] memory) {
-        uint count = 0;
+    function getActivePins() public view returns (uint[] memory) {
+        uint activeCount = 0;
         
-        // First pass: count active pins
+        // First, count active pins
         for (uint i = 0; i < intelPins.length; i++) {
             if (intelPins[i].isActive) {
-                count++;
+                activeCount++;
             }
         }
         
-        // Second pass: collect active pin IDs
-        uint[] memory result = new uint[](count);
+        // Then, collect active pin IDs
+        uint[] memory activePins = new uint[](activeCount);
         uint index = 0;
         for (uint i = 0; i < intelPins.length; i++) {
             if (intelPins[i].isActive) {
-                result[index] = i;
+                activePins[index] = i;
                 index++;
             }
         }
         
-        return result;
+        return activePins;
     }
 
     /**
-     * @dev Get detailed information about a specific pin
-     * @param pinId ID of the pin to query
+     * @dev Get intel pins by type
+     * @param pinType Type of intel to filter by
+     * @return pinIds Array of pin IDs matching the type
      */
-    function getIntelDetails(uint pinId) public view returns (
-        uint x,
-        uint y,
-        PinType pinType,
-        address reporter,
-        uint timestamp,
-        uint priority,
-        bool isActive,
-        uint confirmationCount
-    ) {
-        require(pinId < intelPins.length, "Pin does not exist");
+    function getPinsByType(PinType pinType) public view returns (uint[] memory) {
+        uint count = 0;
         
-        IntelPin memory pin = intelPins[pinId];
-        return (
-            pin.x,
-            pin.y,
-            pin.pinType,
-            pin.reporter,
-            pin.timestamp,
-            pin.priority,
-            pin.isActive,
-            confirmations[pinId]
-        );
+        // First, count matching pins
+        for (uint i = 0; i < intelPins.length; i++) {
+            if (intelPins[i].pinType == pinType && intelPins[i].isActive) {
+                count++;
+            }
+        }
+        
+        // Then, collect matching pin IDs
+        uint[] memory pinIds = new uint[](count);
+        uint index = 0;
+        for (uint i = 0; i < intelPins.length; i++) {
+            if (intelPins[i].pinType == pinType && intelPins[i].isActive) {
+                pinIds[index] = i;
+                index++;
+            }
+        }
+        
+        return pinIds;
+    }
+
+    /**
+     * @dev Get high priority intel pins (priority >= 8)
+     * @return highPriorityPins Array of high priority pin IDs
+     */
+    function getHighPriorityPins() public view returns (uint[] memory) {
+        uint count = 0;
+        
+        // First, count high priority pins
+        for (uint i = 0; i < intelPins.length; i++) {
+            if (intelPins[i].priority >= 8 && intelPins[i].isActive) {
+                count++;
+            }
+        }
+        
+        // Then, collect high priority pin IDs
+        uint[] memory highPriorityPins = new uint[](count);
+        uint index = 0;
+        for (uint i = 0; i < intelPins.length; i++) {
+            if (intelPins[i].priority >= 8 && intelPins[i].isActive) {
+                highPriorityPins[index] = i;
+                index++;
+            }
+        }
+        
+        return highPriorityPins;
+    }
+
+    /**
+     * @dev Get intel pins within a specific area
+     * @param centerX X coordinate of area center
+     * @param centerY Y coordinate of area center
+     * @param radius Search radius in micrometers
+     * @return pinIds Array of pin IDs within the area
+     */
+    function getPinsInArea(uint centerX, uint centerY, uint radius) public view returns (uint[] memory) {
+        uint count = 0;
+        uint radiusSquared = radius * radius;
+        
+        // First, count pins within radius
+        for (uint i = 0; i < intelPins.length; i++) {
+            if (!intelPins[i].isActive) continue;
+            
+            int deltaX = int(intelPins[i].x) - int(centerX);
+            int deltaY = int(intelPins[i].y) - int(centerY);
+            uint distanceSquared = uint(deltaX * deltaX + deltaY * deltaY);
+            
+            if (distanceSquared <= radiusSquared) {
+                count++;
+            }
+        }
+        
+        // Then, collect pin IDs within radius
+        uint[] memory pinIds = new uint[](count);
+        uint index = 0;
+        for (uint i = 0; i < intelPins.length; i++) {
+            if (!intelPins[i].isActive) continue;
+            
+            int deltaX = int(intelPins[i].x) - int(centerX);
+            int deltaY = int(intelPins[i].y) - int(centerY);
+            uint distanceSquared = uint(deltaX * deltaX + deltaY * deltaY);
+            
+            if (distanceSquared <= radiusSquared) {
+                pinIds[index] = i;
+                index++;
+            }
+        }
+        
+        return pinIds;
     }
 }
-
