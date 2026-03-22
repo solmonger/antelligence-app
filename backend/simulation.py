@@ -1,13 +1,13 @@
 # simulation.py
 import numpy as np
 import os
-import openai
 import random
 from random import choice
 import json
 from dotenv import load_dotenv
 import asyncio
 import time
+from litellm_client import create_client as create_llm_client
 
 # Load environment variables
 load_dotenv()
@@ -16,30 +16,23 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 
+# LiteLLM API base
+LITELLM_API_BASE = "http://host.orb.internal:4000/v1"
+
+# Initialize model clients via LiteLLM
+def get_openai_client():
+    return create_llm_client(api_key=OPENAI_API_KEY, api_base=LITELLM_API_BASE)
+
+def get_gemini_client():
+    return create_llm_client(api_key=GEMINI_API_KEY, api_base=LITELLM_API_BASE)
+
+def get_mistral_client():
+    return create_llm_client(api_key=MISTRAL_API_KEY, api_base=LITELLM_API_BASE)
+
 # Initialize model clients
-try:
-    import google.generativeai as genai
-    if GEMINI_API_KEY:
-        genai.configure(api_key=GEMINI_API_KEY)
-        print("✅ Gemini API configured")
-except ImportError:
-    print("⚠️ google-generativeai not installed")
-    genai = None
-
-try:
-    from mistralai import Mistral
-    mistral_client = Mistral(api_key=MISTRAL_API_KEY) if MISTRAL_API_KEY else None
-    if mistral_client:
-        print("✅ Mistral client configured")
-except ImportError:
-    print("⚠️ mistralai not installed")
-    mistral_client = None
-
-# OpenAI client for GPT models
-openai_client = None
-if OPENAI_API_KEY:
-    openai_client = openai.OpenAI(api_key=OPENAI_API_KEY)
-    print("✅ OpenAI client configured")
+openai_client = get_openai_client()
+gemini_client = get_gemini_client()
+mistral_client = get_mistral_client()
 
 class SimpleAntAgent:
     def __init__(self, unique_id, model, is_llm_controlled=True):
@@ -715,9 +708,9 @@ class SimpleForagingModel:
         self.api_enabled = False
         if IO_API_KEY:
             try:
-                self.io_client = openai.OpenAI(
+                self.io_client = create_llm_client(
                     api_key=IO_API_KEY,
-                    base_url="https://api.intelligence.io.solutions/api/v1/"
+                    api_base=LITELLM_API_BASE
                 )
                 self.api_enabled = True
                 self.log_error("LLM API initialized successfully.")

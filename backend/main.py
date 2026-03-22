@@ -10,8 +10,8 @@ import sys
 import numpy as np
 import random
 import traceback
-import openai
 from dotenv import load_dotenv
+from litellm_client import create_client as create_llm_client
 
 # Add the current directory to Python path for local development
 current_dir = os.path.dirname(os.path.abspath(__file__))
