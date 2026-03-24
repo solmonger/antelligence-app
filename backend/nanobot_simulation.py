@@ -147,10 +147,18 @@ class NanobotAgent:
     def _search_for_target(self, guidance: Optional[Dict] = None):
         """
         Search for tumor cells to target.
-        Prioritizes nearest living cell for drug delivery.
+        Queen exploration_bias controls explore vs exploit:
+        - Low bias (< 0.5): prioritize nearest cell (exploit)
+        - High bias (≥ 0.5): skip nearest-cell, use pheromone navigation (explore)
         """
-        # FIRST PRIORITY: Check for nearby targets immediately
-        nearby_cell = self._find_nearest_living_cell(max_distance=100.0)  # Updated to find any living cell
+        # Queen can override direct targeting via exploration bias
+        exploration_bias = getattr(self, '_queen_exploration_bias', 0.0)
+        use_direct_targeting = (exploration_bias < 0.5) or (np.random.random() > exploration_bias)
+
+        # FIRST PRIORITY: Check for nearby targets (if not in explore mode)
+        nearby_cell = None
+        if use_direct_targeting:
+            nearby_cell = self._find_nearest_living_cell(max_distance=100.0)
         if nearby_cell and self.drug_payload > 2.0:
             self.target_cell = nearby_cell
             self.state = NanobotState.TARGETING
