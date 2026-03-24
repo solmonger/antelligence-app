@@ -14,18 +14,18 @@ Do NOT write more tests for completed contracts — move forward.
 - [x] Hardhat test suites for all contracts
 - [x] GitHub Actions CI pipeline
 
-## Phase 1 — Python Simulation Core [CURRENT]
+## Phase 1 — Python Simulation Core [COMPLETE]
 Goal: Get the existing Python simulation running with tests that pass in CI.
 The simulation code already exists in `backend/` — fix and extend it, don't rewrite from scratch.
 
 - [x] Fix imports: replace `openai`/`google.generativeai`/`mistralai` with LiteLLM client (use `requests` to call `http://host.orb.internal:4000/v1/chat/completions`)
-- [ ] Make `backend/biofvm.py` independently testable: add unit tests in `tests/test_biofvm.py` for substrate diffusion, decay, mass conservation
-- [ ] Make `backend/tumor_environment.py` independently testable: add unit tests in `tests/test_tumor_env.py` for voxel grid initialization and oxygen gradients
-- [ ] Make `backend/nanobot_simulation.py` independently testable: add unit tests in `tests/test_nanobot.py` for nanobot movement, chemotaxis, drug delivery
-- [ ] Add `pytest.ini` or `pyproject.toml` with test configuration and CI integration
-- [ ] Update GitHub Actions to run both `npx hardhat test` AND `pytest` in CI
+- [x] Make `backend/biofvm.py` independently testable: add unit tests in `tests/test_biofvm.py` for substrate diffusion, decay, mass conservation
+- [x] Make `backend/tumor_environment.py` independently testable: add unit tests in `tests/test_tumor_env.py` for voxel grid initialization and oxygen gradients
+- [x] Make `backend/nanobot_simulation.py` independently testable: add unit tests in `tests/test_nanobot.py` for nanobot movement, chemotaxis, drug delivery
+- [x] Add `pytest.ini` or `pyproject.toml` with test configuration and CI integration
+- [x] Update GitHub Actions to run both `npx hardhat test` AND `pytest` in CI
 
-## Phase 2 — Pheromone System Enhancement
+## Phase 2 — Pheromone System Enhancement [CURRENT]
 Goal: Implement and validate the pheromone signaling system for decentralized coordination.
 
 - [ ] Implement trail pheromone field in `backend/biofvm.py` with secretion, diffusion, and exponential decay
