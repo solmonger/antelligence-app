@@ -1,124 +1,97 @@
-"""
-LiteLLM client for Antelligence simulation.
+"""LiteLLM proxy client using direct HTTP requests.
 
-This module replaces direct OpenAI/Google/Mistral API calls with LiteLLM
-to route through the local LiteLLM proxy at http://host.orb.internal:4000
+This module provides a simple HTTP client that calls the LiteLLM proxy at
+http://host.orb.internal:4000/v1/chat/completions. Per sprint requirements:
+use requests to call the proxy instead of importing openai/google/mistralai directly.
 """
-
-import os
 import requests
-import json
+import os
 from typing import Dict, List, Optional, Any
 
 
 class LiteLLMClient:
-    """Client for LiteLLM proxy API."""
-    
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
-        """
-        Initialize LiteLLM client.
-        
-        Args:
-            api_key: API key for LiteLLM (defaults to environment variable)
-            base_url: Base URL for LiteLLM proxy (defaults to http://host.orb.internal:4000)
-        """
-        self.api_key = api_key or os.getenv("LITELLM_API_KEY", "sk-litellm-openclaw-local-2026")
-        self.base_url = base_url or os.getenv("LITELLM_URL", "http://host.orb.internal:4000")
-        
-    def chat_completion(
-        self,
-        model: str,
-        messages: List[Dict[str, str]],
-        temperature: float = 0.7,
-        max_tokens: Optional[int] = None,
-        timeout: int = 30
-    ) -> Dict[str, Any]:
-        """
-        Create a chat completion using LiteLLM.
-        
-        Args:
-            model: Model name (e.g., "gpt-4", "claude-3-opus", "gemini-pro")
-            messages: List of message dicts with "role" and "content"
-            temperature: Sampling temperature
-            max_tokens: Maximum tokens to generate
-            timeout: Request timeout in seconds
-            
-        Returns:
-            Dict with completion response
-            
-        Raises:
-            Exception: If API call fails
-        """
-        url = f"{self.base_url}/v1/chat/completions"
-        
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
-        }
-        
-        payload = {
-            "model": model,
-            "messages": messages,
-            "temperature": temperature,
-        }
-        
-        if max_tokens:
-            payload["max_tokens"] = max_tokens
-            
-        try:
-            response = requests.post(
-                url,
-                headers=headers,
-                json=payload,
-                timeout=timeout
-            )
+    """Simple client for calling LiteLLM proxy via HTTP."""
+
+    def __init__(self, api_key: Optional[str] = None, api_base: str = "http://host.orb.internal:4000/v1"):
+        self.api_key = api_key or os.getenv("LITELLM_API_KEY", "")
+        self.api_base = api_base.rstrip("/")
+        self.chat = self.ChatCompletions(self)
+
+    class ChatCompletions:
+        """Mimics openai.ChatCompletions interface."""
+
+        def __init__(self, client: 'LiteLLMClient'):
+            self._client = client
+
+        def create(self, model: str, messages: List[Dict[str, str]], temperature: float = 0.7,
+                   max_completion_tokens: Optional[int] = None, max_tokens: Optional[int] = None,
+                   timeout: int = 30, **kwargs) -> Any:
+            """Make a chat completion request to the LiteLLM proxy."""
+            # Build request payload
+            payload = {
+                "model": model,
+                "messages": messages,
+                "temperature": temperature,
+            }
+
+            # Use max_completion_tokens if provided, otherwise max_tokens
+            if max_completion_tokens is not None:
+                payload["max_completion_tokens"] = max_completion_tokens
+            elif max_tokens is not None:
+                payload["max_tokens"] = max_tokens
+
+            # Add any additional kwargs
+            payload.update(kwargs)
+
+            # Make the request
+            url = f"{self._client.api_base}/chat/completions"
+            headers = {"Content-Type": "application/json"}
+            if self._client.api_key:
+                headers["Authorization"] = f"Bearer {self._client.api_key}"
+
+            response = requests.post(url, json=payload, headers=headers, timeout=timeout)
             response.raise_for_status()
-            return response.json()
-        except requests.exceptions.RequestException as e:
-            raise Exception(f"LiteLLM API request failed: {e}")
-            
-    def simple_completion(
-        self,
-        model: str,
-        prompt: str,
-        system_prompt: Optional[str] = None,
-        temperature: float = 0.7,
-        max_tokens: Optional[int] = None
-    ) -> str:
-        """
-        Simple wrapper for single-prompt completions.
-        
-        Args:
-            model: Model name
-            prompt: User prompt
-            system_prompt: Optional system prompt
-            temperature: Sampling temperature
-            max_tokens: Maximum tokens to generate
-            
-        Returns:
-            Generated text
-        """
-        messages = []
-        if system_prompt:
-            messages.append({"role": "system", "content": system_prompt})
-        messages.append({"role": "user", "content": prompt})
-        
-        response = self.chat_completion(
-            model=model,
-            messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens
-        )
-        
-        return response["choices"][0]["message"]["content"].strip()
+
+            # Parse and return a response object that mimics OpenAI's format
+            data = response.json()
+            return _OpenAIResponse(data)
 
 
-# Global client instance
-_client = None
+    class _OpenAIResponse:
+        """Mimics OpenAI response format."""
 
-def get_client() -> LiteLLMClient:
-    """Get or create global LiteLLM client instance."""
-    global _client
-    if _client is None:
-        _client = LiteLLMClient()
-    return _client
+        def __init__(self, data: Dict[str, Any]):
+            self.choices = [_OpenAIChoice(choice) for choice in data.get("choices", [])]
+            self.model = data.get("model", "")
+            self.usage = _OpenAIUsage(data.get("usage", {})) if "usage" in data else None
+
+
+    class _OpenAIChoice:
+        """Mimics OpenAI choice format."""
+
+        def __init__(self, data: Dict[str, Any]):
+            self.message = _OpenAIMessage(data.get("message", {}))
+            self.finish_reason = data.get("finish_reason", "")
+            self.index = data.get("index", 0)
+
+
+    class _OpenAIMessage:
+        """Mimics OpenAI message format."""
+
+        def __init__(self, data: Dict[str, Any]):
+            self.content = data.get("content", "")
+            self.role = data.get("role", "assistant")
+
+
+    class _OpenAIUsage:
+        """Mimics OpenAI usage format."""
+
+        def __init__(self, data: Dict[str, Any]):
+            self.prompt_tokens = data.get("prompt_tokens", 0)
+            self.completion_tokens = data.get("completion_tokens", 0)
+            self.total_tokens = data.get("total_tokens", 0)
+
+
+def create_client(api_key: Optional[str] = None, api_base: str = "http://host.orb.internal:4000/v1") -> LiteLLMClient:
+    """Factory function to create a LiteLLM client."""
+    return LiteLLMClient(api_key=api_key, api_base=api_base)

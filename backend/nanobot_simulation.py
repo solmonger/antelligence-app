@@ -16,15 +16,18 @@ import numpy as np
 import random
 from typing import Dict, List, Tuple, Optional
 from enum import Enum
-import openai
 import os
 from dotenv import load_dotenv
 import threading
+from litellm_client import create_client as create_llm_client
 from biofvm import Microenvironment
 from tumor_environment import TumorGeometry, TumorCell, VesselPoint, CellPhase, CellType
 
 load_dotenv()
 IO_API_KEY = os.getenv("IO_SECRET_KEY")
+
+# Create LiteLLM client for internal API
+LITELLM_API_BASE = "http://host.orb.internal:4000/v1"
 
 # Blockchain integration
 try:
@@ -957,7 +960,7 @@ class TumorNanobotModel:
         self.with_queen = with_queen
         self.use_llm_queen = use_llm_queen
         
-        # List of known supported chat models
+        # List of known supported chat models (LiteLLM unified format)
         SUPPORTED_CHAT_MODELS = [
             'meta-llama/Llama-3.3-70B-Instruct',
             'mistralai/Mistral-Large-Instruct-2411',
@@ -1045,13 +1048,13 @@ class TumorNanobotModel:
         # Initialize Queen
         self.queen = QueenNanobot(self, use_llm=use_llm_queen) if with_queen else None
         
-        # Initialize IO client
+        # Initialize IO client via LiteLLM
         self.api_enabled = False
         if IO_API_KEY:
             try:
-                self.io_client = openai.OpenAI(
+                self.io_client = create_llm_client(
                     api_key=IO_API_KEY,
-                    base_url="https://api.intelligence.io.solutions/api/v1/"
+                    api_base=LITELLM_API_BASE
                 )
                 self.api_enabled = True
                 print("[TUMOR MODEL] LLM API initialized successfully")
