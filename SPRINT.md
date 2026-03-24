@@ -47,11 +47,11 @@ Goal: Connect the Python simulation to the Solidity contracts for provenance.
 ## Phase 4 — LLM Hierarchy (Queen/Worker) [CURRENT]
 Goal: Add the Queen agent for strategic coordination with measurable improvement over baseline.
 
-- [ ] Queen policy wrapper: episodic planner that adjusts bot parameters every K simulation steps
-- [ ] Worker agent parameters: exploration bias, trail secretion rate, alarm sensitivity (configurable)
-- [ ] Queen uses LiteLLM (qwen3.5-35b or deepseek-chat) for strategic decisions
-- [ ] Evaluation harness: compare queen-guided vs fixed-policy across seeds and patients
-- [ ] Success gate: queen policy must improve kill rate ≥10% vs fixed baseline (≥5 seeds, ≥3 patients)
+- [x] Queen policy wrapper: episodic planner that adjusts bot parameters every K simulation steps
+- [x] Worker agent parameters: exploration bias, trail secretion rate, alarm sensitivity (configurable)
+- [ ] Queen uses LiteLLM (qwen3.5-35b or deepseek-chat) for strategic decisions (blocked: LiteLLM billing)
+- [x] Evaluation harness: compare queen-guided vs fixed-policy across seeds and patients
+- [ ] Success gate: queen policy must improve kill rate ≥10% vs fixed baseline (≥5 seeds, ≥3 patients) — FAIL at current scale (direct targeting dominates); needs larger domain or fewer bots
 
 ## Phase 5 — Experiment Ops & Evaluation
 Goal: Automated experiment sweeps with reproducible, on-chain-attested results.
