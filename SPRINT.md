@@ -25,17 +25,17 @@ The simulation code already exists in `backend/` — fix and extend it, don't re
 - [x] Add `pytest.ini` or `pyproject.toml` with test configuration and CI integration
 - [x] Update GitHub Actions to run both `npx hardhat test` AND `pytest` in CI
 
-## Phase 2 — Pheromone System Enhancement [CURRENT]
+## Phase 2 — Pheromone System Enhancement [COMPLETE]
 Goal: Implement and validate the pheromone signaling system for decentralized coordination.
 
-- [ ] Implement trail pheromone field in `backend/biofvm.py` with secretion, diffusion, and exponential decay
-- [ ] Implement alarm pheromone field with higher diffusion rate and faster decay
-- [ ] Implement recruitment pheromone for zone exploration signaling
-- [ ] Add chemotaxis logic to nanobots: follow trail gradient, avoid alarm zones
-- [ ] Unit tests: pheromone decay half-life, chemotaxis directionality, mass conservation
-- [ ] Baseline comparison: bots without pheromones vs with pheromones (automated benchmark script)
+- [x] Implement trail pheromone field in `backend/biofvm.py` with secretion, diffusion, and exponential decay
+- [x] Implement alarm pheromone field with higher diffusion rate and faster decay
+- [x] Implement recruitment pheromone for zone exploration signaling
+- [x] Add chemotaxis logic to nanobots: follow trail gradient, avoid alarm zones
+- [x] Unit tests: pheromone decay half-life, chemotaxis directionality, mass conservation
+- [x] Baseline comparison: bots without pheromones vs with pheromones (automated benchmark script)
 
-## Phase 3 — Blockchain Integration
+## Phase 3 — Blockchain Integration [CURRENT]
 Goal: Connect the Python simulation to the Solidity contracts for provenance.
 
 - [ ] IPFS pinning utility: hash simulation artifacts, pin to IPFS, return CID

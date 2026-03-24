@@ -104,16 +104,10 @@ describe("TumorIntel", function () {
       expect(pin.isActive).to.equal(false);
     });
 
-    it("Should allow anyone to deactivate intel", async function () {
-      // The contract allows anyone to deactivate in current version
-      const tx = await tumorIntel.connect(addr2).deactivateIntel(0);
-      
-      await expect(tx)
-        .to.emit(tumorIntel, "IntelDeactivated")
-        .withArgs(0, addr2.address);
-      
-      const pin = await tumorIntel.intelPins(0);
-      expect(pin.isActive).to.equal(false);
+    it("Should prevent non-reporter from deactivating intel", async function () {
+      await expect(
+        tumorIntel.connect(addr2).deactivateIntel(0)
+      ).to.be.revertedWith("Not authorized to deactivate");
     });
   });
 
@@ -124,35 +118,36 @@ describe("TumorIntel", function () {
       await tumorIntel.connect(addr1).reportIntel(200, 300, 2, 3);
     });
 
-    it("Should return correct intel count", async function () {
-      expect(await tumorIntel.getIntelCount()).to.equal(3);
+    it("Should return correct pin count", async function () {
+      expect(await tumorIntel.getPinCount()).to.equal(3);
     });
 
-    it("Should return active intel only", async function () {
-      await tumorIntel.connect(addr1).deactivateIntel(1);
-      
-      const activeIntel = await tumorIntel.getActiveIntel();
-      expect(activeIntel.length).to.equal(2);
+    it("Should return active pins only", async function () {
+      // addr1 reported pin 1 (index 1 was reported by addr2), deactivate pin 0 (reported by addr1)
+      await tumorIntel.connect(addr1).deactivateIntel(0);
+
+      const activePins = await tumorIntel.getActivePins();
+      expect(activePins.length).to.equal(2);
     });
 
-    it("Should return intel by type", async function () {
-      const hypoxicIntel = await tumorIntel.getActiveIntelByType(0); // HYPOXIC_CLUSTER
-      expect(hypoxicIntel.length).to.equal(1);
-      // Check that the returned ID corresponds to the right pin
-      const pinId = hypoxicIntel[0];
+    it("Should return pins by type", async function () {
+      const hypoxicPins = await tumorIntel.getPinsByType(0); // HYPOXIC_CLUSTER
+      expect(hypoxicPins.length).to.equal(1);
+      const pinId = hypoxicPins[0];
       const pin = await tumorIntel.intelPins(pinId);
       expect(pin.x).to.equal(100);
     });
 
-    it("Should return intel details", async function () {
-      const details = await tumorIntel.getIntelDetails(0);
-      expect(details.x).to.equal(100);
-      expect(details.y).to.equal(200);
-      expect(details.pinType).to.equal(0);
-      expect(details.reporter).to.equal(addr1.address);
-      expect(details.priority).to.equal(5);
-      expect(details.isActive).to.equal(true);
-      expect(details.confirmationCount).to.equal(0);
+    it("Should return pin details from mapping", async function () {
+      const pin = await tumorIntel.intelPins(0);
+      expect(pin.x).to.equal(100);
+      expect(pin.y).to.equal(200);
+      expect(pin.pinType).to.equal(0);
+      expect(pin.reporter).to.equal(addr1.address);
+      expect(pin.priority).to.equal(5);
+      expect(pin.isActive).to.equal(true);
+      // confirmations are stored in a separate mapping
+      expect(await tumorIntel.confirmations(0)).to.equal(0);
     });
   });
 });
