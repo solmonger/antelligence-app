@@ -35,16 +35,16 @@ Goal: Implement and validate the pheromone signaling system for decentralized co
 - [x] Unit tests: pheromone decay half-life, chemotaxis directionality, mass conservation
 - [x] Baseline comparison: bots without pheromones vs with pheromones (automated benchmark script)
 
-## Phase 3 — Blockchain Integration [CURRENT]
+## Phase 3 — Blockchain Integration [COMPLETE]
 Goal: Connect the Python simulation to the Solidity contracts for provenance.
 
 - [x] IPFS pinning utility: hash simulation artifacts, pin to IPFS, return CID
 - [x] Verification CLI: `python3 scripts/antelligence_cli.py verify --run-hash HASH` fetches from chain, checks data integrity
 - [x] Deploy ExperienceRegistry + TumorIntel to Base Sepolia testnet (deployment script + verified contract)
 - [x] Submission CLI: `python3 scripts/antelligence_cli.py submit --metrics FILE` posts run hash + CID + score
-- [ ] Leaderboard service: reads on-chain events, ranks policies by attested performance
+- [x] Leaderboard service: SQLite tracker + on-chain sync, ranks by score with attestation status
 
-## Phase 4 — LLM Hierarchy (Queen/Worker)
+## Phase 4 — LLM Hierarchy (Queen/Worker) [CURRENT]
 Goal: Add the Queen agent for strategic coordination with measurable improvement over baseline.
 
 - [ ] Queen policy wrapper: episodic planner that adjusts bot parameters every K simulation steps
