@@ -1,0 +1,13 @@
+name: queen-rl-scaled
+description: >
+  Scaled-up environment where coordination matters.
+  4000µm domain with 5 nanobots and 250µm tumor radius.
+  Per BRIEF-045 RL recipe: ~1K episodes sweet spot.
+seeds: [42, 43, 44, 45, 46]
+defaults:
+  steps: 500
+  nanobots: 5
+  domain_size: 4000.0
+  voxel_size: 50.0
+sweep:
+  tumor_radius: [250, 350]
