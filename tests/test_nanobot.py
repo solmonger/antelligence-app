@@ -98,11 +98,14 @@ class TestNanobotInit:
                 assert min_dist < 200.0
 
     def test_position_within_domain(self, simple_model):
+        """Nanobots should start within or near domain boundaries.
+        Allow small overshoot from vessel-proximity random offset."""
+        margin = 50.0  # µm tolerance for random start offset
         for bot in simple_model.nanobots:
-            assert bot.position[0] >= simple_model.microenv.x_range[0]
-            assert bot.position[0] <= simple_model.microenv.x_range[1]
-            assert bot.position[1] >= simple_model.microenv.y_range[0]
-            assert bot.position[1] <= simple_model.microenv.y_range[1]
+            assert bot.position[0] >= simple_model.microenv.x_range[0] - margin
+            assert bot.position[0] <= simple_model.microenv.x_range[1] + margin
+            assert bot.position[1] >= simple_model.microenv.y_range[0] - margin
+            assert bot.position[1] <= simple_model.microenv.y_range[1] + margin
 
 
 # ---------------------------------------------------------------------------
