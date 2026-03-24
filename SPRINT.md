@@ -59,5 +59,5 @@ Goal: Automated experiment sweeps with reproducible, on-chain-attested results.
 - [x] Batch runner: YAML config for seed × parameter grid sweeps (`scripts/batch_runner.py`)
 - [x] Metrics collection: kill rate, deliveries, drug amount, elapsed time per run
 - [x] Report generator: Markdown with tables, parameters, seed stats, summary statistics
-- [ ] Attestation bot: re-runs k% of submissions for reproducibility spot-checks
-- [ ] Streamlit dashboard: live leaderboard from on-chain data
+- [x] Attestation bot: re-runs simulations for reproducibility spot-checks (`scripts/attestation_bot.py`)
+- [ ] Streamlit dashboard: live leaderboard from on-chain data (deferred: needs streamlit install)
