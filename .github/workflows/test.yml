@@ -1,4 +1,4 @@
-name: Smart Contract Tests
+name: Tests
 
 on:
   pull_request:
@@ -7,7 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  solidity:
+    name: Smart Contract Tests
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -30,3 +31,20 @@ jobs:
 
       - name: Run tests
         run: npx hardhat test
+
+  python:
+    name: Python Simulation Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install numpy scipy pytest python-dotenv
+
+      - name: Run tests
+        run: python -m pytest tests/ -v --tb=short
