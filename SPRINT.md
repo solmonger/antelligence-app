@@ -38,10 +38,10 @@ Goal: Implement and validate the pheromone signaling system for decentralized co
 ## Phase 3 — Blockchain Integration [CURRENT]
 Goal: Connect the Python simulation to the Solidity contracts for provenance.
 
-- [ ] IPFS pinning utility: hash simulation artifacts, pin to IPFS, return CID
-- [ ] Verification CLI: `python3 -m antelligence verify <run_hash>` fetches CID, recomputes metrics, checks tolerance
-- [ ] Deploy ExperienceRegistry + TumorIntel to Base Sepolia testnet (deployment script + verified contract)
-- [ ] Submission CLI: `python3 -m antelligence submit` posts run hash + CID + metrics to ExperienceRegistry
+- [x] IPFS pinning utility: hash simulation artifacts, pin to IPFS, return CID
+- [x] Verification CLI: `python3 scripts/antelligence_cli.py verify --run-hash HASH` fetches from chain, checks data integrity
+- [x] Deploy ExperienceRegistry + TumorIntel to Base Sepolia testnet (deployment script + verified contract)
+- [x] Submission CLI: `python3 scripts/antelligence_cli.py submit --metrics FILE` posts run hash + CID + score
 - [ ] Leaderboard service: reads on-chain events, ranks policies by attested performance
 
 ## Phase 4 — LLM Hierarchy (Queen/Worker)
