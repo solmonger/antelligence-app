@@ -1,0 +1,10 @@
+name: tumor-size-sweep
+description: Sweep tumor radius to find optimal nanobot count ratio
+seeds: [42, 43, 44, 45, 46]
+defaults:
+  steps: 200
+  nanobots: 10
+  domain_size: 400.0
+  voxel_size: 10.0
+sweep:
+  tumor_radius: [100, 150, 200]
