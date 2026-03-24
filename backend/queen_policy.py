@@ -146,8 +146,25 @@ class QueenPolicy:
 
 
 def apply_params_to_nanobot(nanobot, params: WorkerParams):
-    """Apply queen-decided parameters to a worker nanobot."""
+    """Apply queen-decided parameters to a worker nanobot.
+
+    Updates chemotaxis weights, speed, and critically the search/delivery
+    parameters that control targeting behavior.
+    """
     nanobot.chemotaxis_weights["alarm"] = -params.alarm_sensitivity
     nanobot.chemotaxis_weights["trail"] = 0.8 * (1.0 - params.exploration_bias)
     nanobot.chemotaxis_weights["chemokine_signal"] = params.chemokine_weight
     nanobot.speed = 30.0 * params.speed_multiplier
+
+    # These actually affect targeting behavior (not just pheromone navigation)
+    # Exploration bias controls random walk vs nearest-cell targeting
+    if hasattr(nanobot, '_queen_exploration_bias'):
+        nanobot._queen_exploration_bias = params.exploration_bias
+    else:
+        nanobot._queen_exploration_bias = params.exploration_bias
+
+    # Drug delivery amount per step
+    if hasattr(nanobot, '_queen_delivery_amount'):
+        nanobot._queen_delivery_amount = params.drug_delivery_amount
+    else:
+        nanobot._queen_delivery_amount = params.drug_delivery_amount
