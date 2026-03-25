@@ -28,9 +28,9 @@ The simulation code already exists in `backend/` — fix and extend it, don't re
 ## Phase 2 — Pheromone System Enhancement
 Goal: Implement and validate the pheromone signaling system for decentralized coordination.
 
-- [ ] Implement trail pheromone field in `backend/biofvm.py` with secretion, diffusion, and exponential decay
-- [ ] Implement alarm pheromone field with higher diffusion rate and faster decay
-- [ ] Implement recruitment pheromone for zone exploration signaling
+- [x] Implement trail pheromone field in `backend/biofvm.py` with secretion, diffusion, and exponential decay (D=1e-6, t½≈10min)
+- [x] Implement alarm pheromone field with higher diffusion rate and faster decay (D=5e-6, t½≈3min)
+- [x] Implement recruitment pheromone for zone exploration signaling (D=2e-6, t½≈7min)
 - [ ] Add chemotaxis logic to nanobots: follow trail gradient, avoid alarm zones
 - [ ] Unit tests: pheromone decay half-life, chemotaxis directionality, mass conservation
 - [ ] Baseline comparison: bots without pheromones vs with pheromones (automated benchmark script)
