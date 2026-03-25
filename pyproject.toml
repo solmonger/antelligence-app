@@ -1,0 +1,12 @@
+[project]
+name = "antelligence"
+version = "0.2.0"
+description = "DeSci compute-as-a-service: privacy-preserving tumor simulation with ZK proofs on Base L2"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --tb=short"
