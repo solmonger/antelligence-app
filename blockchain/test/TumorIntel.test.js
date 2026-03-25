@@ -130,7 +130,7 @@ describe("TumorIntel", function () {
     });
 
     it("Should return active intel only", async function () {
-      await tumorIntel.connect(addr1).deactivateIntel(1);
+      await tumorIntel.connect(addr2).deactivateIntel(1);
       
       const activeIntel = await tumorIntel.getActivePins();
       expect(activeIntel.length).to.equal(2);
@@ -153,7 +153,7 @@ describe("TumorIntel", function () {
       expect(pin.reporter).to.equal(addr1.address);
       expect(pin.priority).to.equal(5);
       expect(pin.isActive).to.equal(true);
-      expect(details.confirmationCount).to.equal(0);
+      expect(await tumorIntel.confirmations(0)).to.equal(0);
     });
   });
 });
