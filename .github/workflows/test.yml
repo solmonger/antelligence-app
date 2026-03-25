@@ -32,6 +32,9 @@ jobs:
       - name: Run tests
         run: npx hardhat test
 
+      - name: Check contract sizes
+        run: npx hardhat compile --force 2>&1 | tail -5
+
   python:
     name: Python Simulation Tests
     runs-on: ubuntu-latest
@@ -46,5 +49,44 @@ jobs:
       - name: Install dependencies
         run: pip install numpy scipy pytest python-dotenv
 
-      - name: Run tests
-        run: python -m pytest tests/ -v --tb=short
+      - name: Lint check (syntax errors)
+        run: python -m py_compile backend/biofvm.py backend/tumor_environment.py backend/queen_policy.py
+
+      - name: Run unit tests
+        run: python -m pytest tests/ -v --tb=short --ignore=tests/test_blockchain_integration.py
+
+      - name: Test summary
+        if: always()
+        run: python -m pytest tests/ -q --tb=no --ignore=tests/test_blockchain_integration.py 2>&1 | tail -3
+
+  blockchain-integration:
+    name: Blockchain Integration (Base Sepolia)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [solidity, python]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: blockchain/package-lock.json
+
+      - name: Install Python deps
+        run: pip install numpy scipy pytest python-dotenv web3 eth-account
+
+      - name: Install Node deps and compile
+        working-directory: blockchain
+        run: npm ci && npx hardhat compile
+
+      - name: Run blockchain integration tests
+        env:
+          BASE_SEPOLIA_RPC_URL: "https://base-sepolia.g.alchemy.com/v2/B2L9H_xQOst8AYNUtG7MEOat5hCyQRd5"
+          PRIVATE_KEY: "0x3bb6d06d084ac672f2633fd2ccd69e86c09c8a4120fcda280e27de529ee923f6"
+        run: python -m pytest tests/test_blockchain_integration.py -v --tb=short
