@@ -104,14 +104,15 @@ describe("TumorIntel", function () {
       expect(pin.isActive).to.equal(false);
     });
 
-    it("Should allow anyone to deactivate intel", async function () {
-      // The contract allows anyone to deactivate in current version
+    it("Should allow confirmer to deactivate intel", async function () {
+      // First confirm, then deactivate
+      await tumorIntel.connect(addr2).confirmIntel(0);
       const tx = await tumorIntel.connect(addr2).deactivateIntel(0);
-      
+
       await expect(tx)
         .to.emit(tumorIntel, "IntelDeactivated")
         .withArgs(0, addr2.address);
-      
+
       const pin = await tumorIntel.intelPins(0);
       expect(pin.isActive).to.equal(false);
     });
@@ -125,18 +126,18 @@ describe("TumorIntel", function () {
     });
 
     it("Should return correct intel count", async function () {
-      expect(await tumorIntel.getIntelCount()).to.equal(3);
+      expect(await tumorIntel.getPinCount()).to.equal(3);
     });
 
     it("Should return active intel only", async function () {
       await tumorIntel.connect(addr1).deactivateIntel(1);
       
-      const activeIntel = await tumorIntel.getActiveIntel();
+      const activeIntel = await tumorIntel.getActivePins();
       expect(activeIntel.length).to.equal(2);
     });
 
     it("Should return intel by type", async function () {
-      const hypoxicIntel = await tumorIntel.getActiveIntelByType(0); // HYPOXIC_CLUSTER
+      const hypoxicIntel = await tumorIntel.getPinsByType(0); // HYPOXIC_CLUSTER
       expect(hypoxicIntel.length).to.equal(1);
       // Check that the returned ID corresponds to the right pin
       const pinId = hypoxicIntel[0];
@@ -144,14 +145,14 @@ describe("TumorIntel", function () {
       expect(pin.x).to.equal(100);
     });
 
-    it("Should return intel details", async function () {
-      const details = await tumorIntel.getIntelDetails(0);
-      expect(details.x).to.equal(100);
-      expect(details.y).to.equal(200);
-      expect(details.pinType).to.equal(0);
-      expect(details.reporter).to.equal(addr1.address);
-      expect(details.priority).to.equal(5);
-      expect(details.isActive).to.equal(true);
+    it("Should return intel details from mapping", async function () {
+      const pin = await tumorIntel.intelPins(0);
+      expect(pin.x).to.equal(100);
+      expect(pin.y).to.equal(200);
+      expect(pin.pinType).to.equal(0);
+      expect(pin.reporter).to.equal(addr1.address);
+      expect(pin.priority).to.equal(5);
+      expect(pin.isActive).to.equal(true);
       expect(details.confirmationCount).to.equal(0);
     });
   });
