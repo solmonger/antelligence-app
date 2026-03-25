@@ -100,13 +100,12 @@ class NanobotAgent:
         self.speed = 30.0  # µm per step (movement speed)
         
         # Chemotaxis weights (how much each gradient influences movement)
+        # Names must match substrate names in the microenvironment
         self.chemotaxis_weights = {
-            'oxygen': -1.0,           # Move TOWARD low oxygen (hypoxic tumor)
-            'trail': 0.8,             # Follow successful delivery trails
-            'alarm': -0.5,            # Avoid alarm pheromones
-            'recruitment': 0.6,       # Respond to recruitment signals
-            'chemokine_signal': 1.2,  # Strong attraction to "come here" signals
-            'toxicity_signal': -1.5,  # Strong repulsion from "stay away" signals
+            'oxygen': -1.0,                  # Move TOWARD low oxygen (hypoxic tumor)
+            'trail_pheromone': 0.8,           # Follow successful delivery trails
+            'alarm_pheromone': -0.5,          # Avoid alarm pheromones (repulsion)
+            'recruitment_pheromone': 0.6,     # Respond to recruitment signals
         }
         
         # Target tracking
@@ -197,7 +196,7 @@ class NanobotAgent:
                 self.model.log_error(f"Nanobot {self.nanobot_id} LLM call failed: {str(e)}")
                 # Deposit alarm pheromone on error
                 voxel = self.model.microenv.position_to_voxel(tuple(self.position))
-                alarm = self.model.microenv.get_substrate('alarm')
+                alarm = self.model.microenv.get_substrate('alarm_pheromone')
                 if alarm:
                     alarm.add_source(voxel, 5.0)
         
@@ -258,9 +257,9 @@ class NanobotAgent:
         """Compute direction based only on pheromone trails."""
         direction = np.zeros(2)
         
-        trail = self.model.microenv.get_substrate('trail')
+        trail = self.model.microenv.get_substrate('trail_pheromone')
         if trail:
-            gradient = self.model.microenv.get_gradient_at('trail', tuple(self.position))
+            gradient = self.model.microenv.get_gradient_at('trail_pheromone', tuple(self.position))
             direction = gradient[:2]
         
         return direction
