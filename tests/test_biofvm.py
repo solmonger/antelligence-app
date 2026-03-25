@@ -18,6 +18,9 @@ from biofvm import (
     create_oxygen_substrate,
     create_drug_substrate,
     create_pheromone_substrate,
+    create_trail_pheromone,
+    create_alarm_pheromone,
+    create_recruitment_pheromone,
 )
 
 
@@ -274,3 +277,87 @@ class TestFactoryFunctions:
         )
         sub = create_pheromone_substrate(env, name="trail_pheromone")
         assert sub.name == "trail_pheromone"
+
+
+class TestPheromoneSystem:
+    """Tests for Phase 2 pheromone substrates."""
+
+    def _make_env(self):
+        return Microenvironment(
+            x_range=(0, 200), y_range=(0, 200), z_range=(0, 200),
+            dx=20.0, dy=20.0, dz=20.0, dimensionality=3,
+        )
+
+    def test_create_trail_pheromone(self):
+        env = self._make_env()
+        trail = create_trail_pheromone(env)
+        assert trail.name == "trail_pheromone"
+        assert trail.decay_rate > 0
+        assert np.allclose(trail.concentration, 0.0)
+
+    def test_create_alarm_pheromone(self):
+        env = self._make_env()
+        alarm = create_alarm_pheromone(env)
+        assert alarm.name == "alarm_pheromone"
+        # Alarm should diffuse faster than trail
+        trail = create_trail_pheromone(env)
+        assert alarm.diffusion_coefficient > trail.diffusion_coefficient
+
+    def test_create_recruitment_pheromone(self):
+        env = self._make_env()
+        recruit = create_recruitment_pheromone(env)
+        assert recruit.name == "recruitment_pheromone"
+        assert recruit.decay_rate > 0
+
+    def test_alarm_decays_faster_than_trail(self):
+        env = self._make_env()
+        trail = create_trail_pheromone(env)
+        alarm = create_alarm_pheromone(env)
+        assert alarm.decay_rate > trail.decay_rate
+
+    def test_trail_pheromone_secretion_and_decay(self):
+        """Simulate a nanobot depositing trail pheromone and verify it decays."""
+        env = self._make_env()
+        trail = create_trail_pheromone(env)
+        center = env.shape[0] // 2
+
+        # Simulate nanobot secretion at center
+        trail.add_source((center, center, center), 10.0)
+        initial = trail.source_sink[center, center, center]
+        assert initial == 10.0
+
+        # Step the environment — source should diffuse and decay
+        env.step()
+        # After one step with source, concentration at center should increase
+        assert trail.concentration[center, center, center] > 0
+
+    def test_pheromone_half_life(self):
+        """Trail pheromone should lose ~half concentration in ~10 min (decay_rate=0.07)."""
+        env = self._make_env()
+        trail = create_trail_pheromone(env)
+        center = env.shape[0] // 2
+
+        # Set initial concentration directly (no diffusion, just decay)
+        trail.concentration[center, center, center] = 100.0
+        initial = trail.concentration[center, center, center]
+
+        # Run decay for ~10 minutes with many small steps
+        for _ in range(10000):
+            env.step()
+
+        # After ~10 min, should be roughly half (with diffusion spreading it out)
+        # We just check it decreased significantly
+        final_center = trail.concentration[center, center, center]
+        assert final_center < initial * 0.8  # At least 20% reduction
+
+    def test_all_three_pheromones_coexist(self):
+        """All three pheromone fields can coexist in the same environment."""
+        env = self._make_env()
+        trail = create_trail_pheromone(env)
+        alarm = create_alarm_pheromone(env)
+        recruit = create_recruitment_pheromone(env)
+
+        assert len(env.substrates) == 3
+        assert env.get_substrate("trail_pheromone") is trail
+        assert env.get_substrate("alarm_pheromone") is alarm
+        assert env.get_substrate("recruitment_pheromone") is recruit

@@ -439,12 +439,12 @@ def create_pheromone_substrate(
 ) -> SubstrateField:
     """
     Create a pheromone substrate for nanobot communication.
-    
+
     Args:
         microenv: The microenvironment
         name: Pheromone name (e.g., 'trail', 'alarm', 'recruitment')
         decay_rate: How fast pheromone evaporates (1/min)
-        
+
     Returns:
         Pheromone SubstrateField
     """
@@ -454,5 +454,59 @@ def create_pheromone_substrate(
         decay_rate=decay_rate,
         initial_value=0.0,
         dirichlet_boundary_value=None  # No-flux boundaries
+    )
+
+
+def create_trail_pheromone(microenv: Microenvironment) -> SubstrateField:
+    """Create trail pheromone for marking successful delivery paths.
+
+    Inspired by ant trail pheromones: deposited along paths that led to
+    successful drug deliveries. Moderate diffusion, slow decay (persists
+    for ~10 min half-life = ln(2)/0.07 ≈ 10 min).
+
+    Nanobots secrete trail pheromone at rate 1.0 units/step during DELIVERING state.
+    """
+    return microenv.add_substrate(
+        name="trail_pheromone",
+        diffusion_coefficient=1e-6,  # cm²/s — moderate spread
+        decay_rate=0.07,  # 1/min — half-life ~10 min
+        initial_value=0.0,
+        dirichlet_boundary_value=None,
+    )
+
+
+def create_alarm_pheromone(microenv: Microenvironment) -> SubstrateField:
+    """Create alarm pheromone for marking dangerous/toxic zones.
+
+    Higher diffusion (spreads fast to warn neighbors) and faster decay
+    (danger signals should be transient, half-life ~3 min).
+
+    Nanobots secrete alarm pheromone when:
+    - Drug delivery fails (resistant cell)
+    - Navigation error (stuck)
+    - Entering necrotic core
+    """
+    return microenv.add_substrate(
+        name="alarm_pheromone",
+        diffusion_coefficient=5e-6,  # cm²/s — fast spread (5x trail)
+        decay_rate=0.23,  # 1/min — half-life ~3 min
+        initial_value=0.0,
+        dirichlet_boundary_value=None,
+    )
+
+
+def create_recruitment_pheromone(microenv: Microenvironment) -> SubstrateField:
+    """Create recruitment pheromone for attracting bots to unexplored zones.
+
+    Moderate diffusion, moderate decay (half-life ~7 min).
+    Secreted by nanobots that discover high-value targets (stem cells,
+    resistant cells) but can't handle them alone.
+    """
+    return microenv.add_substrate(
+        name="recruitment_pheromone",
+        diffusion_coefficient=2e-6,  # cm²/s — moderate spread
+        decay_rate=0.1,  # 1/min — half-life ~7 min
+        initial_value=0.0,
+        dirichlet_boundary_value=None,
     )
 
