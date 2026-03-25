@@ -31,8 +31,8 @@ Goal: Implement and validate the pheromone signaling system for decentralized co
 - [x] Implement trail pheromone field in `backend/biofvm.py` with secretion, diffusion, and exponential decay (D=1e-6, t½≈10min)
 - [x] Implement alarm pheromone field with higher diffusion rate and faster decay (D=5e-6, t½≈3min)
 - [x] Implement recruitment pheromone for zone exploration signaling (D=2e-6, t½≈7min)
-- [ ] Add chemotaxis logic to nanobots: follow trail gradient, avoid alarm zones
-- [ ] Unit tests: pheromone decay half-life, chemotaxis directionality, mass conservation
+- [x] Add chemotaxis logic to nanobots: follow trail gradient, avoid alarm zones (wired to trail_pheromone, alarm_pheromone, recruitment_pheromone substrates)
+- [x] Unit tests: pheromone decay half-life, chemotaxis directionality, mass conservation (7 pheromone tests in test_biofvm.py)
 - [ ] Baseline comparison: bots without pheromones vs with pheromones (automated benchmark script)
 
 ## Phase 3 — Blockchain Integration
