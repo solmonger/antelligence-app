@@ -33,7 +33,7 @@ Goal: Implement and validate the pheromone signaling system for decentralized co
 - [x] Implement recruitment pheromone for zone exploration signaling (D=2e-6, t½≈7min)
 - [x] Add chemotaxis logic to nanobots: follow trail gradient, avoid alarm zones (wired to trail_pheromone, alarm_pheromone, recruitment_pheromone substrates)
 - [x] Unit tests: pheromone decay half-life, chemotaxis directionality, mass conservation (7 pheromone tests in test_biofvm.py)
-- [ ] Baseline comparison: bots without pheromones vs with pheromones (automated benchmark script)
+- [x] Baseline comparison: bots without pheromones vs with pheromones (benchmark_pheromones.py — 0% improvement, expected: secretion logic not yet wired)
 
 ## Phase 3 — Blockchain Integration
 Goal: Connect the Python simulation to the Solidity contracts for provenance.
