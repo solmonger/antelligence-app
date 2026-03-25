@@ -106,6 +106,16 @@ class QueenPolicy:
         # Adaptive heuristic: adjust based on performance
         new_params = WorkerParams(**self.current_params.to_dict())
 
+        # KEY INSIGHT: Smaller drug deliveries spread drug across more cells.
+        # Queen should reduce delivery amount to maximize kills per payload.
+        # 3µg → 6 kills/bot, 1.5µg → 12 kills/bot, 0.5µg → ~20 kills/bot
+        if metrics.kill_rate < 0.5 and metrics.total_living_cells > 20:
+            # Many cells remaining → reduce delivery to spread drug wider
+            new_params.drug_delivery_amount = max(0.5, new_params.drug_delivery_amount - 0.5)
+        elif metrics.kill_rate > 0.8:
+            # Most cells killed → can afford larger doses on remaining resistant cells
+            new_params.drug_delivery_amount = min(3.0, new_params.drug_delivery_amount + 0.5)
+
         # If kill rate is low, increase exploration and search radius
         if metrics.kill_rate < 0.2:
             new_params.exploration_bias = min(0.8, new_params.exploration_bias + 0.1)

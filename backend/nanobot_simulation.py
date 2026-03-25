@@ -464,7 +464,9 @@ class NanobotAgent:
         drug = self.model.microenv.get_substrate('drug')
         
         if drug and self.drug_payload > 0:
-            delivery_amount = min(self.drug_payload, 3.0)  # 3 μg per delivery (increased for more effective killing)
+            # Queen can adjust delivery amount via _queen_delivery_amount
+            base_delivery = getattr(self, '_queen_delivery_amount', 3.0)
+            delivery_amount = min(self.drug_payload, base_delivery)
             drug.add_source(voxel, delivery_amount)
             self.drug_payload -= delivery_amount
             self.total_drug_delivered += delivery_amount
