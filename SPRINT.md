@@ -20,7 +20,7 @@ The simulation code already exists in `backend/` — fix and extend it, don't re
 
 - [x] Fix imports: replace `openai`/`google.generativeai`/`mistralai` with LiteLLM client (use `requests` to call `http://host.orb.internal:4000/v1/chat/completions`)
 - [x] Make `backend/biofvm.py` independently testable: add unit tests in `tests/test_biofvm.py` for substrate diffusion, decay, mass conservation (21 tests, all passing)
-- [ ] Make `backend/tumor_environment.py` independently testable: add unit tests in `tests/test_tumor_env.py` for voxel grid initialization and oxygen gradients
+- [x] Make `backend/tumor_environment.py` independently testable: add unit tests in `tests/test_tumor_env.py` for voxel grid initialization and oxygen gradients (22 tests, all passing)
 - [ ] Make `backend/nanobot_simulation.py` independently testable: add unit tests in `tests/test_nanobot.py` for nanobot movement, chemotaxis, drug delivery
 - [ ] Add `pytest.ini` or `pyproject.toml` with test configuration and CI integration
 - [ ] Update GitHub Actions to run both `npx hardhat test` AND `pytest` in CI
