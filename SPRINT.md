@@ -56,8 +56,8 @@ Goal: Add the Queen agent for strategic coordination with measurable improvement
 ## Phase 5 — Experiment Ops & Evaluation
 Goal: Automated experiment sweeps with reproducible, on-chain-attested results.
 
-- [ ] Batch runner: YAML config for seed × parameter grid sweeps
-- [ ] Metrics collection: tumor-kill %, toxicity proxy, time-to-control, runtime/cost per run
+- [x] Batch runner: YAML config for seed × parameter grid sweeps (batch_runner.py, includes IPFS attestation)
+- [x] Metrics collection: tumor-kill %, toxicity proxy, time-to-control, runtime/cost per run (integrated into batch runner)
 - [ ] Report generator: HTML/Markdown with plots, parameters, seed stats, links to Sepolia tx + IPFS CID
 - [ ] Attestation bot: re-runs k% of submissions for reproducibility spot-checks
 - [ ] Streamlit dashboard: live leaderboard from on-chain data
