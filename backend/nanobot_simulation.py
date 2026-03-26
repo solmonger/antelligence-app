@@ -758,10 +758,115 @@ class QueenNanobot:
     (every K steps) to adjust swarm parameters.
     """
     
-    def __init__(self, model: 'TumorNanobotModel', use_llm: bool = False):
+    def __init__(self, model: 'TumorNanobotModel', use_llm: bool = False, episode_length: int = 10):
         self.model = model
         self.use_llm = use_llm
-        
+        self.episode_length = episode_length  # Adjust parameters every K steps
+        self.step_counter = 0
+        self.episode_counter = 0
+
+        # Configurable worker parameters (adjusted by Queen each episode)
+        self.worker_params = {
+            "exploration_bias": 0.3,       # 0-1: higher = more random exploration
+            "trail_secretion_rate": 1.0,   # Pheromone deposit rate per delivery
+            "alarm_secretion_rate": 5.0,   # Alarm deposit rate on failure
+            "recruitment_threshold": 0.5,  # Confidence threshold to recruit
+            "oxygen_weight": -1.0,         # Chemotaxis weight for oxygen
+            "trail_weight": 0.8,           # Chemotaxis weight for trail pheromone
+            "alarm_weight": -0.5,          # Chemotaxis weight for alarm pheromone
+            "speed_multiplier": 1.0,       # Movement speed scaling
+        }
+
+        # Episode history for tracking improvement
+        self.episode_history: List[Dict] = []
+
+    def step(self):
+        """Called every simulation step. Triggers episodic replanning at interval K."""
+        self.step_counter += 1
+        if self.step_counter >= self.episode_length:
+            self._end_episode()
+            self.step_counter = 0
+
+    def _end_episode(self):
+        """Evaluate episode and adjust worker parameters."""
+        self.episode_counter += 1
+
+        # Capture current state
+        stats = self.model.geometry.get_tumor_statistics()
+        total_deliveries = sum(bot.deliveries_made for bot in self.model.nanobots)
+        total_drug = sum(bot.total_drug_delivered for bot in self.model.nanobots)
+        kill_rate = (stats["total_cells"] - stats["living_cells"]) / max(1, stats["total_cells"]) * 100
+
+        episode_record = {
+            "episode": self.episode_counter,
+            "kill_rate": round(kill_rate, 2),
+            "living_cells": stats["living_cells"],
+            "total_deliveries": total_deliveries,
+            "total_drug": round(total_drug, 2),
+        }
+        self.episode_history.append(episode_record)
+
+        # Adjust parameters based on performance trends
+        self._adjust_params()
+
+        # Apply updated params to workers
+        self._apply_params_to_workers()
+
+    def _adjust_params(self):
+        """Heuristic parameter adjustment based on episode performance.
+
+        Rules:
+        - Low kill rate → increase exploration, widen search
+        - High kill rate → decrease exploration, focus on exploitation
+        - Low deliveries → increase speed, reduce alarm sensitivity
+        - Many deliveries → increase trail secretion to share paths
+        """
+        if len(self.episode_history) < 2:
+            return
+
+        current = self.episode_history[-1]
+        previous = self.episode_history[-2]
+
+        kill_delta = current["kill_rate"] - previous["kill_rate"]
+        delivery_delta = current["total_deliveries"] - previous["total_deliveries"]
+
+        p = self.worker_params
+
+        if kill_delta <= 0:
+            # Not improving → explore more
+            p["exploration_bias"] = min(0.8, p["exploration_bias"] + 0.1)
+            p["speed_multiplier"] = min(2.0, p["speed_multiplier"] + 0.1)
+        else:
+            # Improving → exploit successful strategies
+            p["exploration_bias"] = max(0.1, p["exploration_bias"] - 0.05)
+            p["trail_secretion_rate"] = min(5.0, p["trail_secretion_rate"] + 0.5)
+
+        if delivery_delta <= 0:
+            # No new deliveries → reduce alarm avoidance (bots may be too cautious)
+            p["alarm_weight"] = max(-1.0, p["alarm_weight"] + 0.1)
+        else:
+            # Deliveries happening → strengthen trail following
+            p["trail_weight"] = min(2.0, p["trail_weight"] + 0.1)
+
+    def _apply_params_to_workers(self):
+        """Push current parameters to all worker nanobots."""
+        for bot in self.model.nanobots:
+            if hasattr(bot, 'chemotaxis_weights'):
+                bot.chemotaxis_weights['oxygen'] = self.worker_params['oxygen_weight']
+                if 'trail_pheromone' in bot.chemotaxis_weights:
+                    bot.chemotaxis_weights['trail_pheromone'] = self.worker_params['trail_weight']
+                if 'alarm_pheromone' in bot.chemotaxis_weights:
+                    bot.chemotaxis_weights['alarm_pheromone'] = self.worker_params['alarm_weight']
+            bot.speed = 30.0 * self.worker_params['speed_multiplier']
+
+    def get_episode_summary(self) -> Dict:
+        """Return episode history and current parameters."""
+        return {
+            "episodes": len(self.episode_history),
+            "current_params": self.worker_params.copy(),
+            "history": self.episode_history[-5:],  # Last 5 episodes
+        }
+
     def guide(self) -> Dict[int, np.ndarray]:
         """
         Provide strategic guidance to nanobots.

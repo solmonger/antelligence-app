@@ -138,6 +138,48 @@ class TestQueenNanobot:
     def test_queen_guide_has_nanobot_ids(self, small_model):
         queen = QueenNanobot(model=small_model, use_llm=False)
         guidance = queen.guide()
-        # Guidance should have entries for nanobots
         for key in guidance:
             assert isinstance(key, int)
+
+    def test_queen_episodic_planner(self, small_model):
+        queen = QueenNanobot(model=small_model, use_llm=False, episode_length=5)
+        assert queen.episode_length == 5
+        assert queen.episode_counter == 0
+        # Run steps to trigger episode end
+        for _ in range(5):
+            queen.step()
+        assert queen.episode_counter == 1
+        assert len(queen.episode_history) == 1
+
+    def test_queen_worker_params(self, small_model):
+        queen = QueenNanobot(model=small_model, use_llm=False)
+        params = queen.worker_params
+        assert "exploration_bias" in params
+        assert "trail_secretion_rate" in params
+        assert "alarm_weight" in params
+        assert 0 <= params["exploration_bias"] <= 1
+
+    def test_queen_applies_params(self, small_model):
+        queen = QueenNanobot(model=small_model, use_llm=False, episode_length=3)
+        original_speed = small_model.nanobots[0].speed
+        queen.worker_params["speed_multiplier"] = 1.5
+        queen._apply_params_to_workers()
+        assert small_model.nanobots[0].speed == 30.0 * 1.5
+
+    def test_queen_episode_summary(self, small_model):
+        queen = QueenNanobot(model=small_model, use_llm=False, episode_length=3)
+        for _ in range(6):  # 2 episodes
+            queen.step()
+        summary = queen.get_episode_summary()
+        assert summary["episodes"] == 2
+        assert "current_params" in summary
+        assert len(summary["history"]) == 2
+
+    def test_queen_adjusts_on_stagnation(self, small_model):
+        queen = QueenNanobot(model=small_model, use_llm=False, episode_length=3)
+        initial_exploration = queen.worker_params["exploration_bias"]
+        # Run two episodes with no kills (stagnation)
+        for _ in range(6):
+            queen.step()
+        # Exploration should increase on stagnation
+        assert queen.worker_params["exploration_bias"] >= initial_exploration
