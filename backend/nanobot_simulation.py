@@ -375,6 +375,11 @@ class NanobotAgent:
             direction = direction / distance
             self.position[:2] += direction * self.speed
             self._clamp_position()
+            # Deposit trail pheromone while moving toward target (breadcrumb)
+            trail = self.model.microenv.get_substrate('trail_pheromone')
+            if trail:
+                voxel = self.model.microenv.position_to_voxel(tuple(self.position))
+                trail.add_source(voxel, 1.0)  # Light trail during movement
     
     def _report_intel_to_blockchain(self, pin_type: int, x: float, y: float, priority: int):
         """
@@ -481,14 +486,21 @@ class NanobotAgent:
                 self._report_intel_to_blockchain(pin_type, self.position[0], self.position[1], priority)
             
             # Deposit trail pheromone (mark successful delivery path)
-            trail = self.model.microenv.get_substrate('trail')
+            trail = self.model.microenv.get_substrate('trail_pheromone')
             if trail:
                 trail.add_source(voxel, 3.0)
-            
-            # Emit chemokine signal to attract other nanobots to this successful delivery site
-            chemokine = self.model.microenv.get_substrate('chemokine_signal')
-            if chemokine:
-                chemokine.add_source(voxel, 4.0)  # Strong "come here" signal
+
+            # If cell killed, deposit recruitment pheromone (more targets likely nearby)
+            if cell_killed:
+                recruit = self.model.microenv.get_substrate('recruitment_pheromone')
+                if recruit:
+                    recruit.add_source(voxel, 5.0)
+
+            # If target is resistant (high accumulated drug but alive), deposit alarm
+            if not cell_killed and self.target_cell.resistance_level > 0.5:
+                alarm = self.model.microenv.get_substrate('alarm_pheromone')
+                if alarm:
+                    alarm.add_source(voxel, 5.0)
         
         # If payload depleted, return to vessel
         if self.drug_payload < 2.0:  # Return when < 2 μg remaining
