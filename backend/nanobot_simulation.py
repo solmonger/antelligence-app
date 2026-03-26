@@ -813,6 +813,16 @@ class QueenNanobot:
         self._apply_params_to_workers()
 
     def _adjust_params(self):
+        """Adjust worker parameters — uses LLM if available, else heuristic."""
+        if len(self.episode_history) < 2:
+            return
+
+        if self.use_llm and self.model.io_client and self.model.api_enabled:
+            self._adjust_params_llm()
+        else:
+            self._adjust_params_heuristic()
+
+    def _adjust_params_heuristic(self):
         """Heuristic parameter adjustment based on episode performance.
 
         Rules:
@@ -821,9 +831,6 @@ class QueenNanobot:
         - Low deliveries → increase speed, reduce alarm sensitivity
         - Many deliveries → increase trail secretion to share paths
         """
-        if len(self.episode_history) < 2:
-            return
-
         current = self.episode_history[-1]
         previous = self.episode_history[-2]
 
@@ -833,20 +840,64 @@ class QueenNanobot:
         p = self.worker_params
 
         if kill_delta <= 0:
-            # Not improving → explore more
             p["exploration_bias"] = min(0.8, p["exploration_bias"] + 0.1)
             p["speed_multiplier"] = min(2.0, p["speed_multiplier"] + 0.1)
         else:
-            # Improving → exploit successful strategies
             p["exploration_bias"] = max(0.1, p["exploration_bias"] - 0.05)
             p["trail_secretion_rate"] = min(5.0, p["trail_secretion_rate"] + 0.5)
 
         if delivery_delta <= 0:
-            # No new deliveries → reduce alarm avoidance (bots may be too cautious)
             p["alarm_weight"] = max(-1.0, p["alarm_weight"] + 0.1)
         else:
-            # Deliveries happening → strengthen trail following
             p["trail_weight"] = min(2.0, p["trail_weight"] + 0.1)
+
+    def _adjust_params_llm(self):
+        """LLM-based parameter adjustment using LiteLLM.
+
+        Sends episode history + current tumor state to LLM and parses
+        recommended parameter adjustments. Falls back to heuristic on error.
+        """
+        try:
+            current = self.episode_history[-1]
+            previous = self.episode_history[-2]
+            stats = self.model.geometry.get_tumor_statistics()
+
+            prompt = (
+                f"You are controlling a nanobot swarm treating a tumor. "
+                f"Episode {self.episode_counter}: kill_rate={current['kill_rate']}% "
+                f"(prev={previous['kill_rate']}%), deliveries={current['total_deliveries']}, "
+                f"living_cells={current['living_cells']}. "
+                f"Tumor stats: {json.dumps({k: v for k, v in stats.items() if isinstance(v, (int, float))})}. "
+                f"Current params: {json.dumps(self.worker_params)}. "
+                f"Respond with ONLY a JSON object of updated parameter values. "
+                f"Keys: exploration_bias (0-1), trail_weight (0-2), alarm_weight (-1 to 0), "
+                f"speed_multiplier (0.5-2). Example: {{\"exploration_bias\": 0.4, \"trail_weight\": 1.2}}"
+            )
+
+            response = self.model.io_client.chat(
+                model=self.model.selected_model,
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=200,
+            )
+
+            # Parse LLM response
+            text = response.get("choices", [{}])[0].get("message", {}).get("content", "")
+            # Extract JSON from response
+            import re
+            json_match = re.search(r'\{[^}]+\}', text)
+            if json_match:
+                updates = json.loads(json_match.group())
+                # Apply valid updates
+                valid_keys = set(self.worker_params.keys())
+                for key, value in updates.items():
+                    if key in valid_keys and isinstance(value, (int, float)):
+                        self.worker_params[key] = float(value)
+                return
+        except Exception:
+            pass
+
+        # Fallback to heuristic
+        self._adjust_params_heuristic()
 
     def _apply_params_to_workers(self):
         """Push current parameters to all worker nanobots."""
