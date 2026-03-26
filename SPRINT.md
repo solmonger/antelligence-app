@@ -41,7 +41,7 @@ Goal: Connect the Python simulation to the Solidity contracts for provenance.
 - [x] IPFS pinning utility: hash simulation artifacts, pin to IPFS, return CID (backend/chain/ipfs.py, 11 tests, supports Pinata/local/dry-run)
 - [x] Verification CLI: `python3 -m chain.verify <run_hash>` fetches CID, recomputes metrics, checks tolerance (8 tests)
 - [x] Deploy ExperienceRegistry + TumorIntel to Base Sepolia testnet — TumorIntel at `0xd1cfa5b9994e06cc18a21dc18fb9d20a3c02238b`, SP1 Gateway wired
-- [ ] Submission CLI: `python3 -m antelligence submit` posts run hash + CID + metrics to ExperienceRegistry
+- [x] Submission CLI: `python3 -m chain.submit` creates attestation bundle (IPFS + on-chain data), ready for ZK proof submission (3 tests)
 - [ ] Leaderboard service: reads on-chain events, ranks policies by attested performance
 
 ## Phase 4 — LLM Hierarchy (Queen/Worker)
