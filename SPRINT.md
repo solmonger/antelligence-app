@@ -49,7 +49,7 @@ Goal: Add the Queen agent for strategic coordination with measurable improvement
 
 - [x] Queen policy wrapper: episodic planner that adjusts bot parameters every K simulation steps (heuristic adaptation)
 - [x] Worker agent parameters: exploration bias, trail secretion rate, alarm sensitivity (configurable, applied to workers each episode)
-- [ ] Queen uses LiteLLM (qwen3.5-35b or deepseek-chat) for strategic decisions
+- [x] Queen uses LiteLLM (qwen3.5-35b or deepseek-chat) for strategic decisions (with heuristic fallback)
 - [ ] Evaluation harness: compare queen-guided vs fixed-policy across seeds and patients
 - [ ] Success gate: queen policy must improve kill rate ≥10% vs fixed baseline (≥5 seeds, ≥3 patients)
 
