@@ -60,4 +60,4 @@ Goal: Automated experiment sweeps with reproducible, on-chain-attested results.
 - [x] Metrics collection: tumor-kill %, toxicity proxy, time-to-control, runtime/cost per run (integrated into batch runner)
 - [x] Report generator: Markdown with tables, parameters, seed stats, links to Sepolia tx + IPFS CID (generate_report.py)
 - [x] Attestation bot: re-runs k% of submissions for reproducibility spot-checks (attestation_bot.py, tested 2/2 pass)
-- [ ] Streamlit dashboard: live leaderboard from on-chain data
+- [x] Streamlit dashboard: live leaderboard from on-chain data (dashboard.py with 3 tabs)
