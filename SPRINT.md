@@ -59,5 +59,5 @@ Goal: Automated experiment sweeps with reproducible, on-chain-attested results.
 - [x] Batch runner: YAML config for seed × parameter grid sweeps (batch_runner.py, includes IPFS attestation)
 - [x] Metrics collection: tumor-kill %, toxicity proxy, time-to-control, runtime/cost per run (integrated into batch runner)
 - [x] Report generator: Markdown with tables, parameters, seed stats, links to Sepolia tx + IPFS CID (generate_report.py)
-- [ ] Attestation bot: re-runs k% of submissions for reproducibility spot-checks
+- [x] Attestation bot: re-runs k% of submissions for reproducibility spot-checks (attestation_bot.py, tested 2/2 pass)
 - [ ] Streamlit dashboard: live leaderboard from on-chain data
