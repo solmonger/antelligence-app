@@ -167,6 +167,8 @@ class TumorSimulationConfig(BaseModel):
     resistant_cell_fraction: float = Field(0.15, ge=0.0, le=1.0, description="Fraction of resistant cells")
     enable_multi_drug: bool = Field(False, description="Enable multi-drug combination therapy")
     drug_combination_ratio: float = Field(1.0, gt=0, description="Ratio of drug A to drug B")
+    use_brats_geometry: bool = False
+    brats_patient_id: Optional[str] = None
 
 
 class NanobotState(BaseModel):

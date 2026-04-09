@@ -1225,13 +1225,25 @@ class TumorNanobotModel:
         
         # Generate tumor geometry
         from tumor_environment import create_simple_tumor_environment
-        
-        self.geometry = create_simple_tumor_environment(
-            domain_size=domain_size,
-            tumor_radius=tumor_radius,
-            cell_density=0.001,
-            dimensionality=2
-        )
+
+        if getattr(self, 'use_brats_geometry', False) or (hasattr(self, 'config') and getattr(self.config, 'use_brats_geometry', False)):
+            try:
+                from brats_loader import load_brats_patient, brats_volume_to_tumor_geometry
+                vol = load_brats_patient(patient_id=getattr(self.config, 'brats_patient_id', None) if hasattr(self, 'config') else None)
+                if vol:
+                    self.geometry = brats_volume_to_tumor_geometry(vol, domain_size=domain_size)
+                else:
+                    self.geometry = create_simple_tumor_environment(domain_size=domain_size, tumor_radius=tumor_radius)
+            except Exception as e:
+                print(f"[BraTS] Failed to load BraTS geometry: {e}, falling back to synthetic")
+                self.geometry = create_simple_tumor_environment(domain_size=domain_size, tumor_radius=tumor_radius)
+        else:
+            self.geometry = create_simple_tumor_environment(
+                domain_size=domain_size,
+                tumor_radius=tumor_radius,
+                cell_density=0.001,
+                dimensionality=2
+            )
         
         # Initialize Knowledge Graph
         self.knowledge_graph = TumorKnowledgeGraph(domain_size=domain_size)

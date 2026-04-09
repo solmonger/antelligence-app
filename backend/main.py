@@ -934,6 +934,105 @@ async def run_tumor_hunt(config: TumorHuntConfig):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/simulation/tumor/compare-ced")
+async def compare_nanobot_vs_ced(config: TumorSimulationConfig):
+    """
+    Run nanobot simulation and CED baseline on the same tumor geometry.
+    Returns side-by-side comparison metrics.
+    """
+    try:
+        from ced_baseline import CEDSimulation, CEDParams
+        from tumor_environment import create_simple_tumor_environment
+    except ImportError:
+        try:
+            from backend.ced_baseline import CEDSimulation, CEDParams
+            from backend.tumor_environment import create_simple_tumor_environment
+        except ImportError:
+            raise HTTPException(status_code=500, detail="Could not import CED or tumor environment modules")
+
+    import copy
+
+    # Shared tumor geometry
+    geometry = create_simple_tumor_environment(
+        domain_size=config.domain_size,
+        tumor_radius=config.tumor_radius
+    )
+
+    # --- Run CED baseline ---
+    ced_cells = copy.deepcopy(geometry.tumor_cells)
+    ced = CEDSimulation(
+        domain_size=config.domain_size,
+        voxel_size=config.voxel_size,
+        tumor_cells=ced_cells,
+        catheter_position=(config.domain_size / 2, config.domain_size / 2)
+    )
+    ced_history = ced.run(
+        total_steps=config.max_steps,
+        record_interval=max(1, config.max_steps // 20)
+    )
+    ced_report = ced.get_comparison_report()
+
+    # --- Run nanobot simulation ---
+    nano_model = TumorNanobotModel(
+        domain_size=config.domain_size,
+        voxel_size=config.voxel_size,
+        n_nanobots=config.n_nanobots,
+        tumor_radius=config.tumor_radius,
+        agent_type=config.agent_type,
+        with_queen=config.use_queen,
+        use_llm_queen=config.use_llm_queen,
+        selected_model=config.selected_model,
+    )
+    # Override geometry with same cells as CED used
+    nano_model.geometry = geometry
+
+    for _ in range(config.max_steps):
+        nano_model.step()
+
+    nano_report = {
+        "method": "Antelligence Nanobot Swarm",
+        "cells_killed": nano_model.metrics.get("cells_killed", 0),
+        "initial_cells": len(geometry.tumor_cells),
+        "kill_rate": round(
+            nano_model.metrics.get("cells_killed", 0) / max(1, len(geometry.tumor_cells)), 4
+        ),
+        "total_drug_delivered": round(nano_model.metrics.get("total_drug_delivered", 0), 4),
+        "drug_efficiency_kills_per_unit": round(
+            nano_model.metrics.get("cells_killed", 0) /
+            max(0.001, nano_model.metrics.get("total_drug_delivered", 0.001)), 4
+        ),
+        "total_deliveries": nano_model.metrics.get("total_deliveries", 0),
+        "advantages": [
+            "Cell-type-aware targeting (prioritizes stem cells)",
+            "Pheromone-guided swarm coordination",
+            "Real-time adaptation based on tumor response",
+            "LLM-driven strategic decisions",
+            "No surgery required for delivery",
+            "Can reach infiltrating margin cells",
+        ]
+    }
+
+    # Compute advantage metrics
+    nano_kill = nano_report["kill_rate"]
+    ced_kill = ced_report["kill_rate"]
+    nano_eff = nano_report["drug_efficiency_kills_per_unit"]
+    ced_eff = ced_report["drug_efficiency_kills_per_unit"]
+
+    return {
+        "ced": ced_report,
+        "nanobot": nano_report,
+        "comparison": {
+            "kill_rate_advantage": round(nano_kill - ced_kill, 4),
+            "kill_rate_ratio": round(nano_kill / max(0.001, ced_kill), 3),
+            "drug_efficiency_advantage": round(nano_eff - ced_eff, 4),
+            "nanobot_wins_kill_rate": nano_kill > ced_kill,
+            "nanobot_wins_efficiency": nano_eff > ced_eff,
+            "shared_tumor_geometry": True,
+            "steps_run": config.max_steps,
+        }
+    }
+
+
 # --- Simulation Caching and Comparison Endpoints ---
 
 class CachedSimulation(BaseModel):
