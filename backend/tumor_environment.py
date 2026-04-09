@@ -453,6 +453,18 @@ class ImmuneCell:
             
             if distance < 20.0:  # Within attack range
                 self._attack_tumor_cell(self.target_cell, dt)
+            else:
+                # Move toward target at migration_speed micrometers/step
+                direction = np.array(self.target_cell.position[:2]) - np.array(self.position[:2])
+                norm = np.linalg.norm(direction)
+                if norm > 0:
+                    direction = direction / norm
+                    step = direction * self.migration_speed * dt
+                    self.position = (
+                        self.position[0] + step[0],
+                        self.position[1] + step[1],
+                        self.position[2]
+                    )
     
     def _find_nearest_tumor_cell(self, tumor_cells: List[TumorCell]) -> Optional[TumorCell]:
         """Find nearest living tumor cell."""
@@ -718,7 +730,7 @@ class TumorGeometry:
             bbb_permeability = 0.1
             
             # Vessels closer to brain tissue have BBB properties
-            if r > 1.2 * self.tumor_radius:  # Outside tumor boundary
+            if r > self.tumor_radius:  # Outside tumor boundary
                 vessel_type = "bbb"
                 bbb_permeability = 0.05  # Very low permeability
             
@@ -851,7 +863,7 @@ class TumorGeometry:
         distance = np.sqrt(
             (position[0] - self.center[0])**2 +
             (position[1] - self.center[1])**2 +
-            (position[2] - self.center[2] if len(position) > 2 else 0)**2
+            ((position[2] - self.center[2]) if len(position) > 2 else 0.0)**2
         )
         return distance <= self.tumor_radius
     
@@ -860,7 +872,7 @@ class TumorGeometry:
         distance = np.sqrt(
             (position[0] - self.center[0])**2 +
             (position[1] - self.center[1])**2 +
-            (position[2] - self.center[2] if len(position) > 2 else 0)**2
+            ((position[2] - self.center[2]) if len(position) > 2 else 0.0)**2
         )
         return distance <= self.necrotic_core_radius
     

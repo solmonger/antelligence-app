@@ -29,7 +29,8 @@ from schemas import (
     # Tumor simulation schemas
     TumorSimulationConfig, TumorSimulationResult, TumorStepState,
     NanobotState, TumorCellState, VesselState, SubstrateMapData,
-    TumorComparisonConfig, TumorComparisonResult, TumorPerformanceData
+    TumorComparisonConfig, TumorComparisonResult, TumorPerformanceData,
+    TumorHuntConfig
 )
 
 # Load environment variables
@@ -873,6 +874,62 @@ async def test_tumor_simulation():
         
     except Exception as e:
         print(f"[TUMOR TEST] Error: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/simulation/tumor/hunt")
+async def run_tumor_hunt(config: TumorHuntConfig):
+    """Tumor Hunt v2: dynamic wave-based tumor cell spawning with nanobot hunters."""
+    try:
+        from tumor_hunt import TumorHuntModel
+    except ImportError:
+        try:
+            from backend.tumor_hunt import TumorHuntModel
+        except ImportError as e:
+            raise HTTPException(status_code=500, detail=f"Could not import TumorHuntModel: {e}")
+
+    try:
+        print(f"[TUMOR HUNT] Starting hunt simulation: {config.n_nanobots} nanobots, "
+              f"{config.initial_cells} initial cells, {config.max_waves} waves")
+
+        model = TumorHuntModel(config)
+        history = []
+        detail_interval = max(1, config.max_steps // 30)  # pheromone data every ~30 steps
+
+        for step in range(config.max_steps):
+            model.step()
+            include_phero = (step % detail_interval == 0) or (step == config.max_steps - 1)
+            history.append(model.get_step_state(include_pheromones=include_phero))
+
+            # Stop early if all cells dead and no more waves coming
+            if (model.metrics["cells_alive"] == 0
+                    and model.waves_spawned >= config.max_waves
+                    and step > config.wave_interval):
+                print(f"[TUMOR HUNT] All cells eliminated at step {step + 1}. Early stop.")
+                break
+
+        final_metrics = model.metrics.copy()
+        cells_killed = final_metrics["cells_killed"]
+        cells_spawned = model.cells_spawned
+
+        print(f"[TUMOR HUNT] Done. Steps: {model.step_count}, "
+              f"Killed: {cells_killed}/{cells_spawned}, "
+              f"Kill rate: {round(cells_killed / max(1, cells_spawned), 4)}")
+
+        return {
+            "config": config.dict(),
+            "total_steps_run": model.step_count,
+            "history": history,
+            "final_metrics": final_metrics,
+            "waves_spawned": model.waves_spawned,
+            "cells_spawned": cells_spawned,
+            "cells_killed": cells_killed,
+            "kill_rate": round(cells_killed / max(1, cells_spawned), 4)
+        }
+
+    except Exception as e:
+        print(f"[TUMOR HUNT] Error: {str(e)}")
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
 

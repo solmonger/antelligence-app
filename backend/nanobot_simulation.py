@@ -12,6 +12,7 @@ Key adaptations:
 - Alarm pheromones → Toxicity or navigation failures
 """
 
+import json
 import numpy as np
 import random
 from typing import Dict, List, Tuple, Optional
@@ -22,6 +23,7 @@ import threading
 from litellm_client import create_client as create_llm_client
 from biofvm import Microenvironment
 from tumor_environment import TumorGeometry, TumorCell, VesselPoint, CellPhase, CellType
+from knowledge_graph import TumorKnowledgeGraph
 
 load_dotenv()
 IO_API_KEY = os.getenv("IO_SECRET_KEY")
@@ -434,7 +436,8 @@ class NanobotAgent:
             
             # Sign and send
             signed = acct.sign_transaction(txn)
-            tx_hash = w3.eth.send_raw_transaction(signed.rawTransaction)
+            raw_tx = getattr(signed, 'raw_transaction', None) or getattr(signed, 'rawTransaction', None)
+            tx_hash = w3.eth.send_raw_transaction(raw_tx)
             
             print(f"[NANOBOT {self.nanobot_id}] ✅ Intel reported to blockchain!")
             print(f"[NANOBOT {self.nanobot_id}]   Transaction: https://sepolia.basescan.org/tx/{tx_hash.hex()}")
@@ -680,7 +683,16 @@ class NanobotAgent:
         nearest_vessel = self.model.geometry.find_nearest_vessel(tuple(self.position))
         bbb_permeability = nearest_vessel.bbb_permeability if nearest_vessel else 0.1
         
-        prompt = f"""You are an intelligent nanobot carrying anti-cancer drugs through a complex tumor microenvironment.
+        # Inject grounded knowledge-graph context at the start of the prompt
+        try:
+            kg_context = self.model.knowledge_graph.get_nanobot_context(
+                self.nanobot_id, tuple(self.position), search_radius=100.0
+            )
+            kg_block = "GROUNDED CONTEXT FROM KNOWLEDGE GRAPH:\n" + json.dumps(kg_context, indent=2) + "\n\n"
+        except Exception:
+            kg_block = ""
+
+        prompt = kg_block + f"""You are an intelligent nanobot carrying anti-cancer drugs through a complex tumor microenvironment.
 
 CURRENT STATUS:
 - Position: ({self.position[0]:.1f}, {self.position[1]:.1f}) µm
@@ -886,14 +898,14 @@ class QueenNanobot:
                 f"speed_multiplier (0.5-2). Example: {{\"exploration_bias\": 0.4, \"trail_weight\": 1.2}}"
             )
 
-            response = self.model.io_client.chat(
+            response = self.model.io_client.chat.completions.create(
                 model=self.model.selected_model,
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=200,
             )
 
             # Parse LLM response
-            text = response.get("choices", [{}])[0].get("message", {}).get("content", "")
+            text = response.choices[0].message.content
             # Extract JSON from response
             import re
             json_match = re.search(r'\{[^}]+\}', text)
@@ -954,7 +966,7 @@ class QueenNanobot:
         
         # Direct nanobots toward hypoxic regions
         for nanobot in self.model.nanobots:
-            if nanobot.state == NanobotState.SEARCHING and nanobot.drug_payload > 20.0:
+            if nanobot.state == NanobotState.SEARCHING and nanobot.drug_payload > nanobot.max_payload * 0.5:
                 # Find nearest hypoxic cell
                 distances = [
                     np.linalg.norm(np.array(cell.position[:2]) - nanobot.position[:2])
@@ -1039,19 +1051,49 @@ Provide guidance for nanobot positioning and targeting priorities."""
             response = self.model.io_client.chat.completions.create(
                 model=self.model.selected_model,
                 messages=[
-                    {"role": "system", "content": "You are a strategic Queen nanobot. Provide high-level coordination guidance."},
+                    {"role": "system", "content": "You are a strategic Queen nanobot. Respond only with valid JSON in the format: {\"guidance\": {\"nanobot_id\": [dx, dy]}, \"report\": \"str\"}"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.2,
-                max_completion_tokens=200,
+                max_completion_tokens=300,
                 timeout=15
             )
-            
-            # Parse response and convert to guidance vectors
-            # For now, use enhanced heuristic based on the analysis
-            print(f"[TUMOR MODEL] ✅ Queen LLM guidance successful")
+
+            response_text = response.choices[0].message.content.strip()
+
+            # Try to parse LLM JSON output: {"guidance": {"nanobot_id": [dx, dy]}, "report": "str"}
+            try:
+                if '{' in response_text and '}' in response_text:
+                    start = response_text.find('{')
+                    end = response_text.rfind('}') + 1
+                    json_str = response_text[start:end]
+                    parsed = json.loads(json_str)
+
+                    raw_guidance = parsed.get("guidance", {})
+                    report = parsed.get("report", "Queen LLM guidance provided")
+
+                    for nanobot_id_str, direction_list in raw_guidance.items():
+                        try:
+                            nanobot_id = int(nanobot_id_str)
+                            if isinstance(direction_list, list) and len(direction_list) == 2:
+                                direction = np.array([float(direction_list[0]), float(direction_list[1])])
+                                norm = np.linalg.norm(direction)
+                                if norm > 0:
+                                    direction = direction / norm
+                                guidance[nanobot_id] = direction
+                        except (ValueError, TypeError, IndexError):
+                            continue
+
+                    print(f"[TUMOR MODEL] ✅ Queen LLM guidance successful: {report} (guided {len(guidance)} nanobots)")
+                    if guidance:
+                        return guidance
+            except (json.JSONDecodeError, KeyError):
+                pass
+
+            # Fall back to enhanced heuristic on JSON parse failure
+            print(f"[TUMOR MODEL] Queen LLM: JSON parse failed or empty, using enhanced heuristic")
             return self._guide_with_enhanced_heuristic(stem_cell_regions, high_resistance_regions, immune_active_regions)
-            
+
         except Exception as e:
             print(f"[TUMOR MODEL] Queen LLM guidance failed: {e}")
             self.model.log_error(f"Queen LLM guidance failed: {str(e)}")
@@ -1062,7 +1104,7 @@ Provide guidance for nanobot positioning and targeting priorities."""
         guidance = {}
         
         for nanobot in self.model.nanobots:
-            if nanobot.state == NanobotState.SEARCHING and nanobot.drug_payload > 20.0:
+            if nanobot.state == NanobotState.SEARCHING and nanobot.drug_payload > nanobot.max_payload * 0.5:
                 best_direction = None
                 best_priority = 0
                 
@@ -1191,6 +1233,18 @@ class TumorNanobotModel:
             dimensionality=2
         )
         
+        # Initialize Knowledge Graph
+        self.knowledge_graph = TumorKnowledgeGraph(domain_size=domain_size)
+
+        # Pre-populate vessels into the knowledge graph
+        for vessel in self.geometry.vessels:
+            self.knowledge_graph.add_vessel(
+                vessel_id=str(id(vessel)),
+                position=vessel.position,
+                oxygen_supply=vessel.oxygen_supply,
+                bbb_permeability=vessel.bbb_permeability,
+            )
+
         # Initialize nanobots
         self.nanobots: List[NanobotAgent] = []
         is_llm = agent_type == "LLM-Powered"
@@ -1265,7 +1319,19 @@ class TumorNanobotModel:
         
         # Update tumor cells (oxygen consumption, drug absorption)
         self._update_tumor_cells()
-        
+
+        # Knowledge graph zone aggregation after cell updates
+        try:
+            living_cells = self.geometry.get_living_cells()
+            hypoxic_cells = [c for c in living_cells if c.phase == CellPhase.HYPOXIC]
+            stem_cells = [c for c in living_cells if c.cell_type == CellType.STEM_CELL]
+            resistant_cells = [c for c in living_cells if c.cell_type == CellType.RESISTANT]
+            self.knowledge_graph.update_hypoxic_zones(hypoxic_cells)
+            self.knowledge_graph.update_stem_clusters(stem_cells)
+            self.knowledge_graph.update_resistant_regions(resistant_cells)
+        except Exception as _kg_err:
+            self.log_error(f"Knowledge graph zone update failed: {_kg_err}")
+
         # Update immune cells and their interactions
         self._update_immune_cells()
         
@@ -1310,6 +1376,16 @@ class TumorNanobotModel:
             # Update cell state
             cell.update_oxygen_status(oxygen, self.microenv.dt)
             cell.absorb_drug(drug, self.microenv.dt)
+
+            # Knowledge graph: record living cell observations
+            self.knowledge_graph.add_tumor_cell(
+                cell_id=cell.cell_id,
+                position=cell.position,
+                phase=cell.phase.value,
+                cell_type=cell.cell_type.value,
+                resistance_level=cell.resistance_level,
+                accumulated_drug=cell.accumulated_drug,
+            )
             
             # Update cell growth and check for division
             if cell.update_growth(self.microenv.dt, oxygen):

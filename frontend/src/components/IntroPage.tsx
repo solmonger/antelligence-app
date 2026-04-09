@@ -24,6 +24,10 @@ export const IntroPage: React.FC<IntroPageProps> = ({ onEnter }) => {
     navigate('/tumor');
   };
 
+  const handleTumorHunt = () => {
+    navigate('/tumor-hunt');
+  };
+
   // Handle keyboard enter
   useEffect(() => {
     const handleKeyPress = (event: KeyboardEvent) => {
@@ -71,6 +75,14 @@ export const IntroPage: React.FC<IntroPageProps> = ({ onEnter }) => {
               className="w-80 h-14 text-lg font-semibold border-2 border-slate-300 hover:border-slate-400 bg-slate-100 text-slate-800 hover:bg-slate-200 hover:text-slate-800"
             >
               Tumor Nanobot Simulation
+            </Button>
+            <Button 
+              onClick={handleTumorHunt}
+              size="lg"
+              variant="outline"
+              className="w-80 h-14 text-lg font-semibold border-2 border-red-300 hover:border-red-400 bg-red-50 text-red-800 hover:bg-red-100 hover:text-red-900"
+            >
+              🧬 Tumor Hunt v2
             </Button>
           </div>
           <p className="text-gray-800 mt-4 text-lg drop-shadow-md font-medium">

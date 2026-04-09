@@ -125,8 +125,8 @@ class PerformanceData(BaseModel):
 
 class ChartDataRequest(BaseModel):
     """Request for chart data from a simulation result."""
-    simulation_id: str = None  # For future use if we store results
-    step_range: Tuple[int, int] = None  # Optional range filter
+    simulation_id: Optional[str] = None  # For future use if we store results
+    step_range: Optional[Tuple[int, int]] = None  # Optional range filter
 
 class PheromoneConfigUpdate(BaseModel):
     """Update pheromone parameters during simulation."""
@@ -267,3 +267,71 @@ class TumorPerformanceData(BaseModel):
     hypoxic_cell_reduction: float  # Percentage reduction in hypoxic cells
     total_api_calls: int
     substrate_summary: Optional[Dict[str, Dict[str, float]]] = None
+
+
+# ---- Tumor Hunt v2 (Dynamic Spawning Mode) ----
+
+class TumorHuntConfig(BaseModel):
+    """Config for dynamic tumor hunt mode - tumor cells spawn in waves, nanobots hunt them."""
+    domain_size: float = 600.0
+    n_nanobots: int = Field(10, ge=1, le=50)
+    agent_type: Literal["LLM-Powered", "Rule-Based", "Hybrid"] = "LLM-Powered"
+    selected_model: str = "meta-llama/Llama-3.3-70B-Instruct"
+    use_queen: bool = True
+    use_llm_queen: bool = False
+    max_steps: int = Field(150, le=500)
+    # Wave spawning parameters
+    initial_cells: int = Field(10, ge=1, le=50)  # cells at start
+    wave_interval: int = Field(20, ge=5, le=100)  # steps between waves
+    cells_per_wave: int = Field(5, ge=1, le=30)   # new cells per wave
+    max_waves: int = Field(5, ge=1, le=20)         # total waves to spawn
+    # Cell parameters
+    cell_radius: float = 15.0   # µm
+    drug_kill_threshold: float = 3.0  # drug units needed to kill a cell
+    # Nanobot parameters
+    nanobot_speed: float = 40.0   # µm/step
+    drug_payload: float = 30.0    # drug units per nanobot
+    drug_delivery_rate: float = 5.0  # drug units per step while delivering
+    # Pheromone parameters
+    pheromone_decay: float = 0.08
+    trail_strength: float = 2.0
+    recruitment_strength: float = 3.0
+
+
+class HuntNanobotState(BaseModel):
+    id: int
+    position: Tuple[float, float]
+    state: str  # searching, targeting, delivering, returning
+    drug_payload: float
+    kills: int
+    is_llm: bool
+    target_id: Optional[int] = None
+
+
+class HuntCellState(BaseModel):
+    id: int
+    position: Tuple[float, float]
+    accumulated_drug: float
+    is_alive: bool
+    wave: int  # which wave spawned this cell
+
+
+class HuntStepState(BaseModel):
+    step: int
+    nanobots: List[HuntNanobotState]
+    cells: List[HuntCellState]
+    metrics: Dict
+    queen_report: str = ""
+    pheromone_trail: Optional[List[List[float]]] = None
+    pheromone_recruitment: Optional[List[List[float]]] = None
+
+
+class TumorHuntResult(BaseModel):
+    config: TumorHuntConfig
+    total_steps_run: int
+    history: List[HuntStepState]
+    final_metrics: Dict
+    waves_spawned: int
+    cells_spawned: int
+    cells_killed: int
+    kill_rate: float
