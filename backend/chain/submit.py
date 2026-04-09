@@ -24,7 +24,7 @@ from chain.ipfs import pin_simulation, compute_artifact_hash
 
 
 # Contract addresses on Base Sepolia
-TUMOR_INTEL_ADDRESS = "0xd1cfa5b9994e06cc18a21dc18fb9d20a3c02238b"
+TUMOR_INTEL_ADDRESS = os.getenv("TUMOR_INTEL_ADDR", "0x1118c23879bC0319981bd12d0497E1496310f4CE")
 BASE_SEPOLIA_CHAIN_ID = 84532
 
 
