@@ -229,15 +229,16 @@ def load_brats_patient(
         ])
 
     # --- Priority 2: BraTS2021 / generic NIfTI (samples/ or elsewhere) ---
+    # Handles both exact 'seg.nii.gz' and prefixed '*_seg.nii.gz' (BraTS2021 style)
     nifti_patients = sorted([
         d for d in DATA_DIR.rglob('*')
         if d.is_dir()
-        and (d / 'seg.nii.gz').exists()
+        and any(d.glob('*seg*.nii.gz'))
         and d not in gli_patients
     ])
     sample_patients = sorted([
         d for d in (DATA_DIR / 'samples').rglob('*')
-        if d.is_dir() and (d / 'seg.nii.gz').exists()
+        if d.is_dir() and any(d.glob('*seg*.nii.gz'))
     ]) if (DATA_DIR / 'samples').exists() else []
 
     all_nifti = gli_patients + nifti_patients + sample_patients
