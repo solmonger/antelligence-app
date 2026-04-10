@@ -74,3 +74,13 @@ logs/
 *.temp
 tmp/
 temp/
+# Medical imaging data — large raw files, download via scripts/download_brats.py
+data/brats/dataset/
+data/brats/BraTS2024-GLI/
+data/brats/brain_tumor_custom/
+data/brats/samples/
+data/brats/BraTS2021/
+data/brats/*.tar
+# Keep data directory structure and manifest
+!data/brats/.gitkeep
+!data/README.md
