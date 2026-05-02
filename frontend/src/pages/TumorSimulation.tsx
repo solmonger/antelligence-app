@@ -12,8 +12,7 @@ import { TumorSimulationSidebar } from "@/components/TumorSimulationSidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, Activity, Zap, Home } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8001";
+import { BUILD_INFO, IS_PREVIEW_MODE, API_BASE_URL } from "@/lib/runtime";
 
 interface TumorSimulationConfig {
   domain_size: number;
@@ -55,6 +54,11 @@ const TumorSimulation = () => {
   const [detailedMode, setDetailedMode] = useState(false); // Simple vs Detailed mode toggle
 
   const runSimulation = useCallback(async () => {
+    if (IS_PREVIEW_MODE) {
+      toast.info("Preview mode is frontend-only. Tumor simulation stays local on the private backend.");
+      return;
+    }
+
     setIsLoading(true);
     setLoadingProgress(0);
     setIsPlaying(false);
@@ -218,6 +222,11 @@ const TumorSimulation = () => {
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     Glioblastoma Treatment Analysis
                   </p>
+                  {IS_PREVIEW_MODE && (
+                    <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                      Preview build: {BUILD_INFO.buildLabel} · backend execution disabled
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

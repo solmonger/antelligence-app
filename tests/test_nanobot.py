@@ -34,6 +34,31 @@ def small_model():
     return model
 
 
+class TestModelInitialization:
+    def test_model_initializes_configured_pheromone_substrates(self):
+        model = TumorNanobotModel(
+            domain_size=200.0,
+            voxel_size=20.0,
+            n_nanobots=2,
+            tumor_radius=80.0,
+            agent_type="heuristic",
+            pheromone_params={
+                "trail_diffusion": 2e-6,
+                "alarm_decay": 0.4,
+                "recruitment_decay": 0.2,
+            },
+        )
+        trail = model.microenv.get_substrate("trail_pheromone")
+        alarm = model.microenv.get_substrate("alarm_pheromone")
+        recruit = model.microenv.get_substrate("recruitment_pheromone")
+        assert trail is not None
+        assert alarm is not None
+        assert recruit is not None
+        assert trail.diffusion_coefficient == pytest.approx(2e-6 * 6e9)
+        assert alarm.decay_rate == pytest.approx(0.4)
+        assert recruit.decay_rate == pytest.approx(0.2)
+
+
 class TestNanobotState:
     """Tests for NanobotState enum."""
 

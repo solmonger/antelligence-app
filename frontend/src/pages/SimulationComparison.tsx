@@ -9,8 +9,7 @@ import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ArrowLeft, Play, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8001";
+import { BUILD_INFO, IS_PREVIEW_MODE, API_BASE_URL } from "@/lib/runtime";
 
 interface ComparisonConfig {
   foodCounts: number[];
@@ -46,6 +45,11 @@ export default function SimulationComparison() {
   const totalRuns = config.foodCounts.length * config.antCounts.length * config.agentTypes.length * config.iterations;
 
   const runComparison = async () => {
+    if (IS_PREVIEW_MODE) {
+      toast.info("Preview mode is frontend-only. Comparison runs stay on the local backend.");
+      return;
+    }
+
     setIsRunning(true);
     setResults([]);
     setProgress(0);
@@ -172,9 +176,16 @@ export default function SimulationComparison() {
             <ArrowLeft className="h-4 w-4" />
             Back to Simulation
           </Button>
-          <h1 className="text-2xl font-bold text-amber-900 dark:text-amber-100">
-            🔬 Simulation Comparison Lab
-          </h1>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-amber-900 dark:text-amber-100">
+              🔬 Simulation Comparison Lab
+            </h1>
+            {IS_PREVIEW_MODE && (
+              <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                Preview build: {BUILD_INFO.buildLabel}. Batch comparisons are disabled on the public frontend.
+              </p>
+            )}
+          </div>
           <div className="w-32" />
         </div>
       </div>

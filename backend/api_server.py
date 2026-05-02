@@ -17,6 +17,7 @@ from __future__ import annotations
 import sys
 import os
 import uuid
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
@@ -28,6 +29,8 @@ if _backend_dir not in sys.path:
     sys.path.insert(0, _backend_dir)
 
 from backend.config import SimulationConfig  # noqa: E402
+from backend.run_store import SQLiteRunStore  # noqa: E402
+from backend.runtime_factory import run_simulation  # noqa: E402
 
 # Import simulation model at module level so tests can patch backend.api_server.TumorNanobotModel
 try:
@@ -45,9 +48,11 @@ app = FastAPI(
 )
 
 # ---------------------------------------------------------------------------
-# In-memory run store  {run_id: {"config": ..., "metrics": ..., "status": ...}}
+# Run storage
 # ---------------------------------------------------------------------------
 _RUNS: Dict[str, Dict[str, Any]] = {}
+_DEFAULT_DB_PATH = Path(os.environ.get("ANTELLIGENCE_RUN_DB", Path(_backend_dir).parent / "data" / "api_runs.sqlite3"))
+RUN_STORE = SQLiteRunStore(_DEFAULT_DB_PATH)
 
 
 # ---------------------------------------------------------------------------
@@ -114,35 +119,19 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     try:
-        import random
-        import numpy as np
-
-        if cfg.seed is not None:
-            random.seed(cfg.seed)
-            np.random.seed(cfg.seed)
-
-        kwargs = cfg.to_model_kwargs()
-        model = TumorNanobotModel(**kwargs)
-
-        for _ in range(cfg.steps):
-            model.step()
-
-        metrics = dict(model.metrics)
-        stats = model.geometry.get_tumor_statistics()
-        total = max(1, stats.get("total_cells", 1))
-        living = stats.get("living_cells", total)
-        metrics["kill_rate"] = (total - living) / total
-        metrics["step_count"] = model.step_count
+        _, metrics = run_simulation(cfg, model_factory=TumorNanobotModel)
 
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=f"Simulation error: {exc}") from exc
 
     run_id = str(uuid.uuid4())
-    _RUNS[run_id] = {
+    entry = {
         "status": "completed",
         "config": cfg.model_dump(),
         "metrics": metrics,
     }
+    _RUNS[run_id] = entry
+    RUN_STORE.save_run(run_id, entry["status"], entry["config"], entry["metrics"])
 
     return SimulateResponse(run_id=run_id, status="completed", metrics=metrics)
 
@@ -151,6 +140,15 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
 def get_run(run_id: str) -> RunResponse:
     """Retrieve stored results for a previous simulation run."""
     entry = _RUNS.get(run_id)
+    if entry is None:
+        persisted = RUN_STORE.get_run(run_id)
+        if persisted is not None:
+            entry = {
+                "status": persisted["status"],
+                "config": persisted["config"],
+                "metrics": persisted["metrics"],
+            }
+            _RUNS[run_id] = entry
     if entry is None:
         raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found.")
     return RunResponse(

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { TumorHuntGrid } from '../components/TumorHuntGrid';
+import { BUILD_INFO, IS_PREVIEW_MODE, API_BASE_URL } from '../lib/runtime';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8001';
+const API_BASE = API_BASE_URL;
 
 interface HuntConfig {
   domain_size: number;
@@ -93,6 +94,17 @@ export default function TumorHunt() {
   }, [isPlaying, totalSteps]);
 
   const handleRun = async () => {
+    if (IS_PREVIEW_MODE) {
+      setError(null);
+      setResults(null);
+      setCurrentStep(0);
+      setIsPlaying(false);
+      setProgress(0);
+      setWaveNotification('Preview mode only: Tumor Hunt backend stays local.');
+      setTimeout(() => setWaveNotification(null), 2500);
+      return;
+    }
+
     setIsRunning(true);
     setError(null);
     setResults(null);
@@ -180,6 +192,11 @@ export default function TumorHunt() {
             <p style={{ color: '#9ca3af', fontSize: 14 }}>
               Dynamic wave-based tumor cell spawning. LLM-brained nanobots hunt and eradicate each wave.
             </p>
+            {IS_PREVIEW_MODE && (
+              <p style={{ color: '#fbbf24', fontSize: 12, marginTop: 6 }}>
+                Preview build: {BUILD_INFO.buildLabel}. Backend execution is disabled on the public frontend.
+              </p>
+            )}
           </div>
           <a
             href="/"
