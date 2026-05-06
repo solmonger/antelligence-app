@@ -20,9 +20,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from chain.config import get_base_sepolia_rpc_url, get_tumor_intel_address
 
-# Contract config
-TUMOR_INTEL_ADDRESS = "0xd1cfa5b9994e06cc18a21dc18fb9d20a3c02238b"
+TUMOR_INTEL_ADDRESS = get_tumor_intel_address()
 SIMULATION_VERIFIED_TOPIC = None  # Will compute from event signature
 
 
@@ -104,6 +104,40 @@ def rank_by_kill_rate(entries: List[Dict]) -> List[Dict]:
     return sorted_entries
 
 
+def derive_trust_tier(verification_status: Dict, proof_bundle: Dict, proof_lifecycle: Dict) -> str:
+    if verification_status.get("onchain_ok"):
+        return "verified_onchain"
+    if proof_lifecycle.get("stage") == "proof_generated" or proof_bundle:
+        return "proof_staged"
+    if verification_status.get("replay_ok"):
+        return "replay_checked"
+    if verification_status.get("integrity_ok"):
+        return "integrity_checked"
+    return "unverified"
+
+
+def normalize_leaderboard_artifact(record: Dict) -> Dict:
+    """Flatten attestation/proof bundle records into a canonical artifact view."""
+    artifact = record.get("ipfs", {}).get("artifact", {}) if isinstance(record.get("ipfs"), dict) else {}
+    if not artifact:
+        return record
+
+    normalized = dict(artifact)
+    for field in (
+        "verification_status",
+        "proof_lifecycle",
+        "proof_bundle",
+        "trust_tier",
+        "verified_onchain",
+        "onchain",
+        "status",
+        "next_step",
+    ):
+        if field in record:
+            normalized[field] = record[field]
+    return normalized
+
+
 def build_leaderboard(artifacts: List[Dict]) -> Dict:
     """Build leaderboard from simulation artifacts.
 
@@ -114,9 +148,13 @@ def build_leaderboard(artifacts: List[Dict]) -> Dict:
         Leaderboard dict with ranked entries and summary stats
     """
     entries = []
-    for artifact in artifacts:
+    for raw_artifact in artifacts:
+        artifact = normalize_leaderboard_artifact(raw_artifact)
         config = artifact.get("config", {})
         metrics = artifact.get("metrics", {})
+        verification_status = artifact.get("verification_status", {})
+        proof_lifecycle = artifact.get("proof_lifecycle", {})
+        proof_bundle = artifact.get("proof_bundle", {})
         entries.append({
             "run_id": artifact.get("run_id", "unknown"),
             "config_hash": artifact.get("config_hash", ""),
@@ -127,16 +165,25 @@ def build_leaderboard(artifacts: List[Dict]) -> Dict:
             "nanobot_count": config.get("nanobot_count", config.get("n_nanobots", 0)),
             "steps": config.get("steps", config.get("n_steps", 0)),
             "timestamp": artifact.get("timestamp", ""),
-            "verified_onchain": artifact.get("verified_onchain", False),
+            "verified_onchain": verification_status.get("onchain_ok", artifact.get("verified_onchain", False)),
+            "proof_stage": proof_lifecycle.get("stage", "untracked"),
+            "integrity_ok": verification_status.get("integrity_ok", False),
+            "replay_ok": verification_status.get("replay_ok", False),
+            "proof_ok": verification_status.get("proof_ok", False),
+            "trust_tier": artifact.get("trust_tier") or derive_trust_tier(verification_status, proof_bundle, proof_lifecycle),
+            "proof_origin": proof_bundle.get("proof_origin", "unknown"),
+            "proof_artifact_version": proof_bundle.get("proof_artifact_version", "untracked"),
         })
 
     ranked = rank_by_kill_rate(entries)
 
     # Summary stats
-    kill_rates = [e["kill_rate"] for e in entries if e["kill_rate"] > 0]
+    kill_rates = [e["kill_rate"] for e in entries]
     summary = {
         "total_entries": len(entries),
         "verified_entries": sum(1 for e in entries if e.get("verified_onchain")),
+        "replay_checked_entries": sum(1 for e in entries if e.get("replay_ok")),
+        "staged_proof_entries": sum(1 for e in entries if e.get("trust_tier") == "proof_staged"),
         "avg_kill_rate": round(sum(kill_rates) / len(kill_rates), 2) if kill_rates else 0,
         "best_kill_rate": max(kill_rates) if kill_rates else 0,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -161,7 +208,7 @@ def main():
     if args.from_dir:
         artifacts = load_local_artifacts(args.from_dir)
     elif args.onchain:
-        rpc_url = os.environ.get("BASE_SEPOLIA_RPC_URL", "")
+        rpc_url = get_base_sepolia_rpc_url()
         if not rpc_url:
             print(json.dumps({"ok": False, "error": "BASE_SEPOLIA_RPC_URL not set"}))
             sys.exit(1)
@@ -172,7 +219,14 @@ def main():
                 "type": "antelligence-simulation-v2",
                 "config": {},
                 "metrics": {"kill_rate": 0},
-                "verified_onchain": True,
+                "verification_status": {
+                    "schema_ok": True,
+                    "integrity_ok": False,
+                    "replay_ok": False,
+                    "proof_ok": False,
+                    "onchain_ok": True,
+                },
+                "proof_lifecycle": {"stage": "verified_onchain"},
                 "tx_hash": evt.get("transactionHash", ""),
             })
     else:

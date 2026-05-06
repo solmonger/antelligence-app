@@ -1,230 +1,138 @@
-# 🐜 Antelligence: LLM-Powered Autonomous Ant Foraging Simulation
-**Track:** Competitive Track - Autonomous Agents in the Real World  
-**Theme:** Multi-Agent Swarm Intelligence with IO Intelligence API Integration  
-**Teammates:** Kashyap Nadendla, Tanya Evita George, Zenith Mesa, Eshaan Mathakari
+# Antelligence
 
----
+Antelligence is a DeSci swarm-intelligence product for tumor simulation, nanobot coordination, and verifiable research provenance. It models how small agents coordinate through local signals, records run provenance for later verification, and stages a proof pipeline that can evolve from mock artifacts to real cryptographic checks.
 
-## ✨ Features
+## What it does
 
-### 🤖 Multi-Model LLM Support
-- **10+ AI Models**: OpenAI GPT-4o, GPT-4o Mini, Google Gemini 2.0 Flash/Pro, Mistral Small/Large, Meta Llama 3.3/3.1, DeepSeek Chat
-- **LLM-Powered Ants**: Individual ant agents make intelligent foraging decisions using various AI models
-- **Rule-Based Ants**: Baseline agents with predefined heuristics for comparative analysis
-- **Model Comparison**: Built-in tools to compare performance across different AI models
+- Runs a tumor simulation with configurable nanobot count, grid size, steps, seed, and pheromone parameters.
+- Exposes a small simulation API for local apps and demos.
+- Ships a CLI for single runs, benchmarks, and leaderboard reads.
+- Records provenance for Base Sepolia workflows and proof artifacts.
+- Distinguishes staged proof bundles from cryptographically accepted verification.
 
-### 👑 Advanced Queen Ant System
-- **Strategic Guidance**: Queen provides colony-wide coordination and anomaly detection
-- **LLM-Powered Queen**: Optional AI-driven queen for meta-coordination
-- **Performance Analytics**: Queen reports on colony efficiency and optimization opportunities
+## Current product surface
 
-### 🧪 Bio-Inspired Pheromone System
-- **Trail Pheromones**: Guide ants on successful foraging routes
-- **Alarm Pheromones**: Signal anomalies or API errors
-- **Recruitment Pheromones**: Indicate zones needing exploration
-- **Fear Pheromones**: Warn of predator presence
-- **Adaptive Decay**: Pheromones decay over time to prevent stagnation
+### CLI
 
-### 🔗 Real Blockchain Integration
-- **Base Sepolia Testnet**: All food collection events recorded as real Ethereum transactions
-- **Smart Contracts**: Custom `ColonyMemory` and `FoodToken` contracts
-- **Gas Optimization**: Intelligent gas pricing and nonce management
-- **Transaction Monitoring**: Real-time Etherscan integration with latency tracking
-- **Transparency**: Immutable record of all colony activities
+The Python package exposes these entry points:
 
-### 📊 Advanced Analytics & Visualization
-- **Real-time Dashboard**: Modern React interface with live simulation updates
-- **Performance Charts**: Food depletion, agent efficiency, and pheromone intensity
-- **Historical Analysis**: Track simulation performance over time
-- **Batch Testing**: Compare multiple configurations simultaneously
-- **Blockchain Metrics**: Transaction latency, gas usage, and success rates
----
+- `antelligence`
+- `antelligence-api`
 
-## 🚀 Getting Started
-
-Set up both the Python simulation and the Node.js-based smart contract system.
-
-### ✅ Prerequisites
-
-- **Python 3.11+** (recommended for optimal performance)
-- **Node.js 18+** (LTS recommended)
-- **Hardhat** (for smart contract deployment)
-- **API Keys** (choose one or more):
-  - Intelligence.io API key (for IO.NET models)
-  - OpenAI API key (for GPT models)
-  - Google Gemini API key (for Gemini models)
-  - Mistral API key (for Mistral models)
-- **Ethereum Wallet** with Base Sepolia ETH (for blockchain integration)
-- **Alchemy/Infura** Base Sepolia RPC URL (for blockchain connectivity)
-
----
-
-## 🛠️ Setup Guide
-
-### 1. Clone the Repository
+Common commands:
 
 ```bash
-git clone https://github.com/kashyapnadendla/Antelligence-app.git
-cd Antelligence-app
+uv run antelligence simulate --steps 100 --bots 10 --output out/run.json
+uv run antelligence benchmark --runs 5 --steps 50 --bots 5 --output out/benchmark.json
+uv run antelligence leaderboard --limit 10
+uv run antelligence-api
 ```
 
-### 2. Set Up Backend Environment
+### API
+
+The FastAPI service is defined in `backend/api_server.py` and currently exposes:
+
+- `POST /simulate`
+- `GET /runs/{run_id}`
+- `GET /health`
+
+Example local flow:
 
 ```bash
-# Create virtual environment
-python -m venv venv
+curl -X POST http://127.0.0.1:8001/simulate \
+  -H 'content-type: application/json' \
+  -d '{"num_bots": 8, "grid_size": 40, "steps": 60, "seed": 7}'
 
-# Activate virtual environment
-# Windows
-.\venv\Scripts\activate
-# macOS/Linux
-source venv/bin/activate
-
-# Install backend dependencies
-cd backend
-pip install -r requirements.txt
-cd ..
+curl http://127.0.0.1:8001/runs/{run_id}
+curl http://127.0.0.1:8001/health
 ```
 
-### 3. Set Up Frontend Environment
+### Proof and provenance
+
+Antelligence already carries proof-shaped artifacts, but the product is explicit about what is and is not cryptographically real yet.
+
+- `proof_origin=mock` means the proof bytes are staging placeholders.
+- `proof_ok=false` must remain false for mock or staged artifacts.
+- `trust_tier=proof_staged` means a proof bundle exists, not that it has been cryptographically accepted.
+- `verified_onchain` is the only state that should be treated as cryptographically accepted.
+
+The current on-chain transport is intentionally small and Base Sepolia oriented:
+
+- `config_hash`
+- `kill_rate_bps`
+- `nanobot_count`
+- `tumor_radius`
+- `steps`
+
+Richer provenance lives in the backend proof artifact alongside that tuple so replay, proof generation, and contract verification can stay pinned to the same run identity.
+
+## Quick start
+
+### 1. Install Python dependencies
+
+Using `uv`:
 
 ```bash
-# Install frontend dependencies
-cd frontend
-npm install
-cd ..
+uv sync --extra test
 ```
 
-### 4. Configure Environment Variables
-
-Create a `.env` file in the project root based on `env.example.txt`:
-
-```env
-# API Keys (choose one or more based on your needs)
-IO_SECRET_KEY="your_intelligence_io_api_key"
-OPENAI_API_KEY="your_openai_api_key"
-GEMINI_API_KEY="your_google_gemini_api_key"
-MISTRAL_API_KEY="your_mistral_api_key"
-
-# Blockchain Configuration
-BASE_SEPOLIA_RPC_URL="https://base-sepolia.g.alchemy.com/v2/your_alchemy_key"
-PRIVATE_KEY="0xyour_private_key"
-FOOD_ADDR="0x..."
-MEMORY_ADDR="0x..."
-```
-
-### 5. Deploy Smart Contracts
+Or with `pip`:
 
 ```bash
-cd blockchain
-npm install
-npx hardhat compile
-npx hardhat run scripts/deploy.js --network baseSepolia
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[test]'
 ```
 
-Copy the deployed contract addresses to your `.env` file.
-
-### 6. Start the Application
+### 2. Run a local simulation from the CLI
 
 ```bash
-# Start backend (from project root)
-cd backend
-python -m uvicorn main:app --reload --port 8001
-
-# In another terminal, start frontend
-cd frontend
-npm run dev
+uv run antelligence simulate --steps 25 --bots 6 --output out/example-run.json
 ```
 
-Visit `http://localhost:8080` to access the application.
+This writes a JSON artifact containing:
 
+- `config`
+- `metrics`
 
-## ⚙️ Usage
+### 3. Run the API
 
-### 🎮 Running Simulations
+```bash
+uv run antelligence-api
+```
 
-1. **Configure Your Colony**:
-   - Set grid size and food quantity
-   - Choose agent type: LLM-Powered or Rule-Based
-   - Select AI model from 10+ available options
-   - Enable/disable Queen Ant guidance
-   - Adjust simulation parameters
+The API listens on port `8001` by default when started through the packaged entry point.
 
-2. **Start Simulation**:
-   - Click "🚀 Start Foraging" to begin
-   - Watch real-time ant movement and pheromone trails
-   - Monitor blockchain transactions on Etherscan
-   - View performance metrics and analytics
+### 4. Optional frontend
 
-3. **Advanced Features**:
-   - Use Simulation Comparison Lab for batch testing
-   - Toggle pheromone visualization overlays
-   - Analyze historical performance data
-   - Export results for further analysis
+If you want the frontend dev server:
 
-### ⌨️ Keyboard Shortcuts
+```bash
+npm --prefix frontend install
+npm --prefix frontend run dev
+```
 
-- **Space**: Play/Pause simulation
-- **←/→**: Step forward/backward
-- **Home/End**: Go to start/end
-- **R**: Replay from beginning
+## Base Sepolia scope
 
-### 🔗 Blockchain Integration
+Blockchain-facing provenance is currently scoped to Base Sepolia test workflows. The repo includes chain utilities for submission, verification, leaderboard reads, and verifier administration, but the public contract is conservative: staged artifacts are not marketed as finished cryptographic proof.
 
-All food collection events are automatically recorded on the Base Sepolia testnet:
-- View transactions on [Basescan](https://sepolia.basescan.org)
-- Monitor gas usage and transaction latency
-- Track colony performance over time
+## Testing
 
-## 🧩 Troubleshooting
+Run the narrow test suite you need while keeping the `uv` cache in a writable directory:
 
-### Common Issues
+```bash
+mkdir -p /private/tmp/uv-cache
+UV_CACHE_DIR=/private/tmp/uv-cache uv run --extra test pytest -q
+```
 
-- **PRIVATE_KEY not set**: Ensure `.env` file is in the project root and correctly formatted
-- **Insufficient funds**: Fund your wallet using [Base Sepolia faucet](https://faucet.quicknode.com/base/sepolia) or [Base Bridge](https://bridge.base.org/deposit)
-- **API Key errors**: Verify your API keys are valid and have sufficient credits
-- **Blockchain connection issues**: Check your RPC URL and network connectivity
-- **Contract deployment fails**: Ensure you have enough Base Sepolia ETH for gas fees
+## Repository layout
 
-### Getting Help
-- Open an issue on GitHub with detailed error logs
+- `backend/` - simulation engine, CLI, API, proof helpers, and chain integration
+- `tests/` - Python test suite
+- `frontend/` - local UI
+- `blockchain/` - smart contracts and Hardhat project
+- `docs/` - release notes, plans, and proof specification
 
-## 🤝 Contributing
+## Status
 
-We welcome:
-
-- Bug reports
-- Pull requests
-- Discussions
-
-Follow:
-
-- PEP8 for Python
-- Type hints and documentation
-- Write tests for new features
-
-## 📄 License
-
-MIT License – see [LICENSE](LICENSE)
-
-## 🙏 Acknowledgments
-
-- **IO.net Team** – for the Intelligence API
-- **Jimenez-Romero et al.** – for LLM multi-agent inspiration
-- **Launch IO Hackathon** – for the platform and opportunity
-- SBP BRIMs 2025 for hosting us
-
-## 📞 Contact & Support
-
-- **Repo**: [Antelligence GitHub]([https://github.com/eshaanmathakari/Antelligence](https://github.com/KashyapNadendla/antelligence-app))
-- **Demo Video**: (Insert link here)
-
----
-
-<div align="center">
-
-**Built with ❤️**
-
-💡 *Did you know? Real ant colonies exhibit swarm intelligence—no single ant knows the whole plan, but together, they solve complex problems. Similarly, decentralized AI agents can collaboratively outperform centralized models in dynamic environments.*
-
-</div>
+This repo is being tightened toward a public-ready DeSci release. The current emphasis is simulation correctness, provenance clarity, proof lifecycle staging, and consistent local interfaces.

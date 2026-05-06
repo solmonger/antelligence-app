@@ -3,6 +3,28 @@ name = "antelligence"
 version = "0.2.0"
 description = "DeSci compute-as-a-service: privacy-preserving tumor simulation with ZK proofs on Base L2"
 requires-python = ">=3.10"
+dependencies = [
+  "fastapi",
+  "uvicorn[standard]",
+  "openai",
+  "numpy",
+  "python-dotenv",
+  "pandas",
+  "web3",
+  "google-generativeai",
+  "mistralai",
+  "httpx",
+  "scipy",
+  "nibabel",
+  "scikit-image",
+  "pydantic",
+  "matplotlib",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=9",
+]
 
 [project.scripts]
 antelligence = "backend.cli:main"
@@ -14,3 +36,6 @@ python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
 addopts = "-v --tb=short"
+
+[tool.uv]
+package = false

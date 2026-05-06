@@ -693,11 +693,8 @@ async def run_tumor_simulation(config: TumorSimulationConfig):
         # Get final substrate data
         final_substrate_data = convert_substrate_maps(model)
         
-        # Blockchain logs (placeholder for now)
-        blockchain_logs = [
-            f"Simulation initialized: {model.step_count} steps, {len(model.nanobots)} nanobots",
-            f"Treatment outcome: {cells_killed} cells killed, {model.metrics['total_deliveries']} drug deliveries"
-        ]
+        # Honest blockchain reporting: surface only actual runtime logs, otherwise return empty list.
+        blockchain_logs = list(getattr(model, 'blockchain_logs', []) or [])
         
         return TumorSimulationResult(
             config=config,

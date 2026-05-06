@@ -6,10 +6,12 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PheromoneParams(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     trail_diffusion: float = Field(default=1e-6, gt=0, description="Trail pheromone diffusion coefficient")
     alarm_diffusion: float = Field(default=5e-6, gt=0, description="Alarm pheromone diffusion coefficient")
     recruitment_diffusion: float = Field(default=2e-6, gt=0, description="Recruitment pheromone diffusion coefficient")
@@ -19,6 +21,8 @@ class PheromoneParams(BaseModel):
 
 
 class SimulationConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     num_bots: int = Field(default=10, ge=1, le=1000, description="Number of nanobots")
     grid_size: int = Field(default=60, ge=2, le=500, description="Grid size (N×N voxels)")
     steps: int = Field(default=100, ge=1, le=10000, description="Number of simulation steps")
@@ -51,6 +55,8 @@ class SimulationConfig(BaseModel):
             "voxel_size": voxel_size,
             "tumor_radius": tumor_radius,
             "with_queen": self.queen_enabled,
+            "pheromone_params": self.pheromone_params.model_dump(),
+            "seed": self.seed,
         }
 
 

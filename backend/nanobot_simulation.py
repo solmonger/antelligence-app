@@ -20,7 +20,14 @@ from enum import Enum
 import os
 from dotenv import load_dotenv
 import threading
-from litellm_client import create_client as create_llm_client
+
+# Mock litellm_client for testing environments where it's not installed
+try:
+    from litellm_client import create_client as create_llm_client
+except ImportError:
+    def create_llm_client(*args, **kwargs):
+        return None
+
 from biofvm import Microenvironment
 from tumor_environment import TumorGeometry, TumorCell, VesselPoint, CellPhase, CellType
 from knowledge_graph import TumorKnowledgeGraph
@@ -31,23 +38,32 @@ IO_API_KEY = os.getenv("IO_SECRET_KEY")
 # Create LiteLLM client for internal API
 LITELLM_API_BASE = "http://host.orb.internal:4000/v1"
 
+
+def _env_truthy(name: str) -> bool:
+    return os.getenv(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
 # Blockchain integration
-try:
-    # Add parent directory to path to find blockchain module
-    import sys
-    import os
-    parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    sys.path.insert(0, parent_dir)
-    
-    from blockchain.client import w3, acct, tumor_intel_contract, TUMOR_INTEL_CONTRACT_ADDRESS
-    BLOCKCHAIN_ENABLED = tumor_intel_contract is not None
-    if BLOCKCHAIN_ENABLED:
-        print("[NANOBOT] ✅ Blockchain intelligence sharing enabled")
-    else:
-        print("[NANOBOT] ⚠️ Blockchain client loaded but TumorIntel contract not available")
-except Exception as e:
-    BLOCKCHAIN_ENABLED = False
-    print(f"[NANOBOT] ⚠️ Blockchain disabled: {e}")
+BLOCKCHAIN_ENABLED = False
+w3 = acct = tumor_intel_contract = TUMOR_INTEL_CONTRACT_ADDRESS = None
+if _env_truthy("ANTELLIGENCE_ENABLE_BLOCKCHAIN_TX"):
+    try:
+        # Add parent directory to path to find blockchain module
+        import sys
+        parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        sys.path.insert(0, parent_dir)
+
+        from blockchain.client import w3, acct, tumor_intel_contract, TUMOR_INTEL_CONTRACT_ADDRESS
+        BLOCKCHAIN_ENABLED = tumor_intel_contract is not None
+        if BLOCKCHAIN_ENABLED:
+            print("[NANOBOT] Blockchain intelligence sharing enabled")
+        else:
+            print("[NANOBOT] Blockchain client loaded but TumorIntel contract not available")
+    except Exception as e:
+        BLOCKCHAIN_ENABLED = False
+        print(f"[NANOBOT] Blockchain disabled: {e}")
+else:
+    print("[NANOBOT] Blockchain transaction writes disabled; set ANTELLIGENCE_ENABLE_BLOCKCHAIN_TX=1 to enable")
 
 
 class NanobotState(Enum):
@@ -77,7 +93,6 @@ class NanobotAgent:
         self.model = model
         self.is_llm_controlled = is_llm_controlled
         
-        # Start near a random vessel
         if model.geometry.vessels:
             start_vessel = random.choice(model.geometry.vessels)
             # Add small random offset
@@ -1154,20 +1169,34 @@ class TumorNanobotModel:
     
     def __init__(
         self,
-        domain_size: float = 600.0,  # µm
-        voxel_size: float = 10.0,    # µm
         n_nanobots: int = 10,
+        domain_size: float = 600.0,
+        voxel_size: float = 10.0,
         tumor_radius: float = 200.0,
         agent_type: str = "LLM-Powered",
         with_queen: bool = False,
         use_llm_queen: bool = False,
-        selected_model: str = "meta-llama/Llama-3.3-70B-Instruct"
+        selected_model: str = "meta-llama/Llama-3.3-70B-Instruct",
+        pheromone_params: Optional[Dict[str, float]] = None,
+        seed: Optional[int] = None,
     ):
+
         self.domain_size = domain_size
         self.voxel_size = voxel_size
+        self.seed = seed
         self.selected_model = selected_model
         self.with_queen = with_queen
         self.use_llm_queen = use_llm_queen
+        self.pheromone_params = {
+            'trail_diffusion': 1e-6,
+            'alarm_diffusion': 5e-6,
+            'recruitment_diffusion': 2e-6,
+            'trail_decay': 0.0693,
+            'alarm_decay': 0.231,
+            'recruitment_decay': 0.099,
+        }
+        if pheromone_params:
+            self.pheromone_params.update(pheromone_params)
         
         # List of known supported chat models (LiteLLM unified format)
         SUPPORTED_CHAT_MODELS = [
@@ -1206,9 +1235,31 @@ class TumorNanobotModel:
         
         create_oxygen_substrate(self.microenv, boundary_value=38.0)
         create_drug_substrate(self.microenv, diffusion_coeff=1e-7)
-        create_pheromone_substrate(self.microenv, 'trail', decay_rate=0.1)
-        create_pheromone_substrate(self.microenv, 'alarm', decay_rate=0.15)
-        create_pheromone_substrate(self.microenv, 'recruitment', decay_rate=0.12)
+        self.microenv.add_substrate(
+            'trail_pheromone',
+            diffusion_coefficient=self.pheromone_params['trail_diffusion'],
+            decay_rate=self.pheromone_params['trail_decay'],
+            initial_value=0.0,
+            dirichlet_boundary_value=None,
+        )
+        self.microenv.add_substrate(
+            'alarm_pheromone',
+            diffusion_coefficient=self.pheromone_params['alarm_diffusion'],
+            decay_rate=self.pheromone_params['alarm_decay'],
+            initial_value=0.0,
+            dirichlet_boundary_value=None,
+        )
+        self.microenv.add_substrate(
+            'recruitment_pheromone',
+            diffusion_coefficient=self.pheromone_params['recruitment_diffusion'],
+            decay_rate=self.pheromone_params['recruitment_decay'],
+            initial_value=0.0,
+            dirichlet_boundary_value=None,
+        )
+        # Backward-compatible aliases for older readers/tests that still look up the short names.
+        self.microenv.substrates['trail'] = self.microenv.substrates['trail_pheromone']
+        self.microenv.substrates['alarm'] = self.microenv.substrates['alarm_pheromone']
+        self.microenv.substrates['recruitment'] = self.microenv.substrates['recruitment_pheromone']
         
         # Add new chemokine and toxicity signal substrates
         create_pheromone_substrate(self.microenv, 'chemokine_signal', decay_rate=0.08)  # Attractant - slower decay
@@ -1273,9 +1324,12 @@ class TumorNanobotModel:
         
         # Blockchain integration for decentralized swarm intelligence
         self.blockchain_enabled = BLOCKCHAIN_ENABLED
+        self.blockchain_logs: List[str] = []
         self.nonce_lock = threading.Lock()
         if self.blockchain_enabled:
             self.current_nonce = w3.eth.get_transaction_count(acct.address)
+        else:
+            self.current_nonce = 0
 
         self.nonce = 0
         # Initialize Queen
@@ -1538,4 +1592,3 @@ class TumorNanobotModel:
         """Log an error message."""
         self.errors.append(message)
         print(f"[TUMOR MODEL] {message}")
-

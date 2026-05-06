@@ -19,51 +19,32 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from chain.verify import verify_artifact_integrity, verify_metrics_tolerance
 from chain.ipfs import create_simulation_artifact
+from simulation_replay import replay_artifact_metrics
 
 
 def spot_check_run(original_result, steps, n_bots, with_queen, episode_length):
     """Re-run a simulation and compare metrics."""
-    from nanobot_simulation import TumorNanobotModel, QueenNanobot
-    from biofvm import create_trail_pheromone, create_alarm_pheromone, create_recruitment_pheromone
-
-    seed = original_result.get("seed", 0)
-    radius = original_result.get("tumor_radius", 150)
-
-    np.random.seed(seed)
-    random.seed(seed)
-
-    domain = max(400.0, radius * 3)
-    model = TumorNanobotModel(
-        domain_size=domain, voxel_size=20.0, n_nanobots=n_bots,
-        tumor_radius=radius, agent_type="heuristic",
-        with_queen=with_queen, use_llm_queen=False,
-    )
-    create_trail_pheromone(model.microenv)
-    create_alarm_pheromone(model.microenv)
-    create_recruitment_pheromone(model.microenv)
-
-    queen = None
-    if with_queen:
-        queen = QueenNanobot(model=model, use_llm=False, episode_length=episode_length)
-
-    total_cells = len(model.geometry.tumor_cells)
-    for _ in range(steps):
-        model.step()
-        if queen:
-            queen.step()
-
-    living = len(model.geometry.get_living_cells())
-    kills = total_cells - living
-    kill_rate = (kills / total_cells * 100) if total_cells > 0 else 0
-
+    artifact = {
+        "config": {
+            "seed": original_result.get("seed", 0),
+            "tumor_radius": original_result.get("tumor_radius", 150),
+            "nanobot_count": n_bots,
+            "steps": steps,
+            "with_queen": with_queen,
+            "episode_length": episode_length,
+            "domain_size": max(400.0, original_result.get("tumor_radius", 150) * 3),
+            "voxel_size": 20.0,
+        }
+    }
+    recomputed = replay_artifact_metrics(artifact)
     return {
-        "kill_rate_pct": round(kill_rate, 2),
-        "kills": kills,
-        "deliveries": sum(bot.deliveries_made for bot in model.nanobots),
+        "kill_rate_pct": round(recomputed["kill_rate"], 2),
+        "kills": recomputed["cells_killed"],
+        "deliveries": recomputed["deliveries"],
     }
 
 

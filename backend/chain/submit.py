@@ -20,12 +20,42 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from chain.config import BASE_SEPOLIA_CHAIN_ID, get_tumor_intel_address
 from chain.ipfs import pin_simulation, compute_artifact_hash
+from chain.proof_lifecycle import build_lifecycle, build_verification_status
+from chain.proof_spec import (
+    PUBLIC_VALUES_SCHEMA_VERSION,
+    PROGRAM_VERSION,
+    build_public_values_metadata,
+    build_public_values_payload,
+    encode_public_values_payload,
+    normalize_config_hash,
+)
 
 
-# Contract addresses on Base Sepolia
-TUMOR_INTEL_ADDRESS = os.getenv("TUMOR_INTEL_ADDR", "0x1118c23879bC0319981bd12d0497E1496310f4CE")
-BASE_SEPOLIA_CHAIN_ID = 84532
+TUMOR_INTEL_ADDRESS = get_tumor_intel_address()
+
+
+def encode_public_values(
+    config_hash: str,
+    kill_rate_bps: int,
+    nanobot_count: int,
+    tumor_radius: int,
+    steps: int,
+) -> str:
+    """ABI-encode verifier public values for TumorIntel.verifySimulation.
+
+    Use the canonical Python encoder so local bundle creation, tests, and future
+    prover integration do not depend on Foundry being installed.
+    """
+    payload = build_public_values_payload(
+        config_hash=config_hash,
+        kill_rate_bps=kill_rate_bps,
+        nanobot_count=nanobot_count,
+        tumor_radius=tumor_radius,
+        steps=steps,
+    )
+    return encode_public_values_payload(payload)
 
 
 def submit_via_cast(
@@ -53,22 +83,23 @@ def submit_via_cast(
     Returns:
         Result dict with tx_hash or estimate
     """
-    # For now, we can't call verifySimulation without a real ZK proof.
-    # Instead, store the attestation data for when proofs are ready.
-    # The isVerified() check can be called once proofs are submitted.
-
+    normalized_config_hash = "0x" + normalize_config_hash(config_hash)
     if dry_run:
-        # Estimate gas for the verification call
         try:
             result = subprocess.run(
                 [
                     "cast", "estimate",
                     TUMOR_INTEL_ADDRESS,
-                    "isVerified(bytes32)(bool)",
-                    f"0x{config_hash}",
+                    "submitSimulation(bytes32,uint32,uint32,uint32,uint32)",
+                    normalized_config_hash,
+                    str(kill_rate),
+                    str(nanobot_count),
+                    str(tumor_radius),
+                    str(steps),
                     "--rpc-url", rpc_url,
+                    "--private-key", private_key,
                 ],
-                capture_output=True, text=True, timeout=15,
+                capture_output=True, text=True, timeout=20, check=True,
             )
             return {
                 "ok": True,
@@ -76,18 +107,55 @@ def submit_via_cast(
                 "contract": TUMOR_INTEL_ADDRESS,
                 "config_hash": config_hash,
                 "gas_estimate": result.stdout.strip(),
-                "message": "Dry run complete. Submit ZK proof via verifySimulation() to attest on-chain.",
+                "message": "Dry run complete for submitSimulation(). Proof verification remains a later stage.",
+                "proof_lifecycle": build_lifecycle(
+                    "bundle_created",
+                    note="Bundle can be submitted on-chain now; proof verification remains pending.",
+                ),
             }
         except Exception as e:
             return {"ok": False, "error": str(e)}
 
-    # Live submission would require a ZK proof — placeholder for now
-    return {
-        "ok": False,
-        "error": "Live submission requires ZK proof generation (SP1). Use --dry-run for gas estimates.",
-        "contract": TUMOR_INTEL_ADDRESS,
-        "config_hash": config_hash,
-    }
+    try:
+        result = subprocess.run(
+            [
+                "cast", "send",
+                TUMOR_INTEL_ADDRESS,
+                "submitSimulation(bytes32,uint32,uint32,uint32,uint32)",
+                normalized_config_hash,
+                str(kill_rate),
+                str(nanobot_count),
+                str(tumor_radius),
+                str(steps),
+                "--rpc-url", rpc_url,
+                "--private-key", private_key,
+                "--json",
+            ],
+            capture_output=True, text=True, timeout=60, check=True,
+        )
+        tx_result = json.loads(result.stdout)
+        return {
+            "ok": True,
+            "dry_run": False,
+            "contract": TUMOR_INTEL_ADDRESS,
+            "config_hash": config_hash,
+            "tx": tx_result,
+            "proof_lifecycle": build_lifecycle(
+                "submitted_onchain",
+                note="Simulation metadata submitted on-chain. Await proof generation and verifySimulation().",
+            ),
+        }
+    except Exception as e:
+        return {
+            "ok": False,
+            "error": f"Live submission failed: {e}",
+            "contract": TUMOR_INTEL_ADDRESS,
+            "config_hash": config_hash,
+            "proof_lifecycle": build_lifecycle(
+                "bundle_created",
+                note="Bundle created locally but on-chain submission failed.",
+            ),
+        }
 
 
 def create_attestation_bundle(
@@ -115,6 +183,21 @@ def create_attestation_bundle(
     tumor_radius = config.get("tumor_radius", 0)
     steps = config.get("steps", config.get("n_steps", 0))
 
+    public_values_payload = build_public_values_payload(
+        config_hash=config_hash,
+        kill_rate_bps=kill_rate,
+        nanobot_count=nanobot_count,
+        tumor_radius=tumor_radius,
+        steps=steps,
+    )
+    public_values = encode_public_values_payload(public_values_payload)
+    artifact = ipfs_result.get("artifact", {})
+    simulation_commitments = {
+        "config_hash": config_hash,
+        "metrics_hash": artifact.get("metrics_hash", compute_artifact_hash(metrics)),
+        "artifact_hash": ipfs_result["artifact_hash"],
+    }
+
     return {
         "ok": True,
         "ipfs": ipfs_result,
@@ -126,9 +209,26 @@ def create_attestation_bundle(
             "nanobot_count": nanobot_count,
             "tumor_radius": tumor_radius,
             "steps": steps,
+            "public_values": public_values,
+            "public_values_payload": public_values_payload,
+            "public_values_schema_version": PUBLIC_VALUES_SCHEMA_VERSION,
+            "program_version": PROGRAM_VERSION,
+            "public_values_metadata": build_public_values_metadata(),
+            "simulation_commitments": simulation_commitments,
         },
-        "status": "ready_for_proof",
-        "next_step": "Generate ZK proof with SP1, then call verifySimulation(publicValues, proofBytes)",
+        "verification_status": build_verification_status(
+            schema_ok=True,
+            integrity_ok=True,
+            replay_ok=False,
+            proof_ok=False,
+            onchain_ok=False,
+        ),
+        "proof_lifecycle": build_lifecycle(
+            "bundle_created",
+            note="Artifact created with encoded public values. Next steps: submitSimulation(), generate SP1+Groth16 proof, then verifySimulation().",
+        ),
+        "status": "ready_for_submission",
+        "next_step": "Submit simulation metadata on-chain, then generate SP1+Groth16 proof and call verifySimulation(publicValues, proofBytes).",
     }
 
 

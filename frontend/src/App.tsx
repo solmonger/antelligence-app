@@ -8,6 +8,7 @@ import SimulationComparison from "./pages/SimulationComparison";
 import TumorSimulation from "./pages/TumorSimulation";
 import TumorHunt from "./pages/TumorHunt";
 import NotFound from "./pages/NotFound";
+import { PreviewModeBanner } from "./components/PreviewModeBanner";
 
 const queryClient = new QueryClient();
 
@@ -17,6 +18,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <PreviewModeBanner />
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
