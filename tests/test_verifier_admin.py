@@ -8,6 +8,13 @@ from backend.chain.verifier_admin import set_verifier_address, submit_proof_veri
 
 class TestVerifierAdmin:
     @patch("backend.chain.verifier_admin.subprocess.run")
+    def test_set_verifier_address_rejects_malformed_address_before_cast(self, mock_run):
+        with pytest.raises(ValueError, match="must be a 20-byte hex address"):
+            set_verifier_address("0x1234")
+
+        mock_run.assert_not_called()
+
+    @patch("backend.chain.verifier_admin.subprocess.run")
     def test_set_verifier_address(self, mock_run):
         mock_run.return_value.stdout = '{"transactionHash":"0xabc"}'
         result = set_verifier_address("0x1111111111111111111111111111111111111111")

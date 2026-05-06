@@ -1,13 +1,10 @@
-"""Tests for backend/cli.py — subprocess-based."""
+"""Tests for backend/cli.py."""
 
 import json
 import subprocess
 import sys
-import tempfile
-from pathlib import Path
+from argparse import Namespace
 from unittest.mock import MagicMock, patch
-
-import pytest
 
 
 # We run the CLI as: python -m backend.cli <subcommand>
@@ -55,26 +52,22 @@ class TestCLIHelp:
 class TestCLISimulate:
     def test_simulate_writes_json_output(self, tmp_path):
         out = tmp_path / "results.json"
+        from backend.cli import cmd_simulate
+
+        args = Namespace(steps=2, bots=1, grid_size=5, seed=7, output=str(out))
         with patch("backend.cli.TumorNanobotModel", side_effect=_fake_model):
-            result = subprocess.run(
-                CLI + ["simulate", "--steps", "2", "--bots", "1", "--grid-size", "5", "--output", str(out)],
-                capture_output=True,
-                text=True,
-                env={**__import__("os").environ},
-            )
-        # If the model patch didn't work via subprocess, skip (subprocess isolation).
-        # Instead, test by importing and calling directly.
-        # (subprocess patching requires a separate approach — see note below)
-        # This test verifies the CLI *parses* correctly and returns 0 when model works.
-        # We accept that the real model may run here; check exit code is not 2 (bad args).
-        assert result.returncode != 2, f"Argument parse error:\n{result.stderr}"
+            cmd_simulate(args)
+
+        data = json.loads(out.read_text())
+        assert data["config"] == {"num_bots": 1, "steps": 2, "grid_size": 5, "seed": 7}
+        assert "bots" not in data["config"]
+        assert data["metrics"]["step_count"] == 3
 
     def test_simulate_no_output_prints_json(self):
         """CLI without --output should print JSON to stdout."""
         with patch("backend.cli.TumorNanobotModel", side_effect=_fake_model):
             import io
             import sys
-            from argparse import Namespace
             from backend.cli import cmd_simulate
 
             args = Namespace(steps=2, bots=1, grid_size=5, seed=None, output=None)
@@ -91,6 +84,8 @@ class TestCLISimulate:
             data = json.loads(out_text)
             assert "metrics" in data
             assert "config" in data
+            assert data["config"]["num_bots"] == 1
+            assert "bots" not in data["config"]
 
 
 class TestCLILeaderboard:

@@ -80,6 +80,20 @@ class TestMetricsTolerance:
         result = verify_metrics_tolerance({}, {})
         assert result["ok"] is True
 
+    def test_missing_recomputed_numeric_metric_fails(self):
+        result = verify_metrics_tolerance({"kill_rate": 45.5}, {})
+        assert result["ok"] is False
+        assert result["checks"] == [
+            {
+                "metric": "kill_rate",
+                "claimed": 45.5,
+                "recomputed": None,
+                "deviation_pct": None,
+                "ok": False,
+                "reason": "missing_recomputed_metric",
+            }
+        ]
+
 
 class TestReplayVerification:
     def test_replay_returns_metrics(self):

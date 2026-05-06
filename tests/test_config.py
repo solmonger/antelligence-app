@@ -48,6 +48,19 @@ class TestSimulationConfig:
         with pytest.raises(ValidationError):
             SimulationConfig(pheromone_params={"trail_diffusion": -1.0})
 
+    def test_pheromone_params_reject_unknown_fields(self):
+        with pytest.raises(ValidationError) as exc_info:
+            SimulationConfig(pheromone_params={"trail_decya": 0.123})
+
+        assert any(
+            error["loc"] == ("pheromone_params", "trail_decya") and error["type"] == "extra_forbidden"
+            for error in exc_info.value.errors()
+        )
+
+    def test_simulation_config_rejects_unknown_fields(self):
+        with pytest.raises(ValidationError):
+            SimulationConfig(unexpected_flag=True)
+
     def test_to_model_kwargs(self):
         cfg = SimulationConfig(num_bots=3, grid_size=5)
         kwargs = cfg.to_model_kwargs()
@@ -95,6 +108,40 @@ class TestSimulationConfig:
             assert cfg.num_bots == 4
         finally:
             tmp.unlink(missing_ok=True)
+
+    def test_runtime_factory_passes_pheromone_params_to_model_factory(self):
+        import sys
+        from unittest.mock import MagicMock
+
+        sys.modules["backend.nanobot_simulation"] = MagicMock()
+        try:
+            from backend.runtime_factory import build_model
+
+            mock_model = MagicMock()
+            mock_factory = MagicMock(return_value=mock_model)
+            cfg = SimulationConfig(
+                num_bots=5,
+                grid_size=10,
+                steps=1,
+                queen_enabled=True,
+                seed=99,
+                pheromone_params={
+                    "trail_diffusion": 2e-6,
+                    "alarm_diffusion": 9e-6,
+                    "recruitment_diffusion": 3e-6,
+                    "trail_decay": 0.07,
+                    "alarm_decay": 0.24,
+                    "recruitment_decay": 0.11,
+                },
+            )
+
+            assert build_model(cfg, model_factory=mock_factory) == mock_model
+            kwargs = mock_factory.call_args.kwargs
+            assert kwargs["with_queen"] is True
+            assert kwargs["seed"] == 99
+            assert kwargs["pheromone_params"] == cfg.pheromone_params.model_dump()
+        finally:
+            del sys.modules["backend.nanobot_simulation"]
 
     def test_runtime_factory_config_guard(self):
         """Verify that runtime factory can handle different config states without crashing."""

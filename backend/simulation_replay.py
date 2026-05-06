@@ -9,6 +9,29 @@ from backend.config import SimulationConfig
 
 DEFAULT_REPLAY_STEPS = 10
 
+SWARM_PROVENANCE_KEYS = {
+    "agent_communication",
+    "agent_messages",
+    "communication_provenance",
+    "communication_trace",
+    "message_trace",
+    "pheromone_provenance",
+    "pheromone_summary",
+    "pheromone_trace",
+}
+
+
+def extract_swarm_provenance(artifact: Dict[str, Any], runtime_metrics: Dict[str, Any]) -> Dict[str, Any]:
+    """Preserve communication/pheromone trace fields already emitted by the simulator."""
+    provenance: Dict[str, Any] = {}
+    for source in (artifact, artifact.get("metrics") or {}, runtime_metrics):
+        if not isinstance(source, dict):
+            continue
+        for key in SWARM_PROVENANCE_KEYS:
+            if key in source:
+                provenance[key] = source[key]
+    return provenance
+
 
 def build_model(cfg: SimulationConfig) -> Any:
     """Import the heavy runtime only when replay actually executes."""
@@ -27,6 +50,7 @@ def compute_metrics(model: Any) -> Dict[str, Any]:
 def normalize_simulation_config(config: Dict[str, Any]) -> SimulationConfig:
     num_bots = (
         config.get("num_bots")
+        or config.get("bots")
         or config.get("nanobot_count")
         or config.get("n_nanobots")
         or config.get("n_bots")
@@ -65,10 +89,19 @@ def replay_artifact_metrics(artifact: Dict[str, Any]) -> Dict[str, Any]:
     runtime_metrics = compute_metrics(model)
     kill_rate = runtime_metrics.get("kill_rate", 0) * 100
 
+    normalized_config = normalized.model_dump()
+    replay_metadata = {
+        "original_config": config,
+        "seed": normalized_config.get("seed"),
+        "normalized_config": normalized_config,
+        "swarm_provenance": extract_swarm_provenance(artifact, runtime_metrics),
+    }
+
     return {
         "kill_rate": round(kill_rate, 2),
         "deliveries": int(runtime_metrics.get("total_deliveries", 0)),
         "cells_killed": int(runtime_metrics.get("cells_killed", 0)),
         "step_count": int(runtime_metrics.get("step_count", model.step_count)),
-        "normalized_config": normalized.model_dump(),
+        "normalized_config": normalized_config,
+        "replay_metadata": replay_metadata,
     }

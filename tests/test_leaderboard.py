@@ -75,6 +75,20 @@ class TestBuildLeaderboard:
         assert result["summary"]["avg_kill_rate"] == 50.0
         assert result["summary"]["best_kill_rate"] == 60.0
 
+    def test_summary_average_includes_zero_kill_runs(self):
+        artifacts = [
+            create_simulation_artifact(
+                config={"tumor_radius": 100},
+                metrics={"kill_rate": 0.0},
+            ),
+            create_simulation_artifact(
+                config={"tumor_radius": 100},
+                metrics={"kill_rate": 60.0},
+            ),
+        ]
+        result = build_leaderboard(artifacts)
+        assert result["summary"]["avg_kill_rate"] == 30.0
+
     def test_staged_proof_entries_are_labeled_honestly(self):
         artifact = create_proof_bundle(
             config={"tumor_radius": 100, "nanobot_count": 3, "steps": 10},

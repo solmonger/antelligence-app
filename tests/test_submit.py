@@ -2,10 +2,16 @@
 
 import sys
 import os
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
-from chain.submit import create_attestation_bundle, encode_public_values, TUMOR_INTEL_ADDRESS
+from chain.submit import (
+    TUMOR_INTEL_ADDRESS,
+    create_attestation_bundle,
+    encode_public_values,
+    submit_via_cast,
+)
 
 
 class TestAttestationBundle:
@@ -52,6 +58,41 @@ class TestAttestationBundle:
         assert bundle["onchain"]["public_values_schema_version"] == "public-values-v1"
         assert bundle["onchain"]["public_values_metadata"]["program_version"] == "tumor-intel-proof-v1"
 
+    def test_bundle_onchain_metadata_preserves_simulation_commitments(self):
+        bundle = create_attestation_bundle(
+            config={"tumor_radius": 100, "nanobot_count": 4, "steps": 20},
+            metrics={"kill_rate": 12.0, "deliveries": 7},
+            run_id="commitment-contract",
+        )
+
+        artifact = bundle["ipfs"]["artifact"]
+        commitments = bundle["onchain"]["simulation_commitments"]
+        assert commitments == {
+            "config_hash": artifact["config_hash"],
+            "metrics_hash": artifact["metrics_hash"],
+            "artifact_hash": artifact["artifact_hash"],
+        }
+        assert bundle["onchain"]["config_hash"] == commitments["config_hash"]
+        assert bundle["onchain"]["public_values_payload"]["config_hash"] == commitments["config_hash"]
+
     def test_encode_public_values(self):
         encoded = encode_public_values("00" * 32, 1234, 5, 150, 40)
         assert encoded.startswith("0x")
+
+    @patch("chain.submit.subprocess.run")
+    def test_submit_via_cast_preserves_existing_0x_prefix(self, mock_run):
+        mock_run.return_value.stdout = "21000\n"
+        result = submit_via_cast(
+            config_hash="0x" + ("ab" * 32),
+            kill_rate=1234,
+            nanobot_count=5,
+            tumor_radius=150,
+            steps=40,
+            rpc_url="http://rpc.test",
+            private_key="0xprivate",
+            dry_run=True,
+        )
+
+        assert result["ok"] is True
+        cast_args = mock_run.call_args.args[0]
+        assert cast_args[4] == "0x" + ("ab" * 32)

@@ -77,7 +77,15 @@ def cmd_simulate(args: argparse.Namespace) -> None:
     metrics["kill_rate"] = (total - living) / total
     metrics["step_count"] = model.step_count
 
-    result = {"config": {"bots": args.bots, "steps": args.steps, "grid_size": args.grid_size}, "metrics": metrics}
+    result = {
+        "config": {
+            "num_bots": args.bots,
+            "steps": args.steps,
+            "grid_size": args.grid_size,
+            "seed": args.seed,
+        },
+        "metrics": metrics,
+    }
 
     if args.output:
         with open(args.output, "w") as f:

@@ -21,14 +21,14 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 # Ensure backend package is importable when running from repo root.
 _backend_dir = os.path.dirname(os.path.abspath(__file__))
 if _backend_dir not in sys.path:
     sys.path.insert(0, _backend_dir)
 
-from backend.config import SimulationConfig  # noqa: E402
+from backend.config import PheromoneParams, SimulationConfig  # noqa: E402
 from backend.run_store import SQLiteRunStore  # noqa: E402
 from backend.runtime_factory import run_simulation  # noqa: E402
 
@@ -61,12 +61,14 @@ RUN_STORE = SQLiteRunStore(_DEFAULT_DB_PATH)
 
 
 class SimulateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     num_bots: int = 10
     grid_size: int = 60
     steps: int = 100
     queen_enabled: bool = False
     seed: Optional[int] = None
-    pheromone_params: Optional[Dict[str, float]] = None
+    pheromone_params: Optional[PheromoneParams] = None
 
 
 class SimulateResponse(BaseModel):

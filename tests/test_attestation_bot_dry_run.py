@@ -10,13 +10,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
 from scripts.attestation_bot import run_spot_checks
 
-def test_attestation_bot_dry_run():
+
+def test_attestation_bot_dry_run(tmp_path: Path):
     """
     Test that the attestation bot can process a dummy JSON input
     and report results without needing real blockchain/IPFS side effects.
     """
     # 1. Create a dummy input file
-    dummy_input_path = Path(__file__).parent / "dummy_results.json"
+    dummy_input_path = tmp_path / "dummy_results.json"
     dummy_data = {
         "config": {
             "steps": 50,

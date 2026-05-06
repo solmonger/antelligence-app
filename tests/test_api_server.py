@@ -76,6 +76,53 @@ class TestSimulateEndpoint:
         resp = client.post("/simulate", json={"num_bots": 0, "grid_size": 5, "steps": 3})
         assert resp.status_code == 422
 
+    def test_simulate_rejects_unknown_request_fields(self):
+        resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 3, "unexpected_flag": True})
+        assert resp.status_code == 422
+        assert any(
+            error.get("loc") == ["body", "unexpected_flag"]
+            and error.get("type") == "extra_forbidden"
+            for error in resp.json()["detail"]
+        )
+
+    def test_simulate_accepts_protocol_fields_and_stores_config(self):
+        payload = {
+            "num_bots": 2,
+            "grid_size": 5,
+            "steps": 3,
+            "queen_enabled": True,
+            "seed": 123,
+            "pheromone_params": {
+                "trail_diffusion": 2e-6,
+                "alarm_diffusion": 9e-6,
+                "recruitment_diffusion": 3e-6,
+                "trail_decay": 0.07,
+                "alarm_decay": 0.24,
+                "recruitment_decay": 0.11,
+            },
+        }
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            resp = client.post("/simulate", json=payload)
+
+        assert resp.status_code == 200
+        run_id = resp.json()["run_id"]
+        stored_config = _RUNS[run_id]["config"]
+        assert stored_config["queen_enabled"] is True
+        assert stored_config["seed"] == 123
+        assert stored_config["pheromone_params"] == payload["pheromone_params"]
+
+    def test_simulate_rejects_unknown_pheromone_fields(self):
+        resp = client.post(
+            "/simulate",
+            json={"num_bots": 2, "grid_size": 5, "steps": 3, "pheromone_params": {"trail_decya": 0.1}},
+        )
+        assert resp.status_code == 422
+        assert any(
+            error.get("loc") == ["body", "pheromone_params", "trail_decya"]
+            and error.get("type") == "extra_forbidden"
+            for error in resp.json()["detail"]
+        )
+
     def test_simulate_run_stored(self):
         _RUNS.clear()
         with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):

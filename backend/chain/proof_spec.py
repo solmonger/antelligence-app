@@ -31,6 +31,23 @@ PUBLIC_VALUES_FIELDS = (
     "steps",
 )
 
+TRANSPORT_METADATA_REQUIRED_KEYS = (
+    "artifact_version",
+    "proof_system",
+    "proof_format",
+    "proof_origin",
+    "prover_status",
+    "is_mock",
+    "program_version",
+    "public_values_schema_version",
+    "proof_boundary_version",
+    "public_values_bytes",
+    "proof_bytes_length",
+    "public_values_commitment",
+    "proof_bytes_commitment",
+    "transport_commitment",
+)
+
 
 def normalize_config_hash(config_hash: str) -> str:
     normalized = config_hash[2:] if config_hash.startswith("0x") else config_hash
@@ -152,7 +169,7 @@ def build_proof_transport_metadata(*, public_values: str, proof_bytes: str, proo
     normalized_proof_bytes = _normalize_hex_bytes(proof_bytes, field_name="proof_bytes")
     public_values_raw = bytes.fromhex(normalized_public_values[2:])
     proof_bytes_raw = bytes.fromhex(normalized_proof_bytes[2:])
-    return {
+    metadata = {
         "artifact_version": PROOF_ARTIFACT_VERSION,
         "proof_system": PROOF_SYSTEM,
         "proof_format": PROOF_FORMAT,
@@ -168,6 +185,9 @@ def build_proof_transport_metadata(*, public_values: str, proof_bytes: str, proo
         "proof_bytes_commitment": hashlib.sha256(proof_bytes_raw).hexdigest(),
         "transport_commitment": compute_transport_commitment(normalized_public_values, normalized_proof_bytes, proof_origin, prover_status, PROGRAM_VERSION),
     }
+    if tuple(metadata) != TRANSPORT_METADATA_REQUIRED_KEYS:
+        raise ValueError("transport metadata keys drifted from the proof-spec contract")
+    return metadata
 
 
 def build_proof_artifact_metadata(*, proof_origin: str, is_mock: bool) -> Dict[str, object]:

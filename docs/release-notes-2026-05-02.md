@@ -88,6 +88,31 @@ Additional review notes:
 - `uv.lock` is now visible as an untracked dependency-lock change and should travel only with the Python dependency update that requires it.
 - The recommended PR split is unchanged: proof core first, chain/runtime second, simulation/replay third, frontend preview fourth, cleanup/artifact removal last.
 
+## 2026-05-02 unattended pass 8 addendum
+
+Current release-prep inventory from `git status --short` at this pass: two dirty paths total, both modified tracked files: `backend/chain/verify.py` and `tests/test_verify.py`. No untracked, generated, local-data, frontend, secret, or scratch files are present in the current dirty tree.
+
+Intentional review group:
+
+- Chain verification hardening: `backend/chain/verify.py` now treats a claimed numeric metric missing from recomputed metrics as a failed tolerance check instead of silently skipping it.
+- Focused regression coverage: `tests/test_verify.py` adds `test_missing_recomputed_numeric_metric_fails` to lock the behavior.
+
+Validation evidence to preserve for review:
+
+- Latest focused loop evidence before this manifest pass: `uv run --extra test pytest -q tests/test_verify.py::TestMetricsTolerance::test_missing_recomputed_numeric_metric_fails` — passed, 1 test.
+- Latest focused suite evidence before this manifest pass: `uv run --extra test pytest -q tests/test_nanobot.py tests/test_tumor_env.py tests/test_verify.py` — passed, 64 tests.
+- This manifest pass ran the required full commands: `uv run --extra test pytest -q` — passed, 199 tests in 4.28s; `npm --prefix frontend run build` — passed, built in 1.91s.
+
+Likely exclusions for this narrowed tree:
+
+- None from `git status --short`; the only dirty files are the implementation/test pair above.
+- Continue excluding any regenerated `frontend/dist/`, `out/`, cache, local SQLite, BraTS archives, `.hermes/`, and debug/probe scripts if they reappear before PR handoff.
+
+Recommended PR split for the current narrowed dirty tree:
+
+1. Single tiny PR — chain verification tolerance hardening with the focused regression test.
+2. Defer the broader proof/runtime/simulation/frontend release groups listed above until their files are intentionally reintroduced into the review set.
+
 ## Release-review checklist
 
 - Confirm `.env.preview` contains no secrets before including it.

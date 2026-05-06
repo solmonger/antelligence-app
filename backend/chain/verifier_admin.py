@@ -6,18 +6,20 @@ import json
 import subprocess
 from typing import Dict
 
-from .config import get_base_sepolia_rpc_url, get_private_key, get_tumor_intel_address
+from .config import (
+    get_base_sepolia_rpc_url,
+    get_private_key,
+    get_tumor_intel_address,
+    validate_required_address,
+)
 from .proof_lifecycle import build_lifecycle, build_verification_status
 
 
 def set_verifier_address(verifier_address: str) -> Dict:
     rpc_url = get_base_sepolia_rpc_url()
     private_key = get_private_key()
-    contract = get_tumor_intel_address()
-    
-    # Validate verifier address is not empty and is valid
-    if not verifier_address or not verifier_address.startswith("0x"):
-        raise ValueError("Invalid verifier address")
+    contract = validate_required_address(get_tumor_intel_address(), "TUMOR_INTEL_ADDR")
+    verifier_address = validate_required_address(verifier_address, "verifier_address")
 
     result = subprocess.run(
         [

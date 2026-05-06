@@ -125,9 +125,18 @@ def verify_metrics_tolerance(
     """Check if claimed metrics are within tolerance of recomputed ones."""
     checks = []
     for key in claimed_metrics:
-        if key not in recomputed_metrics:
-            continue
         claimed = claimed_metrics[key]
+        if key not in recomputed_metrics:
+            if isinstance(claimed, (int, float)):
+                checks.append({
+                    "metric": key,
+                    "claimed": claimed,
+                    "recomputed": None,
+                    "deviation_pct": None,
+                    "ok": False,
+                    "reason": "missing_recomputed_metric",
+                })
+            continue
         recomputed = recomputed_metrics[key]
         if not isinstance(claimed, (int, float)) or not isinstance(recomputed, (int, float)):
             continue

@@ -178,7 +178,7 @@ def build_leaderboard(artifacts: List[Dict]) -> Dict:
     ranked = rank_by_kill_rate(entries)
 
     # Summary stats
-    kill_rates = [e["kill_rate"] for e in entries if e["kill_rate"] > 0]
+    kill_rates = [e["kill_rate"] for e in entries]
     summary = {
         "total_entries": len(entries),
         "verified_entries": sum(1 for e in entries if e.get("verified_onchain")),

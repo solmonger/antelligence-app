@@ -29,6 +29,7 @@ from chain.proof_spec import (
     build_public_values_metadata,
     build_public_values_payload,
     encode_public_values_payload,
+    normalize_config_hash,
 )
 
 
@@ -82,6 +83,7 @@ def submit_via_cast(
     Returns:
         Result dict with tx_hash or estimate
     """
+    normalized_config_hash = "0x" + normalize_config_hash(config_hash)
     if dry_run:
         try:
             result = subprocess.run(
@@ -89,7 +91,7 @@ def submit_via_cast(
                     "cast", "estimate",
                     TUMOR_INTEL_ADDRESS,
                     "submitSimulation(bytes32,uint32,uint32,uint32,uint32)",
-                    f"0x{config_hash}",
+                    normalized_config_hash,
                     str(kill_rate),
                     str(nanobot_count),
                     str(tumor_radius),
@@ -120,7 +122,7 @@ def submit_via_cast(
                 "cast", "send",
                 TUMOR_INTEL_ADDRESS,
                 "submitSimulation(bytes32,uint32,uint32,uint32,uint32)",
-                f"0x{config_hash}",
+                normalized_config_hash,
                 str(kill_rate),
                 str(nanobot_count),
                 str(tumor_radius),
@@ -189,6 +191,12 @@ def create_attestation_bundle(
         steps=steps,
     )
     public_values = encode_public_values_payload(public_values_payload)
+    artifact = ipfs_result.get("artifact", {})
+    simulation_commitments = {
+        "config_hash": config_hash,
+        "metrics_hash": artifact.get("metrics_hash", compute_artifact_hash(metrics)),
+        "artifact_hash": ipfs_result["artifact_hash"],
+    }
 
     return {
         "ok": True,
@@ -206,6 +214,7 @@ def create_attestation_bundle(
             "public_values_schema_version": PUBLIC_VALUES_SCHEMA_VERSION,
             "program_version": PROGRAM_VERSION,
             "public_values_metadata": build_public_values_metadata(),
+            "simulation_commitments": simulation_commitments,
         },
         "verification_status": build_verification_status(
             schema_ok=True,
