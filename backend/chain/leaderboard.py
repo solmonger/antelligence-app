@@ -22,6 +22,7 @@ from typing import Dict, List, Optional
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from chain.config import get_base_sepolia_rpc_url, get_tumor_intel_address
+from chain.proof_spec import PROOF_ARTIFACT_VERSION, PROOF_FORMAT, PROOF_SYSTEM, PUBLIC_VALUES_SCHEMA_VERSION
 
 TUMOR_INTEL_ADDRESS = get_tumor_intel_address()
 SIMULATION_VERIFIED_TOPIC = None  # Will compute from event signature
@@ -126,10 +127,25 @@ def flag_is_true(value: object) -> bool:
     return value is True
 
 
+def valid_staged_proof_bundle(proof_bundle: Dict) -> bool:
+    """Return True only for proof bundles carrying canonical staged proof metadata."""
+    if not proof_bundle:
+        return False
+    required_strings = ("run_id", "artifact_hash", "config_hash", "public_values", "proof_bytes")
+    if any(not isinstance(proof_bundle.get(field), str) or not proof_bundle.get(field) for field in required_strings):
+        return False
+    return all((
+        proof_bundle.get("proof_artifact_version") == PROOF_ARTIFACT_VERSION,
+        proof_bundle.get("proof_system") == PROOF_SYSTEM,
+        proof_bundle.get("proof_format") == PROOF_FORMAT,
+        proof_bundle.get("public_values_schema_version") == PUBLIC_VALUES_SCHEMA_VERSION,
+    ))
+
+
 def derive_trust_tier(verification_status: Dict, proof_bundle: Dict, proof_lifecycle: Dict) -> str:
     if flag_is_true(verification_status.get("onchain_ok")):
         return "verified_onchain"
-    if proof_lifecycle.get("stage") == "proof_generated" or proof_bundle:
+    if valid_staged_proof_bundle(proof_bundle) and proof_lifecycle.get("stage") == "proof_generated":
         return "proof_staged"
     if flag_is_true(verification_status.get("replay_ok")):
         return "replay_checked"
@@ -210,7 +226,8 @@ def build_leaderboard(artifacts: List[Dict]) -> Dict:
         total_drug = finite_metric_value(metrics, "total_drug")
         verification_status = safe_dict(artifact.get("verification_status", {}))
         proof_lifecycle = safe_dict(artifact.get("proof_lifecycle", {}))
-        proof_bundle = safe_dict(artifact.get("proof_bundle", {}))
+        claimed_proof_bundle = safe_dict(artifact.get("proof_bundle", {}))
+        proof_bundle = claimed_proof_bundle if valid_staged_proof_bundle(claimed_proof_bundle) else {}
         effectful = has_treatment_effect(metrics)
         verified_onchain = flag_is_true(verification_status.get("onchain_ok")) or flag_is_true(artifact.get("verified_onchain"))
         trust_tier = (

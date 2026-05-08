@@ -55,9 +55,14 @@ class TestTrustTiersExplicit:
         p_lifecycle = {}
         assert derive_trust_tier(v_status, p_bundle, p_lifecycle) == "verified_onchain"
 
-        # Case: Proof Staged
+        # Case: Proof Staged requires a canonical staged proof bundle, not arbitrary claimed data.
         v_status = {"onchain_ok": False}
-        p_bundle = {"some": "data"}
+        staged_artifact = create_proof_bundle(
+            config={"tumor_radius": 100},
+            metrics={"kill_rate": 10.0},
+            run_id="trust-tier-staged-proof",
+        )
+        p_bundle = staged_artifact["proof_bundle"]
         p_lifecycle = {"stage": "proof_generated"}
         assert derive_trust_tier(v_status, p_bundle, p_lifecycle) == "proof_staged"
 

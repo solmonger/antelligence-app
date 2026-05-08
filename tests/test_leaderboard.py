@@ -294,6 +294,21 @@ class TestBuildLeaderboard:
         assert entry["proof_origin"] == "unknown"
         assert result["summary"]["staged_proof_entries"] == 0
 
+    def test_incomplete_proof_bundle_cannot_self_promote_to_staged_trust(self):
+        artifact = create_simulation_artifact(
+            config={"tumor_radius": 100, "nanobot_count": 3, "steps": 10},
+            metrics={"kill_rate": 22.0, "deliveries": 5},
+            run_id="incomplete-proof-claim",
+        )
+        artifact["proof_bundle"] = {"proof_origin": "mock", "proof_bytes": "0xabcd"}
+
+        result = build_leaderboard([artifact])
+        entry = result["leaderboard"][0]
+
+        assert entry["trust_tier"] == "unverified"
+        assert entry["proof_origin"] == "unknown"
+        assert result["summary"]["staged_proof_entries"] == 0
+
     def test_staged_proof_entries_are_labeled_honestly(self):
         artifact = create_proof_bundle(
             config={"tumor_radius": 100, "nanobot_count": 3, "steps": 10},
