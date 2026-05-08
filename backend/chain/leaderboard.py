@@ -177,6 +177,8 @@ def has_treatment_effect(metrics: object) -> bool:
 
 def config_public_uint32(config: Dict, field: str, fallback_field: Optional[str] = None) -> int:
     """Return an exact uint32 config value for leaderboard public inputs; malformed values are zeroed."""
+    if not isinstance(config, dict):
+        return 0
     value = config.get(field, config.get(fallback_field, 0) if fallback_field else 0)
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
         return 0

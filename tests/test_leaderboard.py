@@ -188,6 +188,23 @@ class TestBuildLeaderboard:
         assert entry["steps"] == 0
         assert entry["effect_status"] == "effect_reported"
 
+    def test_malformed_config_payload_cannot_crash_leaderboard_public_inputs(self):
+        artifact = create_simulation_artifact(
+            config={"tumor_radius": 100, "nanobot_count": 3, "steps": 10},
+            metrics={"kill_rate": 10.0, "deliveries": 1},
+            run_id="malformed-config-payload",
+        )
+        artifact["config"] = "tumor_radius=100"
+
+        result = build_leaderboard([artifact])
+        entry = result["leaderboard"][0]
+
+        assert entry["tumor_radius"] == 0
+        assert entry["nanobot_count"] == 0
+        assert entry["steps"] == 0
+        assert entry["kill_rate"] == 10.0
+        assert entry["effect_status"] == "effect_reported"
+
     def test_zero_effect_proof_runs_remain_in_metrics_without_inflated_trust(self):
         failed_effect = create_proof_bundle(
             config={"tumor_radius": 100, "nanobot_count": 3, "steps": 10},
