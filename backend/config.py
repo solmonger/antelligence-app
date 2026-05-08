@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PheromoneParams(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     trail_diffusion: float = Field(default=1e-6, gt=0, description="Trail pheromone diffusion coefficient")
     alarm_diffusion: float = Field(default=5e-6, gt=0, description="Alarm pheromone diffusion coefficient")

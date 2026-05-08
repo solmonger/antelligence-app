@@ -8,7 +8,9 @@ recomputed metrics.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import math
 import os
 import sys
 import urllib.request
@@ -32,6 +34,8 @@ from chain.proof_spec import (
     compute_transport_commitment,
     decode_public_values_payload,
     encode_public_values_payload,
+    validate_proof_transport_mock_flag,
+    validate_proof_transport_origin_status,
     validate_public_values_payload,
 )
 from simulation_replay import replay_artifact_metrics
@@ -117,6 +121,10 @@ def verify_artifact_integrity(artifact: dict) -> Dict:
     return {"ok": all(c["ok"] for c in checks), "checks": checks}
 
 
+def _is_finite_metric_number(value: object) -> bool:
+    return not isinstance(value, bool) and isinstance(value, (int, float)) and math.isfinite(value)
+
+
 def verify_metrics_tolerance(
     claimed_metrics: dict,
     recomputed_metrics: dict,
@@ -126,19 +134,28 @@ def verify_metrics_tolerance(
     checks = []
     for key in claimed_metrics:
         claimed = claimed_metrics[key]
+        claimed_numeric = _is_finite_metric_number(claimed)
         if key not in recomputed_metrics:
-            if isinstance(claimed, (int, float)):
-                checks.append({
-                    "metric": key,
-                    "claimed": claimed,
-                    "recomputed": None,
-                    "deviation_pct": None,
-                    "ok": False,
-                    "reason": "missing_recomputed_metric",
-                })
+            checks.append({
+                "metric": key,
+                "claimed": claimed,
+                "recomputed": None,
+                "deviation_pct": None,
+                "ok": False,
+                "reason": "missing_recomputed_metric" if claimed_numeric else "non_numeric_claimed_metric_value",
+            })
             continue
         recomputed = recomputed_metrics[key]
-        if not isinstance(claimed, (int, float)) or not isinstance(recomputed, (int, float)):
+        recomputed_numeric = _is_finite_metric_number(recomputed)
+        if not claimed_numeric or not recomputed_numeric:
+            checks.append({
+                "metric": key,
+                "claimed": claimed,
+                "recomputed": recomputed,
+                "deviation_pct": None,
+                "ok": False,
+                "reason": "non_numeric_metric_value",
+            })
             continue
 
         if recomputed == 0:
@@ -176,10 +193,22 @@ def verify_public_values_schema(artifact: dict) -> Dict:
             "actual": metadata.get("schema_version"),
         })
         checks.append({
+            "check": "public_values_schema_version_canonical",
+            "ok": onchain.get("public_values_schema_version") == PUBLIC_VALUES_SCHEMA_VERSION,
+            "expected": PUBLIC_VALUES_SCHEMA_VERSION,
+            "actual": onchain.get("public_values_schema_version"),
+        })
+        checks.append({
             "check": "public_values_program_version",
             "ok": metadata.get("program_version") == onchain.get("program_version"),
             "expected": onchain.get("program_version"),
             "actual": metadata.get("program_version"),
+        })
+        checks.append({
+            "check": "public_values_program_version_canonical",
+            "ok": onchain.get("program_version") == PROGRAM_VERSION,
+            "expected": PROGRAM_VERSION,
+            "actual": onchain.get("program_version"),
         })
         checks.append({
             "check": "public_values_field_list",
@@ -214,13 +243,23 @@ def verify_public_values_schema(artifact: dict) -> Dict:
                     "reason": str(exc),
                 })
         if payload_present:
-            expected_encoding = encode_public_values_payload(payload)
-            checks.append({
-                "check": "public_values_payload_encoding",
-                "ok": expected_encoding == public_values,
-                "expected": public_values,
-                "actual": expected_encoding,
-            })
+            checks.extend(validate_public_values_payload(payload))
+            try:
+                expected_encoding = encode_public_values_payload(payload)
+                checks.append({
+                    "check": "public_values_payload_encoding",
+                    "ok": expected_encoding == public_values,
+                    "expected": public_values,
+                    "actual": expected_encoding,
+                })
+            except Exception as exc:
+                checks.append({
+                    "check": "public_values_payload_encoding",
+                    "ok": False,
+                    "expected": public_values,
+                    "actual": None,
+                    "reason": str(exc),
+                })
         if payload_present and decoded_payload is not None:
             checks.append({
                 "check": "decoded_payload_matches_declared_payload",
@@ -285,6 +324,14 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
         return {"ok": False, "checks": [{"check": "proof_bundle_present", "ok": False, "reason": "Missing proof_bundle"}], "decoded_public_values": None}
 
     checks = [{"check": "proof_bundle_present", "ok": True}]
+    checks.append(validate_proof_transport_origin_status(
+        str(proof_bundle.get("proof_origin", "")),
+        str(proof_bundle.get("prover_status", "")),
+    ))
+    checks.append(validate_proof_transport_mock_flag(
+        str(proof_bundle.get("proof_origin", "")),
+        bool(proof_bundle.get("is_mock", False)),
+    ))
     decoded_public_values = None
 
     checks.extend([
@@ -360,6 +407,13 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
 
     artifact = record.get("ipfs", {}).get("artifact", {}) if isinstance(record.get("ipfs"), dict) else {}
     if artifact:
+        if decoded_public_values is not None:
+            checks.append({
+                "check": "proof_payload_config_hash_matches_artifact",
+                "ok": decoded_public_values.get("config_hash") == artifact.get("config_hash"),
+                "expected": artifact.get("config_hash"),
+                "actual": decoded_public_values.get("config_hash"),
+            })
         checks.extend([
             {
                 "check": "run_id_matches_artifact",
@@ -403,12 +457,19 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
         "ok": bool(transport_metadata),
     })
     if transport_metadata and decoded_public_values is not None and normalized_proof_bytes is not None:
+        normalized_public_values = public_values if public_values.startswith("0x") else f"0x{public_values}"
+        public_values_raw = bytes.fromhex(normalized_public_values[2:])
+        proof_bytes_raw = bytes.fromhex(normalized_proof_bytes)
+        expected_public_values_commitment = hashlib.sha256(public_values_raw).hexdigest()
+        expected_proof_bytes_commitment = hashlib.sha256(proof_bytes_raw).hexdigest()
         expected_transport_commitment = compute_transport_commitment(
-            public_values,
+            normalized_public_values,
             proof_bytes if proof_bytes.startswith("0x") else f"0x{normalized_proof_bytes}",
             proof_bundle.get("proof_origin", ""),
             proof_bundle.get("prover_status", ""),
             PROGRAM_VERSION,
+            proof_bundle.get("public_values_schema_version", ""),
+            proof_bundle.get("proof_boundary_version", ""),
         )
         checks.extend([
             {
@@ -430,6 +491,18 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
                 "actual": transport_metadata.get("program_version"),
             },
             {
+                "check": "transport_proof_origin_matches_bundle",
+                "ok": transport_metadata.get("proof_origin") == proof_bundle.get("proof_origin"),
+                "expected": proof_bundle.get("proof_origin"),
+                "actual": transport_metadata.get("proof_origin"),
+            },
+            {
+                "check": "transport_prover_status_matches_bundle",
+                "ok": transport_metadata.get("prover_status") == proof_bundle.get("prover_status"),
+                "expected": proof_bundle.get("prover_status"),
+                "actual": transport_metadata.get("prover_status"),
+            },
+            {
                 "check": "transport_proof_boundary_version",
                 "ok": transport_metadata.get("proof_boundary_version") == proof_bundle.get("proof_boundary_version"),
                 "expected": proof_bundle.get("proof_boundary_version"),
@@ -442,15 +515,27 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
                 "actual": transport_metadata.get("transport_commitment"),
             },
             {
+                "check": "transport_public_values_commitment",
+                "ok": transport_metadata.get("public_values_commitment") == expected_public_values_commitment,
+                "expected": expected_public_values_commitment,
+                "actual": transport_metadata.get("public_values_commitment"),
+            },
+            {
+                "check": "transport_proof_bytes_commitment",
+                "ok": transport_metadata.get("proof_bytes_commitment") == expected_proof_bytes_commitment,
+                "expected": expected_proof_bytes_commitment,
+                "actual": transport_metadata.get("proof_bytes_commitment"),
+            },
+            {
                 "check": "transport_public_values_bytes",
-                "ok": transport_metadata.get("public_values_bytes") == len(bytes.fromhex(public_values[2:] if public_values.startswith("0x") else public_values)),
-                "expected": len(bytes.fromhex(public_values[2:] if public_values.startswith("0x") else public_values)),
+                "ok": transport_metadata.get("public_values_bytes") == len(public_values_raw),
+                "expected": len(public_values_raw),
                 "actual": transport_metadata.get("public_values_bytes"),
             },
             {
                 "check": "transport_proof_bytes_length",
-                "ok": transport_metadata.get("proof_bytes_length") == len(bytes.fromhex(normalized_proof_bytes)),
-                "expected": len(bytes.fromhex(normalized_proof_bytes)),
+                "ok": transport_metadata.get("proof_bytes_length") == len(proof_bytes_raw),
+                "expected": len(proof_bytes_raw),
                 "actual": transport_metadata.get("proof_bytes_length"),
             },
             {

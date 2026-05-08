@@ -47,6 +47,8 @@ curl http://127.0.0.1:8001/runs/{run_id}
 curl http://127.0.0.1:8001/health
 ```
 
+Run lookups are durable across process restarts. By default the API stores completed runs in `data/api_runs.sqlite3`, and you can point it at a different local database with `ANTELLIGENCE_RUN_DB=/path/to/runs.sqlite3`.
+
 ### Proof and provenance
 
 Antelligence already carries proof-shaped artifacts, but the product is explicit about what is and is not cryptographically real yet.

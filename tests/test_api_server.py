@@ -6,6 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.api_server import app, _RUNS
+from backend.run_store import SQLiteRunStore
 
 client = TestClient(app)
 
@@ -153,3 +154,23 @@ class TestGetRunEndpoint:
         assert data["status"] == "completed"
         assert "config" in data
         assert "metrics" in data
+
+    def test_get_run_restores_persisted_result_after_memory_cache_clear(self, tmp_path):
+        _RUNS.clear()
+        temp_store = SQLiteRunStore(tmp_path / "api_runs.sqlite3")
+        with (
+            patch("backend.api_server.RUN_STORE", temp_store),
+            patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory),
+        ):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2})
+            run_id = post_resp.json()["run_id"]
+
+            _RUNS.clear()
+
+            get_resp = client.get(f"/runs/{run_id}")
+
+        assert get_resp.status_code == 200
+        data = get_resp.json()
+        assert data["run_id"] == run_id
+        assert data["status"] == "completed"
+        assert run_id in _RUNS

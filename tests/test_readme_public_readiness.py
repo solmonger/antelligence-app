@@ -16,6 +16,8 @@ def test_readme_matches_current_public_product_surface():
         "/simulate",
         "/runs/{run_id}",
         "/health",
+        "api_runs.sqlite3",
+        "antelligence_run_db",
     ]
     for phrase in required_phrases:
         assert phrase in readme, f"README is missing public-facing phrase: {phrase}"

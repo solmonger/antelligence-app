@@ -48,6 +48,15 @@ class TestSimulationConfig:
         with pytest.raises(ValidationError):
             SimulationConfig(pheromone_params={"trail_diffusion": -1.0})
 
+    def test_pheromone_params_reject_infinite_diffusion(self):
+        with pytest.raises(ValidationError) as exc_info:
+            SimulationConfig(pheromone_params={"trail_diffusion": float("inf")})
+
+        assert any(
+            error["loc"] == ("pheromone_params", "trail_diffusion") and error["type"] == "finite_number"
+            for error in exc_info.value.errors()
+        )
+
     def test_pheromone_params_reject_unknown_fields(self):
         with pytest.raises(ValidationError) as exc_info:
             SimulationConfig(pheromone_params={"trail_decya": 0.123})

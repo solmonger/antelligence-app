@@ -1,280 +1,145 @@
-# Quick Start: Tumor Nanobot Simulation
+# Quick Start: Antelligence Tumor Simulation
 
-## 🚀 Get Running in 5 Minutes
+This guide matches the current public product surface: the packaged CLI, the FastAPI service, and the staged proof/provenance model.
 
-### Step 1: Install Dependencies
+## 1. Install dependencies
 
-```bash
-cd /Users/apple/Desktop/PG/data2dreams/antelligence-app
-pip install scipy nibabel scikit-image
-```
-
-(Other dependencies like fastapi, numpy, openai should already be installed)
-
-### Step 2: Run Tests
+From the repository root:
 
 ```bash
-python3 test_tumor_simulation.py
+uv sync --extra test
 ```
 
-**Expected output:**
-```
-🎉 All tests passed! The tumor nanobot simulation is working!
-```
-
-### Step 3: Start the API Server
+If you are not using `uv`, the fallback flow is:
 
 ```bash
-cd backend
-python3 -m uvicorn main:app --reload --port 8000
+python -m venv .venv
+source .venv/bin/activate
+pip install -e '.[test]'
 ```
 
-### Step 4: Test the API
+## 2. Run a local simulation from the CLI
 
-**Quick test:**
+Write one simulation artifact:
+
 ```bash
-curl http://localhost:8000/simulation/tumor/test
+uv run antelligence simulate --steps 25 --bots 6 --output out/example-run.json
 ```
 
-**Full simulation (rule-based, no LLM needed):**
+Run a small benchmark:
+
 ```bash
-curl -X POST http://localhost:8000/simulation/tumor/run \
-  -H "Content-Type: application/json" \
+uv run antelligence benchmark --runs 3 --steps 25 --bots 6 --output out/benchmark.json
+```
+
+Read the on-chain-oriented leaderboard view:
+
+```bash
+uv run antelligence leaderboard --limit 10
+```
+
+The CLI output stores the current canonical config keys:
+
+- `num_bots`
+- `steps`
+- `grid_size`
+- `seed`
+
+## 3. Start the local API
+
+Use the packaged entry point:
+
+```bash
+uv run antelligence-api
+```
+
+The API listens on port `8001` by default.
+
+## 4. Check the API surface
+
+Health check:
+
+```bash
+curl http://127.0.0.1:8001/health
+```
+
+Run a simulation:
+
+```bash
+curl -X POST http://127.0.0.1:8001/simulate \
+  -H 'content-type: application/json' \
   -d '{
-    "domain_size": 400.0,
-    "voxel_size": 20.0,
-    "n_nanobots": 5,
-    "tumor_radius": 100.0,
-    "agent_type": "Rule-Based",
-    "use_queen": false,
-    "max_steps": 50
+    "num_bots": 8,
+    "grid_size": 40,
+    "steps": 60,
+    "seed": 7
   }'
 ```
 
-## 📊 What You Get
-
-### Simulation Results Include:
-
-1. **Tumor Statistics**
-   - Initial vs final living cells
-   - Kill rate (percentage)
-   - Hypoxic cell reduction
-   - Apoptotic (drug-induced) deaths
-
-2. **Nanobot Performance**
-   - Drug deliveries made
-   - Total drug delivered
-   - Delivery efficiency
-   - State history (searching, targeting, delivering)
-
-3. **Substrate Maps** (periodic snapshots)
-   - Oxygen concentration
-   - Drug concentration
-   - Pheromone trails (trail, alarm, recruitment)
-
-4. **Blockchain Logs** (simulated)
-   - Simulation initialization
-   - Treatment outcomes
-
-### Example Response (abbreviated):
+Example response:
 
 ```json
 {
-  "config": {
-    "domain_size": 400.0,
-    "n_nanobots": 5,
-    "tumor_radius": 100.0,
-    "max_steps": 50
-  },
-  "total_steps_run": 50,
-  "total_time": 0.02,
-  "tumor_statistics": {
-    "initial_living_cells": 29,
-    "final_living_cells": 27,
-    "cells_killed": 2,
-    "kill_rate": 0.069,
-    "apoptotic_cells": 2
-  },
-  "final_metrics": {
-    "total_deliveries": 5,
-    "total_drug_delivered": 120.5,
-    "cells_killed": 2
+  "run_id": "replace-with-real-run-id",
+  "status": "completed",
+  "metrics": {
+    "kill_rate": 0.12
   }
 }
 ```
 
-## 🧪 Advanced Usage
-
-### Compare Strategies
-
-Test pheromone-guided vs non-pheromone approaches:
+Fetch a stored run:
 
 ```bash
-curl -X POST http://localhost:8000/simulation/tumor/compare \
-  -H "Content-Type: application/json" \
-  -d '{
-    "domain_size": 400.0,
-    "n_nanobots": 10,
-    "tumor_radius": 120.0,
-    "comparison_steps": 50
-  }'
+curl http://127.0.0.1:8001/runs/{run_id}
 ```
 
-### Use LLM-Powered Nanobots
+Current public endpoints:
 
-**Requires Intelligence.io API key in `.env`:**
+- `POST /simulate`
+- `GET /runs/{run_id}`
+- `GET /health`
+
+## 5. Understand the proof and provenance state
+
+Antelligence is explicit about proof maturity. Current public-facing guidance:
+
+- `proof_origin=mock` means proof bytes are placeholders.
+- `proof_ok=false` means the run has not been cryptographically accepted.
+- `trust_tier=proof_staged` means a proof bundle exists, but verification is still staged.
+- `verified_onchain` is the only state that should be treated as cryptographically accepted.
+
+The current blockchain-facing provenance flow is scoped to Base Sepolia. Keep public language conservative until the verifier path is fully real, not theater in a lab coat.
+
+## 6. Run narrow verification
+
+Use the narrowest useful checks while you work:
 
 ```bash
-curl -X POST http://localhost:8000/simulation/tumor/run \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_type": "LLM-Powered",
-    "selected_model": "meta-llama/Llama-3.3-70B-Instruct",
-    "use_queen": true,
-    "use_llm_queen": false,
-    "n_nanobots": 5,
-    "max_steps": 30
-  }'
+UV_CACHE_DIR=/private/tmp/uv-cache uv run --extra test pytest tests/test_readme_public_readiness.py tests/test_quickstart_public_readiness.py -q
 ```
 
-### Performance Analysis
+If you are changing backend behavior, extend the test command to the affected test file instead of defaulting to the full suite.
 
-Get focused metrics:
+## 7. Optional frontend
+
+If you want the local UI:
 
 ```bash
-curl -X POST http://localhost:8000/simulation/tumor/performance \
-  -H "Content-Type: application/json" \
-  -d '{
-    "domain_size": 600.0,
-    "n_nanobots": 15,
-    "tumor_radius": 200.0,
-    "max_steps": 100
-  }'
+npm --prefix frontend install
+npm --prefix frontend run dev
 ```
 
-## 🔬 Understanding the Simulation
+## Troubleshooting
 
-### Key Concepts
+If `uv run antelligence-api` fails, confirm you installed the Python dependencies from the repo root instead of launching an older ad hoc server entry point.
 
-1. **Tumor Microenvironment**
-   - Circular tumor with necrotic core (25% of radius)
-   - Peripheral blood vessels (oxygen sources)
-   - Hypoxic regions in tumor interior
+If `GET /runs/{run_id}` returns `404`, the `run_id` was never stored or you are querying a different local database.
 
-2. **Nanobot Behavior**
-   - Start near blood vessels (fully loaded with drug)
-   - Navigate using chemotaxis toward low-oxygen regions
-   - Follow pheromone trails from successful peers
-   - Deliver drug when near hypoxic tumor cells
-   - Return to vessels to reload
+If leaderboard reads fail locally, the CLI should degrade gracefully in offline mode rather than pretending chain data exists.
 
-3. **Drug Action**
-   - Diffuses from delivery points
-   - Tumor cells absorb drug over time
-   - Accumulated dose reaches lethal threshold → apoptosis
-   - Kills tracked as "apoptotic" cells
+## More information
 
-4. **Pheromone System**
-   - **Trail**: Marks successful delivery paths
-   - **Alarm**: Signals problems (API errors, dead ends)
-   - **Recruitment**: Indicates large hypoxic zones needing help
-
-### Parameter Guidelines
-
-| Parameter | Small | Medium | Large |
-|-----------|-------|--------|-------|
-| domain_size | 300 µm | 600 µm | 1000 µm |
-| tumor_radius | 80 µm | 150 µm | 300 µm |
-| n_nanobots | 3-5 | 10-15 | 20-50 |
-| voxel_size | 10 µm | 20 µm | 40 µm |
-| max_steps | 20-50 | 100-200 | 300-500 |
-
-**Performance tips:**
-- Larger voxels = faster simulation
-- More nanobots = better coverage but slower
-- Rule-based is 10x faster than LLM-powered
-
-## 🐛 Troubleshooting
-
-### Tests Fail
-
-**Check Python version:**
-```bash
-python3 --version  # Should be 3.9+
-```
-
-**Reinstall dependencies:**
-```bash
-pip install --upgrade -r backend/requirements.txt
-```
-
-### API Not Responding
-
-**Check if server is running:**
-```bash
-lsof -i :8000
-```
-
-**View server logs:**
-- Terminal running uvicorn shows all requests and errors
-
-### No Cells Being Killed
-
-This is normal for short simulations! Drug delivery takes time:
-
-1. Nanobots must find hypoxic cells (~10-20 steps)
-2. Drug must diffuse to cells (~5-10 steps)
-3. Cells must accumulate lethal dose (~20-30 steps)
-
-**Solution:** Run longer simulations (100+ steps)
-
-### LLM Errors
-
-**"IO_SECRET_KEY not found"**
-- Add to `.env`: `IO_SECRET_KEY="your_key"`
-- Or use `agent_type="Rule-Based"`
-
-**"API timeout"**
-- LLM calls can be slow
-- Use `agent_type="Hybrid"` for balance
-- Or disable LLM entirely for testing
-
-## 📈 Next Steps
-
-1. **Visualize Results**
-   - Build frontend component to display substrate maps
-   - Animate nanobot movement over time
-   - Plot kill rates and delivery efficiency
-
-2. **Optimize Strategies**
-   - Run comparison simulations
-   - Tune chemotaxis weights
-   - Experiment with different LLM prompts
-
-3. **Add Complexity**
-   - Load real tumor geometries from BraTS
-   - Implement cell proliferation
-   - Add immune system interactions
-
-4. **Deploy to Blockchain**
-   - Compile and deploy contracts to Sepolia
-   - Record real simulation runs on-chain
-   - Build experience registry for continual learning
-
-## 📚 More Information
-
-- **Full Documentation**: See `TUMOR_SIMULATION_README.md`
-- **API Reference**: Visit `http://localhost:8000/docs` when server is running
-- **Architecture Details**: See the image you provided (PhysiCell → nanobots → blockchain)
-
-## 🤝 Support
-
-Having issues? Check:
-1. All tests pass: `python3 test_tumor_simulation.py`
-2. Server logs for errors
-3. Network connectivity for LLM API calls
-
----
-
-**You're all set!** 🎉 The PhysiCell-inspired tumor nanobot simulation is ready to use.
-
+- Main overview: `README.md`
+- Technical backend details: `docs/TUMOR_SIMULATION_README.md`
+- Proof lifecycle notes: `docs/plans/proof-spec-v1.md`

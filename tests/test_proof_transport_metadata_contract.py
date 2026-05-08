@@ -11,8 +11,16 @@ from backend.chain.proof_spec import (
 
 
 def test_build_proof_transport_metadata_matches_required_key_contract():
+    payload = build_public_values_payload(
+        config_hash="12" * 32,
+        kill_rate_bps=1200,
+        nanobot_count=4,
+        tumor_radius=100,
+        steps=20,
+    )
+
     metadata = build_proof_transport_metadata(
-        public_values="0x" + ("12" * 32),
+        public_values=encode_public_values_payload(payload),
         proof_bytes="0x" + ("34" * 48),
         proof_origin="mock",
         prover_status="mock-generated",
