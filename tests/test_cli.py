@@ -63,6 +63,18 @@ class TestCLISimulate:
         assert "bots" not in data["config"]
         assert data["metrics"]["step_count"] == 3
 
+    def test_simulate_creates_parent_output_dir(self, tmp_path):
+        out = tmp_path / "nested" / "results.json"
+        from backend.cli import cmd_simulate
+
+        args = Namespace(steps=2, bots=1, grid_size=5, seed=7, output=str(out))
+        with patch("backend.cli.TumorNanobotModel", side_effect=_fake_model):
+            cmd_simulate(args)
+
+        assert out.exists()
+        data = json.loads(out.read_text())
+        assert data["config"]["num_bots"] == 1
+
     def test_simulate_no_output_prints_json(self):
         """CLI without --output should print JSON to stdout."""
         with patch("backend.cli.TumorNanobotModel", side_effect=_fake_model):
@@ -86,6 +98,41 @@ class TestCLISimulate:
             assert "config" in data
             assert data["config"]["num_bots"] == 1
             assert "bots" not in data["config"]
+
+
+class TestCLIBenchmark:
+    def test_benchmark_no_output_prints_json(self):
+        import io
+        import sys
+
+        from backend.cli import cmd_benchmark
+
+        args = Namespace(runs=2, steps=2, bots=1, grid_size=5, output=None)
+        captured = io.StringIO()
+        sys_stdout = sys.stdout
+        sys.stdout = captured
+        try:
+            with patch("backend.cli.TumorNanobotModel", side_effect=_fake_model):
+                cmd_benchmark(args)
+        finally:
+            sys.stdout = sys_stdout
+
+        data = json.loads(captured.getvalue())
+        assert data["runs"] == 2
+        assert len(data["results"]) == 2
+
+    def test_benchmark_creates_parent_output_dir(self, tmp_path):
+        out = tmp_path / "nested" / "benchmark.json"
+        from backend.cli import cmd_benchmark
+
+        args = Namespace(runs=2, steps=2, bots=1, grid_size=5, output=str(out))
+        with patch("backend.cli.TumorNanobotModel", side_effect=_fake_model):
+            cmd_benchmark(args)
+
+        assert out.exists()
+        data = json.loads(out.read_text())
+        assert data["runs"] == 2
+        assert len(data["results"]) == 2
 
 
 class TestCLILeaderboard:

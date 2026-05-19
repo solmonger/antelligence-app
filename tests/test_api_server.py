@@ -55,6 +55,18 @@ class TestHealthEndpoint:
         data = resp.json()
         assert data["status"] == "ok"
         assert "version" in data
+        assert data["run_store_backend"] == "sqlite"
+        assert data["run_store_ready"] is True
+
+    def test_health_returns_503_when_run_store_is_unavailable(self):
+        failing_store = MagicMock()
+        failing_store.is_ready.return_value = False
+
+        with patch("backend.api_server.RUN_STORE", failing_store):
+            resp = client.get("/health")
+
+        assert resp.status_code == 503
+        assert "run store" in resp.json()["detail"].lower()
 
 
 class TestSimulateEndpoint:

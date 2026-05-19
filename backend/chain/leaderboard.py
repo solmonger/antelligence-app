@@ -18,22 +18,28 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from chain.config import get_base_sepolia_rpc_url, get_tumor_intel_address
-from chain.proof_spec import PROOF_ARTIFACT_VERSION, PROOF_FORMAT, PROOF_SYSTEM, PUBLIC_VALUES_SCHEMA_VERSION
+from chain.verify import verify_proof_bundle_schema
 
 TUMOR_INTEL_ADDRESS = get_tumor_intel_address()
 SIMULATION_VERIFIED_TOPIC = None  # Will compute from event signature
 TRUST_TIER_RANK = {
     "verified_onchain": 5,
+    "mock_verified_onchain": 4,
     "proof_staged": 4,
+    "mock_proof_staged": 3,
     "replay_checked": 3,
+    "mock_replay_checked": 2,
     "integrity_checked": 2,
+    "mock_integrity_checked": 1,
     "unverified": 1,
+    "mock_unverified": 0,
     "no_effect": 0,
 }
+STAGED_PROOF_LIFECYCLE_STAGES = {"proof_generated", "submitted_onchain"}
 
 
 def fetch_onchain_events(rpc_url: str, from_block: int = 0) -> List[Dict]:
@@ -128,24 +134,16 @@ def flag_is_true(value: object) -> bool:
 
 
 def valid_staged_proof_bundle(proof_bundle: Dict) -> bool:
-    """Return True only for proof bundles carrying canonical staged proof metadata."""
+    """Return True only for proof bundles passing the canonical schema contract."""
     if not proof_bundle:
         return False
-    required_strings = ("run_id", "artifact_hash", "config_hash", "public_values", "proof_bytes")
-    if any(not isinstance(proof_bundle.get(field), str) or not proof_bundle.get(field) for field in required_strings):
-        return False
-    return all((
-        proof_bundle.get("proof_artifact_version") == PROOF_ARTIFACT_VERSION,
-        proof_bundle.get("proof_system") == PROOF_SYSTEM,
-        proof_bundle.get("proof_format") == PROOF_FORMAT,
-        proof_bundle.get("public_values_schema_version") == PUBLIC_VALUES_SCHEMA_VERSION,
-    ))
+    return verify_proof_bundle_schema(proof_bundle).get("ok") is True
 
 
 def derive_trust_tier(verification_status: Dict, proof_bundle: Dict, proof_lifecycle: Dict) -> str:
     if flag_is_true(verification_status.get("onchain_ok")):
         return "verified_onchain"
-    if valid_staged_proof_bundle(proof_bundle) and proof_lifecycle.get("stage") == "proof_generated":
+    if valid_staged_proof_bundle(proof_bundle) and proof_lifecycle.get("stage") in STAGED_PROOF_LIFECYCLE_STAGES:
         return "proof_staged"
     if flag_is_true(verification_status.get("replay_ok")):
         return "replay_checked"
@@ -164,6 +162,24 @@ def finite_metric_value(metrics: object, field: str, default: float = 0, max_val
     if max_value is not None and value > max_value:
         return default
     return value
+
+
+def finite_metric_value_capped(metrics: object, field: str, default: float = 0, max_value: Optional[float] = None) -> Tuple[float, bool]:
+    """Return a bounded finite non-negative metric value and whether it was domain-capped.
+
+    Unlike finite_metric_value, this returns (value, was_capped) so callers can
+    audit which fields hit domain boundaries instead of silently zeroing them.
+    This is a metric-accounting invariant: zeroed-from-missing and zeroed-from-capped
+    must be distinguishable for downstream trust decisions.
+    """
+    if not isinstance(metrics, dict):
+        return default, False
+    value = metrics.get(field, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+        return default, False
+    if max_value is not None and value > max_value:
+        return default, True
+    return value, False
 
 
 def has_treatment_effect(metrics: object) -> bool:
@@ -223,9 +239,12 @@ def build_leaderboard(artifacts: List[Dict]) -> Dict:
         artifact = normalize_leaderboard_artifact(raw_artifact)
         config = artifact.get("config", {})
         metrics = artifact.get("metrics", {})
-        kill_rate = finite_metric_value(metrics, "kill_rate", max_value=100)
+        kill_rate, kill_rate_capped = finite_metric_value_capped(metrics, "kill_rate", max_value=100)
         deliveries = finite_metric_value(metrics, "deliveries")
         total_drug = finite_metric_value(metrics, "total_drug")
+        capped_metric_fields = []
+        if kill_rate_capped:
+            capped_metric_fields.append("kill_rate")
         verification_status = safe_dict(artifact.get("verification_status", {}))
         proof_lifecycle = safe_dict(artifact.get("proof_lifecycle", {}))
         claimed_proof_bundle = safe_dict(artifact.get("proof_bundle", {}))
@@ -237,6 +256,10 @@ def build_leaderboard(artifacts: List[Dict]) -> Dict:
             if verified_onchain
             else derive_trust_tier(verification_status, proof_bundle, proof_lifecycle)
         )
+        # Mock proof bundles must not claim the same trust tier as real proofs.
+        # Mirror the verify.py convention: mock artifacts get a mock_ prefix.
+        if proof_bundle and flag_is_true(proof_bundle.get("is_mock")) and trust_tier not in ("no_effect",):
+            trust_tier = f"mock_{trust_tier}"
         entry = {
             "run_id": artifact.get("run_id", "unknown"),
             "config_hash": artifact.get("config_hash", ""),
@@ -256,6 +279,7 @@ def build_leaderboard(artifacts: List[Dict]) -> Dict:
             "proof_origin": proof_bundle.get("proof_origin", "unknown"),
             "proof_artifact_version": proof_bundle.get("proof_artifact_version", "untracked"),
             "effect_status": "effect_reported" if effectful else "no_effect",
+            "capped_metric_fields": capped_metric_fields,
         }
         if not effectful:
             entry.update({

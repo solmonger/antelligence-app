@@ -68,4 +68,6 @@ def load_config(path: str | Path) -> SimulationConfig:
 
 def save_config(config: SimulationConfig, path: str | Path) -> None:
     """Save a SimulationConfig to a JSON file."""
-    Path(path).write_text(config.model_dump_json(indent=2))
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(config.model_dump_json(indent=2), encoding="utf-8")

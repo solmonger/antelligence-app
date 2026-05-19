@@ -3,6 +3,8 @@ from unittest.mock import MagicMock
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from backend.run_store import SQLiteRunStore
 from backend.simulation_replay import replay_artifact_metrics
 
@@ -76,6 +78,16 @@ def test_replay_supports_legacy_cli_bots_key():
     assert normalized.seed == 9
 
 
+def test_replay_rejects_zero_steps_instead_of_defaulting():
+    """Explicit invalid step counts should fail closed during replay normalization."""
+    import pydantic
+
+    from backend.simulation_replay import normalize_simulation_config
+
+    with pytest.raises(pydantic.ValidationError):
+        normalize_simulation_config({"num_bots": 5, "grid_size": 12, "steps": 0})
+
+
 def test_replay_artifact_preserves_seed_config_and_swarm_provenance():
     """Replay output should carry deterministic inputs plus emitted communication/pheromone traces."""
     artifact = {
@@ -114,4 +126,40 @@ def test_replay_artifact_preserves_seed_config_and_swarm_provenance():
             "communication_trace": artifact["metrics"]["communication_trace"],
             "pheromone_provenance": artifact["metrics"]["pheromone_provenance"],
         },
+    }
+
+
+def test_replay_provenance_drops_scalar_values_instead_of_propagating_them():
+    """A scalar provenance value must not corrupt replay metadata.
+
+    If a provenance key like ``agent_messages`` is set to a bare integer
+    (e.g. a mis-logged count instead of a structured trace), the replay
+    pipeline must drop it rather than letting an opaque scalar leak into
+    the replay_metadata.swarm_provenance dict.
+    """
+    from backend.simulation_replay import extract_swarm_provenance
+
+    artifact = {
+        "agent_messages": 3,
+        "pheromone_summary": {"trail_decay": 0.5, "steps": 10},
+    }
+    runtime_metrics = {"communication_provenance": 42}
+
+    provenance = extract_swarm_provenance(artifact, runtime_metrics)
+    # Scalar values (int 3, int 42) are dropped; only dict pheromone_summary survives
+    assert provenance == {"pheromone_summary": {"trail_decay": 0.5, "steps": 10}}
+
+
+def test_replay_provenance_keeps_list_and_dict_values():
+    """Structured provenance (list traces, dict summaries) must pass through."""
+    from backend.simulation_replay import extract_swarm_provenance
+
+    artifact = {
+        "communication_trace": [{"step": 1, "sender": "bot-1"}],
+        "pheromone_trace": [{"step": 1, "amount": 2.5}],
+    }
+    provenance = extract_swarm_provenance(artifact, {})
+    assert provenance == {
+        "communication_trace": [{"step": 1, "sender": "bot-1"}],
+        "pheromone_trace": [{"step": 1, "amount": 2.5}],
     }

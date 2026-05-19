@@ -77,6 +77,7 @@ temp/
 cache/
 out/
 .hermes/
+.serena/
 
 # Local preview/runtime state
 frontend/.env.preview

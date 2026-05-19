@@ -32,6 +32,14 @@ class SQLiteRunStore:
             )
             conn.commit()
 
+    def is_ready(self) -> bool:
+        try:
+            with self._connect() as conn:
+                conn.execute("SELECT 1").fetchone()
+            return True
+        except sqlite3.Error:
+            return False
+
     def save_run(self, run_id: str, status: str, config: Dict[str, Any], metrics: Dict[str, Any]) -> None:
         with self._connect() as conn:
             conn.execute(

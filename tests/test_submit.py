@@ -189,3 +189,23 @@ class TestAttestationBundle:
             raise AssertionError("out-of-range kill_rate should not reach cast submission")
 
         mock_run.assert_not_called()
+
+    def test_bundle_transport_fields_stay_out_of_onchain_public_values(self):
+        """Transport metadata must not be injected into public_values.
+
+        TumorIntel.verifySimulation decodes public_values as exactly
+        (bytes32,uint32,uint32,uint32,uint32). Version/status/commitment fields
+        belong in proof transport metadata, not the on-chain calldata payload.
+        """
+        bundle = create_attestation_bundle(
+            config={"tumor_radius": 100, "nanobot_count": 4, "steps": 20},
+            metrics={"kill_rate": 12.0},
+        )
+        payload = bundle["onchain"]["public_values_payload"]
+        assert tuple(payload) == ("config_hash", "kill_rate_bps", "nanobot_count", "tumor_radius", "steps")
+        assert len(bytes.fromhex(bundle["onchain"]["public_values"][2:])) == 160
+        assert "protocol_version" not in payload
+        assert "status" not in payload
+        assert "public_values_commitment" not in payload
+        assert "proof_bytes_commitment" not in payload
+        assert "transport_commitment" not in payload

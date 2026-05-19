@@ -94,6 +94,8 @@ Fetch a stored run:
 curl http://127.0.0.1:8001/runs/{run_id}
 ```
 
+Run lookups survive process restarts. By default the API stores completed runs in `data/api_runs.sqlite3`, and you can point it at another local database with `ANTELLIGENCE_RUN_DB=/path/to/runs.sqlite3`.
+
 Current public endpoints:
 
 - `POST /simulate`

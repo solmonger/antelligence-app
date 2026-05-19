@@ -15,6 +15,8 @@ def test_quickstart_matches_current_cli_and_api_surface():
         "/runs/{run_id}",
         "/health",
         "8001",
+        "api_runs.sqlite3",
+        "antelligence_run_db",
         "proof_staged",
         "base sepolia",
     ]

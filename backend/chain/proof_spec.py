@@ -18,6 +18,10 @@ PROGRAM_VERSION = "tumor-intel-proof-v1"
 PROOF_SYSTEM = "sp1+groth16"
 PROOF_FORMAT = "groth16"
 PROOF_BOUNDARY_VERSION = "sp1-groth16-adapter-v1"
+PROOF_TRANSPORT_PROTOCOL_VERSION = "v1.1.0"
+UINT32_MAX = Decimal("4294967295")
+KILL_RATE_BPS_MAX = Decimal("10000")
+PROOF_TRANSPORT_STATUS_ACTIVE = "active"
 PROOF_ORIGIN_MOCK = "mock"
 PROOF_ORIGIN_ADAPTER = "sp1-groth16-adapter"
 PROOF_STATUS_MOCK = "mock-generated"
@@ -26,8 +30,15 @@ PROOF_TRANSPORT_ORIGIN_STATUSES = {
     PROOF_ORIGIN_MOCK: PROOF_STATUS_MOCK,
     PROOF_ORIGIN_ADAPTER: PROOF_STATUS_ADAPTER,
 }
-PUBLIC_VALUES_ABI_TYPES: Tuple[str, ...] = ("bytes32", "uint32", "uint32", "uint32", "uint32")
+PUBLIC_VALUES_ABI_TYPES: Tuple[str, ...] = (
+    "bytes32",
+    "uint32",
+    "uint32",
+    "uint32",
+    "uint32"
+)
 PUBLIC_VALUES_ABI_BYTE_LENGTH = 32 * len(PUBLIC_VALUES_ABI_TYPES)
+
 
 PUBLIC_VALUES_FIELDS = (
     "config_hash",
@@ -36,8 +47,6 @@ PUBLIC_VALUES_FIELDS = (
     "tumor_radius",
     "steps",
 )
-UINT32_MAX = Decimal("4294967295")
-KILL_RATE_BPS_MAX = Decimal("10000")
 
 TRANSPORT_METADATA_REQUIRED_KEYS = (
     "artifact_version",
@@ -54,6 +63,8 @@ TRANSPORT_METADATA_REQUIRED_KEYS = (
     "public_values_commitment",
     "proof_bytes_commitment",
     "transport_commitment",
+    "protocol_version",
+    "status",
 )
 
 
@@ -65,7 +76,7 @@ def normalize_config_hash(config_hash: str) -> str:
     return normalized.lower()
 
 
-def _uint32_public_value(field: str, value: Any, *, max_value: Decimal = UINT32_MAX) -> int:
+def _uint32_public_value(field: str, value: Any, *, max_value: Decimal = UINT32_MAX, min_value: Decimal = Decimal("0")) -> int:
     try:
         normalized = Decimal(str(value))
     except (InvalidOperation, ValueError) as exc:
@@ -73,11 +84,19 @@ def _uint32_public_value(field: str, value: Any, *, max_value: Decimal = UINT32_
 
     if not normalized.is_finite():
         raise ValueError(f"{field} must be finite before public-values encoding")
-    if not Decimal("0") <= normalized <= max_value:
-        raise ValueError(f"{field} must be between 0 and {int(max_value)} before public-values encoding")
+    if not min_value <= normalized <= max_value:
+        raise ValueError(f"{field} must be between {int(min_value)} and {int(max_value)} before public-values encoding")
     if normalized != normalized.to_integral_value():
-        raise ValueError(f"{field} must encode exactly to uint32 before public-values encoding")
+        raise ValueError(f"{field} must be an integer / encode exactly to uint32 before public-values encoding")
     return int(normalized)
+
+def _validate_config_format(config_hash: str) -> None:
+    if not isinstance(config_hash, str):
+        raise ValueError("config_hash must be a string")
+    if len(config_hash.replace("0x", "")) != 64:
+        raise ValueError("config_hash must be 32 bytes / 64 hex chars")
+    # Verify hex
+    bytes.fromhex(config_hash.replace("0x", ""))
 
 
 def build_public_values_payload(
@@ -87,13 +106,15 @@ def build_public_values_payload(
     tumor_radius: int,
     steps: int,
 ) -> Dict[str, int | str]:
-    return {
+    payload = {
         "config_hash": normalize_config_hash(config_hash),
         "kill_rate_bps": _uint32_public_value("kill_rate_bps", kill_rate_bps, max_value=KILL_RATE_BPS_MAX),
-        "nanobot_count": _uint32_public_value("nanobot_count", nanobot_count),
+        "nanobot_count": _uint32_public_value("nanobot_count", nanobot_count, min_value=Decimal("0")),
         "tumor_radius": _uint32_public_value("tumor_radius", tumor_radius),
         "steps": _uint32_public_value("steps", steps),
     }
+    _validate_config_format(config_hash)
+    return payload
 
 
 def validate_public_values_payload(payload: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -121,36 +142,43 @@ def validate_public_values_payload(payload: Dict[str, Any]) -> List[Dict[str, An
             "reason": str(exc),
         })
 
+    # Public-values fields are the canonical five-word on-chain ABI decoded by
+    # TumorIntel.verifySimulation(bytes,bytes). Transport commitments/versioning
+    # live in proof transport metadata, not inside public_values.
+    _UINT32_FIELDS = {"kill_rate_bps", "nanobot_count", "steps", "tumor_radius"}
+
     for field in PUBLIC_VALUES_FIELDS[1:]:
         value = payload.get(field)
-        max_value = KILL_RATE_BPS_MAX if field == "kill_rate_bps" else UINT32_MAX
-        try:
-            normalized = _uint32_public_value(field, value, max_value=max_value)
-            checks.append({
-                "check": f"{field}_non_negative_int",
-                "ok": True,
-                "actual": normalized,
-            })
-            checks.append({
-                "check": f"{field}_uint32_boundary",
-                "ok": True,
-                "actual": normalized,
-                "max": int(max_value),
-            })
-        except Exception as exc:
-            checks.append({
-                "check": f"{field}_non_negative_int",
-                "ok": False,
-                "reason": str(exc),
-                "actual": value,
-            })
-            checks.append({
-                "check": f"{field}_uint32_boundary",
-                "ok": False,
-                "reason": str(exc),
-                "actual": value,
-                "max": int(max_value),
-            })
+
+        if field in _UINT32_FIELDS:
+            max_value = KILL_RATE_BPS_MAX if field == "kill_rate_bps" else UINT32_MAX
+            try:
+                normalized = _uint32_public_value(field, value, max_value=max_value)
+                checks.append({
+                    "check": f"{field}_non_negative_int",
+                    "ok": True,
+                    "actual": normalized,
+                })
+                checks.append({
+                    "check": f"{field}_uint32_boundary",
+                    "ok": True,
+                    "actual": normalized,
+                    "max": int(max_value),
+                })
+            except Exception as exc:
+                checks.append({
+                    "check": f"{field}_non_negative_int",
+                    "ok": False,
+                    "reason": str(exc),
+                    "actual": value,
+                })
+                checks.append({
+                    "check": f"{field}_uint32_boundary",
+                    "ok": False,
+                    "reason": str(exc),
+                    "actual": value,
+                    "max": int(max_value),
+                })
 
     return checks
 
@@ -265,6 +293,49 @@ def require_proof_transport_mock_flag(proof_origin: str, is_mock: bool) -> None:
         )
 
 
+def build_transport_commitment_inputs(
+    *,
+    public_values: str,
+    proof_bytes: str,
+    proof_origin: str,
+    prover_status: str,
+    is_mock: bool,
+    artifact_version: str | None = None,
+    proof_system: str | None = None,
+    proof_format: str | None = None,
+    program_version: str | None = None,
+    public_values_schema_version: str | None = None,
+    proof_boundary_version: str | None = None,
+    protocol_version: str | None = None,
+    status: str | None = None,
+) -> Tuple[str, ...]:
+    artifact_version = PROOF_ARTIFACT_VERSION if artifact_version is None else artifact_version
+    proof_system = PROOF_SYSTEM if proof_system is None else proof_system
+    proof_format = PROOF_FORMAT if proof_format is None else proof_format
+    program_version = PROGRAM_VERSION if program_version is None else program_version
+    public_values_schema_version = (
+        PUBLIC_VALUES_SCHEMA_VERSION if public_values_schema_version is None else public_values_schema_version
+    )
+    proof_boundary_version = PROOF_BOUNDARY_VERSION if proof_boundary_version is None else proof_boundary_version
+    protocol_version = PROOF_TRANSPORT_PROTOCOL_VERSION if protocol_version is None else protocol_version
+    status = PROOF_TRANSPORT_STATUS_ACTIVE if status is None else status
+    return (
+        public_values,
+        proof_bytes,
+        proof_origin,
+        prover_status,
+        "true" if is_mock else "false",
+        artifact_version,
+        proof_system,
+        proof_format,
+        program_version,
+        public_values_schema_version,
+        proof_boundary_version,
+        protocol_version,
+        status,
+    )
+
+
 def build_proof_transport_metadata(*, public_values: str, proof_bytes: str, proof_origin: str, prover_status: str, is_mock: bool) -> Dict[str, object]:
     require_proof_transport_origin_status(proof_origin, prover_status)
     require_proof_transport_mock_flag(proof_origin, is_mock)
@@ -287,15 +358,15 @@ def build_proof_transport_metadata(*, public_values: str, proof_bytes: str, proo
         "proof_bytes_length": len(proof_bytes_raw),
         "public_values_commitment": hashlib.sha256(public_values_raw).hexdigest(),
         "proof_bytes_commitment": hashlib.sha256(proof_bytes_raw).hexdigest(),
-        "transport_commitment": compute_transport_commitment(
-            normalized_public_values,
-            normalized_proof_bytes,
-            proof_origin,
-            prover_status,
-            PROGRAM_VERSION,
-            PUBLIC_VALUES_SCHEMA_VERSION,
-            PROOF_BOUNDARY_VERSION,
-        ),
+        "transport_commitment": compute_transport_commitment(*build_transport_commitment_inputs(
+            public_values=normalized_public_values,
+            proof_bytes=normalized_proof_bytes,
+            proof_origin=proof_origin,
+            prover_status=prover_status,
+            is_mock=is_mock,
+        )),
+        "protocol_version": PROOF_TRANSPORT_PROTOCOL_VERSION,
+        "status": PROOF_TRANSPORT_STATUS_ACTIVE,
     }
     if tuple(metadata) != TRANSPORT_METADATA_REQUIRED_KEYS:
         raise ValueError("transport metadata keys drifted from the proof-spec contract")

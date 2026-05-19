@@ -28,9 +28,15 @@ from chain.proof_spec import (
     PROOF_BOUNDARY_VERSION,
     PROOF_FORMAT,
     PROOF_SYSTEM,
+    PROOF_TRANSPORT_ORIGIN_STATUSES,
+    PROOF_TRANSPORT_PROTOCOL_VERSION,
+    PROOF_TRANSPORT_STATUS_ACTIVE,
     PUBLIC_VALUES_ABI_TYPES,
     PUBLIC_VALUES_FIELDS,
     PUBLIC_VALUES_SCHEMA_VERSION,
+    TRANSPORT_METADATA_REQUIRED_KEYS,
+    build_proof_transport_metadata,
+    build_transport_commitment_inputs,
     compute_transport_commitment,
     decode_public_values_payload,
     encode_public_values_payload,
@@ -131,6 +137,17 @@ def verify_metrics_tolerance(
     tolerance_pct: float = 5.0,
 ) -> Dict:
     """Check if claimed metrics are within tolerance of recomputed ones."""
+    if not (isinstance(tolerance_pct, (int, float)) and not isinstance(tolerance_pct, bool)
+            and math.isfinite(tolerance_pct) and tolerance_pct >= 0):
+        return {
+            "ok": False,
+            "checks": [{
+                "check": "tolerance_pct_valid",
+                "ok": False,
+                "reason": f"tolerance_pct must be a non-negative finite number, got {tolerance_pct!r}",
+            }],
+            "tolerance_pct": tolerance_pct,
+        }
     checks = []
     for key in claimed_metrics:
         claimed = claimed_metrics[key]
@@ -154,12 +171,28 @@ def verify_metrics_tolerance(
                 "recomputed": recomputed,
                 "deviation_pct": None,
                 "ok": False,
-                "reason": "non_numeric_metric_value",
+                "reason": "non_numeric_computed_or_claimed_metric_value",
             })
             continue
 
         if recomputed == 0:
-            deviation = abs(claimed)
+            if claimed == 0:
+                deviation = 0.0
+            else:
+                # Non-zero claimed vs zero recomputed: relative deviation is
+                # undefined/infinite.  A metric that the recomputer says is
+                # zero but the claim says is non-zero must always fail,
+                # regardless of tolerance — this is a metric-accounting
+                # invariant.
+                checks.append({
+                    "metric": key,
+                    "claimed": claimed,
+                    "recomputed": recomputed,
+                    "deviation_pct": None,
+                    "ok": False,
+                    "reason": "nonzero_claimed_vs_zero_recomputed_deviation_undefined",
+                })
+                continue
         else:
             deviation = abs(claimed - recomputed) / abs(recomputed) * 100
 
@@ -169,6 +202,20 @@ def verify_metrics_tolerance(
             "recomputed": recomputed,
             "deviation_pct": round(deviation, 2),
             "ok": deviation <= tolerance_pct,
+        })
+
+    # Flag phantom metrics: keys in recomputed that were never claimed.
+    # A phantom metric could mask that the recomputation produced different
+    # outputs than the original claim, which is a metric-accounting invariant.
+    phantom_keys = [k for k in recomputed_metrics if k not in claimed_metrics]
+    for key in phantom_keys:
+        checks.append({
+            "metric": key,
+            "claimed": None,
+            "recomputed": recomputed_metrics[key],
+            "deviation_pct": None,
+            "ok": False,
+            "reason": "phantom_recomputed_metric_not_in_claimed",
         })
 
     all_ok = all(c["ok"] for c in checks) if checks else True
@@ -292,18 +339,31 @@ def verify_public_values_schema(artifact: dict) -> Dict:
 
 
 def verify_artifact_replay(artifact: dict, tolerance_pct: float = 5.0) -> Dict:
-    """Replay the simulation from artifact config and compare metrics."""
+    """Replay the simulation from artifact config and compare metrics.
+
+    Passes the full claimed and recomputed numeric metric dictionaries to
+    verify_metrics_tolerance instead of cherry-picking two keys, so that
+    phantom-metric detection (keys present in recomputed but absent from
+    claimed) and missing-metric detection fire correctly in the replay path.
+    Structural metadata keys (normalized_config, replay_metadata, etc.) are
+    excluded from tolerance comparison because they are not numeric metrics.
+    """
     recomputed = replay_artifact_metrics(artifact)
     claimed = artifact.get("metrics", {})
+
+    # Normalize claimed key names to match recomputed output convention
+    normalized_claimed: Dict[str, object] = {}
+    for key, value in claimed.items():
+        normalized_key = "deliveries" if key == "total_deliveries" else key
+        normalized_claimed[normalized_key] = value
+
+    # Separate numeric metrics from structural metadata in recomputed output
+    _STRUCTURAL_KEYS = {"normalized_config", "replay_metadata", "swarm_provenance"}
+    numeric_recomputed = {k: v for k, v in recomputed.items() if k not in _STRUCTURAL_KEYS}
+
     tolerance_result = verify_metrics_tolerance(
-        {
-            "kill_rate": claimed.get("kill_rate", 0),
-            "deliveries": claimed.get("deliveries", claimed.get("total_deliveries", 0)),
-        },
-        {
-            "kill_rate": recomputed.get("kill_rate", 0),
-            "deliveries": recomputed.get("deliveries", 0),
-        },
+        normalized_claimed,
+        numeric_recomputed,
         tolerance_pct=tolerance_pct,
     )
     return {
@@ -398,6 +458,12 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
                 "actual": onchain.get("public_values"),
             })
             for field in PUBLIC_VALUES_FIELDS:
+                # Only check fields that are present as flat onchain keys.
+                # Commitment/protocol/status fields live inside public_values_payload
+                # and the encoded public_values string — they are not separate
+                # onchain columns, so a missing flat key is not a mismatch.
+                if field not in onchain:
+                    continue
                 checks.append({
                     "check": f"onchain_{field}_matches_proof_bundle_payload",
                     "ok": onchain.get(field) == decoded_public_values.get(field),
@@ -462,21 +528,45 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
         proof_bytes_raw = bytes.fromhex(normalized_proof_bytes)
         expected_public_values_commitment = hashlib.sha256(public_values_raw).hexdigest()
         expected_proof_bytes_commitment = hashlib.sha256(proof_bytes_raw).hexdigest()
-        expected_transport_commitment = compute_transport_commitment(
-            normalized_public_values,
-            proof_bytes if proof_bytes.startswith("0x") else f"0x{normalized_proof_bytes}",
-            proof_bundle.get("proof_origin", ""),
-            proof_bundle.get("prover_status", ""),
-            PROGRAM_VERSION,
-            proof_bundle.get("public_values_schema_version", ""),
-            proof_bundle.get("proof_boundary_version", ""),
-        )
+        expected_transport_commitment = compute_transport_commitment(*build_transport_commitment_inputs(
+            public_values=normalized_public_values,
+            proof_bytes=proof_bytes if proof_bytes.startswith("0x") else f"0x{normalized_proof_bytes}",
+            proof_origin=str(transport_metadata.get("proof_origin", "")),
+            prover_status=str(transport_metadata.get("prover_status", "")),
+            is_mock=bool(transport_metadata.get("is_mock", False)),
+            artifact_version=str(transport_metadata.get("artifact_version", "")),
+            proof_system=str(transport_metadata.get("proof_system", "")),
+            proof_format=str(transport_metadata.get("proof_format", "")),
+            program_version=str(transport_metadata.get("program_version", "")),
+            public_values_schema_version=str(transport_metadata.get("public_values_schema_version", "")),
+            proof_boundary_version=str(transport_metadata.get("proof_boundary_version", "")),
+            protocol_version=str(transport_metadata.get("protocol_version", "")),
+            status=str(transport_metadata.get("status", "")),
+        ))
         checks.extend([
+            {
+                "check": "transport_metadata_keys_exact",
+                "ok": tuple(transport_metadata.keys()) == TRANSPORT_METADATA_REQUIRED_KEYS,
+                "expected": list(TRANSPORT_METADATA_REQUIRED_KEYS),
+                "actual": list(transport_metadata.keys()),
+            },
             {
                 "check": "transport_artifact_version",
                 "ok": transport_metadata.get("artifact_version") == proof_bundle.get("proof_artifact_version"),
                 "expected": proof_bundle.get("proof_artifact_version"),
                 "actual": transport_metadata.get("artifact_version"),
+            },
+            {
+                "check": "transport_proof_system",
+                "ok": transport_metadata.get("proof_system") == PROOF_SYSTEM,
+                "expected": PROOF_SYSTEM,
+                "actual": transport_metadata.get("proof_system"),
+            },
+            {
+                "check": "transport_proof_format",
+                "ok": transport_metadata.get("proof_format") == PROOF_FORMAT,
+                "expected": PROOF_FORMAT,
+                "actual": transport_metadata.get("proof_format"),
             },
             {
                 "check": "transport_public_values_schema_version",
@@ -491,6 +581,24 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
                 "actual": transport_metadata.get("program_version"),
             },
             {
+                "check": "transport_proof_boundary_version",
+                "ok": transport_metadata.get("proof_boundary_version") == proof_bundle.get("proof_boundary_version"),
+                "expected": proof_bundle.get("proof_boundary_version"),
+                "actual": transport_metadata.get("proof_boundary_version"),
+            },
+            {
+                "check": "transport_protocol_version",
+                "ok": transport_metadata.get("protocol_version") == PROOF_TRANSPORT_PROTOCOL_VERSION,
+                "expected": PROOF_TRANSPORT_PROTOCOL_VERSION,
+                "actual": transport_metadata.get("protocol_version"),
+            },
+            {
+                "check": "transport_status",
+                "ok": transport_metadata.get("status") == PROOF_TRANSPORT_STATUS_ACTIVE,
+                "expected": PROOF_TRANSPORT_STATUS_ACTIVE,
+                "actual": transport_metadata.get("status"),
+            },
+            {
                 "check": "transport_proof_origin_matches_bundle",
                 "ok": transport_metadata.get("proof_origin") == proof_bundle.get("proof_origin"),
                 "expected": proof_bundle.get("proof_origin"),
@@ -501,12 +609,6 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
                 "ok": transport_metadata.get("prover_status") == proof_bundle.get("prover_status"),
                 "expected": proof_bundle.get("prover_status"),
                 "actual": transport_metadata.get("prover_status"),
-            },
-            {
-                "check": "transport_proof_boundary_version",
-                "ok": transport_metadata.get("proof_boundary_version") == proof_bundle.get("proof_boundary_version"),
-                "expected": proof_bundle.get("proof_boundary_version"),
-                "actual": transport_metadata.get("proof_boundary_version"),
             },
             {
                 "check": "transport_commitment",
@@ -544,6 +646,14 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
                 "expected": proof_bundle.get("is_mock"),
                 "actual": transport_metadata.get("is_mock"),
             },
+            validate_proof_transport_origin_status(
+                str(transport_metadata.get("proof_origin", "")),
+                str(transport_metadata.get("prover_status", "")),
+            ),
+            validate_proof_transport_mock_flag(
+                str(transport_metadata.get("proof_origin", "")),
+                bool(transport_metadata.get("is_mock", False)),
+            ),
         ])
 
     return {"ok": all(check["ok"] for check in checks), "checks": checks, "decoded_public_values": decoded_public_values}
@@ -577,17 +687,58 @@ def check_onchain_verification(config_hash: str) -> Dict:
         return {"ok": False, "reason": str(exc)}
 
 
+def _flag_is_true(value: object) -> bool:
+    """Return True only for explicit boolean True, never truthy claims."""
+    return value is True
+
+
+STAGED_PROOF_LIFECYCLE_STAGES = {"proof_generated", "submitted_onchain"}
+
+
+def _valid_staged_proof_bundle(proof_bundle: Dict) -> bool:
+    """Return True only for proof bundles carrying canonical staged proof metadata.
+
+    Mirrors the leaderboard's valid_staged_proof_bundle gate so that the
+    verify-path trust-tier derivation cannot promote a fabricated or
+    schema-invalid proof bundle to proof_staged — the same origin/status
+    contract enforced by verify_proof_bundle_schema must hold here too.
+    """
+    if not proof_bundle:
+        return False
+    required_strings = ("run_id", "artifact_hash", "config_hash", "public_values", "proof_bytes")
+    if any(not isinstance(proof_bundle.get(field), str) or not proof_bundle.get(field) for field in required_strings):
+        return False
+    proof_origin = proof_bundle.get("proof_origin")
+    if not isinstance(proof_origin, str) or proof_origin not in PROOF_TRANSPORT_ORIGIN_STATUSES:
+        return False
+    return all((
+        proof_bundle.get("proof_artifact_version") == PROOF_ARTIFACT_VERSION,
+        proof_bundle.get("proof_system") == PROOF_SYSTEM,
+        proof_bundle.get("proof_format") == PROOF_FORMAT,
+        proof_bundle.get("public_values_schema_version") == PUBLIC_VALUES_SCHEMA_VERSION,
+        proof_bundle.get("program_version") == PROGRAM_VERSION,
+        proof_bundle.get("proof_boundary_version") == PROOF_BOUNDARY_VERSION,
+    ))
+
+
 def _derive_trust_tier(verification_status: Dict, proof_bundle: Dict | None, proof_lifecycle: Dict | None) -> str:
-    if verification_status.get("onchain_ok"):
+    if _flag_is_true(verification_status.get("onchain_ok")):
         return "verified_onchain"
-    if (proof_lifecycle or {}).get("stage") == "proof_generated" or proof_bundle:
+    if _valid_staged_proof_bundle(proof_bundle or {}) and (proof_lifecycle or {}).get("stage") in STAGED_PROOF_LIFECYCLE_STAGES:
         return "proof_staged"
-    if verification_status.get("replay_ok"):
+    if _flag_is_true(verification_status.get("replay_ok")):
         return "replay_checked"
-    if verification_status.get("integrity_ok"):
+    if _flag_is_true(verification_status.get("integrity_ok")):
         return "integrity_checked"
     return "unverified"
 
+
+def _artifact_is_mock(artifact: Dict, proof_bundle: Dict | None) -> bool:
+    # Trust-tier prefixing is reserved for artifacts explicitly marked as mock.
+    # Staged proof bundles currently carry mock transport metadata while they
+    # are awaiting a real verifier; that state is already represented by
+    # proof_ok=False/proof_staged and should not rewrite historical tiers.
+    return artifact.get("is_mock") is True
 
 
 def verify_artifact(artifact: dict, tolerance_pct: float = 5.0, replay: bool = True) -> Dict:
@@ -600,14 +751,14 @@ def verify_artifact(artifact: dict, tolerance_pct: float = 5.0, replay: bool = T
         replay_result = verify_artifact_replay(artifact, tolerance_pct=tolerance_pct)
 
     onchain = check_onchain_verification(artifact.get("config_hash", "")) if integrity["ok"] else None
-    onchain_verified = bool(onchain and onchain.get("ok") and onchain.get("verified"))
+    onchain_verified = isinstance(onchain, dict) and _flag_is_true(onchain.get("ok")) and _flag_is_true(onchain.get("verified"))
 
     prior_status = artifact.get("verification_status", {}) if isinstance(artifact.get("verification_status"), dict) else {}
     verification_status = {
-        "schema_ok": prior_status.get("schema_ok", True) and (public_values["ok"] if public_values is not None else True) and (proof_bundle_result["ok"] if proof_bundle_result is not None else True),
+        "schema_ok": _flag_is_true(prior_status.get("schema_ok", True)) and (public_values["ok"] if public_values is not None else True) and (proof_bundle_result["ok"] if proof_bundle_result is not None else True),
         "integrity_ok": integrity["ok"],
-        "replay_ok": replay_result["ok"] if replay_result is not None else prior_status.get("replay_ok", False),
-        "proof_ok": (proof_bundle_result["ok"] if proof_bundle_result is not None else prior_status.get("proof_ok", False)) and onchain_verified,
+        "replay_ok": replay_result["ok"] if replay_result is not None else _flag_is_true(prior_status.get("replay_ok", False)),
+        "proof_ok": (proof_bundle_result["ok"] if proof_bundle_result is not None else _flag_is_true(prior_status.get("proof_ok", False))) and onchain_verified,
         "onchain_ok": onchain_verified,
     }
 
@@ -626,24 +777,17 @@ def verify_artifact(artifact: dict, tolerance_pct: float = 5.0, replay: bool = T
             "is_final": False,
             "note": "Proof bundle validated locally; awaiting on-chain verifier acceptance.",
         }
-    trust_tier = artifact.get("trust_tier", "unverified")
-    if artifact.get("is_mock", False):
+    valid_proof_bundle = artifact.get("proof_bundle") if proof_bundle_result is not None and proof_bundle_result["ok"] else None
+    trust_tier = _derive_trust_tier(verification_status, valid_proof_bundle, proof_lifecycle)
+    proof_bundle = artifact.get("proof_bundle") if isinstance(artifact.get("proof_bundle"), dict) else None
+    is_mock = _artifact_is_mock(artifact, proof_bundle)
+    if is_mock and trust_tier != "unverified" and not trust_tier.startswith("mock_"):
         trust_tier = f"mock_{trust_tier}"
-    elif verification_status["onchain_ok"]:
-        trust_tier = "verified_onchain"
-    elif proof_bundle_result is not None:
-        trust_tier = "proof_staged"
-    elif verification_status["replay_ok"]:
-        trust_tier = "replay_checked"
-    elif verification_status["integrity_ok"]:
-        trust_tier = "integrity_checked"
-    else:
-        trust_tier = "unverified"
 
     # Explicitly differentiate between local/simulated and cryptographically verified
     trust_metadata = {
         "is_cryptographic": verification_status["onchain_ok"],
-        "is_mock": artifact.get("is_mock", False),
+        "is_mock": is_mock,
         "trust_tier": trust_tier
     }
 
@@ -664,7 +808,7 @@ def verify_artifact(artifact: dict, tolerance_pct: float = 5.0, replay: bool = T
         "proof_lifecycle": proof_lifecycle,
         "trust_tier": trust_tier,
         "trust_metadata": trust_metadata,
-        "is_mock": artifact.get("is_mock", False),
+        "is_mock": is_mock,
     }
 
 

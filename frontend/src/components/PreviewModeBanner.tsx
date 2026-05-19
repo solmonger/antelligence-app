@@ -14,8 +14,8 @@ export function PreviewModeBanner() {
           <div className="text-sm opacity-90">
             Frontend is exposed for monitoring only. Backend, transactions, proofs, and local infrastructure remain private.
           </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-500">Proof: Staged</Badge>
+          <div className="flex items-center gap-2">
+          <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-500">Proof: Staged (SP1+Groth16)</Badge>
           <Badge variant="outline" className="border-amber-500 text-amber-700 dark:text-amber-500">Chain: Local</Badge>
         </div>
         </div>

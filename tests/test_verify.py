@@ -106,8 +106,8 @@ class TestMetricsTolerance:
                 "recomputed": 1,
                 "deviation_pct": None,
                 "ok": False,
-                "reason": "non_numeric_metric_value",
-            }
+                "reason": "non_numeric_computed_or_claimed_metric_value",
+            },
         ]
 
     def test_non_numeric_claimed_metric_fails_even_without_recomputed_counterpart(self):
@@ -136,9 +136,117 @@ class TestMetricsTolerance:
                 "recomputed": "0",
                 "deviation_pct": None,
                 "ok": False,
-                "reason": "non_numeric_metric_value",
-            }
+                "reason": "non_numeric_computed_or_claimed_metric_value",
+            },
         ]
+
+    def test_phantom_recomputed_metric_fails_closed(self):
+        """Recomputed metrics not present in the claimed set must be flagged.
+
+        A phantom metric means the recomputation produced outputs that were
+        never part of the original claim -- a metric-accounting invariant.
+        """
+        result = verify_metrics_tolerance(
+            {"kill_rate": 45.5},
+            {"kill_rate": 45.5, "ghost_metric": 99.9},
+        )
+        assert result["ok"] is False
+        phantom = [c for c in result["checks"] if c["metric"] == "ghost_metric"]
+        assert len(phantom) == 1
+        assert phantom[0]["ok"] is False
+        assert phantom[0]["reason"] == "phantom_recomputed_metric_not_in_claimed"
+        assert phantom[0]["claimed"] is None
+        assert phantom[0]["recomputed"] == 99.9
+
+    def test_phantom_recomputed_metric_with_empty_claimed_fails(self):
+        """Even with no claimed metrics, phantom recomputed keys must fail."""
+        result = verify_metrics_tolerance({}, {"injected_metric": 42})
+        assert result["ok"] is False
+        assert any(c["reason"] == "phantom_recomputed_metric_not_in_claimed" for c in result["checks"])
+
+    def test_no_phantom_metrics_when_claimed_equals_recomputed(self):
+        """Matching key sets should not produce phantom checks."""
+        result = verify_metrics_tolerance({"kill_rate": 45.5}, {"kill_rate": 44.0}, tolerance_pct=5.0)
+        assert result["ok"] is True
+        assert not any(c.get("reason") == "phantom_recomputed_metric_not_in_claimed" for c in result["checks"])
+
+    def test_negative_tolerance_pct_fails_closed(self):
+        """A negative tolerance would silently accept all metrics; must fail closed."""
+        result = verify_metrics_tolerance({"kill_rate": 45.5}, {"kill_rate": 44.0}, tolerance_pct=-1.0)
+        assert result["ok"] is False
+        assert any(c["check"] == "tolerance_pct_valid" and c["ok"] is False for c in result["checks"])
+
+    def test_infinite_tolerance_pct_fails_closed(self):
+        """inf tolerance would accept any deviation; must fail closed."""
+        result = verify_metrics_tolerance({"kill_rate": 45.5}, {"kill_rate": 0.0}, tolerance_pct=float("inf"))
+        assert result["ok"] is False
+        assert any(c["check"] == "tolerance_pct_valid" and c["ok"] is False for c in result["checks"])
+
+    def test_replay_path_detects_phantom_recomputed_metrics(self):
+        """verify_artifact_replay must flag recomputed metrics not present in claimed.
+
+        When an artifact claims only kill_rate+deliveries but recomputation
+        produces additional numeric metrics (cells_killed, step_count), the
+        phantom-metric detection inherited from verify_metrics_tolerance must
+        fire rather than silently passing on the cherry-picked subset.
+        """
+        artifact = create_simulation_artifact(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2, "seed": 7, "domain_size": 40, "voxel_size": 20},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+        )
+        result = verify_artifact_replay(artifact, tolerance_pct=100.0)
+        # The claimed metrics omit cells_killed/step_count which the
+        # recomputation produces, so phantom detection must flag them.
+        phantom_checks = [
+            c for c in result["tolerance"]["checks"]
+            if c.get("reason") == "phantom_recomputed_metric_not_in_claimed"
+        ]
+        assert len(phantom_checks) >= 1, (
+            "replay path must detect phantom recomputed metrics; "
+            f"got checks: {result['tolerance']['checks']}"
+        )
+        phantom_keys = {c["metric"] for c in phantom_checks}
+        assert "cells_killed" in phantom_keys or "step_count" in phantom_keys, (
+            f"expected cells_killed or step_count as phantom; got {phantom_keys}"
+        )
+
+    def test_nan_tolerance_pct_fails_closed(self):
+        """NaN tolerance makes the comparison undefined; must fail closed."""
+        result = verify_metrics_tolerance({"kill_rate": 45.5}, {"kill_rate": 44.0}, tolerance_pct=float("nan"))
+        assert result["ok"] is False
+        assert any(c["check"] == "tolerance_pct_valid" and c["ok"] is False for c in result["checks"])
+
+    def test_nonzero_claimed_vs_zero_recomputed_always_fails(self):
+        """Non-zero claimed vs zero recomputed has undefined deviation; must fail closed.
+
+        The old logic used abs(claimed)*100 as a pseudo-deviation, which could
+        silently pass with a large tolerance.  The correct invariant is: a
+        claimed non-zero metric against a recomputed zero is an infinite
+        relative deviation and must always fail regardless of tolerance.
+        """
+        result = verify_metrics_tolerance({"kill_rate": 0.01}, {"kill_rate": 0}, tolerance_pct=100.0)
+        assert result["ok"] is False
+        failed = [c for c in result["checks"] if not c["ok"]]
+        assert len(failed) == 1
+        assert failed[0]["reason"] == "nonzero_claimed_vs_zero_recomputed_deviation_undefined"
+        assert failed[0]["deviation_pct"] is None
+
+    def test_both_zero_claimed_and_recomputed_passes(self):
+        """Both zero is an exact match with 0% deviation."""
+        result = verify_metrics_tolerance({"kill_rate": 0}, {"kill_rate": 0})
+        assert result["ok"] is True
+        assert result["checks"][0]["deviation_pct"] == 0.0
+
+    def test_zero_claimed_vs_nonzero_recomputed_is_100pct_deviation(self):
+        """Zero claimed vs non-zero recomputed gives exactly 100% deviation."""
+        result = verify_metrics_tolerance({"kill_rate": 0}, {"kill_rate": 50.0}, tolerance_pct=100.0)
+        assert result["ok"] is True
+        assert result["checks"][0]["deviation_pct"] == 100.0
+
+    def test_nonzero_claimed_vs_zero_recomputed_fails_even_with_huge_tolerance(self):
+        """Even a 1e9 tolerance cannot accept non-zero vs zero recomputed."""
+        result = verify_metrics_tolerance({"kill_rate": 42.0}, {"kill_rate": 0}, tolerance_pct=1e9)
+        assert result["ok"] is False
 
 
 class TestPublicValuesBoundary:
@@ -152,7 +260,7 @@ class TestPublicValuesBoundary:
                 steps=20,
             )
         except ValueError as exc:
-            assert "nanobot_count must encode exactly to uint32" in str(exc)
+            assert "nanobot_count must" in str(exc)
         else:
             raise AssertionError("fractional proof-boundary inputs should not be silently truncated")
 
@@ -197,7 +305,7 @@ class TestPublicValuesBoundary:
         try:
             encode_public_values_payload(payload)
         except ValueError as exc:
-            assert "steps must encode exactly to uint32" in str(exc)
+            assert "steps must" in str(exc)
         else:
             raise AssertionError("direct public-value encoding should not truncate fractional payload drift")
 
@@ -645,3 +753,322 @@ class TestReplayVerification:
     def test_onchain_check_returns_shape(self):
         result = check_onchain_verification("00" * 32)
         assert "ok" in result
+
+
+class TestVerifyTrustTierStrictBoolean:
+    """Trust-tier derivation in the verify path must reject truthy non-boolean claims."""
+
+    def test_string_onchain_ok_cannot_promote_to_verified(self):
+        from chain.verify import _derive_trust_tier
+        tier = _derive_trust_tier({"onchain_ok": "true"}, None, None)
+        assert tier == "unverified"
+
+    def test_integer_onchain_ok_cannot_promote_to_verified(self):
+        from chain.verify import _derive_trust_tier
+        tier = _derive_trust_tier({"onchain_ok": 1}, None, None)
+        assert tier == "unverified"
+
+    def test_string_replay_ok_cannot_promote_to_replay_checked(self):
+        from chain.verify import _derive_trust_tier
+        tier = _derive_trust_tier({"onchain_ok": False, "replay_ok": "true"}, None, None)
+        assert tier == "unverified"
+
+    def test_string_integrity_ok_cannot_promote_to_integrity_checked(self):
+        from chain.verify import _derive_trust_tier
+        tier = _derive_trust_tier({"onchain_ok": False, "replay_ok": False, "integrity_ok": "yes"}, None, None)
+        assert tier == "unverified"
+
+    def test_true_booleans_still_work(self):
+        from chain.verify import _derive_trust_tier
+        assert _derive_trust_tier({"onchain_ok": True}, None, None) == "verified_onchain"
+        assert _derive_trust_tier({"onchain_ok": False, "replay_ok": True}, None, None) == "replay_checked"
+        assert _derive_trust_tier({"onchain_ok": False, "replay_ok": False, "integrity_ok": True}, None, None) == "integrity_checked"
+
+
+class TestDeriveTrustTierProofBundleGate:
+    """_derive_trust_tier must validate proof bundle schema before promoting to proof_staged.
+
+    The old logic accepted any non-empty proof_bundle dict; the new logic
+    requires canonical proof metadata (origin, version constants, required
+    string fields) and a valid lifecycle stage — the same contract enforced
+    by the leaderboard's valid_staged_proof_bundle gate.
+    """
+
+    def test_empty_dict_cannot_promote_to_proof_staged(self):
+        from chain.verify import _derive_trust_tier
+        tier = _derive_trust_tier(
+            {"onchain_ok": False},
+            {},
+            {"stage": "proof_generated"},
+        )
+        assert tier != "proof_staged"
+
+    def test_fabricated_proof_bundle_cannot_promote_to_proof_staged(self):
+        from chain.verify import _derive_trust_tier
+        tier = _derive_trust_tier(
+            {"onchain_ok": False},
+            {"proof_origin": "fabricated-origin", "proof_bytes": "0x00"},
+            {"stage": "proof_generated"},
+        )
+        assert tier != "proof_staged"
+
+    def test_incomplete_proof_bundle_cannot_promote_to_proof_staged(self):
+        from chain.verify import _derive_trust_tier
+        tier = _derive_trust_tier(
+            {"onchain_ok": False},
+            {"run_id": "r1"},
+            {"stage": "proof_generated"},
+        )
+        assert tier != "proof_staged"
+
+    def test_valid_mock_proof_bundle_with_lifecycle_promotes_to_proof_staged(self):
+        from chain.verify import _derive_trust_tier
+        from chain.proof_adapter import create_proof_bundle
+        bundle = create_proof_bundle(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+            run_id="tier-gate-1",
+        )
+        tier = _derive_trust_tier(
+            {"onchain_ok": False},
+            bundle["proof_bundle"],
+            {"stage": "proof_generated"},
+        )
+        assert tier == "proof_staged"
+
+    def test_valid_proof_bundle_without_lifecycle_does_not_promote(self):
+        from chain.verify import _derive_trust_tier
+        from chain.proof_adapter import create_proof_bundle
+        bundle = create_proof_bundle(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+            run_id="tier-gate-2",
+        )
+        tier = _derive_trust_tier(
+            {"onchain_ok": False},
+            bundle["proof_bundle"],
+            {"stage": "untracked"},
+        )
+        assert tier != "proof_staged"
+
+    def test_valid_proof_bundle_with_submitted_onchain_lifecycle_promotes(self):
+        from chain.verify import _derive_trust_tier
+        from chain.proof_adapter import create_proof_bundle
+        bundle = create_proof_bundle(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+            run_id="tier-gate-3",
+        )
+        tier = _derive_trust_tier(
+            {"onchain_ok": False},
+            bundle["proof_bundle"],
+            {"stage": "submitted_onchain"},
+        )
+        assert tier == "proof_staged"
+
+    def test_mismatched_program_version_cannot_promote(self):
+        from chain.verify import _derive_trust_tier
+        from chain.proof_adapter import create_proof_bundle
+        bundle = create_proof_bundle(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+            run_id="tier-gate-stale",
+        )
+        bundle["proof_bundle"]["program_version"] = "stale-v0"
+        tier = _derive_trust_tier(
+            {"onchain_ok": False},
+            bundle["proof_bundle"],
+            {"stage": "proof_generated"},
+        )
+        assert tier != "proof_staged"
+
+    def test_mismatched_proof_boundary_version_cannot_promote(self):
+        """A proof bundle with a stale proof_boundary_version must not reach proof_staged.
+
+        The proof_boundary_version binds the transport shape to a specific SP1/Groth16
+        adapter version; a drifted boundary version means the public-values layout
+        may no longer match what the on-chain verifier expects.
+        """
+        from chain.verify import _derive_trust_tier
+        from chain.proof_adapter import create_proof_bundle
+        bundle = create_proof_bundle(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+            run_id="tier-gate-boundary-drift",
+        )
+        bundle["proof_bundle"]["proof_boundary_version"] = "stale-adapter-v0"
+        tier = _derive_trust_tier(
+            {"onchain_ok": False},
+            bundle["proof_bundle"],
+            {"stage": "proof_generated"},
+        )
+        assert tier != "proof_staged"
+
+
+class TestProofTransportMetadataVerification:
+    """verify_proof_bundle_schema must reject drifted transport metadata.
+
+    Transport fields live in metadata rather than the on-chain public_values ABI,
+    so this validator is the guardrail that keeps protocol/status/boundary drift
+    from being treated as a valid staged proof bundle.
+    """
+
+    def test_transport_protocol_version_drift_fails_schema(self):
+        from chain.proof_adapter import create_proof_bundle
+        from chain.verify import verify_proof_bundle_schema
+        bundle = create_proof_bundle(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+            run_id="transport-protocol-drift",
+        )
+        bundle["proof_bundle"]["transport_metadata"]["protocol_version"] = "stale-protocol-v0"
+
+        result = verify_proof_bundle_schema(bundle["proof_bundle"])
+
+        assert result["ok"] is False
+        assert any(
+            check["check"] == "transport_protocol_version" and check["ok"] is False
+            for check in result["checks"]
+        )
+
+    def test_transport_status_drift_fails_schema(self):
+        from chain.proof_adapter import create_proof_bundle
+        from chain.verify import verify_proof_bundle_schema
+        bundle = create_proof_bundle(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+            run_id="transport-status-drift",
+        )
+        bundle["proof_bundle"]["transport_metadata"]["status"] = "retired"
+
+        result = verify_proof_bundle_schema(bundle["proof_bundle"])
+
+        assert result["ok"] is False
+        assert any(
+            check["check"] == "transport_status" and check["ok"] is False
+            for check in result["checks"]
+        )
+
+    def test_transport_boundary_version_drift_fails_schema(self):
+        from chain.proof_adapter import create_proof_bundle
+        from chain.verify import verify_proof_bundle_schema
+        bundle = create_proof_bundle(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+            run_id="transport-boundary-drift",
+        )
+        bundle["proof_bundle"]["transport_metadata"]["proof_boundary_version"] = "stale-boundary-v0"
+
+        result = verify_proof_bundle_schema(bundle["proof_bundle"])
+
+        assert result["ok"] is False
+        assert any(
+            check["check"] == "transport_proof_boundary_version" and check["ok"] is False
+            for check in result["checks"]
+        )
+
+
+class TestVerifyArtifactStrictBooleanPriorStatus:
+    """verify_artifact must reject truthy non-boolean prior verification_status.
+
+    An artifact with prior_status replay_ok='true' or proof_ok=1 must NOT
+    be promoted to a higher trust tier via the prior_status fallback path.
+    """
+
+    def test_string_replay_ok_in_prior_status_cannot_promote_trust_tier(self, monkeypatch):
+        artifact = create_simulation_artifact(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2, "seed": 7, "domain_size": 40, "voxel_size": 20},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+        )
+        artifact["verification_status"] = {"replay_ok": "true", "integrity_ok": True, "onchain_ok": False, "proof_ok": False, "schema_ok": True}
+        monkeypatch.setattr("chain.verify.check_onchain_verification", lambda ch: {"ok": False, "reason": "test"})
+        result = verify_artifact(artifact, tolerance_pct=100.0, replay=False)
+        assert result["trust_tier"] == "integrity_checked"
+        assert result["verification_status"]["replay_ok"] is False
+
+    def test_integer_proof_ok_in_prior_status_cannot_promote_trust_tier(self, monkeypatch):
+        artifact = create_simulation_artifact(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2, "seed": 7, "domain_size": 40, "voxel_size": 20},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+        )
+        artifact["verification_status"] = {"replay_ok": False, "integrity_ok": True, "onchain_ok": False, "proof_ok": 1, "schema_ok": True}
+        monkeypatch.setattr("chain.verify.check_onchain_verification", lambda ch: {"ok": False, "reason": "test"})
+        result = verify_artifact(artifact, tolerance_pct=100.0, replay=False)
+        assert result["trust_tier"] != "verified_onchain"
+        assert result["verification_status"]["proof_ok"] is False
+
+    def test_string_onchain_verified_cannot_promote_trust_tier(self, monkeypatch):
+        artifact = create_simulation_artifact(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2, "seed": 7, "domain_size": 40, "voxel_size": 20},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+        )
+        monkeypatch.setattr("chain.verify.check_onchain_verification", lambda ch: {"ok": "true", "verified": "true", "raw": "true"})
+        result = verify_artifact(artifact, tolerance_pct=100.0, replay=False)
+        assert result["trust_tier"] != "verified_onchain"
+        assert result["verification_status"]["onchain_ok"] is False
+
+
+class TestPublicValuesPayloadFieldTypeValidation:
+    """validate_public_values_payload must enforce the on-chain five-field ABI.
+
+    Transport version/status/commitment data belongs in proof transport
+    metadata, not in TumorIntel.verifySimulation public_values calldata.
+    """
+
+    def test_valid_payload_passes_all_field_type_checks(self):
+        from chain.proof_spec import build_public_values_payload, validate_public_values_payload
+        payload = build_public_values_payload(
+            config_hash="0x" + ("ab" * 32),
+            kill_rate_bps=1250,
+            nanobot_count=4,
+            tumor_radius=100,
+            steps=20,
+        )
+        checks = validate_public_values_payload(payload)
+        failed = [c for c in checks if not c["ok"]]
+        assert failed == [], f"valid payload should pass all checks; failed: {failed}"
+
+    def test_transport_commitment_extra_field_rejected_from_public_values_payload(self):
+        from chain.proof_spec import build_public_values_payload, validate_public_values_payload
+        payload = build_public_values_payload(
+            config_hash="0x" + ("ab" * 32),
+            kill_rate_bps=0,
+            nanobot_count=1,
+            tumor_radius=10,
+            steps=1,
+        )
+        payload["transport_commitment"] = "00" * 32
+        checks = validate_public_values_payload(payload)
+        schema_checks = [c for c in checks if c["check"] == "payload_fields_exact"]
+        assert len(schema_checks) == 1
+        assert schema_checks[0]["ok"] is False
+
+    def test_protocol_version_extra_field_rejected_from_public_values_payload(self):
+        from chain.proof_spec import build_public_values_payload, validate_public_values_payload
+        payload = build_public_values_payload(
+            config_hash="0x" + ("ab" * 32),
+            kill_rate_bps=0,
+            nanobot_count=1,
+            tumor_radius=10,
+            steps=1,
+        )
+        payload["protocol_version"] = "v1.1.0"
+        checks = validate_public_values_payload(payload)
+        schema_checks = [c for c in checks if c["check"] == "payload_fields_exact"]
+        assert len(schema_checks) == 1
+        assert schema_checks[0]["ok"] is False
+
+    def test_status_extra_field_rejected_from_public_values_payload(self):
+        from chain.proof_spec import build_public_values_payload, validate_public_values_payload
+        payload = build_public_values_payload(
+            config_hash="0x" + ("ab" * 32),
+            kill_rate_bps=0,
+            nanobot_count=1,
+            tumor_radius=10,
+            steps=1,
+        )
+        payload["status"] = "active"
+        checks = validate_public_values_payload(payload)
+        schema_checks = [c for c in checks if c["check"] == "payload_fields_exact"]
+        assert len(schema_checks) == 1
+        assert schema_checks[0]["ok"] is False
