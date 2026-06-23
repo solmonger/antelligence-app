@@ -15,6 +15,8 @@ import time
 from enum import Enum
 from typing import Dict, List, Optional, Tuple
 
+from chain.ipfs import compute_artifact_hash, pin_simulation
+
 import networkx as nx
 
 
@@ -819,3 +821,46 @@ class TumorKnowledgeGraph:
             # Store confirmation count from the contract
             if self.graph.has_node(node_id):
                 self.graph.nodes[node_id]["contract_confirmations"] = confirmations
+
+    def sync_from_chain(self, reader) -> int:
+        """Seed the local KG from a ChainIntelReader-compatible object."""
+        pins = reader.fetch_active_intel_pins()
+        self.import_from_contract_events([
+            pin.to_contract_pin_dict() if hasattr(pin, "to_contract_pin_dict") else dict(pin)
+            for pin in pins
+        ])
+        return len(pins)
+
+    def get_nearby_intel(self, position: tuple, radius: float) -> List[dict]:
+        """Return active chain/local intel pins near a position, sorted by priority."""
+        pos2d = tuple(position[:2])
+        result = []
+        for node_id, data in self.graph.nodes(data=True):
+            if data.get("type") != NodeType.INTEL_PIN.value:
+                continue
+            pin_pos = data.get("position", (0, 0))
+            distance = _dist(pos2d, pin_pos)
+            if distance <= radius:
+                result.append({
+                    "node_id": node_id,
+                    "pin_id": data.get("pin_id"),
+                    "position": pin_pos,
+                    "pin_type": data.get("pin_type"),
+                    "priority": data.get("priority", 0),
+                    "confirmations": data.get("contract_confirmations", 0),
+                    "distance": distance,
+                })
+        result.sort(key=lambda pin: (pin["priority"], -pin["distance"]), reverse=True)
+        return result
+
+    def export_to_ipfs(self, backend: str = "dry-run") -> dict:
+        """Export the KG summary as a pin-ready IPFS artifact."""
+        artifact = self.to_ipfs_artifact()
+        result = pin_simulation(
+            config={"artifact_type": "knowledge_graph", "domain_size": self.domain_size},
+            metrics={"node_count": self.graph.number_of_nodes(), "edge_count": self.graph.number_of_edges()},
+            run_id=f"kg-{compute_artifact_hash(artifact)[:16]}",
+            backend=backend,
+        )
+        result["knowledge_graph"] = artifact
+        return result
