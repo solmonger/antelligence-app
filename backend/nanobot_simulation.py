@@ -795,12 +795,20 @@ class QueenNanobot:
     (every K steps) to adjust swarm parameters.
     """
     
-    def __init__(self, model: 'TumorNanobotModel', use_llm: bool = False, episode_length: int = 10):
+    def __init__(
+        self,
+        model: 'TumorNanobotModel',
+        use_llm: bool = False,
+        episode_length: int = 10,
+        experience_consumer=None,
+    ):
         self.model = model
         self.use_llm = use_llm
         self.episode_length = episode_length  # Adjust parameters every K steps
         self.step_counter = 0
         self.episode_counter = 0
+        self.experience_consumer = experience_consumer
+        self.selected_chain_strategy = None
 
         # Configurable worker parameters (adjusted by Queen each episode)
         self.worker_params = {
@@ -814,8 +822,35 @@ class QueenNanobot:
             "speed_multiplier": 1.0,       # Movement speed scaling
         }
 
+        self._apply_chain_strategy_if_enabled()
+
         # Episode history for tracking improvement
         self.episode_history: List[Dict] = []
+
+    def _apply_chain_strategy_if_enabled(self):
+        """Adopt the top promoted strategy when chain reads are explicitly enabled."""
+        if not _env_truthy("CHAIN_READ_ENABLED"):
+            return
+        if self.experience_consumer is None:
+            try:
+                from chain.experience_consumer import ChainExperienceConsumer
+                self.experience_consumer = ChainExperienceConsumer()
+            except Exception as exc:
+                self.model.log_error(f"Chain strategy consumer unavailable: {exc}")
+                return
+        try:
+            strategies = self.experience_consumer.get_top_strategies(1)
+        except Exception as exc:
+            self.model.log_error(f"Chain strategy read failed: {exc}")
+            return
+        if not strategies:
+            return
+        strategy = strategies[0]
+        updates = getattr(strategy, "worker_params", {}) or {}
+        for key, value in updates.items():
+            if key in self.worker_params and isinstance(value, (int, float)):
+                self.worker_params[key] = float(value)
+        self.selected_chain_strategy = getattr(strategy, "run_hash", None)
 
     def step(self):
         """Called every simulation step. Triggers episodic replanning at interval K."""
@@ -1177,6 +1212,7 @@ class TumorNanobotModel:
         selected_model: str = "meta-llama/Llama-3.3-70B-Instruct",
         pheromone_params: Optional[Dict[str, float]] = None,
         seed: Optional[int] = None,
+        chain_intel_reader=None,
     ):
 
         self.domain_size = domain_size
@@ -1296,6 +1332,16 @@ class TumorNanobotModel:
         
         # Initialize Knowledge Graph
         self.knowledge_graph = TumorKnowledgeGraph(domain_size=domain_size)
+        self.chain_sync_summary = {"imported_intel_pins": 0}
+        if _env_truthy("CHAIN_READ_ENABLED"):
+            try:
+                if chain_intel_reader is None:
+                    from chain.intel_reader import ChainIntelReader
+                    chain_intel_reader = ChainIntelReader()
+                imported = self.knowledge_graph.sync_from_chain(chain_intel_reader)
+                self.chain_sync_summary = {"imported_intel_pins": imported}
+            except Exception as exc:
+                self.chain_sync_summary = {"imported_intel_pins": 0, "error": str(exc)}
 
         # Pre-populate vessels into the knowledge graph
         for vessel in self.geometry.vessels:

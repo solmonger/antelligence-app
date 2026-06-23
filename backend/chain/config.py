@@ -11,7 +11,10 @@ import os
 from typing import Optional
 
 BASE_SEPOLIA_CHAIN_ID = 84532
-DEFAULT_TUMOR_INTEL_ADDRESS = "0xacc88E84ebe70ee79484144548a49C45DDcab2B6"
+DEFAULT_TUMOR_INTEL_ADDRESS = "0x925b455175eF932a9a0239090a94E593224CD8AB"
+DEFAULT_EXPERIENCE_REGISTRY_ADDRESS = "0x58A78E337ce3D948A39475f05Ca1A2c30274CADE"
+DEFAULT_COLONY_MEMORY_ADDRESS = "0x914D72b9d49ED4Bb46FA553a01fEbbd5EEf481fA"
+DEFAULT_FOOD_TOKEN_ADDRESS = "0x7310fb01b393459d2f8Ab15AD4a66F5380200869"
 
 
 def _first_env(*names: str) -> Optional[str]:
@@ -31,15 +34,18 @@ def get_private_key() -> str:
 
 
 def get_food_address() -> str:
-    return _first_env("ANTELLIGENCE_FOOD_ADDR", "FOOD_ADDR") or ""
+    return _first_env("ANTELLIGENCE_FOOD_ADDR", "FOOD_ADDR") or DEFAULT_FOOD_TOKEN_ADDRESS
 
 
 def get_memory_address() -> str:
-    return _first_env("ANTELLIGENCE_MEMORY_ADDR", "MEMORY_ADDR") or ""
+    return _first_env("ANTELLIGENCE_MEMORY_ADDR", "MEMORY_ADDR") or DEFAULT_COLONY_MEMORY_ADDRESS
 
 
 def get_experience_registry_address() -> str:
-    return _first_env("ANTELLIGENCE_REGISTRY_ADDR", "EXPERIENCE_REGISTRY_ADDR") or ""
+    return (
+        _first_env("ANTELLIGENCE_REGISTRY_ADDR", "EXPERIENCE_REGISTRY_ADDR")
+        or DEFAULT_EXPERIENCE_REGISTRY_ADDRESS
+    )
 
 
 def get_verifier_address() -> str:
