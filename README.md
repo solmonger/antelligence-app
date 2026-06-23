@@ -30,13 +30,32 @@ uv run antelligence-api
 
 ### API
 
-The FastAPI service is defined in `backend/api_server.py` and currently exposes:
+The project has two API servers:
 
-- `POST /simulate`
-- `GET /runs/{run_id}`
+**`backend/main.py`** — the full-featured API used by the frontend. Start it with:
+
+```bash
+uvicorn backend.main:app --host 0.0.0.0 --port 8001
+```
+
+Endpoints:
+
 - `GET /health`
+- `POST /simulation/run` — ant colony simulation
+- `POST /simulation/compare` — queen vs no-queen comparison
+- `POST /simulation/tumor/run` — tumor nanobot simulation
+- `POST /simulation/tumor/hunt` — tumor hunt v2
+- `POST /simulation/tumor/compare` — tumor simulation comparison
+- `GET /simulation/history` — simulation history
+- `GET /simulation/compare/{id1}/{id2}` — compare two runs
 
-Example local flow:
+**`backend/api_server.py`** — a minimal simulation API for programmatic use:
+
+- `POST /simulate` — run a simulation with num_bots, grid_size, steps, seed
+- `GET /runs/{run_id}` — retrieve stored results
+- `GET /health` — liveness check
+
+Example local flow (minimal API):
 
 ```bash
 curl -X POST http://127.0.0.1:8001/simulate \

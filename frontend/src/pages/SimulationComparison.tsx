@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ArrowLeft, Play, Download } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { BUILD_INFO, IS_PREVIEW_MODE, API_BASE_URL } from "@/lib/runtime";
@@ -80,7 +80,7 @@ export default function SimulationComparison() {
                   trail_deposit: 2.0,
                   alarm_deposit: 2.0,
                   recruitment_deposit: 2.0,
-                  max_pheromone_value: antCount * 2.0,
+                  max_pheromone_value: Math.min(antCount * 2.0, 20.0),
                   enable_predators: false,
                   n_predators: 0,
                   predator_type: "Rule-Based",
@@ -335,7 +335,11 @@ export default function SimulationComparison() {
                         <YAxis label={{ value: 'Food Collected', angle: -90, position: 'insideLeft' }} />
                         <Tooltip />
                         <Legend />
-                        <Bar dataKey="collected" fill="#f59e0b" name="Food Collected" />
+                        <Bar dataKey="collected" fill="#f59e0b" name="Food Collected">
+                          {foodCollectionChart.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill="#f59e0b" />
+                          ))}
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
@@ -355,8 +359,16 @@ export default function SimulationComparison() {
                         <YAxis yAxisId="right" orientation="right" label={{ value: 'Latency (ms)', angle: 90, position: 'insideRight' }} />
                         <Tooltip />
                         <Legend />
-                        <Bar yAxisId="left" dataKey="steps" fill="#3b82f6" name="Steps to Complete" />
-                        <Bar yAxisId="right" dataKey="latency" fill="#8b5cf6" name="Avg Blockchain Latency" />
+                        <Bar yAxisId="left" dataKey="steps" fill="#3b82f6" name="Steps to Complete">
+                          {performanceChart.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill="#3b82f6" />
+                          ))}
+                        </Bar>
+                        <Bar yAxisId="right" dataKey="latency" fill="#8b5cf6" name="Avg Blockchain Latency">
+                          {performanceChart.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill="#8b5cf6" />
+                          ))}
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
