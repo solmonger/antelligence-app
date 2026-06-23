@@ -408,12 +408,10 @@ class NanobotAgent:
             priority: Priority level (1-10)
         """
         if not BLOCKCHAIN_ENABLED:
-            print(f"[NANOBOT {self.nanobot_id}] ⚠️ Blockchain not enabled globally")
-            return
-            
+            return  # Blockchain disabled globally; silent skip
+
         if not self.model.blockchain_enabled:
-            print(f"[NANOBOT {self.nanobot_id}] ⚠️ Blockchain not enabled in model")
-            return
+            return  # Blockchain disabled in model; silent skip
         
         pin_type_names = {
             0: "HYPOXIC_CLUSTER",

@@ -150,10 +150,60 @@ def cmd_benchmark(args: argparse.Namespace) -> None:
 def cmd_leaderboard(args: argparse.Namespace) -> None:
     """Display the on-chain leaderboard."""
     try:
-        from chain.leaderboard import get_leaderboard, format_leaderboard_table
+        from chain.leaderboard import build_leaderboard, fetch_onchain_events, load_local_artifacts
+        from chain.config import get_base_sepolia_rpc_url
 
-        entries = get_leaderboard(limit=args.limit)
-        print(format_leaderboard_table(entries))
+        artifacts: list = []
+
+        if args.from_dir:
+            artifacts = load_local_artifacts(args.from_dir)
+        else:
+            rpc_url = get_base_sepolia_rpc_url()
+            if not rpc_url:
+                print("[leaderboard] BASE_SEPOLIA_RPC_URL not set; cannot fetch on-chain data.")
+                print("[leaderboard] No entries to display (offline mode). Use --from-dir <dir> for local artifacts.")
+                return
+            events = fetch_onchain_events(rpc_url)
+            for evt in events:
+                artifacts.append({
+                    "type": "antelligence-simulation-v2",
+                    "config": {},
+                    "metrics": {"kill_rate": 0},
+                    "verification_status": {
+                        "schema_ok": True,
+                        "integrity_ok": False,
+                        "replay_ok": False,
+                        "proof_ok": False,
+                        "onchain_ok": True,
+                    },
+                    "proof_lifecycle": {"stage": "verified_onchain"},
+                    "tx_hash": evt.get("transactionHash", ""),
+                })
+
+        if not artifacts:
+            print("[leaderboard] No simulation entries found.")
+            return
+
+        result = build_leaderboard(artifacts)
+        if not result.get("leaderboard"):
+            print("[leaderboard] No simulation entries found.")
+            return
+
+        print("\nAntelligence Simulation Leaderboard")
+        print("=" * 60)
+        print(f"{'Rank':<6}{'Kill Rate':<12}{'Deliveries':<12}{'Nanobots':<10}{'Steps':<8}{'Run ID'}")
+        print("-" * 60)
+        for entry in result["leaderboard"][:args.limit]:
+            print(
+                f"{entry['rank']:<6}"
+                f"{entry['kill_rate']:>8.1f}%   "
+                f"{entry['deliveries']:>8}    "
+                f"{entry['nanobot_count']:>6}    "
+                f"{entry['steps']:>5}   "
+                f"{entry['run_id'][:16]}"
+            )
+        print(f"\nTotal: {result['summary']['total_entries']} entries")
+        print(f"Best: {result['summary']['best_kill_rate']}% | Avg: {result['summary']['avg_kill_rate']}%")
     except Exception as exc:  # noqa: BLE001
         # Graceful fallback when blockchain is unavailable.
         print(f"[leaderboard] could not reach on-chain data: {exc}")
@@ -193,6 +243,7 @@ def build_parser() -> argparse.ArgumentParser:
     # --- leaderboard ---
     p_lb = sub.add_parser("leaderboard", help="Display the on-chain leaderboard")
     p_lb.add_argument("--limit", type=int, default=10, help="Number of entries to show (default: 10)")
+    p_lb.add_argument("--from-dir", dest="from_dir", type=str, default=None, help="Load artifacts from local directory instead of on-chain")
     p_lb.set_defaults(func=cmd_leaderboard)
 
     return parser
