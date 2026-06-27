@@ -88,6 +88,9 @@ def cmd_simulate(args: argparse.Namespace) -> None:
     }
 
     if args.output:
+        output_dir = os.path.dirname(args.output)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
         with open(args.output, "w") as f:
             json.dump(result, f, indent=2)
         print(f"[simulate] results written to {args.output}")
@@ -99,7 +102,6 @@ def cmd_benchmark(args: argparse.Namespace) -> None:
     """Run multiple simulations and aggregate statistics."""
     import random
     import numpy as np
-    from nanobot_simulation import TumorNanobotModel
 
     results = []
     steps = getattr(args, "steps", 50)
@@ -109,7 +111,7 @@ def cmd_benchmark(args: argparse.Namespace) -> None:
     domain_size = float(grid_size) * voxel_size
     tumor_radius = min(domain_size * 0.33, 200.0)
 
-    print(f"[benchmark] runs={args.runs}, steps={steps}, bots={bots}")
+    print(f"[benchmark] runs={args.runs}, steps={steps}, bots={bots}", file=sys.stderr)
 
     for i in range(args.runs):
         seed = i
@@ -128,7 +130,7 @@ def cmd_benchmark(args: argparse.Namespace) -> None:
         living = stats.get("living_cells", total)
         kill_rate = (total - living) / total
         results.append({"run": i, "seed": seed, "kill_rate": kill_rate, **model.metrics})
-        print(f"  run {i + 1}/{args.runs}: kill_rate={kill_rate:.4f}")
+        print(f"  run {i + 1}/{args.runs}: kill_rate={kill_rate:.4f}", file=sys.stderr)
 
     kill_rates = [r["kill_rate"] for r in results]
     summary = {
@@ -140,6 +142,9 @@ def cmd_benchmark(args: argparse.Namespace) -> None:
     }
 
     if args.output:
+        output_dir = os.path.dirname(args.output)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
         with open(args.output, "w") as f:
             json.dump(summary, f, indent=2)
         print(f"[benchmark] results written to {args.output}")

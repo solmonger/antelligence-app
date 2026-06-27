@@ -12,18 +12,34 @@ Usage:
 
 import argparse
 import json
+import math
 import os
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from chain.config import get_base_sepolia_rpc_url, get_tumor_intel_address
+from chain.verify import verify_proof_bundle_schema
 
 TUMOR_INTEL_ADDRESS = get_tumor_intel_address()
 SIMULATION_VERIFIED_TOPIC = None  # Will compute from event signature
+TRUST_TIER_RANK = {
+    "verified_onchain": 5,
+    "mock_verified_onchain": 4,
+    "proof_staged": 4,
+    "mock_proof_staged": 3,
+    "replay_checked": 3,
+    "mock_replay_checked": 2,
+    "integrity_checked": 2,
+    "mock_integrity_checked": 1,
+    "unverified": 1,
+    "mock_unverified": 0,
+    "no_effect": 0,
+}
+STAGED_PROOF_LIFECYCLE_STAGES = {"proof_generated", "submitted_onchain"}
 
 
 def fetch_onchain_events(rpc_url: str, from_block: int = 0) -> List[Dict]:
@@ -96,7 +112,10 @@ def rank_by_kill_rate(entries: List[Dict]) -> List[Dict]:
     """
     sorted_entries = sorted(
         entries,
-        key=lambda x: x.get("kill_rate", 0),
+        key=lambda x: (
+            x.get("kill_rate", 0),
+            TRUST_TIER_RANK.get(x.get("trust_tier"), -1),
+        ),
         reverse=True,
     )
     for i, entry in enumerate(sorted_entries):
@@ -104,16 +123,84 @@ def rank_by_kill_rate(entries: List[Dict]) -> List[Dict]:
     return sorted_entries
 
 
+def safe_dict(value: object) -> Dict:
+    """Return value only when it is a protocol dictionary; otherwise ignore malformed claims."""
+    return value if isinstance(value, dict) else {}
+
+
+def flag_is_true(value: object) -> bool:
+    """Return True only for explicit boolean protocol flags, never truthy claims."""
+    return value is True
+
+
+def valid_staged_proof_bundle(proof_bundle: Dict) -> bool:
+    """Return True only for proof bundles passing the canonical schema contract."""
+    if not proof_bundle:
+        return False
+    return verify_proof_bundle_schema(proof_bundle).get("ok") is True
+
+
 def derive_trust_tier(verification_status: Dict, proof_bundle: Dict, proof_lifecycle: Dict) -> str:
-    if verification_status.get("onchain_ok"):
+    if flag_is_true(verification_status.get("onchain_ok")):
         return "verified_onchain"
-    if proof_lifecycle.get("stage") == "proof_generated" or proof_bundle:
+    if valid_staged_proof_bundle(proof_bundle) and proof_lifecycle.get("stage") in STAGED_PROOF_LIFECYCLE_STAGES:
         return "proof_staged"
-    if verification_status.get("replay_ok"):
+    if flag_is_true(verification_status.get("replay_ok")):
         return "replay_checked"
-    if verification_status.get("integrity_ok"):
+    if flag_is_true(verification_status.get("integrity_ok")):
         return "integrity_checked"
     return "unverified"
+
+
+def finite_metric_value(metrics: object, field: str, default: float = 0, max_value: Optional[float] = None) -> float:
+    """Return a bounded finite non-negative metric value; malformed values are zeroed."""
+    if not isinstance(metrics, dict):
+        return default
+    value = metrics.get(field, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+        return default
+    if max_value is not None and value > max_value:
+        return default
+    return value
+
+
+def finite_metric_value_capped(metrics: object, field: str, default: float = 0, max_value: Optional[float] = None) -> Tuple[float, bool]:
+    """Return a bounded finite non-negative metric value and whether it was domain-capped.
+
+    Unlike finite_metric_value, this returns (value, was_capped) so callers can
+    audit which fields hit domain boundaries instead of silently zeroing them.
+    This is a metric-accounting invariant: zeroed-from-missing and zeroed-from-capped
+    must be distinguishable for downstream trust decisions.
+    """
+    if not isinstance(metrics, dict):
+        return default, False
+    value = metrics.get(field, default)
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
+        return default, False
+    if max_value is not None and value > max_value:
+        return default, True
+    return value, False
+
+
+def has_treatment_effect(metrics: object) -> bool:
+    """Return True when a run reports any finite positive treatment effect signal."""
+    return any((
+        finite_metric_value(metrics, "kill_rate", max_value=100) > 0,
+        finite_metric_value(metrics, "deliveries") > 0,
+        finite_metric_value(metrics, "total_drug") > 0,
+    ))
+
+
+def config_public_uint32(config: Dict, field: str, fallback_field: Optional[str] = None) -> int:
+    """Return an exact uint32 config value for leaderboard public inputs; malformed values are zeroed."""
+    if not isinstance(config, dict):
+        return 0
+    value = config.get(field, config.get(fallback_field, 0) if fallback_field else 0)
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        return 0
+    if value < 0 or value > 4_294_967_295 or int(value) != value:
+        return 0
+    return int(value)
 
 
 def normalize_leaderboard_artifact(record: Dict) -> Dict:
@@ -152,28 +239,58 @@ def build_leaderboard(artifacts: List[Dict]) -> Dict:
         artifact = normalize_leaderboard_artifact(raw_artifact)
         config = artifact.get("config", {})
         metrics = artifact.get("metrics", {})
-        verification_status = artifact.get("verification_status", {})
-        proof_lifecycle = artifact.get("proof_lifecycle", {})
-        proof_bundle = artifact.get("proof_bundle", {})
-        entries.append({
+        kill_rate, kill_rate_capped = finite_metric_value_capped(metrics, "kill_rate", max_value=100)
+        deliveries = finite_metric_value(metrics, "deliveries")
+        total_drug = finite_metric_value(metrics, "total_drug")
+        capped_metric_fields = []
+        if kill_rate_capped:
+            capped_metric_fields.append("kill_rate")
+        verification_status = safe_dict(artifact.get("verification_status", {}))
+        proof_lifecycle = safe_dict(artifact.get("proof_lifecycle", {}))
+        claimed_proof_bundle = safe_dict(artifact.get("proof_bundle", {}))
+        proof_bundle = claimed_proof_bundle if valid_staged_proof_bundle(claimed_proof_bundle) else {}
+        effectful = has_treatment_effect(metrics)
+        verified_onchain = flag_is_true(verification_status.get("onchain_ok")) or flag_is_true(artifact.get("verified_onchain"))
+        trust_tier = (
+            "verified_onchain"
+            if verified_onchain
+            else derive_trust_tier(verification_status, proof_bundle, proof_lifecycle)
+        )
+        # Mock proof bundles must not claim the same trust tier as real proofs.
+        # Mirror the verify.py convention: mock artifacts get a mock_ prefix.
+        if proof_bundle and flag_is_true(proof_bundle.get("is_mock")) and trust_tier not in ("no_effect",):
+            trust_tier = f"mock_{trust_tier}"
+        entry = {
             "run_id": artifact.get("run_id", "unknown"),
             "config_hash": artifact.get("config_hash", ""),
-            "kill_rate": metrics.get("kill_rate", 0),
-            "deliveries": metrics.get("deliveries", 0),
-            "total_drug": metrics.get("total_drug", 0),
-            "tumor_radius": config.get("tumor_radius", 0),
-            "nanobot_count": config.get("nanobot_count", config.get("n_nanobots", 0)),
-            "steps": config.get("steps", config.get("n_steps", 0)),
+            "kill_rate": kill_rate,
+            "deliveries": deliveries,
+            "total_drug": total_drug,
+            "tumor_radius": config_public_uint32(config, "tumor_radius"),
+            "nanobot_count": config_public_uint32(config, "nanobot_count", "n_nanobots"),
+            "steps": config_public_uint32(config, "steps", "n_steps"),
             "timestamp": artifact.get("timestamp", ""),
-            "verified_onchain": verification_status.get("onchain_ok", artifact.get("verified_onchain", False)),
+            "verified_onchain": verified_onchain,
             "proof_stage": proof_lifecycle.get("stage", "untracked"),
-            "integrity_ok": verification_status.get("integrity_ok", False),
-            "replay_ok": verification_status.get("replay_ok", False),
-            "proof_ok": verification_status.get("proof_ok", False),
-            "trust_tier": artifact.get("trust_tier") or derive_trust_tier(verification_status, proof_bundle, proof_lifecycle),
+            "integrity_ok": flag_is_true(verification_status.get("integrity_ok")),
+            "replay_ok": flag_is_true(verification_status.get("replay_ok")),
+            "proof_ok": flag_is_true(verification_status.get("proof_ok")),
+            "trust_tier": trust_tier,
             "proof_origin": proof_bundle.get("proof_origin", "unknown"),
             "proof_artifact_version": proof_bundle.get("proof_artifact_version", "untracked"),
-        })
+            "effect_status": "effect_reported" if effectful else "no_effect",
+            "capped_metric_fields": capped_metric_fields,
+        }
+        if not effectful:
+            entry.update({
+                "verified_onchain": False,
+                "proof_stage": "no_effect",
+                "integrity_ok": False,
+                "replay_ok": False,
+                "proof_ok": False,
+                "trust_tier": "no_effect",
+            })
+        entries.append(entry)
 
     ranked = rank_by_kill_rate(entries)
 
@@ -184,6 +301,7 @@ def build_leaderboard(artifacts: List[Dict]) -> Dict:
         "verified_entries": sum(1 for e in entries if e.get("verified_onchain")),
         "replay_checked_entries": sum(1 for e in entries if e.get("replay_ok")),
         "staged_proof_entries": sum(1 for e in entries if e.get("trust_tier") == "proof_staged"),
+        "zero_effect_entries": sum(1 for e in entries if e.get("effect_status") == "no_effect"),
         "avg_kill_rate": round(sum(kill_rates) / len(kill_rates), 2) if kill_rates else 0,
         "best_kill_rate": max(kill_rates) if kill_rates else 0,
         "generated_at": datetime.now(timezone.utc).isoformat(),

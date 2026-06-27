@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class PheromoneParams(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
 
     trail_diffusion: float = Field(default=1e-6, gt=0, description="Trail pheromone diffusion coefficient")
     alarm_diffusion: float = Field(default=5e-6, gt=0, description="Alarm pheromone diffusion coefficient")
@@ -68,4 +68,6 @@ def load_config(path: str | Path) -> SimulationConfig:
 
 def save_config(config: SimulationConfig, path: str | Path) -> None:
     """Save a SimulationConfig to a JSON file."""
-    Path(path).write_text(config.model_dump_json(indent=2))
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(config.model_dump_json(indent=2), encoding="utf-8")

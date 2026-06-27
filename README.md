@@ -66,6 +66,8 @@ curl http://127.0.0.1:8001/runs/{run_id}
 curl http://127.0.0.1:8001/health
 ```
 
+Run lookups are durable across process restarts. By default the API stores completed runs in `data/api_runs.sqlite3`, and you can point it at a different local database with `ANTELLIGENCE_RUN_DB=/path/to/runs.sqlite3`.
+
 ### Proof and provenance
 
 Antelligence already carries proof-shaped artifacts, but the product is explicit about what is and is not cryptographically real yet.
@@ -113,6 +115,10 @@ This writes a JSON artifact containing:
 
 - `config`
 - `metrics`
+
+The default `simulate` output is intentionally small. It does not claim proof state and does not include `artifact_hash`, `config_hash`, `proof_bundle`, or `verification_status`.
+
+When you move from a plain run JSON to a staged proof/provenance bundle through the backend chain helpers, the payload expands to include `run_id`, `artifact_hash`, `config_hash`, `proof_bundle`, `verification_status`, `proof_lifecycle`, and `trust_tier`.
 
 ### 3. Run the API
 

@@ -87,6 +87,8 @@ class RunResponse(BaseModel):
 class HealthResponse(BaseModel):
     status: str
     version: str
+    run_store_backend: str
+    run_store_ready: bool
 
 
 # ---------------------------------------------------------------------------
@@ -96,8 +98,16 @@ class HealthResponse(BaseModel):
 
 @app.get("/health", response_model=HealthResponse, tags=["ops"])
 def health() -> HealthResponse:
-    """Return service liveness status."""
-    return HealthResponse(status="ok", version=app.version)
+    """Return service liveness plus durable run-store readiness."""
+    run_store_ready = RUN_STORE.is_ready()
+    if not run_store_ready:
+        raise HTTPException(status_code=503, detail="Run store unavailable.")
+    return HealthResponse(
+        status="ok",
+        version=app.version,
+        run_store_backend="sqlite",
+        run_store_ready=run_store_ready,
+    )
 
 
 @app.post("/simulate", response_model=SimulateResponse, tags=["simulation"])

@@ -16,6 +16,7 @@ import json
 import os
 import subprocess
 import sys
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
@@ -28,12 +29,73 @@ from chain.proof_spec import (
     PROGRAM_VERSION,
     build_public_values_metadata,
     build_public_values_payload,
+    decode_public_values_payload,
     encode_public_values_payload,
     normalize_config_hash,
 )
 
 
 TUMOR_INTEL_ADDRESS = get_tumor_intel_address()
+
+
+UINT32_MAX = Decimal("4294967295")
+KILL_RATE_BPS_MAX = Decimal("10000")
+
+
+def public_value_to_uint32(field: str, value: int, *, max_value: Decimal = UINT32_MAX) -> int:
+    """Validate direct public-value inputs before cast/ABI submission."""
+    try:
+        normalized = Decimal(str(value))
+    except (InvalidOperation, ValueError) as exc:
+        raise ValueError(f"{field} must be numeric before submission") from exc
+
+    if not normalized.is_finite():
+        raise ValueError(f"{field} must be finite before submission")
+
+    if not Decimal("0") <= normalized <= max_value:
+        raise ValueError(f"{field} must be between 0 and {int(max_value)} before submission")
+
+    if normalized != normalized.to_integral_value():
+        raise ValueError(f"{field} must encode exactly to uint32 before submission")
+    return int(normalized)
+
+
+def metric_kill_rate_to_bps(metrics: dict) -> int:
+    """Convert percent kill_rate to basis points within the proof boundary."""
+    try:
+        kill_rate = Decimal(str(metrics.get("kill_rate", 0)))
+    except (InvalidOperation, ValueError) as exc:
+        raise ValueError("kill_rate must be numeric before encoding public values") from exc
+
+    if not kill_rate.is_finite():
+        raise ValueError("kill_rate must be finite before encoding public values")
+
+    if not Decimal("0") <= kill_rate <= Decimal("100"):
+        raise ValueError("kill_rate must be between 0 and 100 before encoding public values")
+
+    basis_points = kill_rate * Decimal("100")
+    if basis_points != basis_points.to_integral_value():
+        raise ValueError("kill_rate must encode exactly to basis points before encoding public values")
+    return int(basis_points)
+
+
+def config_value_to_uint32(config: dict, field: str, fallback_field: Optional[str] = None) -> int:
+    """Validate config public inputs before ABI encoding can truncate or explode."""
+    value = config.get(field, config.get(fallback_field, 0) if fallback_field else 0)
+    try:
+        normalized = Decimal(str(value))
+    except (InvalidOperation, ValueError) as exc:
+        raise ValueError(f"{field} must be numeric before encoding public values") from exc
+
+    if not normalized.is_finite():
+        raise ValueError(f"{field} must be finite before encoding public values")
+
+    if not Decimal("0") <= normalized <= UINT32_MAX:
+        raise ValueError(f"{field} must be between 0 and 4294967295 before encoding public values")
+
+    if normalized != normalized.to_integral_value():
+        raise ValueError(f"{field} must encode exactly to uint32 before encoding public values")
+    return int(normalized)
 
 
 def encode_public_values(
@@ -83,6 +145,10 @@ def submit_via_cast(
     Returns:
         Result dict with tx_hash or estimate
     """
+    kill_rate = public_value_to_uint32("kill_rate", kill_rate, max_value=KILL_RATE_BPS_MAX)
+    nanobot_count = public_value_to_uint32("nanobot_count", nanobot_count)
+    tumor_radius = public_value_to_uint32("tumor_radius", tumor_radius)
+    steps = public_value_to_uint32("steps", steps)
     normalized_config_hash = "0x" + normalize_config_hash(config_hash)
     if dry_run:
         try:
@@ -173,15 +239,17 @@ def create_attestation_bundle(
     Returns:
         Bundle with IPFS pin result + on-chain submission data
     """
+    # Validate proof-boundary metric accounting before deriving artifact/on-chain data.
+    kill_rate = metric_kill_rate_to_bps(metrics)
+
     # Pin to IPFS
     ipfs_result = pin_simulation(config, metrics, run_id=run_id, backend="dry-run")
 
     # Prepare on-chain data
     config_hash = ipfs_result["config_hash"]
-    kill_rate = int(metrics.get("kill_rate", 0) * 100)  # Scale to basis points
-    nanobot_count = config.get("nanobot_count", config.get("n_nanobots", 0))
-    tumor_radius = config.get("tumor_radius", 0)
-    steps = config.get("steps", config.get("n_steps", 0))
+    nanobot_count = config_value_to_uint32(config, "nanobot_count", "n_nanobots")
+    tumor_radius = config_value_to_uint32(config, "tumor_radius")
+    steps = config_value_to_uint32(config, "steps", "n_steps")
 
     public_values_payload = build_public_values_payload(
         config_hash=config_hash,
@@ -191,6 +259,10 @@ def create_attestation_bundle(
         steps=steps,
     )
     public_values = encode_public_values_payload(public_values_payload)
+    decoded_public_values = decode_public_values_payload(public_values)
+    if decoded_public_values != public_values_payload:
+        raise ValueError("encoded public values drifted from payload before attestation bundle creation")
+
     artifact = ipfs_result.get("artifact", {})
     simulation_commitments = {
         "config_hash": config_hash,

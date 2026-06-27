@@ -48,6 +48,15 @@ class TestSimulationConfig:
         with pytest.raises(ValidationError):
             SimulationConfig(pheromone_params={"trail_diffusion": -1.0})
 
+    def test_pheromone_params_reject_infinite_diffusion(self):
+        with pytest.raises(ValidationError) as exc_info:
+            SimulationConfig(pheromone_params={"trail_diffusion": float("inf")})
+
+        assert any(
+            error["loc"] == ("pheromone_params", "trail_diffusion") and error["type"] == "finite_number"
+            for error in exc_info.value.errors()
+        )
+
     def test_pheromone_params_reject_unknown_fields(self):
         with pytest.raises(ValidationError) as exc_info:
             SimulationConfig(pheromone_params={"trail_decya": 0.123})
@@ -108,6 +117,17 @@ class TestSimulationConfig:
             assert cfg.num_bots == 4
         finally:
             tmp.unlink(missing_ok=True)
+
+    def test_save_config_creates_parent_directories(self, tmp_path: Path):
+        cfg = SimulationConfig(num_bots=3, grid_size=12, steps=8, seed=11)
+        target = tmp_path / "nested" / "configs" / "sim.json"
+
+        save_config(cfg, target)
+
+        assert target.exists()
+        saved = json.loads(target.read_text())
+        assert saved["num_bots"] == 3
+        assert saved["seed"] == 11
 
     def test_runtime_factory_passes_pheromone_params_to_model_factory(self):
         import sys

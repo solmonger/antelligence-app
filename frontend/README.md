@@ -1,73 +1,52 @@
-# Welcome to your Lovable project
+# Antelligence Frontend
 
-## Project info
+This frontend is the local React/Vite interface for Antelligence. It visualizes swarm simulations, tumor-focused nanobot runs, and comparison views while keeping real backend execution on the private Python service.
 
-**URL**: https://lovable.dev/projects/2d48896d-115e-4cdc-9a64-f3b17eae2f08
+## Current routes
 
-## How can I edit this code?
+- `/` - main colony simulation interface
+- `/comparison` - side-by-side simulation comparison view
+- `/tumor` - tumor nanobot simulation playback and controls
+- `/tumor-hunt` - wave-based tumor hunt demo
 
-There are several ways of editing your application.
+## Local development
 
-**Use Lovable**
+From the repo root:
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/2d48896d-115e-4cdc-9a64-f3b17eae2f08) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+npm --prefix frontend install
+npm --prefix frontend run dev
 ```
 
-**Edit a file directly in GitHub**
+The Vite dev server runs on `http://127.0.0.1:8081`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Backend connection
 
-**Use GitHub Codespaces**
+The frontend expects the Antelligence API at `http://127.0.0.1:8001` by default. Override it with `VITE_API_BASE_URL` if your backend is elsewhere.
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Useful runtime variables:
 
-## What technologies are used for this project?
+- `VITE_API_BASE_URL` - backend base URL for simulation requests
+- `VITE_FRONTEND_MODE` - set to `preview` to disable private backend execution in the public UI
+- `VITE_PREVIEW_HOSTNAME` - hostname shown in preview banners
+- `VITE_BUILD_LABEL` and `VITE_GIT_SHA` - optional build metadata surfaced in the UI
 
-This project is built with:
+## Preview mode
 
+Preview mode is a frontend-only surface. When `VITE_FRONTEND_MODE=preview`, the app keeps backend execution private and shows banner/toast messaging instead of sending live simulation requests.
+
+## Build
+
+```bash
+npm --prefix frontend run build
+npm --prefix frontend run preview
+```
+
+## Stack
+
+- React 18 + TypeScript
 - Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/2d48896d-115e-4cdc-9a64-f3b17eae2f08) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+- TanStack Query
+- React Router
+- Tailwind + shadcn/ui
+- Recharts for simulation charts
