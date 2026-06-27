@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 # Ensure backend package is importable when running from repo root.
 _backend_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,6 +31,7 @@ if _backend_dir not in sys.path:
 from backend.config import PheromoneParams, SimulationConfig  # noqa: E402
 from backend.run_store import SQLiteRunStore  # noqa: E402
 from backend.runtime_factory import run_simulation  # noqa: E402
+from chain.proof_adapter import create_proof_bundle  # noqa: E402
 
 # Import simulation model at module level so tests can patch backend.api_server.TumorNanobotModel
 try:
@@ -75,6 +76,7 @@ class SimulateResponse(BaseModel):
     run_id: str
     status: str
     metrics: Dict[str, Any]
+    provenance: Dict[str, Any]
 
 
 class RunResponse(BaseModel):
@@ -82,11 +84,50 @@ class RunResponse(BaseModel):
     status: str
     config: Dict[str, Any]
     metrics: Dict[str, Any]
+    provenance: Optional[Dict[str, Any]] = None
 
 
 class HealthResponse(BaseModel):
     status: str
     version: str
+
+
+def _config_validation_detail(exc: ValidationError) -> list[dict[str, Any]]:
+    """Return FastAPI-style validation errors for SimulationConfig failures."""
+    detail: list[dict[str, Any]] = []
+    for error in exc.errors():
+        item = dict(error)
+        item["loc"] = ["body", *item.get("loc", ())]
+        if "ctx" in item:
+            item["ctx"] = {key: str(value) for key, value in item["ctx"].items()}
+        detail.append(item)
+    return detail
+
+
+def _provenance_config(cfg: SimulationConfig) -> Dict[str, Any]:
+    """Return simulation config normalized for proof/public-value metadata."""
+    model_kwargs = cfg.to_model_kwargs()
+    config = cfg.model_dump()
+    config.update(
+        {
+            "nanobot_count": cfg.num_bots,
+            "tumor_radius": int(model_kwargs["tumor_radius"]),
+        }
+    )
+    return config
+
+
+def _build_run_provenance(run_id: str, cfg: SimulationConfig, metrics: Dict[str, Any]) -> Dict[str, Any]:
+    """Build machine-readable proof/provenance metadata for an API run."""
+    bundle = create_proof_bundle(_provenance_config(cfg), metrics, run_id=run_id)
+    return {
+        "run_id": run_id,
+        "trust_tier": bundle["trust_tier"],
+        "verification_status": bundle["verification_status"],
+        "proof_lifecycle": bundle["proof_lifecycle"],
+        "onchain": bundle["onchain"],
+        "proof_bundle": bundle["proof_bundle"],
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -117,8 +158,8 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
             seed=request.seed,
             pheromone_params=pheromone_kwargs,
         )
-    except Exception as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ValidationError as exc:
+        raise HTTPException(status_code=422, detail=_config_validation_detail(exc)) from exc
 
     try:
         _, metrics = run_simulation(cfg, model_factory=TumorNanobotModel)
@@ -127,15 +168,17 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
         raise HTTPException(status_code=500, detail=f"Simulation error: {exc}") from exc
 
     run_id = str(uuid.uuid4())
+    provenance = _build_run_provenance(run_id, cfg, metrics)
     entry = {
         "status": "completed",
         "config": cfg.model_dump(),
         "metrics": metrics,
+        "provenance": provenance,
     }
     _RUNS[run_id] = entry
-    RUN_STORE.save_run(run_id, entry["status"], entry["config"], entry["metrics"])
+    RUN_STORE.save_run(run_id, entry["status"], entry["config"], entry["metrics"], entry["provenance"])
 
-    return SimulateResponse(run_id=run_id, status="completed", metrics=metrics)
+    return SimulateResponse(run_id=run_id, status="completed", metrics=metrics, provenance=provenance)
 
 
 @app.get("/runs/{run_id}", response_model=RunResponse, tags=["simulation"])
@@ -149,6 +192,7 @@ def get_run(run_id: str) -> RunResponse:
                 "status": persisted["status"],
                 "config": persisted["config"],
                 "metrics": persisted["metrics"],
+                "provenance": persisted.get("provenance"),
             }
             _RUNS[run_id] = entry
     if entry is None:
@@ -158,6 +202,7 @@ def get_run(run_id: str) -> RunResponse:
         status=entry["status"],
         config=entry["config"],
         metrics=entry["metrics"],
+        provenance=entry.get("provenance"),
     )
 
 

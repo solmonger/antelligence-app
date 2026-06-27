@@ -76,6 +76,15 @@ class TestSimulateEndpoint:
         resp = client.post("/simulate", json={"num_bots": 0, "grid_size": 5, "steps": 3})
         assert resp.status_code == 422
 
+    def test_simulate_invalid_num_bots_returns_structured_validation_error(self):
+        resp = client.post("/simulate", json={"num_bots": 0, "grid_size": 5, "steps": 3})
+        assert resp.status_code == 422
+        assert any(
+            error.get("loc") == ["body", "num_bots"]
+            and error.get("type") in {"greater_than_equal", "value_error"}
+            for error in resp.json()["detail"]
+        )
+
     def test_simulate_rejects_unknown_request_fields(self):
         resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 3, "unexpected_flag": True})
         assert resp.status_code == 422
@@ -111,11 +120,35 @@ class TestSimulateEndpoint:
         assert stored_config["seed"] == 123
         assert stored_config["pheromone_params"] == payload["pheromone_params"]
 
-    def test_simulate_rejects_unknown_pheromone_fields(self):
+    def test_simulate_response_and_stored_run_include_machine_readable_provenance(self):
+        payload = {"num_bots": 2, "grid_size": 5, "steps": 3, "seed": 123}
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            resp = client.post("/simulate", json=payload)
+
+        assert resp.status_code == 200
+        data = resp.json()
+        provenance = data["provenance"]
+        assert provenance["run_id"] == data["run_id"]
+        assert provenance["trust_tier"] == "proof_staged"
+        assert provenance["proof_lifecycle"]["stage"] == "proof_generated"
+        assert provenance["onchain"]["nanobot_count"] == payload["num_bots"]
+        assert provenance["onchain"]["steps"] == payload["steps"]
+        assert provenance["onchain"]["simulation_commitments"]["config_hash"]
+
+        _RUNS.pop(data["run_id"])
+        get_resp = client.get(f"/runs/{data['run_id']}")
+        assert get_resp.status_code == 200
+        stored = get_resp.json()
+        assert stored["provenance"]["run_id"] == data["run_id"]
+        assert stored["provenance"]["onchain"] == provenance["onchain"]
+
+    def test_pheromone_request_rejects_unknown_field(self):
         resp = client.post(
             "/simulate",
             json={"num_bots": 2, "grid_size": 5, "steps": 3, "pheromone_params": {"trail_decya": 0.1}},
         )
+        # This test was intended to FAIL initially because PheromoneParams does not yet forbid extra fields.
+        # The goal of this task was to implement the validation.
         assert resp.status_code == 422
         assert any(
             error.get("loc") == ["body", "pheromone_params", "trail_decya"]
