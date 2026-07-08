@@ -1,4 +1,3 @@
-
 import json
 import os
 import sys
@@ -48,22 +47,36 @@ def test_attestation_bot_dry_run(tmp_path: Path):
     try:
         # 2. Run the core logic without replaying live simulations or touching
         # blockchain/IPFS side effects.
-        def fake_spot_check(original, steps, n_bots, with_queen, episode_length):
-            return {
-                "kill_rate_pct": original["kill_rate_pct"],
-                "kills": 0,
-                "deliveries": original["deliveries"],
-            }
-
-        with patch("scripts.attestation_bot.spot_check_run", side_effect=fake_spot_check):
-            result = run_spot_checks(dummy_data, sample_pct=100, tolerance_pct=5.0, verbose=False)
-
-        # 3. Assertions
-        assert result["ok"] is True, f"Dry run failed: {result}"
-        assert result["checked"] == 2
-        assert result["passed"] == 2
         
-        print("Dry run test passed successfully!")
+        # We patch 'spot_check_run' to track if it's called.
+        with patch("scripts.attestation_bot.spot_check_run") as mock_spot_check:
+            # We also need to mock the return value of the patch if it WERE called, 
+            # but since we are testing the 'else' branch (dry_run=True), it shouldn't be called.
+            
+            def fake_spot_check_return(original, steps, n_bots, with_queen, episode_length):
+                return {
+                    "kill_rate_pct": original["kill_rate_pct"],
+                    "kills": 0,
+                    "deliveries": original["deliveries"],
+                }
+            
+            # To make the patch robust, we'll use the side_effect for the 'else' branch 
+            # just in case, but our goal is to ensure it's NOT called during dry_run=True.
+            mock_spot_check.side_effect = fake_spot_check_return
+
+            # Perform the dry run
+            result = run_spot_checks(dummy_data, sample_pct=100, tolerance_pct=5.0, verbose=False, dry_run=True)
+            
+            # 3. Assertions
+            assert result["ok"] is True, f"Dry run failed: {result}"
+            assert result["checked"] == 2
+            assert result["passed"] == 2
+            
+            # CRITICAL: Verify that the heavy 'spot_check_run' was NOT called during dry_run=True.
+            # This proves the 'else' branch (the dry-run guard) was taken.
+            mock_spot_check.assert_not_called()
+
+            print("Dry run test passed successfully!")
 
     finally:
         # Cleanup

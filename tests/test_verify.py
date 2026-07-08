@@ -176,7 +176,26 @@ class TestReplayVerification:
         assert result["ok"] is False
         assert any(check["check"] == "transport_commitment" and check["ok"] is False for check in result["checks"])
 
-    def test_verify_artifact_includes_proof_bundle_validation(self):
+    def test_valid_mock_proof_bundle_with_lifecycle_promotes_to_proof_staged(self, monkeypatch):
+        bundle = create_proof_bundle(
+            config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2},
+            metrics={"kill_rate": 0.0, "deliveries": 0},
+            run_id="proof-verify-mock",
+        )
+        artifact = {
+            **bundle["ipfs"]["artifact"],
+            "onchain": bundle["onchain"],
+            "proof_bundle": bundle["proof_bundle"],
+            "proof_lifecycle": bundle["proof_lifecycle"],
+            "verification_status": bundle["verification_status"],
+            "trust_tier": "proof_staged",
+        }
+        result = verify_artifact(artifact, tolerance_pct=100.0, replay=False)
+        assert result["trust_tier"] == "proof_staged"
+        assert result["verification_status"]["proof_ok"] is False
+        # This check will fail because 'is_trusted_tier' is not implemented yet
+        assert result["verification_status"]["is_trusted_tier"] is True
+
         bundle = create_proof_bundle(
             config={"tumor_radius": 40, "nanobot_count": 2, "steps": 2, "seed": 7, "domain_size": 40, "voxel_size": 20},
             metrics={"kill_rate": 0.0, "deliveries": 0},
@@ -199,6 +218,7 @@ class TestReplayVerification:
         assert result["verification_status"]["onchain_ok"] is False
         assert result["proof_lifecycle"]["stage"] == "proof_generated"
         assert result["trust_tier"] == "proof_staged"
+        assert result["verification_status"]["is_trusted_tier"] is True
 
     def test_verify_artifact_marks_verified_onchain_only_when_chain_accepts(self, monkeypatch):
         bundle = create_proof_bundle(

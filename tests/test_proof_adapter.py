@@ -1,7 +1,10 @@
 """Tests for proof adapter helpers."""
 
+from copy import deepcopy
 from pathlib import Path
+
 from backend.chain.proof_adapter import create_proof_bundle, write_proof_bundle, ProverInterface
+from backend.chain.verify import verify_proof_bundle_schema
 
 class TestProofAdapter:
     def test_create_proof_bundle(self):
@@ -128,12 +131,53 @@ class TestProofAdapter:
         assert "transport_commitment" in transport
         assert "artifact_version" in transport
         assert "proof_system" in transport
+        # Ensure transport metadata also contains the origin and status
+        assert "proof_origin" in transport
+        assert "prover_status" in transport
+        assert "is_mock" in transport
         
         # 3. Check adapter fields
         assert "expected_verifier_call" in adapter
-        assert "proof_transport" in adapter
-        
-        # 4. Check trust tier
         assert "trust_tier" in bundle
         assert bundle["trust_tier"] == "proof_staged"
+
+        trusted_bundle = create_proof_bundle(
+            config={"tumor_radius": 125, "nanobot_count": 8, "steps": 12},
+            metrics={"kill_rate": 22.0},
+            run_id="trusted-proof-run",
+        )
+        substituted_bundle = create_proof_bundle(
+            config={"tumor_radius": 130, "nanobot_count": 9, "steps": 13},
+            metrics={"kill_rate": 25.0},
+            run_id="substituted-proof-run",
+        )
+
+        tampered_bundle = deepcopy(substituted_bundle)
+        tampered_bundle["proof_bundle"]["transport_metadata"] = trusted_bundle["proof_bundle"]["transport_metadata"]
+
+        result = verify_proof_bundle_schema(tampered_bundle)
+
+        assert result["ok"] is False
+        assert any(
+            check["check"] == "transport_commitment" and check["ok"] is False
+            for check in result["checks"]
+        )
+
+    def test_proof_bundle_schema_rejects_missing_required_field(self):
+        bundle = create_proof_bundle(
+            config={"tumor_radius": 100, "nanobot_count": 5, "steps": 10},
+            metrics={"kill_rate": 10.0},
+            run_id="missing-field-run",
+        )
+        del bundle["proof_bundle"]["run_id"]
+
+        result = verify_proof_bundle_schema(bundle)
+
+        assert result["ok"] is False
+        assert any(
+            check["check"] == "proof_bundle_required_fields"
+            and check["ok"] is False
+            and "run_id" in check["missing"]
+            for check in result["checks"]
+        )
 

@@ -19,6 +19,8 @@ def set_verifier_address(verifier_address: str) -> Dict:
     rpc_url = get_base_sepolia_rpc_url()
     private_key = get_private_key()
     contract = validate_required_address(get_tumor_intel_address(), "TUMOR_INTEL_ADDR")
+    if not verifier_address:
+        raise ValueError("verifier_address is not configured")
     verifier_address = validate_required_address(verifier_address, "verifier_address")
 
     result = subprocess.run(

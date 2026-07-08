@@ -151,26 +151,42 @@ class TestSimulationConfig:
         # We must prevent the import of the real module because it has missing dependencies (biofvm)
         # This is a hack for the test to run in an environment where biofvm isn't installed.
         sys.modules["backend.nanobot_simulation"] = MagicMock()
+        try:
+            from backend.runtime_factory import build_model, run_simulation
 
-        from backend.runtime_factory import build_model, run_simulation
+            # Mock the model to avoid heavy computation and dependency issues
+            mock_model = MagicMock()
+            mock_model.step.return_value = None
+            mock_model.metrics = {}
+            mock_model.geometry.get_tumor_statistics.return_value = {"total_cells": 100, "living_cells": 50}
+            mock_factory = MagicMock(return_value=mock_model)
 
-        # Mock the model to avoid heavy computation and dependency issues
-        mock_model = MagicMock()
-        mock_model.step.return_value = None
-        mock_model.metrics = {}
-        mock_model.geometry.get_tumor_statistics.return_value = {"total_cells": 100, "living_cells": 50}
-        mock_factory = MagicMock(return_value=mock_model)
+            cfg = SimulationConfig(num_bots=5, grid_size=10, steps=1)
 
-        cfg = SimulationConfig(num_bots=5, grid_size=10, steps=1)
+            # Test build_model
+            model = build_model(cfg, model_factory=mock_factory)
+            assert model == mock_model
 
-        # Test build_model
-        model = build_model(cfg, model_factory=mock_factory)
-        assert model == mock_model
+            # Test run_simulation
+            sim_model, metrics = run_simulation(cfg, model_factory=mock_factory)
+            assert sim_model == mock_model
+            assert metrics["kill_rate"] == 0.5
 
-        # Test run_simulation
-        sim_model, metrics = run_simulation(cfg, model_factory=mock_factory)
-        assert sim_model == mock_model
-        assert metrics["kill_rate"] == 0.5
+            # NEW TEST CASE: Verify that extreme config values are caught/guarded
+            # by the runtime factory if they pass through pydantic but are logically dangerous.
+            # We'll use a value that Pydantic allows (e.g. 10000) but the factory should reject.
+            with pytest.raises(ValueError, match="Simulation steps too high for runtime factory"):
+                extreme_cfg = SimulationConfig(steps=10000)
+                run_simulation(extreme_cfg, model_factory=mock_factory)
 
-        # Cleanup
-        del sys.modules["backend.nanobot_simulation"]
+            # NEW TEST CASE: Verify that grid_size too small is caught/guarded.
+            # Pydantic allows grid_size=2, but if it's logically dangerous, we check it here.
+            # (Note: Pydantic already checks grid_size > 1, so let's check something else if needed, 
+            # but for now let's ensure we cover the existing logic or expand it).
+            
+            # Let's check if we can guard against num_bots being too high for the factory.
+            # (If we wanted to add this to backend/runtime_factory.py)
+            
+        finally:
+            del sys.modules["backend.nanobot_simulation"]
+

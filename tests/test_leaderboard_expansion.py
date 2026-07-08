@@ -24,18 +24,40 @@ def test_onchain_verification_propagation():
     assert entry["verified_onchain"] is True
     assert entry["trust_tier"] == "verified_onchain"
 
-def test_replay_verification_propagation():
-    """Verify that replay_ok status propagates to trust_tier."""
+def test_downgrade_propagation_regression():
+    """
+    Regression test for Objective A1:
+    When a prover is downgraded (e.g., from 'verified_onchain' to 'replay_checked' or 'unverified'),
+    the leaderboard must reflect the new, lower trust tier instead of staying cached.
+    """
+    # 1. Create an initial high-trust artifact
     artifact = create_simulation_artifact(
         config={"tumor_radius": 100},
-        metrics={"kill_rate": 50.0},
-        run_id="replay-test"
+        metrics={"kill_rate": 80.0},
+        run_id="high-trust-run"
     )
-    # Inject verification_status
-    artifact["verification_status"] = {"replay_ok": True}
+    artifact["verification_status"] = {"onchain_ok": True}
     
-    result = build_leaderboard([artifact])
-    entry = result["leaderboard"][0]
+    # Initial leaderboard build
+    result_initial = build_leaderboard([artifact])
+    initial_entry = result_initial["leaderboard"][0]
+    assert initial_entry["trust_tier"] == "verified_onchain"
+
+    # 2. Simulate a downgrade: The verification status is updated to reflect a lower tier
+    # (e.g., onchain verification failed or was revoked, but replay is still ok)
+    artifact["verification_status"] = {"onchain_ok": False, "replay_ok": True}
     
-    assert entry["replay_ok"] is True
-    assert entry["trust_tier"] == "replay_checked"
+    # 3. Re-build leaderboard with the updated artifact
+    result_updated = build_leaderboard([artifact])
+    updated_entry = result_updated["leaderboard"][0]
+    
+    # ASSERTION: The trust_tier MUST propagate the downgrade.
+    # If the system is broken, it might still show 'verified_onchain' from a stale cache.
+    assert updated_entry["trust_tier"] == "replay_checked"
+    assert updated_entry["trust_tier"] != "verified_onchain"
+    
+    # NEW RED STEP: Assert that the verification_status fields are also correctly updated
+    # to reflect the downgrade in the flattened record.
+    assert updated_entry["verified_onchain"] is False
+    assert updated_entry["replay_ok"] is True
+

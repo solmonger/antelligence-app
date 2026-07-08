@@ -119,9 +119,13 @@ def _provenance_config(cfg: SimulationConfig) -> Dict[str, Any]:
 
 def _build_run_provenance(run_id: str, cfg: SimulationConfig, metrics: Dict[str, Any]) -> Dict[str, Any]:
     """Build machine-readable proof/provenance metadata for an API run."""
+    config = cfg.model_dump()
     bundle = create_proof_bundle(_provenance_config(cfg), metrics, run_id=run_id)
+    config_hash = bundle["onchain"]["simulation_commitments"]["config_hash"]
     return {
         "run_id": run_id,
+        "config": config,
+        "config_hash": config_hash,
         "trust_tier": bundle["trust_tier"],
         "verification_status": bundle["verification_status"],
         "proof_lifecycle": bundle["proof_lifecycle"],
@@ -165,7 +169,13 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
         _, metrics = run_simulation(cfg, model_factory=TumorNanobotModel)
 
     except Exception as exc:  # noqa: BLE001
-        raise HTTPException(status_code=500, detail=f"Simulation error: {exc}") from exc
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "type": "simulation_runtime_error",
+                "message": f"Simulation error: {exc}",
+            },
+        ) from exc
 
     run_id = str(uuid.uuid4())
     provenance = _build_run_provenance(run_id, cfg, metrics)
@@ -196,7 +206,14 @@ def get_run(run_id: str) -> RunResponse:
             }
             _RUNS[run_id] = entry
     if entry is None:
-        raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found.")
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "type": "run_not_found",
+                "run_id": run_id,
+                "message": f"Run '{run_id}' not found.",
+            },
+        )
     return RunResponse(
         run_id=run_id,
         status=entry["status"],

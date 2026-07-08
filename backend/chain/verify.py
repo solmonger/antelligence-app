@@ -37,6 +37,60 @@ from chain.proof_spec import (
 from simulation_replay import replay_artifact_metrics
 
 
+PROOF_BUNDLE_REQUIRED_FIELDS = (
+    "run_id",
+    "artifact_hash",
+    "config_hash",
+    "public_values",
+    "proof_bytes",
+    "proof_system",
+    "proof_format",
+    "proof_origin",
+    "proof_artifact_version",
+    "public_values_schema_version",
+    "prover_status",
+    "is_mock",
+    "program_version",
+    "proof_boundary_version",
+    "trace_commitment",
+    "witness_commitment",
+    "adapter",
+    "transport_metadata",
+)
+
+
+SUPPORTED_TRUST_TIERS = (
+    "integrity_checked",
+    "proof_staged",
+    "replay_checked",
+    "unverified",
+    "verified_onchain",
+)
+
+
+def _unsupported_trust_tier_error(trust_tier: str) -> Dict:
+    return {
+        "code": "unsupported_trust_tier",
+        "message": f"Unsupported trust tier: {trust_tier}",
+        "trust_tier": trust_tier,
+        "supported_trust_tiers": list(SUPPORTED_TRUST_TIERS),
+    }
+
+
+def _validate_supplied_trust_tier(artifact: dict) -> Dict | None:
+    if "trust_tier" not in artifact:
+        return None
+
+    trust_tier = artifact["trust_tier"]
+    if not isinstance(trust_tier, str):
+        return _unsupported_trust_tier_error(str(trust_tier))
+
+    base_trust_tier = trust_tier.removeprefix("mock_")
+    if base_trust_tier not in SUPPORTED_TRUST_TIERS:
+        return _unsupported_trust_tier_error(trust_tier)
+    return None
+
+
 def fetch_from_ipfs(cid: str) -> Tuple[Optional[dict], Optional[str]]:
     """Fetch artifact JSON from IPFS via public gateway."""
     gateways = [
@@ -287,6 +341,15 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
     checks = [{"check": "proof_bundle_present", "ok": True}]
     decoded_public_values = None
 
+    missing_required_fields = [field for field in PROOF_BUNDLE_REQUIRED_FIELDS if field not in proof_bundle]
+    checks.append({
+        "check": "proof_bundle_required_fields",
+        "ok": not missing_required_fields,
+        "expected": list(PROOF_BUNDLE_REQUIRED_FIELDS),
+        "missing": missing_required_fields,
+        "actual": sorted(proof_bundle.keys()),
+    })
+
     checks.extend([
         {
             "check": "proof_artifact_version",
@@ -526,6 +589,28 @@ def verify_artifact(artifact: dict, tolerance_pct: float = 5.0, replay: bool = T
         "onchain_ok": onchain_verified,
     }
 
+    unsupported_trust_tier = _validate_supplied_trust_tier(artifact)
+    if unsupported_trust_tier is not None:
+        trust_tier = "unsupported"
+        return {
+            "ok": False,
+            "integrity": integrity,
+            "public_values": public_values,
+            "proof_bundle": proof_bundle_result,
+            "replay": replay_result,
+            "onchain": onchain,
+            "verification_status": verification_status,
+            "proof_lifecycle": artifact.get("proof_lifecycle", {}) if isinstance(artifact.get("proof_lifecycle"), dict) else {},
+            "trust_tier": trust_tier,
+            "trust_metadata": {
+                "is_cryptographic": False,
+                "is_mock": artifact.get("is_mock", False),
+                "trust_tier": trust_tier,
+            },
+            "is_mock": artifact.get("is_mock", False),
+            "error": unsupported_trust_tier,
+        }
+
     prior_lifecycle = artifact.get("proof_lifecycle", {}) if isinstance(artifact.get("proof_lifecycle"), dict) else {}
     proof_lifecycle = dict(prior_lifecycle)
     if verification_status["onchain_ok"]:
@@ -554,6 +639,12 @@ def verify_artifact(artifact: dict, tolerance_pct: float = 5.0, replay: bool = T
         trust_tier = "integrity_checked"
     else:
         trust_tier = "unverified"
+    verification_status["is_trusted_tier"] = trust_tier in {
+        "integrity_checked",
+        "replay_checked",
+        "proof_staged",
+        "verified_onchain",
+    }
 
     # Explicitly differentiate between local/simulated and cryptographically verified
     trust_metadata = {

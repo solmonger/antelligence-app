@@ -1,0 +1,54 @@
+{
+  "project": "Antelligence",
+  "manifest_type": "w27_a1_unreleased_pr_slice",
+  "generated_at": "2026-06-28T01:35:00Z",
+  "status": "not_pushed_operator_approval_required",
+  "base_ref": "origin/main",
+  "source_commit": "318c1d4",
+  "source_commit_subject": "feat: recover swarm knowledge and API provenance work",
+  "current_branch": "recover/local-repo-organization-2026-06-27",
+  "operator_boundary": {
+    "pushed": false,
+    "merged": false,
+    "deployed": false,
+    "contracts_deployed": false,
+    "approval_required_before_release": true
+  },
+  "included_slice": {
+    "objective": "A1 structured simulation/provenance baseline",
+    "description": "Structured /simulate validation errors plus machine-readable provenance persisted from simulation response to stored run record.",
+    "files": [
+      "backend/api_server.py",
+      "backend/run_store.py",
+      "tests/test_api_server.py"
+    ],
+    "accepted_kanban_tasks": [
+      "t_46f5f368",
+      "t_b168a0bd"
+    ]
+  },
+  "excluded_from_slice": {
+    "reason": "Not part of the A1 API/run-store provenance package; keep separate for future review.",
+    "files": [
+      "blockchain/contracts/ExperienceRegistry.sol",
+      "blockchain/contracts/TumorIntel.sol",
+      "blockchain/test/SwarmKnowledge.test.js",
+      "frontend/dist/index.html",
+      ".codex-work/",
+      ".serena/",
+      "backups/"
+    ]
+  },
+  "verification": [
+    {
+      "command": "uv run --extra test python -m pytest tests/test_api_server.py tests/test_run_store.py -q",
+      "result": "16 passed in 0.72s",
+      "run_at": "2026-06-28T01:35:00Z"
+    }
+  ],
+  "release_notes": [
+    "Board acceptance only; source edits were already present in commit 318c1d4.",
+    "This manifest does not authorize push, merge, deployment, or contract deployment.",
+    "A coherent PR should include only included_slice.files plus this manifest unless operator explicitly expands scope."
+  ]
+}

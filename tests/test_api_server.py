@@ -142,6 +142,39 @@ class TestSimulateEndpoint:
         assert stored["provenance"]["run_id"] == data["run_id"]
         assert stored["provenance"]["onchain"] == provenance["onchain"]
 
+    def test_simulate_provenance_links_request_config_stored_run_and_proof_hash(self):
+        payload = {"num_bots": 3, "grid_size": 7, "steps": 4, "queen_enabled": True, "seed": 321}
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            resp = client.post("/simulate", json=payload)
+
+        assert resp.status_code == 200
+        data = resp.json()
+        provenance = data["provenance"]
+        assert provenance["config"]["num_bots"] == payload["num_bots"]
+        assert provenance["config"]["grid_size"] == payload["grid_size"]
+        assert provenance["config"]["steps"] == payload["steps"]
+        assert provenance["config"]["queen_enabled"] == payload["queen_enabled"]
+        assert provenance["config"]["seed"] == payload["seed"]
+        assert provenance["config_hash"] == provenance["onchain"]["simulation_commitments"]["config_hash"]
+        assert provenance["config_hash"] == provenance["proof_bundle"]["config_hash"]
+
+        _RUNS.pop(data["run_id"])
+        get_resp = client.get(f"/runs/{data['run_id']}")
+        assert get_resp.status_code == 200
+        stored = get_resp.json()
+        assert stored["config"] == provenance["config"]
+        assert stored["provenance"]["config_hash"] == provenance["config_hash"]
+
+    def test_simulate_runtime_error_returns_structured_machine_readable_detail(self):
+        with patch("backend.api_server.run_simulation", side_effect=RuntimeError("engine exploded")):
+            resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 3})
+
+        assert resp.status_code == 500
+        assert resp.json()["detail"] == {
+            "type": "simulation_runtime_error",
+            "message": "Simulation error: engine exploded",
+        }
+
     def test_pheromone_request_rejects_unknown_field(self):
         resp = client.post(
             "/simulate",
@@ -173,6 +206,11 @@ class TestGetRunEndpoint:
     def test_get_run_not_found(self):
         resp = client.get("/runs/nonexistent-run-id")
         assert resp.status_code == 404
+        assert resp.json()["detail"] == {
+            "type": "run_not_found",
+            "run_id": "nonexistent-run-id",
+            "message": "Run 'nonexistent-run-id' not found.",
+        }
 
     def test_get_run_returns_stored_result(self):
         _RUNS.clear()

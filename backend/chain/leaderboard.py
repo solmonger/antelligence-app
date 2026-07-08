@@ -132,6 +132,8 @@ def normalize_leaderboard_artifact(record: Dict) -> Dict:
         "onchain",
         "status",
         "next_step",
+        "replay_ok",
+        "integrity_ok",
     ):
         if field in record:
             normalized[field] = record[field]
