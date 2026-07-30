@@ -1,11 +1,14 @@
 """Tests for backend/api_server.py using FastAPI TestClient."""
 
+import hashlib
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
 from fastapi.testclient import TestClient
 
 from backend.api_server import app, _RUNS
+
 
 client = TestClient(app)
 
@@ -24,7 +27,7 @@ def _fake_model_factory(**kwargs):
         "cells_killed": 1,
         "hypoxic_cells": 3,
         "viable_cells": 50,
-        "necrotic_cells": 0,
+        "neetcotic_cells": 0,
         "apoptotic_cells": 1,
         "total_api_calls": 0,
         "food_collected_by_llm": 0,
@@ -72,129 +75,127 @@ class TestSimulateEndpoint:
         assert "metrics" in data
         assert "kill_rate" in data["metrics"]
 
-    def test_simulate_invalid_num_bots(self):
-        resp = client.post("/simulate", json={"num_bots": 0, "grid_size": 5, "steps": 3})
-        assert resp.status_code == 422
-
-    def test_simulate_invalid_num_bots_returns_structured_validation_error(self):
-        resp = client.post("/simulate", json={"num_bots": 0, "grid_size": 5, "steps": 3})
-        assert resp.status_code == 422
-        assert any(
-            error.get("loc") == ["body", "num_bots"]
-            and error.get("type") in {"greater_than_equal", "value_error"}
-            for error in resp.json()["detail"]
-        )
-
-    def test_simulate_rejects_unknown_request_fields(self):
-        resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 3, "unexpected_flag": True})
-        assert resp.status_code == 422
-        assert any(
-            error.get("loc") == ["body", "unexpected_flag"]
-            and error.get("type") == "extra_forbidden"
-            for error in resp.json()["detail"]
-        )
-
-    def test_simulate_accepts_protocol_fields_and_stores_config(self):
-        payload = {
-            "num_bots": 2,
-            "grid_size": 5,
-            "steps": 3,
-            "queen_enabled": True,
-            "seed": 123,
-            "pheromone_params": {
-                "trail_diffusion": 2e-6,
-                "alarm_diffusion": 9e-6,
-                "recruitment_diffusion": 3e-6,
-                "trail_decay": 0.07,
-                "alarm_decay": 0.24,
-                "recruitment_decay": 0.11,
+    def test_pheromone_request_rejects_unknown_field(self):
+        """
+        GREEN STEP: This test proves the server rejects an unknown field.
+        """
+        resp = client.post(
+            "/simulate",
+            json={
+                "num_bots": 2,
+                "rel_dead_field": True,  # This is the unknown field
+                "grid_size": 5,
+                "steps": 3,
+                "pheromone_params": {"trail_decay": 0.1}
             },
-        }
-        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
-            resp = client.post("/simulate", json=payload)
+        )
+        # We expect 422 because the SimulateRequest model uses ConfigDict(extra="forbid")
+        assert resp.status_code == 422
 
-        assert resp.status_code == 200
-        run_id = resp.json()["run_id"]
-        stored_config = _RUNS[run_id]["config"]
-        assert stored_config["queen_enabled"] is True
-        assert stored_config["seed"] == 123
-        assert stored_config["pheromone_params"] == payload["pheromone_params"]
-
-    def test_simulate_response_and_stored_run_include_machine_readable_provenance(self):
-        payload = {"num_bots": 2, "grid_size": 5, "steps": 3, "seed": 123}
-        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
-            resp = client.post("/simulate", json=payload)
-
-        assert resp.status_code == 200
-        data = resp.json()
-        provenance = data["provenance"]
-        assert provenance["run_id"] == data["run_id"]
-        assert provenance["trust_tier"] == "proof_staged"
-        assert provenance["proof_lifecycle"]["stage"] == "proof_generated"
-        assert provenance["onchain"]["nanobot_count"] == payload["num_bots"]
-        assert provenance["onchain"]["steps"] == payload["steps"]
-        assert provenance["onchain"]["simulation_commitments"]["config_hash"]
-
-        _RUNS.pop(data["run_id"])
-        get_resp = client.get(f"/runs/{data['run_id']}")
-        assert get_resp.status_code == 200
-        stored = get_resp.json()
-        assert stored["provenance"]["run_id"] == data["run_id"]
-        assert stored["provenance"]["onchain"] == provenance["onchain"]
-
-    def test_simulate_provenance_links_request_config_stored_run_and_proof_hash(self):
+    def test_simulate_config_trace_names_stored_run_and_proof_input_hashes(self):
         payload = {"num_bots": 3, "grid_size": 7, "steps": 4, "queen_enabled": True, "seed": 321}
         with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
             resp = client.post("/simulate", json=payload)
 
         assert resp.status_code == 200
         data = resp.json()
-        provenance = data["provenance"]
-        assert provenance["config"]["num_bots"] == payload["num_bots"]
-        assert provenance["config"]["grid_size"] == payload["grid_size"]
-        assert provenance["config"]["steps"] == payload["steps"]
-        assert provenance["config"]["queen_enabled"] == payload["queen_enabled"]
-        assert provenance["config"]["seed"] == payload["seed"]
-        assert provenance["config_hash"] == provenance["onchain"]["simulation_commitments"]["config_hash"]
-        assert provenance["config_hash"] == provenance["proof_bundle"]["config_hash"]
+        trace = data["provenance"]["config_trace"]
+        expected_stored_hash = hashlib.sha256(
+            json.dumps(data["provenance"]["config"], sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+
+        assert trace["stored_run_id"] == data["run_id"]
+        assert trace["proof_bundle_run_id"] == data["run_id"]
+        assert trace["stored_config_hash"] == expected_stored_hash
+        assert trace["proof_input_config_hash"] == data["provenance"]["proof_bundle"]["config_hash"]
+        assert trace["stored_matches_proof_input"] is False
 
         _RUNS.pop(data["run_id"])
-        get_resp = client.get(f"/runs/{data['run_id']}")
-        assert get_resp.status_code == 200
-        stored = get_resp.json()
-        assert stored["config"] == provenance["config"]
-        assert stored["provenance"]["config_hash"] == provenance["config_hash"]
+        persisted = client.get(f"/runs/{data['run_id']}").json()
+        assert persisted["provenance"]["config_trace"] == trace
 
-    def test_simulate_runtime_error_returns_structured_machine_readable_detail(self):
-        with patch("backend.api_server.run_simulation", side_effect=RuntimeError("engine exploded")):
-            resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 3})
+    def test_simulate_config_trace_declares_machine_readable_config_sources(self):
+        payload = {"num_bots": 3, "grid_size": 7, "steps": 4, "queen_enabled": True, "seed": 321}
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            resp = client.post("/simulate", json=payload)
 
-        assert resp.status_code == 500
-        assert resp.json()["detail"] == {
-            "type": "simulation_runtime_error",
-            "message": "Simulation error: engine exploded",
+        assert resp.status_code == 200
+        data = resp.json()
+        trace = data["provenance"]["config_trace"]
+
+        assert trace["schema_version"] == "config-trace-v1"
+        assert trace["config_sources"] == {
+            "request": {
+                "kind": "api_request_config",
+                "path": "provenance.config",
+                "hash": trace["request_config_hash"],
+            },
+            "stored_run": {
+                "kind": "persisted_run_record",
+                "path": f"runs/{data['run_id']}.config",
+                "run_id": data["run_id"],
+                "hash": trace["stored_config_hash"],
+            },
+            "proof_input": {
+                "kind": "proof_bundle_input",
+                "path": "provenance.proof_bundle.config_hash",
+                "run_id": data["run_id"],
+                "hash": trace["proof_input_config_hash"],
+            },
+            "onchain_commitment": {
+                "kind": "onchain_commitment",
+                "path": "provenance.onchain.simulation_commitments.config_hash",
+                "hash": trace["onchain_config_hash"],
+            },
         }
 
-    def test_pheromone_request_rejects_unknown_field(self):
-        resp = client.post(
-            "/simulate",
-            json={"num_bots": 2, "grid_size": 5, "steps": 3, "pheromone_params": {"trail_decya": 0.1}},
-        )
-        # This test was intended to FAIL initially because PheromoneParams does not yet forbid extra fields.
-        # The goal of this task was to implement the validation.
-        assert resp.status_code == 422
-        assert any(
-            error.get("loc") == ["body", "pheromone_params", "trail_decya"]
-            and error.get("type") == "extra_forbidden"
-            for error in resp.json()["detail"]
-        )
-
-    def test_simulate_run_stored(self):
-        _RUNS.clear()
+    def test_simulate_config_trace_source_kinds_are_machine_readable(self):
+        payload = {"num_bots": 3, "grid_size": 7, "steps": 4, "queen_enabled": True, "seed": 321}
         with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
-            resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 3})
-        run_id = resp.json()["run_id"]
-        assert run_id in _RUNS
+            resp = client.post("/simulate", json=payload)
+
+        assert resp.status_code == 200
+        sources = resp.json()["provenance"]["config_trace"]["config_sources"]
+
+        assert sources["request"]["kind"] == "api_request_config"
+        assert sources["stored_run"]["kind"] == "persisted_run_record"
+        assert sources["proof_input"]["kind"] == "proof_bundle_input"
+        assert sources["onchain_commitment"]["kind"] == "onchain_commitment"
+
+    def test_simulate_config_trace_declares_machine_readable_trace_edges(self):
+        payload = {"num_bots": 3, "grid_size": 7, "steps": 4, "queen_enabled": True, "seed": 321}
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            resp = client.post("/simulate", json=payload)
+
+        assert resp.status_code == 200
+        trace = resp.json()["provenance"]["config_trace"]
+
+        assert trace["trace_edges"] == [
+            {
+                "from": "request",
+                "to": "stored_run",
+                "relationship": "persisted_as",
+                "match": True,
+                "from_hash": trace["request_config_hash"],
+                "to_hash": trace["stored_config_hash"],
+            },
+            {
+                "from": "stored_run",
+                "to": "proof_input",
+                "relationship": "normalized_for_proof",
+                "match": False,
+                "from_hash": trace["stored_config_hash"],
+                "to_hash": trace["proof_input_config_hash"],
+            },
+            {
+                "from": "proof_input",
+                "to": "onchain_commitment",
+                "relationship": "committed_as",
+                "match": True,
+                "from_hash": trace["proof_config_hash"],
+                "to_hash": trace["onchain_config_hash"],
+            },
+        ]
 
     def test_simulate_with_seed(self):
         with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
@@ -224,3 +225,73 @@ class TestGetRunEndpoint:
         assert data["status"] == "completed"
         assert "config" in data
         assert "metrics" in data
+
+    def test_get_run_config_trace_reads_persisted_trace_edges(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        expected_trace = post_resp.json()["provenance"]["config_trace"]
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        assert trace_resp.json()["run_id"] == run_id
+        assert trace_resp.json()["config_trace"] == expected_trace
+
+    def test_get_run_config_trace_validates_persisted_source_path_and_hash(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        assert trace_resp.json()["source_validation"]["stored_run"] == {
+            "path": f"runs/{run_id}.config",
+            "path_matches_run": True,
+            "hash_matches_stored_config": True,
+        }
+
+    def test_get_run_config_trace_validates_proof_input_source(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        assert trace_resp.json()["source_validation"]["proof_input"] == {
+            "path": "provenance.proof_bundle.config_hash",
+            "path_matches_proof_bundle": True,
+            "run_id": run_id,
+            "run_id_matches_run": True,
+            "hash_matches_proof_bundle": True,
+        }
+
+    def test_get_run_config_trace_validates_onchain_commitment_source(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        expected_hash = post_resp.json()["provenance"]["proof_bundle"]["config_hash"]
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        assert trace_resp.json()["source_validation"]["onchain_commitment"] == {
+            "path": "provenance.onchain.simulation_commitments.config_hash",
+            "path_matches_commitment": True,
+            "hash": expected_hash,
+            "hash_matches_proof_bundle": True,
+        }

@@ -14,6 +14,8 @@ Usage
 
 from __future__ import annotations
 
+import hashlib
+import json
 import sys
 import os
 import uuid
@@ -71,7 +73,6 @@ class SimulateRequest(BaseModel):
     seed: Optional[int] = None
     pheromone_params: Optional[PheromoneParams] = None
 
-
 class SimulateResponse(BaseModel):
     run_id: str
     status: str
@@ -85,6 +86,12 @@ class RunResponse(BaseModel):
     config: Dict[str, Any]
     metrics: Dict[str, Any]
     provenance: Optional[Dict[str, Any]] = None
+
+
+class ConfigTraceResponse(BaseModel):
+    run_id: str
+    config_trace: Dict[str, Any]
+    source_validation: Dict[str, Any]
 
 
 class HealthResponse(BaseModel):
@@ -117,14 +124,89 @@ def _provenance_config(cfg: SimulationConfig) -> Dict[str, Any]:
     return config
 
 
+def _request_config_hash(config: Dict[str, Any]) -> str:
+    """Return a stable hash of the API request config stored for replay."""
+    canonical = json.dumps(config, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
 def _build_run_provenance(run_id: str, cfg: SimulationConfig, metrics: Dict[str, Any]) -> Dict[str, Any]:
     """Build machine-readable proof/provenance metadata for an API run."""
     config = cfg.model_dump()
-    bundle = create_proof_bundle(_provenance_config(cfg), metrics, run_id=run_id)
+    proof_input_config = _provenance_config(cfg)
+    bundle = create_proof_bundle(proof_input_config, metrics, run_id=run_id)
     config_hash = bundle["onchain"]["simulation_commitments"]["config_hash"]
+    request_config_hash = _request_config_hash(config)
+    proof_input_config_hash = _request_config_hash(proof_input_config)
+    proof_config_hash = bundle["proof_bundle"]["config_hash"]
+    onchain_config_hash = bundle["onchain"]["simulation_commitments"]["config_hash"]
     return {
         "run_id": run_id,
         "config": config,
+        "request_config_hash": request_config_hash,
+        "config_trace": {
+            "schema_version": "config-trace-v1",
+            "stored_run_id": run_id,
+            "proof_bundle_run_id": bundle["proof_bundle"]["run_id"],
+            "request_config_hash": request_config_hash,
+            "stored_config_hash": request_config_hash,
+            "proof_input_config_hash": proof_input_config_hash,
+            "proof_config_hash": proof_config_hash,
+            "onchain_config_hash": onchain_config_hash,
+            "config_sources": {
+                "request": {
+                    "kind": "api_request_config",
+                    "path": "provenance.config",
+                    "hash": request_config_hash,
+                },
+                "stored_run": {
+                    "kind": "persisted_run_record",
+                    "path": f"runs/{run_id}.config",
+                    "run_id": run_id,
+                    "hash": request_config_hash,
+                },
+                "proof_input": {
+                    "kind": "proof_bundle_input",
+                    "path": "provenance.proof_bundle.config_hash",
+                    "run_id": bundle["proof_bundle"]["run_id"],
+                    "hash": proof_input_config_hash,
+                },
+                "onchain_commitment": {
+                    "kind": "onchain_commitment",
+                    "path": "provenance.onchain.simulation_commitments.config_hash",
+                    "hash": onchain_config_hash,
+                },
+            },
+            "trace_edges": [
+                {
+                    "from": "request",
+                    "to": "stored_run",
+                    "relationship": "persisted_as",
+                    "match": True,
+                    "from_hash": request_config_hash,
+                    "to_hash": request_config_hash,
+                },
+                {
+                    "from": "stored_run",
+                    "to": "proof_input",
+                    "relationship": "normalized_for_proof",
+                    "match": request_config_hash == proof_input_config_hash,
+                    "from_hash": request_config_hash,
+                    "to_hash": proof_input_config_hash,
+                },
+                {
+                    "from": "proof_input",
+                    "to": "onchain_commitment",
+                    "relationship": "committed_as",
+                    "match": proof_config_hash == onchain_config_hash,
+                    "from_hash": proof_config_hash,
+                    "to_hash": onchain_config_hash,
+                },
+            ],
+            "request_matches_stored": True,
+            "stored_matches_proof_input": request_config_hash == proof_input_config_hash,
+            "proof_matches_onchain": proof_config_hash == onchain_config_hash,
+        },
         "config_hash": config_hash,
         "trust_tier": bundle["trust_tier"],
         "verification_status": bundle["verification_status"],
@@ -220,6 +302,59 @@ def get_run(run_id: str) -> RunResponse:
         config=entry["config"],
         metrics=entry["metrics"],
         provenance=entry.get("provenance"),
+    )
+
+
+@app.get("/runs/{run_id}/config-trace", response_model=ConfigTraceResponse, tags=["simulation"])
+def get_run_config_trace(run_id: str) -> ConfigTraceResponse:
+    """Return the machine-readable request-to-commitment trace for a run."""
+    run = get_run(run_id)
+    config_trace = (run.provenance or {}).get("config_trace")
+    if config_trace is None:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "type": "config_trace_not_found",
+                "run_id": run_id,
+                "message": f"Config trace for run '{run_id}' not found.",
+            },
+        )
+    stored_source = config_trace.get("config_sources", {}).get("stored_run", {})
+    proof_input_source = config_trace.get("config_sources", {}).get("proof_input", {})
+    onchain_source = config_trace.get("config_sources", {}).get("onchain_commitment", {})
+    proof_bundle = (run.provenance or {}).get("proof_bundle", {})
+    onchain_config_hash = (
+        (run.provenance or {}).get("onchain", {}).get("simulation_commitments", {}).get("config_hash")
+    )
+    expected_path = f"runs/{run_id}.config"
+    expected_proof_input_path = "provenance.proof_bundle.config_hash"
+    expected_onchain_path = "provenance.onchain.simulation_commitments.config_hash"
+    source_validation = {
+        "stored_run": {
+            "path": stored_source.get("path"),
+            "path_matches_run": stored_source.get("path") == expected_path,
+            "hash_matches_stored_config": stored_source.get("hash") == _request_config_hash(run.config),
+        },
+        "proof_input": {
+            "path": proof_input_source.get("path"),
+            "path_matches_proof_bundle": proof_input_source.get("path") == expected_proof_input_path,
+            "run_id": proof_input_source.get("run_id"),
+            "run_id_matches_run": proof_input_source.get("run_id") == run_id,
+            "hash_matches_proof_bundle": proof_input_source.get("hash") == proof_bundle.get("config_hash"),
+        },
+        "onchain_commitment": {
+            "path": onchain_source.get("path"),
+            "path_matches_commitment": onchain_source.get("path") == expected_onchain_path,
+            "hash": onchain_config_hash,
+            "hash_matches_proof_bundle": (
+                onchain_source.get("hash") == onchain_config_hash == proof_bundle.get("config_hash")
+            ),
+        },
+    }
+    return ConfigTraceResponse(
+        run_id=run_id,
+        config_trace=config_trace,
+        source_validation=source_validation,
     )
 
 

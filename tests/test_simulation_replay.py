@@ -67,8 +67,72 @@ def test_simulation_replay_determinism(tmp_path: Path):
                 "cells_killed": 0,
                 "step_count": 5
             }
+            
+            replayed_metrics = replay_artifact_metrics(retrieved_run)
             replayed_metrics_2 = replay_artifact_metrics(retrieved_run)
-            assert replayed_metrics["replay_metadata"]["deterministic_config_id"] == replayed_metrics_2["replay_metadata"]["deterministic_config_id"]
+            
+            # The hash is based on the original config passed to replay_artifact_metrics.
+            # We check that the hash matches the expected hash of the 'config' dict used in the test.
+            import hashlib
+            import json
+            expected_hash = hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest()
+            assert replayed_metrics["replay_metadata"]["deterministic_config_id"] == expected_hash
+            assert replayed_metrics_2["replay_metadata"]["deterministic_config_id"] == expected_hash
+
+    # RED STEP: Ensure we catch non-deterministic behavior if config changes
+    with patch("backend.simulation_replay.build_model_from_config") as mock_build_3:
+        from backend.config import SimulationConfig
+        mock_model_3 = MagicMock()
+        mock_build_3.return_value = (SimulationConfig(**config), mock_model_3)
+        
+        with patch("backend.simulation_replay.compute_metrics") as mock_metrics_3:
+            mock_metrics_3.return_value = {
+                "kill_rate": 0.1, # Different metric
+                "total_deliveries": 0,
+                "cells_killed": 0,
+                "step_count": 5
+            }
+            
+            replayed_metrics_bad = replay_artifact_metrics(retrieved_run)
+            # The hash should still be the same because the config hasn't changed, 
+            # but the metrics should reflect the new (mocked) reality.
+            assert replayed_metrics_bad["replay_metadata"]["deterministic_config_id"] == expected_hash
+            assert replayed_metrics_bad["kill_rate"] == 10.0
+
+    # RED STEP: Ensure we catch non-deterministic behavior if config changes
+    # We've verified that if we use a different config, the hash changes.
+    # Let's check if the 'deterministic_config_id' is actually derived from the 
+    # config object that we're passing to the replay function, not just the stored one.
+    
+    # RED STEP: Test that a DIFFERENT config produces a DIFFERENT hash
+    bad_config = config.copy()
+    bad_config["seed"] = 999
+    
+    with patch("backend.simulation_replay.build_model_from_config") as mock_build_4:
+        from backend.config import SimulationConfig
+        mock_model_4 = MagicMock()
+        mock_build_4.return_value = (SimulationConfig(**bad_config), mock_model_4)
+        
+        with patch("backend.simulation_replay.compute_metrics") as mock_metrics_4:
+            mock_metrics_4.return_value = {
+                "kill_rate": 0.0,
+                "total_deliveries": 0,
+                "cells_killed": 0,
+                "step_count": 5
+            }
+            
+            # Create a fake artifact with the bad config
+            bad_artifact = {
+                "config": bad_config,
+                "metrics": {"step_count": 5}
+            }
+            replayed_metrics_bad_config = replay_artifact_metrics(bad_artifact)
+            
+            import hashlib
+            import json
+            expected_bad_hash = hashlib.sha256(json.dumps(bad_config, sort_keys=True).encode()).hexdigest()
+            assert replayed_metrics_bad_config["replay_metadata"]["deterministic_config_id"] == expected_bad_hash
+            assert replayed_metrics_bad_config["replay_metadata"]["deterministic_config_id"] != expected_hash
 
 
 def test_replay_config_extraction(tmp_path: Path):

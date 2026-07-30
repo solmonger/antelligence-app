@@ -58,6 +58,8 @@ def test_downgrade_propagation_regression():
     
     # NEW RED STEP: Assert that the verification_status fields are also correctly updated
     # to reflect the downgrade in the flattened record.
+    # If the implementation is broken, 'verified_onchain' might still be True from a stale cache.
     assert updated_entry["verified_onchain"] is False
     assert updated_entry["replay_ok"] is True
+    assert updated_entry["trust_tier"] == "replay_checked"
 

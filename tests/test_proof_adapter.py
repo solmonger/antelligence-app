@@ -141,18 +141,20 @@ class TestProofAdapter:
         assert "trust_tier" in bundle
         assert bundle["trust_tier"] == "proof_staged"
 
+        # 4. TAMPER TEST: Verify that changing the transport metadata signature is detected
         trusted_bundle = create_proof_bundle(
             config={"tumor_radius": 125, "nanobot_count": 8, "steps": 12},
             metrics={"kill_rate": 22.0},
             run_id="trusted-proof-run",
         )
         substituted_bundle = create_proof_bundle(
-            config={"tumor_radius": 130, "nanobot_count": 9, "steps": 13},
+            config={"tumor_radius": 130, "not_a_real_field": 9, "steps": 13},
             metrics={"kill_rate": 25.0},
             run_id="substituted-proof-run",
         )
 
         tampered_bundle = deepcopy(substituted_bundle)
+        # Force the transport metadata to match a different bundle (corrupting the commitment)
         tampered_bundle["proof_bundle"]["transport_metadata"] = trusted_bundle["proof_bundle"]["transport_metadata"]
 
         result = verify_proof_bundle_schema(tampered_bundle)
@@ -180,4 +182,5 @@ class TestProofAdapter:
             and "run_id" in check["missing"]
             for check in result["checks"]
         )
+
 

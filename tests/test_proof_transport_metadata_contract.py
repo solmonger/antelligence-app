@@ -1,4 +1,4 @@
-"""Regression guard for proof transport metadata shape."""
+"""Regression guard for proof transport metadata."""
 
 import hashlib
 
@@ -58,8 +58,6 @@ def test_transport_metadata_commitments_are_stable_and_bound_to_config_hash():
 
 
 def test_shared_memory_result_matches_proof_commitment():
-    # This test asserts that the transport commitment in the metadata
-    # is actually tied to the simulation result (the public values).
     payload = build_public_values_payload(
         config_hash="ab" * 32,
         kill_rate_bps=1200,
@@ -78,8 +76,6 @@ def test_shared_memory_result_matches_proof_commitment():
         is_mock=True,
     )
 
-    # The transport commitment must include the public_values to prevent substitution attacks.
-    # We verify that if we change the simulation result, the transport_commitment changes.
     changed_payload = build_public_values_payload(
         config_hash="cd" * 32,
         kill_rate_bps=1200,
@@ -98,16 +94,31 @@ def test_shared_memory_result_matches_proof_commitment():
     )
 
     assert metadata["transport_commitment"] != changed_metadata["transport_commitment"], \
-        "Transport commitment must change when public values change (prevents simulation result substitution attack)"
+        "Transport commitment must change when public values change"
 
-    # NEW: Verify that the transport commitment also covers the program version
-    # to prevent protocol mismatch attacks.
-    # Note: We can't easily change PROGRAM_VERSION without patching the constant,
-    # so we use a dummy call with a different origin to simulate the structure.
     assert changed_metadata["transport_commitment"] != build_proof_transport_metadata(
         public_values=public_values,
         proof_bytes=proof_bytes,
         proof_origin="different-origin",
         prover_status="mode-generated",
-        is_mock=True,
+        is_mock=
+        True,
     )["transport_commitment"], "Transport commitment must change if origin/protocol context changes"
+
+    # RED STEP: Verify that the transport commitment is sensitive to the
+    # public_values_schema_version. This assertion will fail.
+    from backend.chain.proof_spec import _normalize_hex_bytes
+    
+    norm_pv = _normalize_hex_bytes(public_values, field_name="public_values")
+    norm_pb = _normalize_hex_bytes(proof_bytes, field_name="proof_bytes")
+    origin = "mock"
+    status = "mock-generated"
+    prog_ver = "tumor-intel-proof-v1"
+    schema_ver = metadata["public_values_schema_version"]
+    
+    correct_commitment_with_schema = hashlib.sha256(
+        f"{norm_pv}|{norm_pb}|{origin}|{status}|{prog_ver}|{schema_ver}".encode("utf-8")
+    ).hexdigest()
+    
+    assert metadata["transport_commitment"] == correct_commitment_with_schema, \
+        "Transport commitment must be sensitive to the public_values_schema_version"

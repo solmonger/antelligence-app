@@ -91,6 +91,12 @@ def _validate_supplied_trust_tier(artifact: dict) -> Dict | None:
     return None
 
 
+def _is_trusted_tier(trust_tier: str) -> bool:
+    """Check if the trust tier is considered trusted (not mock, not unverified)."""
+    base_trust_tier = trust_tier.removeprefix("mock_")
+    return base_trust_tier in SUPPORTED_TRUST_TIERS and base_trust_tier not in ("unverified", "integrity_checked")
+
+
 def fetch_from_ipfs(cid: str) -> Tuple[Optional[dict], Optional[str]]:
     """Fetch artifact JSON from IPFS via public gateway."""
     gateways = [
@@ -472,6 +478,7 @@ def verify_proof_bundle_schema(record: dict) -> Dict:
             proof_bundle.get("proof_origin", ""),
             proof_bundle.get("prover_status", ""),
             PROGRAM_VERSION,
+            PUBLIC_VALUES_SCHEMA_VERSION,
         )
         checks.extend([
             {
@@ -631,7 +638,7 @@ def verify_artifact(artifact: dict, tolerance_pct: float = 5.0, replay: bool = T
         trust_tier = f"mock_{trust_tier}"
     elif verification_status["onchain_ok"]:
         trust_tier = "verified_onchain"
-    elif proof_bundle_result is not None:
+    elif proof_lifecycle.get("stage") == "proof_generated" or proof_bundle_result is not None:
         trust_tier = "proof_staged"
     elif verification_status["replay_ok"]:
         trust_tier = "replay_checked"

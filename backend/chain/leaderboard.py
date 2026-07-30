@@ -137,6 +137,17 @@ def normalize_leaderboard_artifact(record: Dict) -> Dict:
     ):
         if field in record:
             normalized[field] = record[field]
+    
+    # Ensure verification_status flags are flattened for the leaderboard
+    if "verification_status" in record:
+        vs = record["verification_status"]
+        if "onchain_ok" in vs:
+            normalized["verified_onchain"] = vs["onchain_ok"]
+        if "replay_ok" in vs:
+            normalized["replay_ok"] = vs["replay_ok"]
+        if "integrity_ok" in vs:
+            normalized["integrity_ok"] = vs["integrity_ok"]
+            
     return normalized
 
 

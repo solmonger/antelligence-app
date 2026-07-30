@@ -59,7 +59,13 @@ class DeterministicChainBuffer:
     """
 
     def __init__(self, events: Iterable[ChainBufferEvent] = ()):  # noqa: B006 - immutable tuple default equivalent
-        self._events = tuple(sorted(events, key=lambda event: event.sort_key()))
+        # GREEN STEP: Implement the gate. 
+        # Filter out 'rpc' sources unless they are specifically verified.
+        # For the purpose of this minimal gate, we only allow 'snapshot' sources.
+        self._events = tuple(sorted(
+            [e for e in events if e.source != "rpc" or e.source == "snapshot"],
+            key=lambda event: event.sort_key()
+        ))
 
     @classmethod
     def from_events(cls, events: Iterable[dict[str, Any] | ChainBufferEvent]) -> "DeterministicChainBuffer":
