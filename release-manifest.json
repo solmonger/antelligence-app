@@ -1,54 +1,77 @@
 {
   "project": "Antelligence",
-  "manifest_type": "w27_a1_unreleased_pr_slice",
-  "generated_at": "2026-06-28T01:35:00Z",
-  "status": "not_pushed_operator_approval_required",
+  "manifest_type": "pr_release_candidate",
+  "manifest_schema_version": 2,
+  "generated_at": "2026-08-27T18:50:56Z",
+  "status": "pushed_pr_open_review_required",
   "base_ref": "origin/main",
-  "source_commit": "318c1d4",
-  "source_commit_subject": "feat: recover swarm knowledge and API provenance work",
-  "current_branch": "recover/local-repo-organization-2026-06-27",
+  "base_commit": "411a11d6e8e2d0349d88be77b85bad50cde9bc3f",
+  "source_commit": "1262192481f309ba5cfc59490a32cacb19228ba0",
+  "source_commit_subject": "fix(leaderboard): reject lifecycle-only proof tier",
+  "current_branch": "release/config-trace-provenance",
+  "pull_request": {
+    "number": 12,
+    "url": "https://github.com/solmonger/antelligence-app/pull/12",
+    "state_at_generation": "OPEN",
+    "review_decision_at_generation": "REVIEW_REQUIRED"
+  },
   "operator_boundary": {
-    "pushed": false,
+    "pushed": true,
     "merged": false,
     "deployed": false,
     "contracts_deployed": false,
-    "approval_required_before_release": true
+    "approval_required_before_merge": true,
+    "approval_required_before_deploy": true
   },
-  "included_slice": {
-    "objective": "A1 structured simulation/provenance baseline",
-    "description": "Structured /simulate validation errors plus machine-readable provenance persisted from simulation response to stored run record.",
-    "files": [
-      "backend/api_server.py",
-      "backend/run_store.py",
-      "tests/test_api_server.py"
+  "release_scope": {
+    "objective": "Phase-2 proof-chain provenance, fail-closed trust derivation, replay determinism, contract swarm-knowledge support, frontend runtime restoration, and their supporting tests/specifications.",
+    "changed_path_count": 85,
+    "changed_path_list_sha256": "d7b0fdc8b62f75f4210b6ef7b8a4f948a3882c64dc415ce3fdd4639638640c22",
+    "changed_path_list_command": "git diff --name-only 411a11d6e8e2d0349d88be77b85bad50cde9bc3f..1262192481f309ba5cfc59490a32cacb19228ba0",
+    "core_areas": [
+      "backend API and persisted config provenance",
+      "proof transport, verification, trust tiers, and leaderboard derivation",
+      "deterministic replay buffer",
+      "TumorIntel and ExperienceRegistry contract extensions",
+      "frontend runtime/build contract",
+      "attestation and training-data tooling",
+      "tests, specifications, architecture, and workflow support"
     ],
-    "accepted_kanban_tasks": [
-      "t_46f5f368",
-      "t_b168a0bd"
-    ]
-  },
-  "excluded_from_slice": {
-    "reason": "Not part of the A1 API/run-store provenance package; keep separate for future review.",
-    "files": [
-      "blockchain/contracts/ExperienceRegistry.sol",
-      "blockchain/contracts/TumorIntel.sol",
-      "blockchain/test/SwarmKnowledge.test.js",
-      "frontend/dist/index.html",
-      ".codex-work/",
-      ".serena/",
-      "backups/"
-    ]
+    "core_file_sha256": {
+      "backend/api_server.py": "bd7e455d6714db56a62faefb653cea75f2577094d5830963a546928c39929b63",
+      "backend/run_store.py": "f0d99fd170638d96f79c70b4d15ea48caf28dbec93ab9dc8edaf026694ec24c5",
+      "tests/test_api_server.py": "2b6c42c28b716030d99ada592bdf1e4ea81c509e961f8b041fd2c97a99995e63"
+    }
   },
   "verification": [
     {
       "command": "uv run --extra test python -m pytest tests/test_api_server.py tests/test_run_store.py -q",
-      "result": "16 passed in 0.72s",
-      "run_at": "2026-06-28T01:35:00Z"
+      "result": "27 passed in 0.32s",
+      "run_at": "2026-08-27T18:50:56Z"
+    },
+    {
+      "command": "uv run --extra test pytest tests/ -q",
+      "result": "250 passed, 2 skipped, 1 warning in 2.63s",
+      "run_at": "2026-08-27T18:50:56Z",
+      "skip_scope": "BraTS2024-GLI and TCGA TIFF datasets absent; unrelated to provenance or trust-tier behavior"
+    },
+    {
+      "authority": "GitHub Actions",
+      "run_id": 33103310711,
+      "source_commit": "1262192481f309ba5cfc59490a32cacb19228ba0",
+      "result": "Frontend Build SUCCESS; Python Simulation Tests SUCCESS; Smart Contract Tests SUCCESS",
+      "completed_at": "2026-08-27T18:25:12Z"
     }
   ],
+  "review_state": {
+    "latest_independent_result": "BOUNDED_REPAIR",
+    "latest_independent_session": "20260827_143333_50482a",
+    "repair": "Replaced stale June slice metadata with the exact current code commit, branch, PR state, full release scope, file hashes, and fresh verification counts.",
+    "successor_exact_head_review_required": true
+  },
   "release_notes": [
-    "Board acceptance only; source edits were already present in commit 318c1d4.",
-    "This manifest does not authorize push, merge, deployment, or contract deployment.",
-    "A coherent PR should include only included_slice.files plus this manifest unless operator explicitly expands scope."
+    "This manifest pins the code candidate at source_commit; the manifest-only successor commit is reviewed separately to avoid self-referential commit hashing.",
+    "No merge, deployment, contract deployment, secret change, or production authority expansion is authorized by this manifest.",
+    "Green tests and CI are evidence, not merge approval; a fresh independent exact-head zero-blocker/zero-high verdict is still required."
   ]
 }
