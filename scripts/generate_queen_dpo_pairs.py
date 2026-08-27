@@ -24,6 +24,10 @@ _HERE = Path(__file__).resolve().parent
 _ROOT = _HERE.parent
 sys.path.insert(0, str(_ROOT / "backend"))
 
+TRAINING_ELIGIBLE_TRUST_TIERS = frozenset(
+    {"replay_checked", "proof_staged", "verified_onchain"}
+)
+
 
 # ---------------------------------------------------------------------------
 # Dry-run / synthetic data
@@ -167,11 +171,14 @@ def generate_pairs(
     """Generate preference pairs from leaderboard entries.
 
     Pairs runs with same nanobot_count and steps but different pheromone params.
-    Only emits pairs where score delta >= min_score_delta.
+    Only replay-checked or stronger runs are eligible, and score delta must be
+    at least ``min_score_delta``.
     """
     # Group by (nanobot_count, steps)
     groups: Dict[tuple, List[Dict]] = {}
     for entry in entries:
+        if entry.get("trust_tier") not in TRAINING_ELIGIBLE_TRUST_TIERS:
+            continue
         key = (entry.get("nanobot_count", 0), entry.get("steps", 0))
         groups.setdefault(key, []).append(entry)
 
