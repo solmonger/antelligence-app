@@ -359,7 +359,7 @@ contract TumorIntel {
     }
 
     /// @notice Prune stale intel pins that haven't been confirmed and are older than maxAgeSeconds
-    function pruneStalePins(uint256 maxAgeSeconds) external {
+    function pruneStalePins(uint256 maxAgeSeconds) external onlyOwner {
         for (uint256 i = 0; i < intelPins.length; i++) {
             if (!intelPins[i].isActive) continue;
             if (confirmations[i] >= 2) continue;

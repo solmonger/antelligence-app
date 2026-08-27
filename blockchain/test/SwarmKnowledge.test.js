@@ -92,6 +92,18 @@ describe("Swarm Knowledge Sharing", function () {
   });
 
   describe("TumorIntel - pruneStalePins", function () {
+    it("rejects pruning by non-owners", async function () {
+      await tumorIntel.reportIntel(100, 200, 0, 5);
+      await ethers.provider.send("evm_increaseTime", [3600]);
+      await ethers.provider.send("evm_mine");
+
+      await expect(tumorIntel.connect(other).pruneStalePins(0))
+        .to.be.revertedWith("Only owner");
+
+      const result = await tumorIntel.getActivePinDetails();
+      expect(result.ids.length).to.equal(1);
+    });
+
     it("deactivates old unconfirmed pins", async function () {
       await tumorIntel.reportIntel(100, 200, 0, 5);
       // Advance time by 1 hour
