@@ -122,8 +122,9 @@ def main():
     args = parser.parse_args()
 
     if args.dry_run:
-        print("Attestation Bot: DRY RUN mode enabled. No simulations will be executed.")
-        print("=" * 50)
+        if not args.json:
+            print("Attestation Bot: DRY RUN mode enabled. No simulations will be executed.")
+            print("=" * 50)
         # For dry run, we still need to load the JSON data to show what would be checked
         text = Path(args.input).read_text()
         start = text.find("{")

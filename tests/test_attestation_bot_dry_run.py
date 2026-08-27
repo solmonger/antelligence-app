@@ -7,7 +7,34 @@ from unittest.mock import patch
 # Add backend to sys.path so we can import the bot's dependencies
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 
-from scripts.attestation_bot import run_spot_checks
+from scripts.attestation_bot import main, run_spot_checks
+
+
+def test_attestation_bot_dry_run_json_stdout_is_one_document(tmp_path: Path, capsys):
+    input_path = tmp_path / "result.json"
+    input_path.write_text(
+        json.dumps(
+            {
+                "config": {},
+                "results": [
+                    {
+                        "seed": 1,
+                        "patient": "test",
+                        "kill_rate_pct": 10.0,
+                        "deliveries": 2,
+                    }
+                ],
+            }
+        )
+    )
+
+    with patch.object(sys, "argv", ["attestation_bot.py", str(input_path), "--dry-run", "--json"]):
+        main()
+
+    output = capsys.readouterr().out
+    parsed = json.loads(output)
+    assert parsed["ok"] is True
+    assert parsed["checked"] == 1
 
 
 def test_attestation_bot_dry_run(tmp_path: Path):
