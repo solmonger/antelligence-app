@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from backend.api_server import app, _RUNS
+from backend.api_server import RUN_STORE, app, _RUNS
 
 
 client = TestClient(app)
@@ -226,6 +226,59 @@ class TestGetRunEndpoint:
         assert "config" in data
         assert "metrics" in data
 
+    def test_persisted_run_provenance_matches_simulate_contract(self):
+        required_fields = {
+            "run_id",
+            "config",
+            "config_hash",
+            "trust_tier",
+            "verification_status",
+            "proof_lifecycle",
+            "onchain",
+            "proof_bundle",
+        }
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post(
+                "/simulate",
+                json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42},
+            )
+
+        post_data = post_resp.json()
+        run_id = post_data["run_id"]
+        _RUNS.pop(run_id)
+        get_resp = client.get(f"/runs/{run_id}")
+
+        assert get_resp.status_code == 200
+        persisted_provenance = get_resp.json()["provenance"]
+        assert required_fields <= persisted_provenance.keys()
+        assert {
+            field: persisted_provenance[field] for field in required_fields
+        } == {
+            field: post_data["provenance"][field] for field in required_fields
+        }
+
+        malformed = RUN_STORE.get_run(run_id)
+        assert malformed is not None
+        malformed["provenance"].pop("verification_status")
+        RUN_STORE.save_run(
+            run_id,
+            malformed["status"],
+            malformed["config"],
+            malformed["metrics"],
+            malformed["provenance"],
+        )
+        _RUNS.pop(run_id)
+
+        malformed_resp = client.get(f"/runs/{run_id}")
+        assert malformed_resp.status_code == 500
+        assert malformed_resp.json()["detail"] == {
+            "type": "invalid_run_provenance",
+            "run_id": run_id,
+            "missing_fields": ["verification_status"],
+            "message": "Persisted run provenance is incomplete.",
+        }
+
     def test_get_run_config_trace_reads_persisted_trace_edges(self):
         _RUNS.clear()
         with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
@@ -253,10 +306,223 @@ class TestGetRunEndpoint:
 
         assert trace_resp.status_code == 200
         assert trace_resp.json()["source_validation"]["stored_run"] == {
+            "kind": "persisted_run_record",
+            "kind_matches_source": True,
             "path": f"runs/{run_id}.config",
             "path_matches_run": True,
             "hash_matches_stored_config": True,
         }
+
+    def test_get_run_config_trace_validates_request_source(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        expected_hash = post_resp.json()["provenance"]["request_config_hash"]
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        assert trace_resp.json()["source_validation"]["request"] == {
+            "kind": "api_request_config",
+            "kind_matches_source": True,
+            "path": "provenance.config",
+            "path_matches_config": True,
+            "config_matches_stored_run": True,
+            "hash_matches_config": True,
+            "hash": expected_hash,
+        }
+        assert trace_resp.json()["source_validation"]["all_sources_valid"] is True
+
+    def test_get_run_config_trace_rejects_tampered_persisted_request_source_hash(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        persisted = RUN_STORE.get_run(run_id)
+        assert persisted is not None
+        persisted["provenance"]["config_trace"]["config_sources"]["request"]["hash"] = "tampered"
+        RUN_STORE.save_run(
+            run_id,
+            persisted["status"],
+            persisted["config"],
+            persisted["metrics"],
+            persisted["provenance"],
+        )
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        assert trace_resp.json()["source_validation"]["request"]["hash_matches_config"] is False
+        assert trace_resp.json()["source_validation"]["all_sources_valid"] is False
+
+    def test_get_run_config_trace_names_tampered_provenance_config_source(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        persisted = RUN_STORE.get_run(run_id)
+        assert persisted is not None
+        persisted["provenance"]["config"]["steps"] = 999
+        RUN_STORE.save_run(
+            run_id,
+            persisted["status"],
+            persisted["config"],
+            persisted["metrics"],
+            persisted["provenance"],
+        )
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        validation = trace_resp.json()["source_validation"]
+        assert validation["request"]["config_matches_stored_run"] is False
+        assert validation["invalid_sources"] == ["request"]
+        assert validation["all_sources_valid"] is False
+
+    def test_get_run_config_trace_names_tampered_proof_input_source(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        persisted = RUN_STORE.get_run(run_id)
+        assert persisted is not None
+        persisted["provenance"]["config_trace"]["config_sources"]["proof_input"]["run_id"] = "tampered"
+        RUN_STORE.save_run(
+            run_id,
+            persisted["status"],
+            persisted["config"],
+            persisted["metrics"],
+            persisted["provenance"],
+        )
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        validation = trace_resp.json()["source_validation"]
+        assert validation["proof_input"]["run_id_matches_run"] is False
+        assert validation["invalid_sources"] == ["proof_input"]
+        assert validation["all_sources_valid"] is False
+
+    def test_get_run_config_trace_names_tampered_source_kind(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        persisted = RUN_STORE.get_run(run_id)
+        assert persisted is not None
+        persisted["provenance"]["config_trace"]["config_sources"]["stored_run"]["kind"] = "api_request_config"
+        RUN_STORE.save_run(
+            run_id,
+            persisted["status"],
+            persisted["config"],
+            persisted["metrics"],
+            persisted["provenance"],
+        )
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        validation = trace_resp.json()["source_validation"]
+        assert validation["stored_run"]["kind"] == "api_request_config"
+        assert validation["stored_run"]["kind_matches_source"] is False
+        assert validation["invalid_sources"] == ["stored_run"]
+        assert validation["all_sources_valid"] is False
+
+    def test_get_run_config_trace_names_tampered_trace_summary(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        persisted = RUN_STORE.get_run(run_id)
+        assert persisted is not None
+        persisted["provenance"]["config_trace"]["stored_run_id"] = "tampered"
+        persisted["provenance"]["config_trace"]["onchain_config_hash"] = "tampered"
+        RUN_STORE.save_run(
+            run_id,
+            persisted["status"],
+            persisted["config"],
+            persisted["metrics"],
+            persisted["provenance"],
+        )
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        validation = trace_resp.json()["source_validation"]
+        assert validation["trace_summary"]["stored_run_id_matches_run"] is False
+        assert validation["trace_summary"]["onchain_config_hash_matches_commitment"] is False
+        assert validation["invalid_sources"] == ["trace_summary"]
+        assert validation["all_sources_valid"] is False
+
+    def test_get_run_config_trace_rejects_tampered_schema_version(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        persisted = RUN_STORE.get_run(run_id)
+        assert persisted is not None
+        persisted["provenance"]["config_trace"]["schema_version"] = "config-trace-v999"
+        RUN_STORE.save_run(
+            run_id,
+            persisted["status"],
+            persisted["config"],
+            persisted["metrics"],
+            persisted["provenance"],
+        )
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        validation = trace_resp.json()["source_validation"]
+        assert validation["trace_summary"]["schema_version"] == "config-trace-v999"
+        assert validation["trace_summary"]["schema_version_supported"] is False
+        assert validation["invalid_sources"] == ["trace_summary"]
+        assert validation["all_sources_valid"] is False
+
+    def test_get_run_config_trace_names_tampered_trace_edges(self):
+        _RUNS.clear()
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            post_resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
+
+        run_id = post_resp.json()["run_id"]
+        persisted = RUN_STORE.get_run(run_id)
+        assert persisted is not None
+        persisted["provenance"]["config_trace"]["trace_edges"][0]["relationship"] = "tampered"
+        RUN_STORE.save_run(
+            run_id,
+            persisted["status"],
+            persisted["config"],
+            persisted["metrics"],
+            persisted["provenance"],
+        )
+        _RUNS.pop(run_id)
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+
+        assert trace_resp.status_code == 200
+        validation = trace_resp.json()["source_validation"]
+        assert validation["trace_edges"] == {
+            "edge_count": 3,
+            "expected_edge_count": 3,
+            "edges_match_expected": False,
+        }
+        assert validation["invalid_sources"] == ["trace_edges"]
+        assert validation["all_sources_valid"] is False
 
     def test_get_run_config_trace_validates_proof_input_source(self):
         _RUNS.clear()
@@ -270,6 +536,8 @@ class TestGetRunEndpoint:
 
         assert trace_resp.status_code == 200
         assert trace_resp.json()["source_validation"]["proof_input"] == {
+            "kind": "proof_bundle_input",
+            "kind_matches_source": True,
             "path": "provenance.proof_bundle.config_hash",
             "path_matches_proof_bundle": True,
             "run_id": run_id,
@@ -290,6 +558,8 @@ class TestGetRunEndpoint:
 
         assert trace_resp.status_code == 200
         assert trace_resp.json()["source_validation"]["onchain_commitment"] == {
+            "kind": "onchain_commitment",
+            "kind_matches_source": True,
             "path": "provenance.onchain.simulation_commitments.config_hash",
             "path_matches_commitment": True,
             "hash": expected_hash,

@@ -56,6 +56,7 @@ app = FastAPI(
 _RUNS: Dict[str, Dict[str, Any]] = {}
 _DEFAULT_DB_PATH = Path(os.environ.get("ANTELLIGENCE_RUN_DB", Path(_backend_dir).parent / "data" / "api_runs.sqlite3"))
 RUN_STORE = SQLiteRunStore(_DEFAULT_DB_PATH)
+CONFIG_TRACE_SCHEMA_VERSION = "config-trace-v1"
 
 
 # ---------------------------------------------------------------------------
@@ -145,7 +146,7 @@ def _build_run_provenance(run_id: str, cfg: SimulationConfig, metrics: Dict[str,
         "config": config,
         "request_config_hash": request_config_hash,
         "config_trace": {
-            "schema_version": "config-trace-v1",
+            "schema_version": CONFIG_TRACE_SCHEMA_VERSION,
             "stored_run_id": run_id,
             "proof_bundle_run_id": bundle["proof_bundle"]["run_id"],
             "request_config_hash": request_config_hash,
@@ -296,12 +297,34 @@ def get_run(run_id: str) -> RunResponse:
                 "message": f"Run '{run_id}' not found.",
             },
         )
+    provenance = entry.get("provenance") or {}
+    required_provenance_fields = {
+        "run_id",
+        "config",
+        "config_hash",
+        "trust_tier",
+        "verification_status",
+        "proof_lifecycle",
+        "onchain",
+        "proof_bundle",
+    }
+    missing_fields = sorted(required_provenance_fields - provenance.keys())
+    if missing_fields:
+        raise HTTPException(
+            status_code=500,
+            detail={
+                "type": "invalid_run_provenance",
+                "run_id": run_id,
+                "missing_fields": missing_fields,
+                "message": "Persisted run provenance is incomplete.",
+            },
+        )
     return RunResponse(
         run_id=run_id,
         status=entry["status"],
         config=entry["config"],
         metrics=entry["metrics"],
-        provenance=entry.get("provenance"),
+        provenance=provenance,
     )
 
 
@@ -319,23 +342,67 @@ def get_run_config_trace(run_id: str) -> ConfigTraceResponse:
                 "message": f"Config trace for run '{run_id}' not found.",
             },
         )
+    request_source = config_trace.get("config_sources", {}).get("request", {})
     stored_source = config_trace.get("config_sources", {}).get("stored_run", {})
     proof_input_source = config_trace.get("config_sources", {}).get("proof_input", {})
     onchain_source = config_trace.get("config_sources", {}).get("onchain_commitment", {})
     proof_bundle = (run.provenance or {}).get("proof_bundle", {})
+    provenance_config = (run.provenance or {}).get("config")
     onchain_config_hash = (
         (run.provenance or {}).get("onchain", {}).get("simulation_commitments", {}).get("config_hash")
     )
+    expected_request_path = "provenance.config"
     expected_path = f"runs/{run_id}.config"
     expected_proof_input_path = "provenance.proof_bundle.config_hash"
     expected_onchain_path = "provenance.onchain.simulation_commitments.config_hash"
+    request_config_hash = _request_config_hash(run.config)
+    trace_edges = config_trace.get("trace_edges")
+    expected_trace_edges = [
+        {
+            "from": "request",
+            "to": "stored_run",
+            "relationship": "persisted_as",
+            "match": True,
+            "from_hash": request_config_hash,
+            "to_hash": request_config_hash,
+        },
+        {
+            "from": "stored_run",
+            "to": "proof_input",
+            "relationship": "normalized_for_proof",
+            "match": request_config_hash == proof_bundle.get("config_hash"),
+            "from_hash": request_config_hash,
+            "to_hash": proof_bundle.get("config_hash"),
+        },
+        {
+            "from": "proof_input",
+            "to": "onchain_commitment",
+            "relationship": "committed_as",
+            "match": proof_bundle.get("config_hash") == onchain_config_hash,
+            "from_hash": proof_bundle.get("config_hash"),
+            "to_hash": onchain_config_hash,
+        },
+    ]
     source_validation = {
+        "request": {
+            "kind": request_source.get("kind"),
+            "kind_matches_source": request_source.get("kind") == "api_request_config",
+            "path": request_source.get("path"),
+            "path_matches_config": request_source.get("path") == expected_request_path,
+            "config_matches_stored_run": provenance_config == run.config,
+            "hash_matches_config": request_source.get("hash") == request_config_hash,
+            "hash": request_config_hash,
+        },
         "stored_run": {
+            "kind": stored_source.get("kind"),
+            "kind_matches_source": stored_source.get("kind") == "persisted_run_record",
             "path": stored_source.get("path"),
             "path_matches_run": stored_source.get("path") == expected_path,
             "hash_matches_stored_config": stored_source.get("hash") == _request_config_hash(run.config),
         },
         "proof_input": {
+            "kind": proof_input_source.get("kind"),
+            "kind_matches_source": proof_input_source.get("kind") == "proof_bundle_input",
             "path": proof_input_source.get("path"),
             "path_matches_proof_bundle": proof_input_source.get("path") == expected_proof_input_path,
             "run_id": proof_input_source.get("run_id"),
@@ -343,6 +410,8 @@ def get_run_config_trace(run_id: str) -> ConfigTraceResponse:
             "hash_matches_proof_bundle": proof_input_source.get("hash") == proof_bundle.get("config_hash"),
         },
         "onchain_commitment": {
+            "kind": onchain_source.get("kind"),
+            "kind_matches_source": onchain_source.get("kind") == "onchain_commitment",
             "path": onchain_source.get("path"),
             "path_matches_commitment": onchain_source.get("path") == expected_onchain_path,
             "hash": onchain_config_hash,
@@ -350,7 +419,76 @@ def get_run_config_trace(run_id: str) -> ConfigTraceResponse:
                 onchain_source.get("hash") == onchain_config_hash == proof_bundle.get("config_hash")
             ),
         },
+        "trace_summary": {
+            "schema_version": config_trace.get("schema_version"),
+            "schema_version_supported": config_trace.get("schema_version") == CONFIG_TRACE_SCHEMA_VERSION,
+            "stored_run_id": config_trace.get("stored_run_id"),
+            "stored_run_id_matches_run": config_trace.get("stored_run_id") == run_id,
+            "proof_bundle_run_id": config_trace.get("proof_bundle_run_id"),
+            "proof_bundle_run_id_matches_bundle": (
+                config_trace.get("proof_bundle_run_id") == proof_bundle.get("run_id") == run_id
+            ),
+            "request_config_hash_matches_config": (
+                config_trace.get("request_config_hash") == request_config_hash
+            ),
+            "stored_config_hash_matches_config": (
+                config_trace.get("stored_config_hash") == request_config_hash
+            ),
+            "proof_input_config_hash_matches_bundle": (
+                config_trace.get("proof_input_config_hash") == proof_bundle.get("config_hash")
+            ),
+            "proof_config_hash_matches_bundle": (
+                config_trace.get("proof_config_hash") == proof_bundle.get("config_hash")
+            ),
+            "onchain_config_hash_matches_commitment": (
+                config_trace.get("onchain_config_hash") == onchain_config_hash
+            ),
+        },
+        "trace_edges": {
+            "edge_count": len(trace_edges) if isinstance(trace_edges, list) else 0,
+            "expected_edge_count": len(expected_trace_edges),
+            "edges_match_expected": trace_edges == expected_trace_edges,
+        },
     }
+    validation_checks = {
+        "request": (
+            source_validation["request"]["kind_matches_source"],
+            source_validation["request"]["path_matches_config"],
+            source_validation["request"]["config_matches_stored_run"],
+            source_validation["request"]["hash_matches_config"],
+        ),
+        "stored_run": (
+            source_validation["stored_run"]["kind_matches_source"],
+            source_validation["stored_run"]["path_matches_run"],
+            source_validation["stored_run"]["hash_matches_stored_config"],
+        ),
+        "proof_input": (
+            source_validation["proof_input"]["kind_matches_source"],
+            source_validation["proof_input"]["path_matches_proof_bundle"],
+            source_validation["proof_input"]["run_id_matches_run"],
+            source_validation["proof_input"]["hash_matches_proof_bundle"],
+        ),
+        "onchain_commitment": (
+            source_validation["onchain_commitment"]["kind_matches_source"],
+            source_validation["onchain_commitment"]["path_matches_commitment"],
+            source_validation["onchain_commitment"]["hash_matches_proof_bundle"],
+        ),
+        "trace_summary": (
+            source_validation["trace_summary"]["schema_version_supported"],
+            source_validation["trace_summary"]["stored_run_id_matches_run"],
+            source_validation["trace_summary"]["proof_bundle_run_id_matches_bundle"],
+            source_validation["trace_summary"]["request_config_hash_matches_config"],
+            source_validation["trace_summary"]["stored_config_hash_matches_config"],
+            source_validation["trace_summary"]["proof_input_config_hash_matches_bundle"],
+            source_validation["trace_summary"]["proof_config_hash_matches_bundle"],
+            source_validation["trace_summary"]["onchain_config_hash_matches_commitment"],
+        ),
+        "trace_edges": (source_validation["trace_edges"]["edges_match_expected"],),
+    }
+    source_validation["invalid_sources"] = [
+        source_name for source_name, checks in validation_checks.items() if not all(checks)
+    ]
+    source_validation["all_sources_valid"] = not source_validation["invalid_sources"]
     return ConfigTraceResponse(
         run_id=run_id,
         config_trace=config_trace,
