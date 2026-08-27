@@ -41,3 +41,29 @@ def test_generate_pairs_requires_two_training_eligible_runs():
     )
 
     assert pairs == []
+
+
+def test_generate_pairs_rejects_identical_pheromone_configs():
+    first = _entry("first", 80.0, "replay_checked")
+    second = _entry("second", 20.0, "replay_checked")
+    second["pheromone_params"] = dict(first["pheromone_params"])
+
+    assert generate_pairs([first, second]) == []
+
+
+def test_pair_explanation_does_not_invent_parameter_causality():
+    chosen = _entry("chosen", 80.0, "replay_checked")
+    rejected = _entry("rejected", 20.0, "replay_checked")
+    chosen["pheromone_params"] = {
+        "trail_decay": 0.01,
+        "recruitment_diffusion": 1e-8,
+    }
+    rejected["pheromone_params"] = {
+        "trail_decay": 0.9,
+        "recruitment_diffusion": 1e-3,
+    }
+
+    pair = generate_pairs([chosen, rejected])[0]
+    assert "Higher trail decay" not in pair["chosen"]
+    assert "stronger recruitment diffusion" not in pair["chosen"]
+    assert "measured result" in pair["chosen"]

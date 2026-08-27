@@ -135,14 +135,15 @@ def _build_pair(chosen_entry: Dict, rejected_entry: Dict) -> Dict[str, Any]:
     chosen_text = (
         f"Configuration A ({_format_params(chosen_params)}) achieves {chosen_score:.1f}% kill rate "
         f"with {chosen_entry.get('deliveries', 0)} deliveries. "
-        f"Higher trail decay maintains fresh path signals, and stronger recruitment diffusion "
-        f"enables rapid swarm coordination around high-value targets."
+        f"This measured result is preferred because it recorded the higher verified kill rate; "
+        f"this pair alone does not establish which parameter caused the difference."
     )
 
     rejected_text = (
         f"Configuration B ({_format_params(rejected_params)}) achieves only {rejected_score:.1f}% kill rate "
         f"with {rejected_entry.get('deliveries', 0)} deliveries. "
-        f"Suboptimal pheromone parameters lead to weaker gradient signals and reduced swarm coordination."
+        f"This measured result is rejected because it recorded the lower verified kill rate under "
+        f"otherwise matched run settings; no causal parameter claim is made."
     )
 
     return {
@@ -190,6 +191,8 @@ def generate_pairs(
         group_sorted = sorted(group, key=lambda e: e.get("kill_rate", 0), reverse=True)
         for i, chosen in enumerate(group_sorted):
             for rejected in group_sorted[i + 1:]:
+                if (chosen.get("pheromone_params") or {}) == (rejected.get("pheromone_params") or {}):
+                    continue
                 chosen_score = chosen.get("kill_rate", 0)
                 rejected_score = rejected.get("kill_rate", 0)
                 delta = chosen_score - rejected_score
