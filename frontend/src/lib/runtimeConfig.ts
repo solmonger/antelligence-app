@@ -18,10 +18,9 @@ export function resolveRuntimeConfig(
   runtimeHostname: string,
 ): ResolvedRuntimeConfig {
   const mode = asString(env.MODE, "production");
-  const frontendMode = asString(
-    env.VITE_FRONTEND_MODE,
-    mode === "preview" ? "preview" : "local",
-  ).toLowerCase();
+  const defaultFrontendMode =
+    mode === "development" ? "local" : mode === "preview" ? "preview" : "production";
+  const frontendMode = asString(env.VITE_FRONTEND_MODE, defaultFrontendMode).toLowerCase();
   const explicitPreview = asString(env.VITE_PREVIEW_MODE).toLowerCase();
   const isPreviewMode =
     frontendMode === "preview" ||
@@ -30,7 +29,7 @@ export function resolveRuntimeConfig(
     explicitPreview === "true";
   const apiBaseUrl = asString(
     env.VITE_API_BASE_URL,
-    "http://127.0.0.1:8001",
+    frontendMode === "local" ? "http://127.0.0.1:8001" : "",
   ).replace(/\/$/, "");
   const gitSha = asString(env.VITE_GIT_SHA, "unknown");
   const previewHostname = asString(env.VITE_PREVIEW_HOSTNAME, runtimeHostname || "unknown");
