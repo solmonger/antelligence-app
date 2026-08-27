@@ -2,12 +2,12 @@
   "project": "Antelligence",
   "manifest_type": "pr_release_candidate",
   "manifest_schema_version": 3,
-  "generated_at": "2026-08-27T19:27:48.719157Z",
+  "generated_at": "2026-08-27T19:50:28.999957Z",
   "status": "local_candidate_verified_push_and_exact_review_required",
   "base_ref": "origin/main",
   "base_commit": "411a11d6e8e2d0349d88be77b85bad50cde9bc3f",
-  "source_commit": "326a0923fb64d915c966755afbe38fe3c4a7f04d",
-  "source_commit_subject": "chore(frontend): refresh vulnerable transitive dependencies",
+  "source_commit": "6d68aad7134ca3bfff5eab126576640ba68803ae",
+  "source_commit_subject": "fix(training): require meaningful DPO comparisons",
   "current_branch": "release/config-trace-provenance",
   "pull_request": {
     "number": 12,
@@ -25,9 +25,9 @@
   },
   "release_scope": {
     "objective": "Phase-2 proof-chain provenance, fail-closed trust derivation, replay determinism, contract swarm-knowledge support, frontend runtime restoration, and their supporting tests/specifications.",
-    "changed_path_count": 91,
-    "changed_path_list_sha256": "7a5f6e33ce75f02aea52a29b4ba878c9d0882ee3e52430533de6e626a3c34b54",
-    "changed_path_list_command": "git diff --name-only 411a11d6e8e2d0349d88be77b85bad50cde9bc3f..326a0923fb64d915c966755afbe38fe3c4a7f04d",
+    "changed_path_count": 93,
+    "changed_path_list_sha256": "21ac8892f7c8aa51a4432215bded6a58d6bcea6f391e7d1d645cdcb3a31a670b",
+    "changed_path_list_command": "git diff --name-only 411a11d6e8e2d0349d88be77b85bad50cde9bc3f..6d68aad7134ca3bfff5eab126576640ba68803ae",
     "core_areas": [
       "backend API and persisted config provenance",
       "proof transport, verification, trust tiers, and leaderboard derivation",
@@ -42,23 +42,24 @@
       "backend/run_store.py": "f0d99fd170638d96f79c70b4d15ea48caf28dbec93ab9dc8edaf026694ec24c5",
       "tests/test_api_server.py": "5b8f88f3fc2ca5b6056782191ed7eeac5450c555205992ec223994780d8cd761",
       "backend/chain/proof_spec.py": "3abcafcda4a5628cfa12ddfe6e5b5469d89e07770f5a610c9f433319a8a9ba64",
+      "backend/chain/intel_reader.py": "da07511263e648b748af46bbd5aa6ed8f674be8f09e3d631a7a5c22a3c2d00ae",
       "frontend/src/lib/runtime.ts": "15359ab94fef72638279b3219ddc8d45d774bfd1879ed05b9f976c179c8e1579",
-      "frontend/src/lib/runtimeConfig.ts": "250aefaac30692a3fe357ecf4ee502232c91319e8206411c0c20b04634b48d8c",
+      "frontend/src/lib/runtimeConfig.ts": "052ca53022b160c62a4ec88df21a69e713cd122d0fbe63a6c39f41bbf3ea170b",
       "frontend/package-lock.json": "344fbf304268f63293849ab82ad7c0d3dc858391102789b1f6008477a8dbb482",
       "blockchain/contracts/TumorIntel.sol": "1595d4050475da3145e9c3149c52875b8f4b3ded22adfc59e311ea0aeea5c737",
-      "scripts/attestation_bot.py": "c5f5ad132640ecf5afcf5a43a7f82fdb1b756d1784784d9718b506937f655934",
-      "scripts/generate_queen_dpo_pairs.py": "a18558fbfad46a8d95795c696e0fe1fa8145acd267287605893f0a4bb125fee1"
+      "scripts/attestation_bot.py": "c3d7dba5512c4fdb95369bce018e4c3d5f06980736ebd92cabfdd463c4b0fa95",
+      "scripts/generate_queen_dpo_pairs.py": "a2f0a517de8cd4b85509a0624e23d704397270e419966ee32d4c0815b33a5bce"
     }
   },
   "verification": [
     {
       "command": "uv run --extra test pytest tests/ -q",
-      "result": "255 passed, 2 skipped, 1 warning in 2.92s",
+      "result": "258 passed, 2 skipped, 1 warning in 2.71s",
       "skip_scope": "BraTS2024-GLI and TCGA TIFF datasets absent; unrelated to provenance or trust-tier behavior"
     },
     {
       "command": "node --test frontend/tests/runtimeConfig.test.ts",
-      "result": "3 passed, 0 failed"
+      "result": "4 passed, 0 failed"
     },
     {
       "command": "npm --prefix frontend run lint",
@@ -70,7 +71,7 @@
     },
     {
       "command": "npm --prefix blockchain test -- --no-compile",
-      "result": "46 passed in 373ms"
+      "result": "46 passed in 389ms"
     },
     {
       "command": "python /Users/operator/openclaw-infra/scripts/antelligence_loop_runner.py sandbox",
@@ -83,15 +84,15 @@
     },
     {
       "authority": "GitHub Actions predecessor evidence",
-      "run_id": 33105585103,
-      "source_commit": "04072e0baabb55244e0c0245906b1c3e23583a59",
+      "run_id": 33108615012,
+      "source_commit": "f060f4d666b02f666251d72c3d926041e89d3740",
       "result": "Frontend Build SUCCESS; Python Simulation Tests SUCCESS; Smart Contract Tests SUCCESS",
       "status": "superseded_by_local_repair_commits; fresh exact-head CI required"
     }
   ],
   "review_state": {
-    "latest_valid_independent_target": "04072e0baabb55244e0c0245906b1c3e23583a59",
-    "latest_valid_independent_result": "NO-GO: 3 high and 4 medium findings",
+    "latest_valid_independent_target": "f060f4d666b02f666251d72c3d926041e89d3740",
+    "latest_valid_independent_result": "NO-GO: 2 high and 3 medium findings",
     "latest_valid_independent_mechanism": "codex review --base 411a11d6e8e2d0349d88be77b85bad50cde9bc3f",
     "repairs": [
       "b515084: scale fractional API kill rate to basis points",
@@ -102,7 +103,11 @@
       "78571f0: exclude unverified DPO inputs",
       "b4ffff3: restrict stale-pin pruning to the contract owner",
       "f6fb737: restore deterministic frontend lint compatibility",
-      "326a092: remove high-severity production dependency advisories"
+      "326a092: remove high-severity production dependency advisories",
+      "3361e54: keep production and preview API calls same-origin by default",
+      "db86d26: mark dry-run spot checks explicitly unverified",
+      "b9f0542: align chain reader PinType names with the Solidity enum",
+      "6d68aad: require distinct DPO configurations and evidence-neutral explanations"
     ],
     "successor_exact_head_review_required": true,
     "invalid_review_evidence": "Hermes qualityreviewer session 20260827_145200_45d062 changed scope to an unrelated six-claim audit and is not release evidence; delegation batch deleg_71d806ad ended unknown and is not release evidence."
