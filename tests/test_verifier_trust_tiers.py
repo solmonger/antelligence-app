@@ -60,17 +60,17 @@ def test_verify_artifact_trust_tier_for_onchain():
     
     assert result["trust_tier"] == "verified_onchain"
 
-def test_verify_artifact_trust_tier_explicit_stages_v2():
-    """NEW: Verify that 'proof_staged' is explicitly detectable in the trust tier."""
+def test_verify_artifact_lifecycle_stage_alone_cannot_promote_trust():
+    """A self-declared lifecycle stage is not proof evidence."""
     artifact = create_simulation_artifact(
         config={"tumor_radius": 150, "nanobot_count": 10},
         metrics={"kill_rate": 45.5, "deliveries": 30},
     )
     artifact["proof_lifecycle"] = {"stage": "proof_generated"}
-    
+
     result = verify_artifact(artifact, tolerance_pct=100.0, replay=False)
-    
-    assert result["trust_tier"] == "proof_staged"
+
+    assert result["trust_tier"] == "integrity_checked"
 
 def test_verify_artifact_rejects_unknown_trust_tier_with_structured_error():
     """Verifier API must not silently default unsupported trust tiers to a permissive tier."""

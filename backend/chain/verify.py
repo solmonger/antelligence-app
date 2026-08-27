@@ -565,7 +565,7 @@ def check_onchain_verification(config_hash: str) -> Dict:
 def _derive_trust_tier(verification_status: Dict, proof_bundle: Dict | None, proof_lifecycle: Dict | None) -> str:
     if verification_status.get("onchain_ok"):
         return "verified_onchain"
-    if (proof_lifecycle or {}).get("stage") == "proof_generated" or proof_bundle:
+    if proof_bundle:
         return "proof_staged"
     if verification_status.get("replay_ok"):
         return "replay_checked"
@@ -638,7 +638,7 @@ def verify_artifact(artifact: dict, tolerance_pct: float = 5.0, replay: bool = T
         trust_tier = f"mock_{trust_tier}"
     elif verification_status["onchain_ok"]:
         trust_tier = "verified_onchain"
-    elif proof_lifecycle.get("stage") == "proof_generated" or proof_bundle_result is not None:
+    elif proof_bundle_result is not None and proof_bundle_result.get("ok") is True:
         trust_tier = "proof_staged"
     elif verification_status["replay_ok"]:
         trust_tier = "replay_checked"
