@@ -26,6 +26,21 @@ def test_chain_config_defaults_to_latest_deployed_phase1_contracts(monkeypatch):
     assert get_experience_registry_address() == "0x58A78E337ce3D948A39475f05Ca1A2c30274CADE"
 
 
+def test_intel_reader_pin_type_names_match_solidity_enum():
+    from chain.intel_reader import PIN_TYPE_NAMES
+
+    assert PIN_TYPE_NAMES == {
+        0: "HYPOXIC_CLUSTER",
+        1: "STEM_CELL_DETECTED",
+        2: "HIGH_RESISTANCE_AREA",
+        3: "VESSEL_LOCATION",
+        4: "SUCCESSFUL_KILL",
+        5: "DRUG_OVERDOSE_ZONE",
+        6: "TARGET_ACQUIRED",
+        7: "DRUG_DELIVERY",
+    }
+
+
 def test_intel_reader_disabled_returns_empty_without_rpc(monkeypatch):
     monkeypatch.delenv("CHAIN_READ_ENABLED", raising=False)
     from chain.intel_reader import ChainIntelReader
@@ -65,7 +80,7 @@ def test_intel_reader_fetches_active_pin_details_and_caches(monkeypatch):
             "pinId": 7,
             "x": 301,
             "y": 299,
-            "pinType": "HIGH_RESISTANCE",
+            "pinType": "HIGH_RESISTANCE_AREA",
             "pinTypeCode": 2,
             "reporter": "0x0000000000000000000000000000000000000001",
             "priority": 9,
