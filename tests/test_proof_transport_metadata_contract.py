@@ -3,6 +3,7 @@
 import hashlib
 
 from backend.chain.proof_spec import (
+    PROOF_BOUNDARY_VERSION,
     TRANSPORT_METADATA_REQUIRED_KEYS,
     build_proof_transport_metadata,
     build_public_values_payload,
@@ -116,6 +117,8 @@ def test_shared_memory_result_matches_proof_commitment():
     prog_ver = "tumor-intel-proof-v1"
     schema_ver = metadata["public_values_schema_version"]
     
+    assert PROOF_BOUNDARY_VERSION == "sp1-groth16-adapter-v2"
+    assert metadata["proof_boundary_version"] == PROOF_BOUNDARY_VERSION
     correct_commitment_with_schema = hashlib.sha256(
         f"{norm_pv}|{norm_pb}|{origin}|{status}|{prog_ver}|{schema_ver}".encode("utf-8")
     ).hexdigest()

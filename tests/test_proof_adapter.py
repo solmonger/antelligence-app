@@ -21,7 +21,7 @@ class TestProofAdapter:
         assert proof["proof_artifact_version"] == "proof-bundle-v1"
         assert proof["public_values_schema_version"] == "public-values-v1"
         assert proof["program_version"] == "tumor-intel-proof-v1"
-        assert proof["proof_boundary_version"] == "sp1-groth16-adapter-v1"
+        assert proof["proof_boundary_version"] == "sp1-groth16-adapter-v2"
         assert proof["adapter"]["expected_verifier_call"] == "verifyProof(bytes,bytes)"
         assert proof["adapter"]["proof_transport"] == "opaque-bytes"
         assert proof["adapter"]["cryptographic_verification"] is False
