@@ -24,6 +24,7 @@ contract ExperienceRegistry {
         uint16 nanobotCount;    // Number of nanobots
         uint16 tumorRadius;     // Tumor size parameter
         bytes32 datasetHash;    // Hash of tumor geometry (BraTS subject)
+        string workerParamsJson; // Canonical JSON parameters the Queen may adopt
     }
     
     /// @notice Attestation from a validator
@@ -213,6 +214,7 @@ contract ExperienceRegistry {
         string strategyType;
         uint16 nanobotCount;
         uint16 tumorRadius;
+        string workerParamsJson;
     }
 
     PromotedStrategy[] public promotedStrategies;
@@ -238,7 +240,8 @@ contract ExperienceRegistry {
             promotedAt: uint256(block.timestamp),
             strategyType: strategies[runHash].strategyType,
             nanobotCount: strategies[runHash].nanobotCount,
-            tumorRadius: strategies[runHash].tumorRadius
+            tumorRadius: strategies[runHash].tumorRadius,
+            workerParamsJson: strategies[runHash].workerParamsJson
         }));
 
         emit StrategyPromoted(runHash, experiences[runHash].score, msg.sender);

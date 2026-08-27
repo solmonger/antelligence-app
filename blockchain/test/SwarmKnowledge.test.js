@@ -138,7 +138,8 @@ describe("Swarm Knowledge Sharing", function () {
         modelUsed: "gpt-4o-mini",
         nanobotCount: 10,
         tumorRadius: 200,
-        datasetHash: ethers.ZeroHash
+        datasetHash: ethers.ZeroHash,
+        workerParamsJson: JSON.stringify({ trail_decay: score / 10000, recruitment_diffusion: 1e-6 })
       };
 
       await experienceRegistry.submitExperience(
@@ -171,7 +172,8 @@ describe("Swarm Knowledge Sharing", function () {
         modelUsed: "gpt-4o-mini",
         nanobotCount: 10,
         tumorRadius: 200,
-        datasetHash: ethers.ZeroHash
+        datasetHash: ethers.ZeroHash,
+        workerParamsJson: JSON.stringify({ trail_decay: 0.05, recruitment_diffusion: 1e-6 })
       };
       await experienceRegistry.submitExperience(
         runHash, "QmTest", ethers.id("data"), 500, strategyMeta
@@ -204,6 +206,10 @@ describe("Swarm Knowledge Sharing", function () {
       expect(top3[0].score).to.equal(900);
       expect(top3[1].score).to.equal(700);
       expect(top3[2].score).to.equal(500);
+      expect(JSON.parse(top3[0].workerParamsJson)).to.deep.equal({
+        trail_decay: 0.09,
+        recruitment_diffusion: 1e-6
+      });
     });
 
     it("getTopStrategies returns fewer if not enough promoted", async function () {
@@ -217,8 +223,8 @@ describe("Swarm Knowledge Sharing", function () {
 
     it("getExperiencesByStrategy filters by type", async function () {
       // Submit with different strategy types
-      const meta1 = { strategyType: "pheromone-guided", modelUsed: "m", nanobotCount: 10, tumorRadius: 200, datasetHash: ethers.ZeroHash };
-      const meta2 = { strategyType: "llm-queen", modelUsed: "m", nanobotCount: 10, tumorRadius: 200, datasetHash: ethers.ZeroHash };
+      const meta1 = { strategyType: "pheromone-guided", modelUsed: "m", nanobotCount: 10, tumorRadius: 200, datasetHash: ethers.ZeroHash, workerParamsJson: "{}" };
+      const meta2 = { strategyType: "llm-queen", modelUsed: "m", nanobotCount: 10, tumorRadius: 200, datasetHash: ethers.ZeroHash, workerParamsJson: "{}" };
 
       await experienceRegistry.submitExperience(ethers.id("r1"), "c1", ethers.id("d1"), 500, meta1);
       await experienceRegistry.submitExperience(ethers.id("r2"), "c2", ethers.id("d2"), 600, meta2);
