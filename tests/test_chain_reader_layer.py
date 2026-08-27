@@ -120,14 +120,21 @@ def test_experience_consumer_reads_top_strategies_and_experience(monkeypatch):
                 "strategyType": "pheromone-guided",
                 "nanobotCount": 12,
                 "tumorRadius": 180,
-                "worker_params": {"exploration_bias": 0.1},
+                "workerParamsJson": '{"exploration_bias":0.1}',
             }
         ]
     )
     contract.functions.getExperience = _fn(
         return_value=(
             ("0x" + "aa" * 32, "ipfs://cid", "0x" + "bb" * 32, 9000, "0xabc", 123, 2, True),
-            ("pheromone-guided", "gemma4", 12, 180, "0x" + "cc" * 32),
+            (
+                "pheromone-guided",
+                "gemma4",
+                12,
+                180,
+                "0x" + "cc" * 32,
+                '{"exploration_bias":0.1}',
+            ),
         )
     )
     contract.functions.isPromoted = _fn(return_value=True)
@@ -141,6 +148,7 @@ def test_experience_consumer_reads_top_strategies_and_experience(monkeypatch):
     assert strategies[0].score == 9000
     assert strategies[0].worker_params == {"exploration_bias": 0.1}
     assert experience.verified is True
+    assert experience.worker_params == {"exploration_bias": 0.1}
     assert consumer.is_promoted("0x" + "aa" * 32) is True
 
 
