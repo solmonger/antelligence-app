@@ -26,7 +26,16 @@ def test_live_rpc_read_not_replayable_without_recorded_determinism():
         payload={"data": "some_snapshot_data"}
     )
     
-    buffer = DeterministicChainBuffer.from_events([live_event, verified_event])
+    untrusted_event = ChainBufferEvent(
+        chain_id=1,
+        source="manual",
+        block_height=100,
+        tx_index=1,
+        log_index=0,
+        payload={"data": "unverified_manual_data"},
+    )
+
+    buffer = DeterministicChainBuffer.from_events([live_event, verified_event, untrusted_event])
     
     # 3. The gate: We want to ensure that 'rpc' sources are NOT marked as replayable
     # if we haven't verified them.

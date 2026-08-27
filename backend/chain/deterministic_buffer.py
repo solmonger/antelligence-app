@@ -59,11 +59,9 @@ class DeterministicChainBuffer:
     """
 
     def __init__(self, events: Iterable[ChainBufferEvent] = ()):  # noqa: B006 - immutable tuple default equivalent
-        # GREEN STEP: Implement the gate. 
-        # Filter out 'rpc' sources unless they are specifically verified.
-        # For the purpose of this minimal gate, we only allow 'snapshot' sources.
+        # Only immutable snapshot fixtures are admitted to the replayable buffer.
         self._events = tuple(sorted(
-            [e for e in events if e.source != "rpc" or e.source == "snapshot"],
+            [e for e in events if e.source == "snapshot"],
             key=lambda event: event.sort_key()
         ))
 
