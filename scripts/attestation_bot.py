@@ -60,25 +60,32 @@ def run_spot_checks(sweep_data, sample_pct=20, tolerance_pct=5.0, verbose=True, 
     n_sample = max(1, int(len(results) * sample_pct / 100))
     sample = random.sample(results, min(n_sample, len(results)))
 
+    if dry_run:
+        return {
+            "ok": False,
+            "status": "dry_run_unverified",
+            "checked": 0,
+            "passed": 0,
+            "failed": 0,
+            "candidate_count": len(sample),
+            "sample_pct": sample_pct,
+            "tolerance_pct": tolerance_pct,
+            "checks": [],
+            "message": "Dry run selected candidates but did not execute or attest them.",
+        }
+
     checks = []
     for original in sample:
         if verbose:
             print(f"  Spot-checking seed={original.get('seed')} patient={original.get('patient')}...", end=" ", flush=True)
 
-        if dry_run:
-            recomputed = {
-                "kill_rate_pct": original.get("kill_rate_pct", 0),
-                "kills": 0,
-                "deliveries": original.get("deliveries", 0),
-            }
-        else:
-            recomputed = spot_check_run(
-                original,
-                steps=config.get("steps", 50),
-                n_bots=config.get("n_bots", 5),
-                with_queen=config.get("with_queen", True),
-                episode_length=config.get("episode_length", 10),
-            )
+        recomputed = spot_check_run(
+            original,
+            steps=config.get("steps", 50),
+            n_bots=config.get("n_bots", 5),
+            with_queen=config.get("with_queen", True),
+            episode_length=config.get("episode_length", 10),
+        )
 
         tolerance_result = verify_metrics_tolerance(
             {"kill_rate": original.get("kill_rate_pct", 0), "deliveries": original.get("deliveries", 0)},

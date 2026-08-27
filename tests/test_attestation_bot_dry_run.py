@@ -33,8 +33,10 @@ def test_attestation_bot_dry_run_json_stdout_is_one_document(tmp_path: Path, cap
 
     output = capsys.readouterr().out
     parsed = json.loads(output)
-    assert parsed["ok"] is True
-    assert parsed["checked"] == 1
+    assert parsed["ok"] is False
+    assert parsed["status"] == "dry_run_unverified"
+    assert parsed["candidate_count"] == 1
+    assert parsed["checked"] == 0
 
 
 def test_attestation_bot_dry_run(tmp_path: Path):
@@ -95,9 +97,11 @@ def test_attestation_bot_dry_run(tmp_path: Path):
             result = run_spot_checks(dummy_data, sample_pct=100, tolerance_pct=5.0, verbose=False, dry_run=True)
             
             # 3. Assertions
-            assert result["ok"] is True, f"Dry run failed: {result}"
-            assert result["checked"] == 2
-            assert result["passed"] == 2
+            assert result["ok"] is False
+            assert result["status"] == "dry_run_unverified"
+            assert result["candidate_count"] == 2
+            assert result["checked"] == 0
+            assert result["passed"] == 0
             
             # CRITICAL: Verify that the heavy 'spot_check_run' was NOT called during dry_run=True.
             # This proves the 'else' branch (the dry-run guard) was taken.
