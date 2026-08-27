@@ -177,6 +177,7 @@ def build_leaderboard(artifacts: List[Dict]) -> Dict:
             "tumor_radius": config.get("tumor_radius", 0),
             "nanobot_count": config.get("nanobot_count", config.get("n_nanobots", 0)),
             "steps": config.get("steps", config.get("n_steps", 0)),
+            "pheromone_params": config.get("pheromone_params", {}),
             "timestamp": artifact.get("timestamp", ""),
             "verified_onchain": verification_status.get("onchain_ok", artifact.get("verified_onchain", False)),
             "proof_stage": proof_lifecycle.get("stage", "untracked"),

@@ -8,6 +8,25 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
 from chain.ipfs import create_simulation_artifact
 from chain.leaderboard import build_leaderboard
 
+
+def test_leaderboard_preserves_worker_parameters_for_dpo_training():
+    artifact = create_simulation_artifact(
+        config={
+            "tumor_radius": 100,
+            "pheromone_params": {"trail_decay": 0.08, "recruitment_diffusion": 1e-6},
+        },
+        metrics={"kill_rate": 50.0},
+        run_id="dpo-config-test",
+    )
+    artifact["verification_status"] = {"replay_ok": True}
+
+    entry = build_leaderboard([artifact])["leaderboard"][0]
+
+    assert entry["pheromone_params"] == {
+        "trail_decay": 0.08,
+        "recruitment_diffusion": 1e-6,
+    }
+
 def test_onchain_verification_propagation():
     """Verify that onchain_ok status propagates to verified_onchain and trust_perm."""
     artifact = create_simulation_artifact(
