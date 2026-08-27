@@ -123,6 +123,8 @@ def run_sweep(
     dry_run: bool,
 ) -> Dict[str, Any]:
     """Run the full parameter grid sweep and return ranked results."""
+    if grid_points <= 0:
+        raise ValueError("grid_points must be positive")
     trail_decays, recruitment_diffusions = build_grid(grid_points)
 
     results = []
@@ -176,6 +178,9 @@ def main() -> None:
     parser.add_argument("--seed", type=int, default=0, help="Random seed")
     parser.add_argument("--dry-run", action="store_true", help="Skip actual simulation, use mock metrics")
     args = parser.parse_args()
+
+    if args.grid_points <= 0:
+        parser.error("--grid-points must be positive")
 
     is_dry = args.dry_run or _is_dry_run_env()
 
