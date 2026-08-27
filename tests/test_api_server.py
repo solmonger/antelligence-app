@@ -75,6 +75,17 @@ class TestSimulateEndpoint:
         assert "metrics" in data
         assert "kill_rate" in data["metrics"]
 
+    def test_simulate_scales_fractional_kill_rate_to_basis_points(self):
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 3})
+
+        data = resp.json()
+        assert data["metrics"]["kill_rate"] == pytest.approx(5 / 60)
+        assert data["provenance"]["onchain"]["kill_rate_bps"] == int((5 / 60) * 10_000)
+        assert data["provenance"]["onchain"]["public_values_payload"]["kill_rate_bps"] == int(
+            (5 / 60) * 10_000
+        )
+
     def test_pheromone_request_rejects_unknown_field(self):
         """
         GREEN STEP: This test proves the server rejects an unknown field.

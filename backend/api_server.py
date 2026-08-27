@@ -135,7 +135,12 @@ def _build_run_provenance(run_id: str, cfg: SimulationConfig, metrics: Dict[str,
     """Build machine-readable proof/provenance metadata for an API run."""
     config = cfg.model_dump()
     proof_input_config = _provenance_config(cfg)
-    bundle = create_proof_bundle(proof_input_config, metrics, run_id=run_id)
+    proof_metrics = dict(metrics)
+    # runtime_factory exposes kill_rate as a [0, 1] fraction; the proof
+    # adapter's public contract accepts percentage points before converting
+    # them to basis points.
+    proof_metrics["kill_rate"] = float(metrics.get("kill_rate", 0.0)) * 100.0
+    bundle = create_proof_bundle(proof_input_config, proof_metrics, run_id=run_id)
     config_hash = bundle["onchain"]["simulation_commitments"]["config_hash"]
     request_config_hash = _request_config_hash(config)
     proof_input_config_hash = _request_config_hash(proof_input_config)
