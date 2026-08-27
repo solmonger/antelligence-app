@@ -89,6 +89,21 @@ class TestBuildLeaderboard:
         result = build_leaderboard(artifacts)
         assert result["summary"]["avg_kill_rate"] == 30.0
 
+    def test_lifecycle_stage_alone_does_not_promote_leaderboard_trust(self):
+        artifact = create_simulation_artifact(
+            config={"tumor_radius": 100},
+            metrics={"kill_rate": 10.0},
+        )
+        artifact.pop("trust_tier", None)
+        artifact["proof_lifecycle"] = {"stage": "proof_generated"}
+        artifact["proof_bundle"] = {}
+        artifact["verification_status"] = {"integrity_ok": True}
+
+        result = build_leaderboard([artifact])
+
+        assert result["leaderboard"][0]["trust_tier"] == "integrity_checked"
+        assert result["summary"]["staged_proof_entries"] == 0
+
     def test_staged_proof_entries_are_labeled_honestly(self):
         artifact = create_proof_bundle(
             config={"tumor_radius": 100, "nanobot_count": 3, "steps": 10},

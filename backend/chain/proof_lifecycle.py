@@ -14,7 +14,7 @@ PROOF_STAGES = [
 ]
 
 
-def build_lifecycle(stage: str, *, note: str = "", proof_system: str = "sp1+groth16") -> Dict[str, Any]:
+def build_lifecycle(stage: str, *, note: str = "", proof_system: str = "sp1+groth16", trust_tier: str = "non-production") -> Dict[str, Any]:
     if stage not in PROOF_STAGES:
         raise ValueError(f"Unknown proof lifecycle stage: {stage}")
     return {
@@ -22,6 +22,7 @@ def build_lifecycle(stage: str, *, note: str = "", proof_system: str = "sp1+grot
         "proof_system": proof_system,
         "is_final": stage == "verified_onchain",
         "note": note,
+        "trust_tier": trust_tier,
     }
 
 

@@ -306,4 +306,67 @@ contract TumorIntel {
         }
         return pinIds;
     }
+
+    /// @notice Get full details of active intel pins (batch read for swarm knowledge sharing)
+    /// @dev Returns arrays for x, y, pinType, reporter, priority, confirmations, timestamp
+    ///      so nanobots and Queen can consume on-chain intel without N individual calls.
+    function getActivePinDetails() external view returns (
+        uint256[] memory ids,
+        uint256[] memory xs,
+        uint256[] memory ys,
+        PinType[] memory types,
+        address[] memory reporters,
+        uint256[] memory priorities,
+        uint256[] memory pinConfirmations,
+        uint256[] memory timestamps
+    ) {
+        uint256 activeCount = 0;
+        for (uint256 i = 0; i < intelPins.length; i++) {
+            if (intelPins[i].isActive) activeCount++;
+        }
+
+        ids = new uint256[](activeCount);
+        xs = new uint256[](activeCount);
+        ys = new uint256[](activeCount);
+        types = new PinType[](activeCount);
+        reporters = new address[](activeCount);
+        priorities = new uint256[](activeCount);
+        pinConfirmations = new uint256[](activeCount);
+        timestamps = new uint256[](activeCount);
+
+        uint256 index = 0;
+        for (uint256 i = 0; i < intelPins.length; i++) {
+            if (intelPins[i].isActive) {
+                ids[index] = i;
+                xs[index] = intelPins[i].x;
+                ys[index] = intelPins[i].y;
+                types[index] = intelPins[i].pinType;
+                reporters[index] = intelPins[i].reporter;
+                priorities[index] = intelPins[i].priority;
+                pinConfirmations[index] = confirmations[i];
+                timestamps[index] = intelPins[i].timestamp;
+                index++;
+            }
+        }
+    }
+
+    /// @notice Get verification status enum: 0=not submitted, 1=submitted, 2=verified
+    function getVerificationStatus(bytes32 configHash) external view returns (uint8) {
+        SimulationRecord storage record = simulations[configHash];
+        if (record.verified) return 2;
+        if (record.submitted) return 1;
+        return 0;
+    }
+
+    /// @notice Prune stale intel pins that haven't been confirmed and are older than maxAgeSeconds
+    function pruneStalePins(uint256 maxAgeSeconds) external onlyOwner {
+        for (uint256 i = 0; i < intelPins.length; i++) {
+            if (!intelPins[i].isActive) continue;
+            if (confirmations[i] >= 2) continue;
+            if (block.timestamp - intelPins[i].timestamp > maxAgeSeconds) {
+                intelPins[i].isActive = false;
+                emit IntelDeactivated(i, msg.sender);
+            }
+        }
+    }
 }

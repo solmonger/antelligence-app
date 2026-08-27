@@ -64,7 +64,8 @@ describe("ExperienceRegistry", function () {
       modelUsed: "meta-llama/Llama-3.3-70B-Instruct",
       nanobotCount: 10,
       tumorRadius: 120,
-      datasetHash: ethers.keccak256(ethers.toUtf8Bytes("BraTS-subject-001"))
+      datasetHash: ethers.keccak256(ethers.toUtf8Bytes("BraTS-subject-001")),
+      workerParamsJson: JSON.stringify({ trail_decay: 0.08, recruitment_diffusion: 1e-6 })
     };
     
     it("Should submit new experience", async function () {
@@ -113,7 +114,8 @@ describe("ExperienceRegistry", function () {
           modelUsed: "gpt-4o",
           nanobotCount: 15,
           tumorRadius: 150,
-          datasetHash: ethers.keccak256(ethers.toUtf8Bytes("BraTS-subject-002"))
+          datasetHash: ethers.keccak256(ethers.toUtf8Bytes("BraTS-subject-002")),
+          workerParamsJson: JSON.stringify({ trail_decay: 0.1, recruitment_diffusion: 2e-6 })
         }
       );
     });
@@ -183,7 +185,8 @@ describe("ExperienceRegistry", function () {
           modelUsed: "gemini-2.0",
           nanobotCount: 20,
           tumorRadius: 200,
-          datasetHash: ethers.keccak256(ethers.toUtf8Bytes("BraTS-subject-003"))
+          datasetHash: ethers.keccak256(ethers.toUtf8Bytes("BraTS-subject-003")),
+          workerParamsJson: JSON.stringify({ trail_decay: 0.12, recruitment_diffusion: 3e-6 })
         }
       );
       

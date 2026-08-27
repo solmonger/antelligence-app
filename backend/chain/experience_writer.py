@@ -25,6 +25,7 @@ EXPERIENCE_REGISTRY_WRITER_ABI = [
                     {"internalType": "uint16", "name": "nanobotCount", "type": "uint16"},
                     {"internalType": "uint16", "name": "tumorRadius", "type": "uint16"},
                     {"internalType": "bytes32", "name": "datasetHash", "type": "bytes32"},
+                    {"internalType": "string", "name": "workerParamsJson", "type": "string"},
                 ],
                 "internalType": "struct ExperienceRegistry.StrategyMeta",
                 "name": "strategyMeta",
@@ -118,12 +119,15 @@ class ChainStrategyWriter:
             "cast",
             "send",
             self.address,
-            "submitExperience(bytes32,string,bytes32,uint256,(string,string,uint16,uint16,bytes32))",
+            "submitExperience(bytes32,string,bytes32,uint256,(string,string,uint16,uint16,bytes32,string))",
             run_hash,
             ipfs_cid,
             data_hash,
             str(score),
-            f"({meta_tuple[0]},{meta_tuple[1]},{meta_tuple[2]},{meta_tuple[3]},{meta_tuple[4]})",
+            (
+                f"({meta_tuple[0]},{meta_tuple[1]},{meta_tuple[2]},{meta_tuple[3]},{meta_tuple[4]},"
+                f"\"{meta_tuple[5].replace(chr(92), chr(92) * 2).replace(chr(34), chr(92) + chr(34))}\")"
+            ),
             "--rpc-url",
             rpc_url,
             "--private-key",
@@ -166,12 +170,17 @@ class ChainStrategyWriter:
             if score <= 0:
                 score = int(metrics.get("cells_killed", 0)) or 1
 
+            worker_params = strategy_meta.get("worker_params", config.get("pheromone_params", {}))
+            if not isinstance(worker_params, dict):
+                raise ValueError("worker parameters must be a JSON object")
+            worker_params_json = json.dumps(worker_params, sort_keys=True, separators=(",", ":"))
             meta_tuple = (
                 str(strategy_meta.get("strategyType", strategy_meta.get("strategy_type", "pheromone-guided"))),
                 str(strategy_meta.get("modelUsed", strategy_meta.get("model_used", config.get("selected_model", "heuristic")))),
                 int(strategy_meta.get("nanobotCount", strategy_meta.get("nanobot_count", config.get("nanobot_count", config.get("n_nanobots", 0))))),
                 int(strategy_meta.get("tumorRadius", strategy_meta.get("tumor_radius", config.get("tumor_radius", 0)))),
                 _bytes32_hex(str(strategy_meta.get("datasetHash", strategy_meta.get("dataset_hash", artifact_hash)))),
+                worker_params_json,
             )
 
             if self.use_cast or self.contract is None:

@@ -16,7 +16,7 @@ PUBLIC_VALUES_SCHEMA_VERSION = "public-values-v1"
 PROGRAM_VERSION = "tumor-intel-proof-v1"
 PROOF_SYSTEM = "sp1+groth16"
 PROOF_FORMAT = "groth16"
-PROOF_BOUNDARY_VERSION = "sp1-groth16-adapter-v1"
+PROOF_BOUNDARY_VERSION = "sp1-groth16-adapter-v2"
 PROOF_ORIGIN_MOCK = "mock"
 PROOF_ORIGIN_ADAPTER = "sp1-groth16-adapter"
 PROOF_STATUS_MOCK = "mock-generated"
@@ -183,7 +183,14 @@ def build_proof_transport_metadata(*, public_values: str, proof_bytes: str, proo
         "proof_bytes_length": len(proof_bytes_raw),
         "public_values_commitment": hashlib.sha256(public_values_raw).hexdigest(),
         "proof_bytes_commitment": hashlib.sha256(proof_bytes_raw).hexdigest(),
-        "transport_commitment": compute_transport_commitment(normalized_public_values, normalized_proof_bytes, proof_origin, prover_status, PROGRAM_VERSION),
+        "transport_commitment": compute_transport_commitment(
+            normalized_public_values,
+            normalized_proof_bytes,
+            proof_origin,
+            prover_status,
+            PROGRAM_VERSION,
+            PUBLIC_VALUES_SCHEMA_VERSION,
+        ),
     }
     if tuple(metadata) != TRANSPORT_METADATA_REQUIRED_KEYS:
         raise ValueError("transport metadata keys drifted from the proof-spec contract")

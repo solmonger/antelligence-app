@@ -24,6 +24,7 @@ contract ExperienceRegistry {
         uint16 nanobotCount;    // Number of nanobots
         uint16 tumorRadius;     // Tumor size parameter
         bytes32 datasetHash;    // Hash of tumor geometry (BraTS subject)
+        string workerParamsJson; // Canonical JSON parameters the Queen may adopt
     }
     
     /// @notice Attestation from a validator
@@ -199,5 +200,107 @@ contract ExperienceRegistry {
     /// @notice Get experience details
     function getExperience(bytes32 runHash) external view returns (Experience memory, StrategyMeta memory) {
         return (experiences[runHash], strategies[runHash]);
+    }
+
+    // ======================================================================
+    // STRATEGY PROMOTION — makes the blockchain a knowledge-sharing layer
+    // ======================================================================
+
+    /// @notice A promoted strategy that the swarm can adopt in future runs
+    struct PromotedStrategy {
+        bytes32 runHash;
+        uint256 score;
+        uint256 promotedAt;
+        string strategyType;
+        uint16 nanobotCount;
+        uint16 tumorRadius;
+        string workerParamsJson;
+    }
+
+    PromotedStrategy[] public promotedStrategies;
+    mapping(bytes32 => bool) public isPromoted;
+    mapping(bytes32 => uint256) public promotedIndex;
+
+    event StrategyPromoted(bytes32 indexed runHash, uint256 score, address indexed promoter);
+
+    /// @notice Promote a verified experience as a strategy for future runs to adopt.
+    ///         This is the core of the self-improving loop: high-score verified
+    ///         experiences become promoted strategies that the Queen reads on
+    ///         the next run's init.
+    function promoteStrategy(bytes32 runHash) external onlyValidator {
+        require(experiences[runHash].runHash != bytes32(0), "Experience not found");
+        require(experiences[runHash].verified, "Not verified");
+        require(!isPromoted[runHash], "Already promoted");
+
+        isPromoted[runHash] = true;
+        promotedIndex[runHash] = promotedStrategies.length;
+        promotedStrategies.push(PromotedStrategy({
+            runHash: runHash,
+            score: experiences[runHash].score,
+            promotedAt: uint256(block.timestamp),
+            strategyType: strategies[runHash].strategyType,
+            nanobotCount: strategies[runHash].nanobotCount,
+            tumorRadius: strategies[runHash].tumorRadius,
+            workerParamsJson: strategies[runHash].workerParamsJson
+        }));
+
+        emit StrategyPromoted(runHash, experiences[runHash].score, msg.sender);
+    }
+
+    /// @notice Get the top-N promoted strategies sorted by score descending.
+    ///         The Queen calls this at run init to select the best strategy.
+    function getTopStrategies(uint8 n) external view returns (PromotedStrategy[] memory) {
+        uint256 count = promotedStrategies.length;
+        if (count == 0) return new PromotedStrategy[](0);
+        uint256 resultCount = count < n ? count : n;
+
+        // Copy to memory for sorting
+        PromotedStrategy[] memory sorted = new PromotedStrategy[](count);
+        for (uint256 i = 0; i < count; i++) {
+            sorted[i] = promotedStrategies[i];
+        }
+
+        // Insertion sort by score descending
+        for (uint256 i = 1; i < count; i++) {
+            PromotedStrategy memory key = sorted[i];
+            int256 j = int256(i) - 1;
+            while (j >= 0 && sorted[uint256(j)].score < key.score) {
+                sorted[uint256(j + 1)] = sorted[uint256(j)];
+                j--;
+            }
+            sorted[uint256(j + 1)] = key;
+        }
+
+        // Return top n
+        PromotedStrategy[] memory result = new PromotedStrategy[](resultCount);
+        for (uint256 i = 0; i < resultCount; i++) {
+            result[i] = sorted[i];
+        }
+        return result;
+    }
+
+    /// @notice Get promoted strategy count
+    function getPromotedCount() external view returns (uint256) {
+        return promotedStrategies.length;
+    }
+
+    /// @notice Get experiences filtered by strategy type
+    function getExperiencesByStrategy(string calldata strategyType) external view returns (bytes32[] memory) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < promotedStrategies.length; i++) {
+            if (keccak256(bytes(promotedStrategies[i].strategyType)) == keccak256(bytes(strategyType))) {
+                count++;
+            }
+        }
+
+        bytes32[] memory result = new bytes32[](count);
+        uint256 index = 0;
+        for (uint256 i = 0; i < promotedStrategies.length; i++) {
+            if (keccak256(bytes(promotedStrategies[i].strategyType)) == keccak256(bytes(strategyType))) {
+                result[index] = promotedStrategies[i].runHash;
+                index++;
+            }
+        }
+        return result;
     }
 }

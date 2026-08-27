@@ -42,6 +42,8 @@ def run_simulation(
     cfg: SimulationConfig,
     model_factory: ModelFactory = TumorNanobotModel,
 ) -> Tuple[TumorNanobotModel, Dict[str, Any]]:
+    if cfg.steps > 1000:
+        raise ValueError("Simulation steps too high for runtime factory")
     model = build_model(cfg, model_factory=model_factory)
     for _ in range(cfg.steps):
         model.step()

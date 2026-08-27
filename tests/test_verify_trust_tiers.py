@@ -45,3 +45,29 @@ def test_verify_artifact_trust_tier_for_integrity_checked():
     result = verify_artifact(artifact, tolerance_pct=100.0, replay=False)
     
     assert result["trust_tier"] == "integrity_checked"
+
+
+def test_verify_artifact_rejects_unknown_trust_tier_with_structured_error():
+    """Verifier API must not silently default unsupported trust tiers to a permissive tier."""
+    artifact = create_simulation_artifact(
+        config={"tumor_radius": 150, "nanobot_count": 10},
+        metrics={"kill_rate": 45.5, "deliveries": 30},
+    )
+    artifact["trust_tier"] = "verified_by_vibes"
+
+    result = verify_artifact(artifact, tolerance_pct=100.0, replay=False)
+
+    assert result["ok"] is False
+    assert result["trust_tier"] == "unsupported"
+    assert result["error"] == {
+        "code": "unsupported_trust_tier",
+        "message": "Unsupported trust tier: verified_by_vibes",
+        "trust_tier": "verified_by_vibes",
+        "supported_trust_tiers": [
+            "integrity_checked",
+            "proof_staged",
+            "replay_checked",
+            "unverified",
+            "verified_onchain",
+        ],
+    }

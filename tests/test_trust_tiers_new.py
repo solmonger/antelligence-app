@@ -12,8 +12,13 @@ def test_trust_tier_derivation():
     # 2. proof_staged (proof_bundle exists)
     assert _derive_trust_tier({"onchain_ok": False}, {"some": "bundle"}, None) == "proof_staged"
     
-    # 3. proof_staged (lifecycle stage is proof_generated)
-    assert _derive_trust_tier({"onchain_ok": False}, None, {"stage": "proof_generated"}) == "proof_staged"
+    # 3. A self-declared lifecycle stage cannot promote trust without a bundle.
+    assert _derive_trust_tier({"onchain_ok": False}, None, {"stage": "proof_generated"}) == "unverified"
+    assert _derive_trust_tier(
+        {"onchain_ok": False, "integrity_ok": True},
+        None,
+        {"stage": "proof_generated"},
+    ) == "integrity_checked"
     
     # 4. replay_checked
     assert _derive_trust_tier({"onchain_ok": False, "replay_ok": True}, None, None) == "replay_checked"
