@@ -107,7 +107,7 @@ def rank_by_kill_rate(entries: List[Dict]) -> List[Dict]:
 def derive_trust_tier(verification_status: Dict, proof_bundle: Dict, proof_lifecycle: Dict) -> str:
     if verification_status.get("onchain_ok"):
         return "verified_onchain"
-    if proof_lifecycle.get("stage") == "proof_generated" or proof_bundle:
+    if proof_bundle:
         return "proof_staged"
     if verification_status.get("replay_ok"):
         return "replay_checked"
