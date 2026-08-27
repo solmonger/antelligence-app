@@ -302,7 +302,17 @@ def get_run(run_id: str) -> RunResponse:
                 "message": f"Run '{run_id}' not found.",
             },
         )
-    provenance = entry.get("provenance") or {}
+    provenance = entry.get("provenance")
+    if provenance is None:
+        # Rows created before the provenance column existed remain readable,
+        # but expose no trust or config-trace claims.
+        return RunResponse(
+            run_id=run_id,
+            status=entry["status"],
+            config=entry["config"],
+            metrics=entry["metrics"],
+            provenance=None,
+        )
     required_provenance_fields = {
         "run_id",
         "config",

@@ -237,6 +237,25 @@ class TestGetRunEndpoint:
         assert "config" in data
         assert "metrics" in data
 
+    def test_legacy_run_without_provenance_remains_retrievable_but_untrusted(self):
+        run_id = "legacy-run-without-provenance"
+        RUN_STORE.save_run(
+            run_id,
+            "completed",
+            {"num_bots": 2, "grid_size": 5, "steps": 2},
+            {"kill_rate": 0.5},
+            provenance=None,
+        )
+        _RUNS.pop(run_id, None)
+
+        get_resp = client.get(f"/runs/{run_id}")
+        assert get_resp.status_code == 200
+        assert get_resp.json()["provenance"] is None
+
+        trace_resp = client.get(f"/runs/{run_id}/config-trace")
+        assert trace_resp.status_code == 404
+        assert trace_resp.json()["detail"]["type"] == "config_trace_not_found"
+
     def test_persisted_run_provenance_matches_simulate_contract(self):
         required_fields = {
             "run_id",
