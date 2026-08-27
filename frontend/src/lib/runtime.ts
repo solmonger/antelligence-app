@@ -1,25 +1,28 @@
+import { resolveRuntimeConfig } from "./runtimeConfig";
+
 export type BuildInfo = {
   mode: string;
+  frontendMode: string;
+  apiBaseUrl: string;
   buildLabel: string;
   gitSha: string;
   previewHostname: string;
 };
 
-const env = import.meta.env;
-const explicitPreview = String(env.VITE_PREVIEW_MODE ?? "").toLowerCase();
-
-export const IS_PREVIEW_MODE =
-  env.MODE === "preview" || explicitPreview === "1" || explicitPreview === "true";
-
-export const API_BASE_URL = String(env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
-
-const gitSha = String(env.VITE_GIT_SHA ?? "unknown");
 const runtimeHostname =
   typeof window === "undefined" ? "unknown" : window.location.hostname || "unknown";
+const runtime = resolveRuntimeConfig(import.meta.env, runtimeHostname);
+
+export const FRONTEND_MODE = runtime.frontendMode;
+export const IS_PREVIEW_MODE = runtime.isPreviewMode;
+export const API_BASE_URL = runtime.apiBaseUrl;
+export const PREVIEW_HOSTNAME = runtime.previewHostname;
 
 export const BUILD_INFO: BuildInfo = Object.freeze({
-  mode: env.MODE,
-  buildLabel: String(env.VITE_BUILD_LABEL ?? `${env.MODE}-${gitSha.slice(0, 8)}`),
-  gitSha,
-  previewHostname: String(env.VITE_PREVIEW_HOSTNAME ?? runtimeHostname),
+  mode: runtime.mode,
+  frontendMode: runtime.frontendMode,
+  apiBaseUrl: runtime.apiBaseUrl,
+  buildLabel: runtime.buildLabel,
+  gitSha: runtime.gitSha,
+  previewHostname: runtime.previewHostname,
 });
