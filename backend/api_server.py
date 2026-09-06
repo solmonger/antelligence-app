@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 # Ensure backend package is importable when running from repo root.
 _backend_dir = os.path.dirname(os.path.abspath(__file__))
@@ -117,8 +117,14 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
             seed=request.seed,
             pheromone_params=pheromone_kwargs,
         )
-    except Exception as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_simulation_config",
+                "errors": exc.errors(include_url=False),
+            },
+        ) from exc
 
     try:
         _, metrics = run_simulation(cfg, model_factory=TumorNanobotModel)

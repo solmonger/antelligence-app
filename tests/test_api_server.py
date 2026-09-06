@@ -75,6 +75,18 @@ class TestSimulateEndpoint:
     def test_simulate_invalid_num_bots(self):
         resp = client.post("/simulate", json={"num_bots": 0, "grid_size": 5, "steps": 3})
         assert resp.status_code == 422
+        assert resp.json()["detail"] == {
+            "code": "invalid_simulation_config",
+            "errors": [
+                {
+                    "type": "greater_than_equal",
+                    "loc": ["num_bots"],
+                    "msg": "Input should be greater than or equal to 1",
+                    "input": 0,
+                    "ctx": {"ge": 1},
+                }
+            ],
+        }
 
     def test_simulate_rejects_unknown_request_fields(self):
         resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 3, "unexpected_flag": True})
