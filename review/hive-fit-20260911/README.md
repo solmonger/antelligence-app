@@ -36,7 +36,7 @@ The runner verifies source hashes, creates a **new** output directory, runs all 
 
 Inspect the generated `summary.json`, `rows.jsonl`, each case's `trace.json`, and `unreported-drift.json`. Raw traces and databases stay local. The checked-in `evidence/summary.json` is an observed result, not a substitute for rerunning.
 
-Fresh packaging checks: **165 tests passed**, **480 assigned matrix rows replayed**, plus **24 unreported-drift diagnostic cases**. These are one small deterministic task family, not independent real-world trials. See `evidence/verification.json` and `SOURCE-MANIFEST.json` for source identity and packaging changes.
+Fresh packaging checks (including manifest-coverage and moved-output audit regressions): **167 tests passed**, **480 assigned matrix rows replayed**, plus **24 unreported-drift diagnostic cases**. These are one small deterministic task family, not independent real-world trials. See `evidence/verification.json` and `SOURCE-MANIFEST.json` for source identity and packaging changes.
 
 ## Observed behavior
 

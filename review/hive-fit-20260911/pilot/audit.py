@@ -23,7 +23,7 @@ assert {(r['seed'],r['revision'],r['condition'],r['arm']) for r in rows}==expect
 assert len(rows)==len(expected)
 for row in rows:
     assert row['error'] is None, row
-    t=json.loads(Path(row['trace_path']).read_text())
+    t=json.loads((p / row['trace_path']).read_text())
     replay=old.replay(t['task'],t['actions'])
     assert replay==t['old_replay']
     assert row['safe_success']==replay['safe_success']

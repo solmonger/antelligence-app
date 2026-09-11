@@ -150,7 +150,7 @@ def run_case(seed, revision, condition, root):
             row.update({'error':f'{type(exc).__name__}: {exc}','safe_success':False,
                         'submitted_actions':len(actions),'rejected_attempt':False,'abstained':None,'actual_state_violation':None})
         row['elapsed_ns']=time.perf_counter_ns()-started
-        row['trace_path']=str(out/'trace.json')
+        row['trace_path']=str((out/'trace.json').relative_to(root.parent))
         (out/'trace.json').write_text(json.dumps(trace,indent=2,default=lambda x:{'canonical_utf8':x.decode()} if isinstance(x,bytes) else str(x))+'\n')
         rows.append(row)
     return rows

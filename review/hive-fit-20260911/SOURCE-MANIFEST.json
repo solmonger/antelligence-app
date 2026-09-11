@@ -86,8 +86,9 @@
   "pilot/fit_pilot.py": {
     "origin_commit": "a4001f12c19d8fc77a29f8017347cbdf564e3f96",
     "origin_path": "fit_pilot.py",
-    "sha256": "cc985dfa1e54c89e56d475be87c21aa2b7b9a1ab58236468a8bad58346d3f19b",
-    "modified": false
+    "sha256": "9a504f5dbc4555ec5d27410370c1e350e636b0f2cee2a2353d5e32a6b9b045ca",
+    "modified": true,
+    "changes": "Portable paths: write relative matrix trace paths."
   },
   "pilot/test_fit.py": {
     "origin_commit": "a4001f12c19d8fc77a29f8017347cbdf564e3f96",
@@ -98,8 +99,28 @@
   "pilot/audit.py": {
     "origin_commit": "a4001f12c19d8fc77a29f8017347cbdf564e3f96",
     "origin_path": "audit.py",
-    "sha256": "5e8692be0c8e6b2fd372be069169ffc5dea1658dfac5f9b7127d477482f69773",
+    "sha256": "886f25c02b48a84ef8533a8850c89cdf21fe9136704126cd8edf137dd354925a",
     "modified": true,
-    "changes": "Accept output directory as argv[1], locate sibling snapshot imports, audit that directory. Outcome logic unchanged."
+    "changes": "Locate sibling snapshot imports, accept matrix directory as argv[1], resolve trace paths relative to matrix root. Outcome logic unchanged."
+  },
+  "pilot/run.py": {
+    "origin": "new review packaging source",
+    "sha256": "8ae8abf5afedda166785ab2be015d856f53016391d809e724d2e5c68955a2d9c",
+    "modified": true
+  },
+  "backend/__init__.py": {
+    "origin": "new review packaging source",
+    "sha256": "9b5123db3cc949025a4d593421b70b9071c3d8efbd0701f0fa5459566613e8f3",
+    "modified": true
+  },
+  "scripts/__init__.py": {
+    "origin": "new review packaging source",
+    "sha256": "9b5123db3cc949025a4d593421b70b9071c3d8efbd0701f0fa5459566613e8f3",
+    "modified": true
+  },
+  "tests/test_review_packaging.py": {
+    "origin": "new review packaging source",
+    "sha256": "d71bc69eba6c17c9af7c8a9cbd670aeba2ccb91a23e6924f1a98e6d45acdcc5e",
+    "modified": true
   }
 }
