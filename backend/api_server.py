@@ -77,6 +77,7 @@ class SimulateResponse(BaseModel):
     status: str
     metrics: Dict[str, Any]
     config_hash: str
+    metrics_hash: str
 
 
 class RunResponse(BaseModel):
@@ -85,6 +86,7 @@ class RunResponse(BaseModel):
     config: Dict[str, Any]
     config_hash: str
     metrics: Dict[str, Any]
+    metrics_hash: str
 
 
 class HealthResponse(BaseModel):
@@ -144,8 +146,13 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
     _RUNS[run_id] = entry
     RUN_STORE.save_run(run_id, entry["status"], entry["config"], entry["metrics"])
 
-    return SimulateResponse(run_id=run_id, status="completed", metrics=metrics,
-                           config_hash=compute_artifact_hash(cfg.model_dump()))
+    return SimulateResponse(
+        run_id=run_id,
+        status="completed",
+        metrics=metrics,
+        config_hash=compute_artifact_hash(cfg.model_dump()),
+        metrics_hash=compute_artifact_hash(metrics),
+    )
 
 
 @app.get("/runs/{run_id}", response_model=RunResponse, tags=["simulation"])
@@ -169,6 +176,7 @@ def get_run(run_id: str) -> RunResponse:
         config=entry["config"],
         config_hash=compute_artifact_hash(entry["config"]),
         metrics=entry["metrics"],
+        metrics_hash=compute_artifact_hash(entry["metrics"]),
     )
 
 
