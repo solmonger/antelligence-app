@@ -21,13 +21,14 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 # Ensure backend package is importable when running from repo root.
 _backend_dir = os.path.dirname(os.path.abspath(__file__))
 if _backend_dir not in sys.path:
     sys.path.insert(0, _backend_dir)
 
+from backend.chain.ipfs import compute_artifact_hash  # noqa: E402
 from backend.config import PheromoneParams, SimulationConfig  # noqa: E402
 from backend.run_store import SQLiteRunStore  # noqa: E402
 from backend.runtime_factory import run_simulation  # noqa: E402
@@ -75,13 +76,17 @@ class SimulateResponse(BaseModel):
     run_id: str
     status: str
     metrics: Dict[str, Any]
+    config_hash: str
+    metrics_hash: str
 
 
 class RunResponse(BaseModel):
     run_id: str
     status: str
     config: Dict[str, Any]
+    config_hash: str
     metrics: Dict[str, Any]
+    metrics_hash: str
 
 
 class HealthResponse(BaseModel):
@@ -117,8 +122,14 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
             seed=request.seed,
             pheromone_params=pheromone_kwargs,
         )
-    except Exception as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "invalid_simulation_config",
+                "errors": exc.errors(include_url=False),
+            },
+        ) from exc
 
     try:
         _, metrics = run_simulation(cfg, model_factory=TumorNanobotModel)
@@ -135,7 +146,13 @@ def simulate(request: SimulateRequest) -> SimulateResponse:
     _RUNS[run_id] = entry
     RUN_STORE.save_run(run_id, entry["status"], entry["config"], entry["metrics"])
 
-    return SimulateResponse(run_id=run_id, status="completed", metrics=metrics)
+    return SimulateResponse(
+        run_id=run_id,
+        status="completed",
+        metrics=metrics,
+        config_hash=compute_artifact_hash(cfg.model_dump()),
+        metrics_hash=compute_artifact_hash(metrics),
+    )
 
 
 @app.get("/runs/{run_id}", response_model=RunResponse, tags=["simulation"])
@@ -157,7 +174,9 @@ def get_run(run_id: str) -> RunResponse:
         run_id=run_id,
         status=entry["status"],
         config=entry["config"],
+        config_hash=compute_artifact_hash(entry["config"]),
         metrics=entry["metrics"],
+        metrics_hash=compute_artifact_hash(entry["metrics"]),
     )
 
 

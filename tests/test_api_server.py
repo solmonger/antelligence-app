@@ -6,6 +6,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from backend.api_server import app, _RUNS
+from backend.chain.ipfs import compute_artifact_hash
+from backend.run_store import SQLiteRunStore
 
 client = TestClient(app)
 
@@ -75,6 +77,18 @@ class TestSimulateEndpoint:
     def test_simulate_invalid_num_bots(self):
         resp = client.post("/simulate", json={"num_bots": 0, "grid_size": 5, "steps": 3})
         assert resp.status_code == 422
+        assert resp.json()["detail"] == {
+            "code": "invalid_simulation_config",
+            "errors": [
+                {
+                    "type": "greater_than_equal",
+                    "loc": ["num_bots"],
+                    "msg": "Input should be greater than or equal to 1",
+                    "input": 0,
+                    "ctx": {"ge": 1},
+                }
+            ],
+        }
 
     def test_simulate_rejects_unknown_request_fields(self):
         resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 3, "unexpected_flag": True})
@@ -135,6 +149,28 @@ class TestSimulateEndpoint:
             resp = client.post("/simulate", json={"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 42})
         assert resp.status_code == 200
 
+    def test_simulate_exposes_config_proof_hash(self):
+        """Provenance: POST response carries a hash that matches the stored config."""
+        payload = {"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 777}
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            resp = client.post("/simulate", json=payload)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "config_hash" in data
+        run_id = data["run_id"]
+        assert data["config_hash"] == compute_artifact_hash(_RUNS[run_id]["config"])
+
+    def test_simulate_exposes_metrics_proof_hash(self):
+        """Provenance: POST response carries a hash that matches the stored metrics."""
+        payload = {"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 777}
+        with patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory):
+            resp = client.post("/simulate", json=payload)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "metrics_hash" in data
+        run_id = data["run_id"]
+        assert data["metrics_hash"] == compute_artifact_hash(_RUNS[run_id]["metrics"])
+
 
 class TestGetRunEndpoint:
     def test_get_run_not_found(self):
@@ -153,3 +189,37 @@ class TestGetRunEndpoint:
         assert data["status"] == "completed"
         assert "config" in data
         assert "metrics" in data
+
+    def test_get_run_exposes_persisted_config_proof_hash(self, tmp_path):
+        store = SQLiteRunStore(tmp_path / "runs.sqlite3")
+        payload = {"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 123}
+
+        with (
+            patch("backend.api_server.RUN_STORE", store),
+            patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory),
+        ):
+            post_resp = client.post("/simulate", json=payload)
+            run_id = post_resp.json()["run_id"]
+            _RUNS.clear()
+            get_resp = client.get(f"/runs/{run_id}")
+
+        assert get_resp.status_code == 200
+        data = get_resp.json()
+        assert data["config_hash"] == compute_artifact_hash(data["config"])
+
+    def test_get_run_exposes_persisted_metrics_proof_hash(self, tmp_path):
+        store = SQLiteRunStore(tmp_path / "runs.sqlite3")
+        payload = {"num_bots": 2, "grid_size": 5, "steps": 2, "seed": 123}
+
+        with (
+            patch("backend.api_server.RUN_STORE", store),
+            patch("backend.api_server.TumorNanobotModel", side_effect=_fake_model_factory),
+        ):
+            post_resp = client.post("/simulate", json=payload)
+            run_id = post_resp.json()["run_id"]
+            _RUNS.clear()
+            get_resp = client.get(f"/runs/{run_id}")
+
+        assert get_resp.status_code == 200
+        data = get_resp.json()
+        assert data["metrics_hash"] == compute_artifact_hash(data["metrics"])
