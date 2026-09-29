@@ -1,0 +1,220 @@
+{
+  "rows_verified": 480,
+  "conditions": [
+    {
+      "condition": "warm",
+      "arm": "legacy_full",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "warm",
+      "arm": "legacy_memory",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "warm",
+      "arm": "new_full",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "warm",
+      "arm": "new_memory",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "warm",
+      "arm": "memory_plus_exchange",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "cold",
+      "arm": "legacy_full",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "cold",
+      "arm": "legacy_memory",
+      "assigned": 24,
+      "success": 0,
+      "rejected_attempts_cases": 0,
+      "abstained": 24,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "cold",
+      "arm": "new_full",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "cold",
+      "arm": "new_memory",
+      "assigned": 24,
+      "success": 0,
+      "rejected_attempts_cases": 0,
+      "abstained": 24,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "cold",
+      "arm": "memory_plus_exchange",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 48,
+      "transport_bytes": 46080
+    },
+    {
+      "condition": "changed",
+      "arm": "legacy_full",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "changed",
+      "arm": "legacy_memory",
+      "assigned": 24,
+      "success": 0,
+      "rejected_attempts_cases": 24,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "changed",
+      "arm": "new_full",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "changed",
+      "arm": "new_memory",
+      "assigned": 24,
+      "success": 0,
+      "rejected_attempts_cases": 0,
+      "abstained": 24,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "changed",
+      "arm": "memory_plus_exchange",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 48,
+      "transport_bytes": 46080
+    },
+    {
+      "condition": "changed_no_reply",
+      "arm": "legacy_full",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "changed_no_reply",
+      "arm": "legacy_memory",
+      "assigned": 24,
+      "success": 0,
+      "rejected_attempts_cases": 24,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "changed_no_reply",
+      "arm": "new_full",
+      "assigned": 24,
+      "success": 24,
+      "rejected_attempts_cases": 0,
+      "abstained": 0,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "changed_no_reply",
+      "arm": "new_memory",
+      "assigned": 24,
+      "success": 0,
+      "rejected_attempts_cases": 0,
+      "abstained": 24,
+      "transport_events": 0,
+      "transport_bytes": 0
+    },
+    {
+      "condition": "changed_no_reply",
+      "arm": "memory_plus_exchange",
+      "assigned": 24,
+      "success": 0,
+      "rejected_attempts_cases": 0,
+      "abstained": 24,
+      "transport_events": 24,
+      "transport_bytes": 20400
+    }
+  ],
+  "unreported_drift": {
+    "assigned": 24,
+    "success": 0,
+    "rejected_attempts_cases": 24,
+    "memory_found": 24
+  },
+  "limits": [
+    "No Rscript found in PATH or standard installation paths; descriptive counts only, calculated in Python. No inferential statistics.",
+    "Not a model study: deterministic planners and trusted evidence sources.",
+    "24 task variants share one small simulator family, not 24 independent real-world problems.",
+    "Sources/caches are seeded by the trusted harness; no learned memory claim.",
+    "Changed-source successes require explicit invalidation plus a correct fresh reply.",
+    "No message/token/latency superiority claim. Memory-plus-exchange adds request/reply overhead.",
+    "No live workbench/tumor integration, no F4/F5/F6 completion or promotion."
+  ]
+}

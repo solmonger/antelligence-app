@@ -1,0 +1,126 @@
+{
+  "backend/research_coldroom.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "backend/research_coldroom.py",
+    "sha256": "2c28481a2931105078484f3271098c1ef56e81342418a3fee71aa346abf7a9a1",
+    "modified": false
+  },
+  "backend/research_hive_communication.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "backend/research_hive_communication.py",
+    "sha256": "8f51c6fbc830a91c12f845c0e1ba909b08c6c42c6b406014e0fcc0e0620c3415",
+    "modified": false
+  },
+  "backend/research_hive_contracts.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "backend/research_hive_contracts.py",
+    "sha256": "25c81eaa0ebec3a0cd66eb8016e4c4d1716cbcf3d2c840eb7ee6c4d1322c3ea3",
+    "modified": false
+  },
+  "backend/research_hive_memory.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "backend/research_hive_memory.py",
+    "sha256": "3893168fb8327103c000441605667f4981d7de9135ed23cb8aeb8786a7fcf753",
+    "modified": false
+  },
+  "backend/research_hive_tasks.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "backend/research_hive_tasks.py",
+    "sha256": "439feaf80043d97d917d4826015fe210aefa98af2efba6399b89d7361890965c",
+    "modified": false
+  },
+  "backend/research_hive_verifier.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "backend/research_hive_verifier.py",
+    "sha256": "a0a412097ae65b534349c0e933beee8d09c21dda1a5fb4c662781e2b18eb152b",
+    "modified": false
+  },
+  "scripts/probe_hive_coldroom.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "scripts/probe_hive_coldroom.py",
+    "sha256": "27df00f8bc96e65be369ae82a54bad4cd3eb775e65d821f15346e860320fa08f",
+    "modified": false
+  },
+  "scripts/probe_hive_communication.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "scripts/probe_hive_communication.py",
+    "sha256": "c1f7e09161e00ab3668f195f3e9148bbc913331b568cf57cb37f3224954c0aa6",
+    "modified": false
+  },
+  "tests/test_research_coldroom.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "tests/test_research_coldroom.py",
+    "sha256": "83d39b16b6df45753f98b8bbf6b13ef1bf73d2735db7fe89827d366f99b5ebc1",
+    "modified": false
+  },
+  "tests/test_research_hive_communication.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "tests/test_research_hive_communication.py",
+    "sha256": "201635f28dbd3cf84e578104131675634fc38a731556fccaa65c574473937755",
+    "modified": false
+  },
+  "tests/test_research_hive_contracts.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "tests/test_research_hive_contracts.py",
+    "sha256": "6e55213cc2404fe580cec17fca92d0618dbc45a215efa6b7ac448d6ed0ed004c",
+    "modified": false
+  },
+  "tests/test_research_hive_memory.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "tests/test_research_hive_memory.py",
+    "sha256": "aeb037ffdf1462886d7f306676a185b08247fecb57b0d6cad5b8090a70e2e114",
+    "modified": false
+  },
+  "tests/test_research_hive_tasks.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "tests/test_research_hive_tasks.py",
+    "sha256": "7ffcabd0947520ff7065da9799e9bfeb8b706e6befe36c3c609ded26d52e48d5",
+    "modified": false
+  },
+  "tests/test_research_hive_verifier.py": {
+    "origin_commit": "81e6289149f3f4a743ba046c494acad4f37258cd",
+    "origin_path": "tests/test_research_hive_verifier.py",
+    "sha256": "4b014976cb8f8106130d8f38a153c1e0a30cef9c3f4e7988f49c2f8a1e60364c",
+    "modified": false
+  },
+  "pilot/fit_pilot.py": {
+    "origin_commit": "a4001f12c19d8fc77a29f8017347cbdf564e3f96",
+    "origin_path": "fit_pilot.py",
+    "sha256": "9a504f5dbc4555ec5d27410370c1e350e636b0f2cee2a2353d5e32a6b9b045ca",
+    "modified": true,
+    "changes": "Portable paths: write relative matrix trace paths."
+  },
+  "pilot/test_fit.py": {
+    "origin_commit": "a4001f12c19d8fc77a29f8017347cbdf564e3f96",
+    "origin_path": "test_fit.py",
+    "sha256": "93eb4d96faec56f40e89a615dce9beb3924efd1afbaf12c6cc05d0ffd9eaca37",
+    "modified": false
+  },
+  "pilot/audit.py": {
+    "origin_commit": "a4001f12c19d8fc77a29f8017347cbdf564e3f96",
+    "origin_path": "audit.py",
+    "sha256": "886f25c02b48a84ef8533a8850c89cdf21fe9136704126cd8edf137dd354925a",
+    "modified": true,
+    "changes": "Locate sibling snapshot imports, accept matrix directory as argv[1], resolve trace paths relative to matrix root. Outcome logic unchanged."
+  },
+  "pilot/run.py": {
+    "origin": "new review packaging source",
+    "sha256": "8ae8abf5afedda166785ab2be015d856f53016391d809e724d2e5c68955a2d9c",
+    "modified": true
+  },
+  "backend/__init__.py": {
+    "origin": "new review packaging source",
+    "sha256": "9b5123db3cc949025a4d593421b70b9071c3d8efbd0701f0fa5459566613e8f3",
+    "modified": true
+  },
+  "scripts/__init__.py": {
+    "origin": "new review packaging source",
+    "sha256": "9b5123db3cc949025a4d593421b70b9071c3d8efbd0701f0fa5459566613e8f3",
+    "modified": true
+  },
+  "tests/test_review_packaging.py": {
+    "origin": "new review packaging source",
+    "sha256": "d71bc69eba6c17c9af7c8a9cbd670aeba2ccb91a23e6924f1a98e6d45acdcc5e",
+    "modified": true
+  }
+}

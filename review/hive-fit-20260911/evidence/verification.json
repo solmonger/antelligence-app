@@ -1,0 +1,36 @@
+{
+  "scope": "Isolated review snapshot only; not full application health or non-author approval",
+  "python": "3.11.15",
+  "pytest": "9.0.3",
+  "environment": "Fresh venv, pytest dependencies only",
+  "tests": 167,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "matrix_rows": 480,
+  "diagnostic_cases": 24,
+  "summary_equals_original": true,
+  "packaging_changes": [
+    "Added empty local backend/scripts package initializers to isolate imports.",
+    "Portable runner replaces author-machine paths and verifies SOURCE-MANIFEST.",
+    "audit.py path lookup/output selection adapted; calculation and historical limitations text unchanged.",
+    "Matrix trace paths made relative; portable audit resolves against matrix root; all executable packaging files added to manifest."
+  ],
+  "scope_exclusions": [
+    "Private controller regression files and process logs are not bundled.",
+    "The author machine lacked R at the original run; copied audit limitations describe that run, not a probe of the reviewers machine."
+  ],
+  "commands": [
+    "python -m pytest tests pilot/test_fit.py -q -p no:cacheprovider",
+    "python pilot/run.py --output NEW_DIRECTORY"
+  ],
+  "initial_tests_before_packaging_fixes": 165,
+  "packaging_regressions": {
+    "red": 2,
+    "green": 2,
+    "checks": [
+      "All executable snapshot files, including runner and initializers, are hash-listed.",
+      "Generated 480-row matrix moved to a different directory, original path absent, audit yields unchanged summary."
+    ]
+  }
+}
