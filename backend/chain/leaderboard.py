@@ -107,7 +107,7 @@ def rank_by_kill_rate(entries: List[Dict]) -> List[Dict]:
 def derive_trust_tier(verification_status: Dict, proof_bundle: Dict, proof_lifecycle: Dict) -> str:
     if verification_status.get("onchain_ok"):
         return "verified_onchain"
-    if proof_lifecycle.get("stage") == "proof_generated" or proof_bundle:
+    if proof_bundle:
         return "proof_staged"
     if verification_status.get("replay_ok"):
         return "replay_checked"
@@ -132,9 +132,22 @@ def normalize_leaderboard_artifact(record: Dict) -> Dict:
         "onchain",
         "status",
         "next_step",
+        "replay_ok",
+        "integrity_ok",
     ):
         if field in record:
             normalized[field] = record[field]
+    
+    # Ensure verification_status flags are flattened for the leaderboard
+    if "verification_status" in record:
+        vs = record["verification_status"]
+        if "onchain_ok" in vs:
+            normalized["verified_onchain"] = vs["onchain_ok"]
+        if "replay_ok" in vs:
+            normalized["replay_ok"] = vs["replay_ok"]
+        if "integrity_ok" in vs:
+            normalized["integrity_ok"] = vs["integrity_ok"]
+            
     return normalized
 
 
@@ -164,6 +177,7 @@ def build_leaderboard(artifacts: List[Dict]) -> Dict:
             "tumor_radius": config.get("tumor_radius", 0),
             "nanobot_count": config.get("nanobot_count", config.get("n_nanobots", 0)),
             "steps": config.get("steps", config.get("n_steps", 0)),
+            "pheromone_params": config.get("pheromone_params", {}),
             "timestamp": artifact.get("timestamp", ""),
             "verified_onchain": verification_status.get("onchain_ok", artifact.get("verified_onchain", False)),
             "proof_stage": proof_lifecycle.get("stage", "untracked"),

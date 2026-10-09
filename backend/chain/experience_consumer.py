@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -21,6 +22,7 @@ EXPERIENCE_REGISTRY_READER_ABI = [
                     {"internalType": "string", "name": "strategyType", "type": "string"},
                     {"internalType": "uint16", "name": "nanobotCount", "type": "uint16"},
                     {"internalType": "uint16", "name": "tumorRadius", "type": "uint16"},
+                    {"internalType": "string", "name": "workerParamsJson", "type": "string"},
                 ],
                 "internalType": "struct ExperienceRegistry.PromotedStrategy[]",
                 "name": "",
@@ -56,6 +58,7 @@ EXPERIENCE_REGISTRY_READER_ABI = [
                     {"internalType": "uint16", "name": "nanobotCount", "type": "uint16"},
                     {"internalType": "uint16", "name": "tumorRadius", "type": "uint16"},
                     {"internalType": "bytes32", "name": "datasetHash", "type": "bytes32"},
+                    {"internalType": "string", "name": "workerParamsJson", "type": "string"},
                 ],
                 "internalType": "struct ExperienceRegistry.StrategyMeta",
                 "name": "",
@@ -93,6 +96,20 @@ def _get(obj: Any, key: str, index: int, default: Any = None) -> Any:
         return default
 
 
+def _parse_worker_params(value: Any) -> Dict[str, float]:
+    parsed = json.loads(value or "{}") if isinstance(value, str) else value
+    if not isinstance(parsed, dict):
+        raise ValueError("worker parameters must be a JSON object")
+    if not all(
+        isinstance(key, str)
+        and isinstance(item, (int, float))
+        and not isinstance(item, bool)
+        for key, item in parsed.items()
+    ):
+        raise ValueError("worker parameters must contain only numeric values")
+    return {key: float(item) for key, item in parsed.items()}
+
+
 @dataclass(frozen=True)
 class StrategyData:
     run_hash: str
@@ -119,6 +136,7 @@ class ExperienceData:
     nanobot_count: int
     tumor_radius: int
     dataset_hash: str
+    worker_params: Dict[str, float] = field(default_factory=dict)
 
 
 class ChainExperienceConsumer:
@@ -159,7 +177,7 @@ class ChainExperienceConsumer:
                     strategy_type=str(_get(item, "strategyType", 3, "")),
                     nanobot_count=int(_get(item, "nanobotCount", 4, 0)),
                     tumor_radius=int(_get(item, "tumorRadius", 5, 0)),
-                    worker_params=dict(_get(item, "worker_params", 6, {}) or {}),
+                    worker_params=_parse_worker_params(_get(item, "workerParamsJson", 6, "{}")),
                 )
                 for item in raw
             ]
@@ -185,6 +203,7 @@ class ChainExperienceConsumer:
                 nanobot_count=int(_get(strategy, "nanobotCount", 2, 0)),
                 tumor_radius=int(_get(strategy, "tumorRadius", 3, 0)),
                 dataset_hash=_hex_bytes32(_get(strategy, "datasetHash", 4, "")),
+                worker_params=_parse_worker_params(_get(strategy, "workerParamsJson", 5, "{}")),
             )
         except Exception:
             return None

@@ -1,5 +1,6 @@
 """Tests for the blockchain-native chain reader layer."""
 
+import json
 import os
 import sys
 from unittest.mock import Mock
@@ -24,6 +25,21 @@ def test_chain_config_defaults_to_latest_deployed_phase1_contracts(monkeypatch):
 
     assert get_tumor_intel_address() == "0x925b455175eF932a9a0239090a94E593224CD8AB"
     assert get_experience_registry_address() == "0x58A78E337ce3D948A39475f05Ca1A2c30274CADE"
+
+
+def test_intel_reader_pin_type_names_match_solidity_enum():
+    from chain.intel_reader import PIN_TYPE_NAMES
+
+    assert PIN_TYPE_NAMES == {
+        0: "HYPOXIC_CLUSTER",
+        1: "STEM_CELL_DETECTED",
+        2: "HIGH_RESISTANCE_AREA",
+        3: "VESSEL_LOCATION",
+        4: "SUCCESSFUL_KILL",
+        5: "DRUG_OVERDOSE_ZONE",
+        6: "TARGET_ACQUIRED",
+        7: "DRUG_DELIVERY",
+    }
 
 
 def test_intel_reader_disabled_returns_empty_without_rpc(monkeypatch):
@@ -65,7 +81,7 @@ def test_intel_reader_fetches_active_pin_details_and_caches(monkeypatch):
             "pinId": 7,
             "x": 301,
             "y": 299,
-            "pinType": "HIGH_RESISTANCE",
+            "pinType": "HIGH_RESISTANCE_AREA",
             "pinTypeCode": 2,
             "reporter": "0x0000000000000000000000000000000000000001",
             "priority": 9,
@@ -104,14 +120,21 @@ def test_experience_consumer_reads_top_strategies_and_experience(monkeypatch):
                 "strategyType": "pheromone-guided",
                 "nanobotCount": 12,
                 "tumorRadius": 180,
-                "worker_params": {"exploration_bias": 0.1},
+                "workerParamsJson": '{"exploration_bias":0.1}',
             }
         ]
     )
     contract.functions.getExperience = _fn(
         return_value=(
             ("0x" + "aa" * 32, "ipfs://cid", "0x" + "bb" * 32, 9000, "0xabc", 123, 2, True),
-            ("pheromone-guided", "gemma4", 12, 180, "0x" + "cc" * 32),
+            (
+                "pheromone-guided",
+                "gemma4",
+                12,
+                180,
+                "0x" + "cc" * 32,
+                '{"exploration_bias":0.1}',
+            ),
         )
     )
     contract.functions.isPromoted = _fn(return_value=True)
@@ -125,6 +148,7 @@ def test_experience_consumer_reads_top_strategies_and_experience(monkeypatch):
     assert strategies[0].score == 9000
     assert strategies[0].worker_params == {"exploration_bias": 0.1}
     assert experience.verified is True
+    assert experience.worker_params == {"exploration_bias": 0.1}
     assert consumer.is_promoted("0x" + "aa" * 32) is True
 
 
@@ -151,7 +175,11 @@ def test_experience_writer_submits_and_promotes_when_enabled(monkeypatch):
     writer = ChainStrategyWriter(contract=contract, transaction_options={"from": "0xabc"})
 
     result = writer.submit_experience(
-        config={"tumor_radius": 100, "nanobot_count": 4},
+        config={
+            "tumor_radius": 100,
+            "nanobot_count": 4,
+            "pheromone_params": {"trail_decay": 0.08, "recruitment_diffusion": 1e-6},
+        },
         metrics={"kill_rate": 42.5},
         run_id="run-1",
         strategy_meta={"strategyType": "pheromone-guided", "modelUsed": "heuristic"},
@@ -162,6 +190,11 @@ def test_experience_writer_submits_and_promotes_when_enabled(monkeypatch):
     assert result["tx_hash"] == "0x7375626d69742d7478"
     assert writer.request_promotion(result["run_hash"]) is True
     contract.functions.submitExperience.assert_called_once()
+    submitted_meta = contract.functions.submitExperience.call_args.args[4]
+    assert json.loads(submitted_meta[5]) == {
+        "recruitment_diffusion": 1e-6,
+        "trail_decay": 0.08,
+    }
     contract.functions.promoteStrategy.assert_called_once_with(result["run_hash"])
 
 
@@ -179,7 +212,11 @@ def test_experience_writer_can_submit_with_cast_when_private_key_configured(monk
 
     writer = ChainStrategyWriter(contract=None, use_cast=True, cast_runner=runner)
     result = writer.submit_experience(
-        config={"tumor_radius": 100, "nanobot_count": 4},
+        config={
+            "tumor_radius": 100,
+            "nanobot_count": 4,
+            "pheromone_params": {"trail_decay": 0.08},
+        },
         metrics={"kill_rate": 42.5},
         run_id="run-1",
         strategy_meta={"strategyType": "pheromone-guided", "modelUsed": "heuristic"},
@@ -189,5 +226,7 @@ def test_experience_writer_can_submit_with_cast_when_private_key_configured(monk
     assert result["ok"] is True
     assert result["tx_hash"] == "0xabc123"
     assert calls[0][:3] == ["cast", "send", "0x58A78E337ce3D948A39475f05Ca1A2c30274CADE"]
+    assert any("(string,string,uint16,uint16,bytes32,string)" in arg for arg in calls[0])
+    assert any('\\"trail_decay\\":0.08' in arg for arg in calls[0])
     assert "--private-key" in calls[0]
     assert "0x" + "11" * 32 in calls[0]
