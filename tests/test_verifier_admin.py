@@ -29,20 +29,17 @@ class TestVerifierAdmin:
         assert result["proof_lifecycle"]["stage"] == "verified_onchain"
         assert result["verification_status"]["onchain_ok"] is True
 
-    @patch("backend.chain.config.get_verifier_address")
-    @patch("backend.chain.verifier_admin.get_base_sepolia_rpc_url")
-    @patch("backend.chain.verifier_admin.get_private_key")
     @patch("backend.chain.verifier_admin.get_tumor_intel_address")
+    @patch("backend.chain.verifier_admin.get_private_key")
+    @patch("backend.chain.verifier_admin.get_base_sepolia_rpc_url")
     @patch("backend.chain.verifier_admin.subprocess.run")
-    def test_set_verifier_address_invalid_config(self, mock_run, mock_intel, mock_pk, mock_rpc, mock_ver_addr):
-        # Simulate missing verifier address in config
-        mock_ver_addr.return_value = ""
+    def test_set_verifier_address_invalid_config(self, mock_run, mock_rpc, mock_pk, mock_intel):
         mock_intel.return_value = "0x1234567890123456789012345678901234567890"
         mock_pk.return_value = "0xabc"
         mock_rpc.return_value = "http://localhost:8545"
+        # Ensure the mock_run returns a valid stdout string to prevent TypeError in json.loads
+        mock_run.return_value.stdout = '{"transactionHash":"0xabc"}'
         
-        # The implementation should ideally check for this, but for now, we test that it fails or we handle it.
-        # If the code doesn't check, this test will fail if we assert an error.
-        # Let's see if the current code handles it.
-        with pytest.raises(Exception):
-            set_verifier_address("0x1111111111111111111111111111111111111111")
+        with pytest.raises(ValueError, match="verifier_address is not configured"):
+            set_verifier_address("")
+
