@@ -1,0 +1,1 @@
+{"completion_tokens": 29, "cost_usd": "subscription", "latency_s": 3.955, "model_id_requested": "claude-sonnet-5-5", "model_id_served": "claude-sonnet-5-5", "prompt_tokens": 2, "provider": "claude-subscription", "result_hash": "7fe202f744008ab625bf0b1c13c636dea7855cd1e148e0f73e5508306f5af8f3", "smoke": true, "tier": "frontier", "timestamp_utc": "2026-10-09T00:41:46.758568+00:00"}
