@@ -1,6 +1,6 @@
 # schemas.py
-from pydantic import BaseModel, Field
-from typing import List, Tuple, Dict, Literal, Optional
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing import Any, List, Tuple, Dict, Literal, Optional
 import numpy as np
 
 class SimulationConfig(BaseModel):
@@ -142,20 +142,24 @@ class PheromoneConfigUpdate(BaseModel):
 # ============================================================================
 
 class TumorSimulationConfig(BaseModel):
-    """Configuration for tumor nanobot simulation."""
+    """Configuration for the bounded synthetic tumor runtime."""
+    model_config = ConfigDict(extra="forbid", allow_inf_nan=False)
     domain_size: float = Field(600.0, gt=0, description="Simulation domain size in micrometers")
     voxel_size: float = Field(10.0, gt=0, description="Voxel spacing in micrometers")
-    n_nanobots: int = Field(10, gt=0, le=100, description="Number of nanobots")
+    n_nanobots: int = Field(10, ge=0, le=100, description="Number of nanobots")
     tumor_radius: float = Field(200.0, gt=0, description="Tumor radius in micrometers")
     agent_type: Literal["LLM-Powered", "Rule-Based", "Hybrid"] = "LLM-Powered"
     selected_model: str = "meta-llama/Llama-3.3-70B-Instruct"
     use_queen: bool = False
     use_llm_queen: bool = False
     max_steps: int = Field(100, gt=0, le=500, description="Maximum simulation steps")
+    seed: Optional[int] = Field(None, ge=0, le=4294967295, description="Explicit random seed for reproducible runs")
+    offline: bool = Field(False, description="Reject LLM and blockchain calls for local-only execution")
+    pheromones_enabled: bool = Field(True, description="Enable pheromone substrates and signaling")
     
     # Cell parameters
     cell_density: float = Field(0.001, gt=0, description="Tumor cells per µm²")
-    vessel_density: float = Field(0.01, gt=0, description="Blood vessels per 100 µm²")
+    vessel_density: float = Field(0.01, gt=0, description="Blood vessels per micrometer of synthetic tumor perimeter")
     
     # Advanced biological parameters
     enable_bbb: bool = Field(True, description="Enable blood-brain barrier modeling")
@@ -169,6 +173,30 @@ class TumorSimulationConfig(BaseModel):
     drug_combination_ratio: float = Field(1.0, gt=0, description="Ratio of drug A to drug B")
     use_brats_geometry: bool = False
     brats_patient_id: Optional[str] = None
+
+    @model_validator(mode="after")
+    def supported_local_runtime(self):
+        # Bound allocations before any model construction, not after an OOM.
+        grid_intervals = self.domain_size / self.voxel_size
+        if not 2 <= grid_intervals <= 100:
+            raise ValueError("domain_size / voxel_size must be between 2 and 100")
+        if self.tumor_radius > self.domain_size / 2:
+            raise ValueError("tumor_radius must fit inside the domain")
+        if np.pi * self.tumor_radius ** 2 * self.cell_density > 2000:
+            raise ValueError("synthetic geometry is limited to 2000 tumor cells")
+        if 2 * np.pi * self.tumor_radius * self.vessel_density > 1000:
+            raise ValueError("synthetic geometry is limited to 1000 vessels")
+        # These legacy fields were never wired to the model. Do not commit a
+        # requested intervention as executed when the runtime ignores it.
+        fixed_fields = (
+            "enable_bbb", "bbb_permeability", "enable_immune_system",
+            "immune_cell_density", "enable_tumor_heterogeneity", "stem_cell_fraction",
+            "resistant_cell_fraction", "enable_multi_drug", "drug_combination_ratio",
+        )
+        changed = [name for name in fixed_fields if getattr(self, name) != type(self).model_fields[name].default]
+        if changed:
+            raise ValueError("unsupported biological overrides: " + ", ".join(changed))
+        return self
 
 
 class NanobotState(BaseModel):
@@ -242,8 +270,17 @@ class TumorSimulationResult(BaseModel):
     final_metrics: Dict
     history: List[TumorStepState]
     tumor_statistics: Dict  # Summary stats about tumor kill rate, etc.
+    initial_geometry_hash: str = ""
     final_substrate_data: Optional[SubstrateMapData] = None
     blockchain_logs: List[str] = []
+    run_id: str = ""
+    config_hash: str = ""
+    proof_staged: bool = False
+    proof_ok: bool = False
+    public_values: Dict[str, Any] = Field(default_factory=dict)
+    proof_bundle: Dict[str, Any] = Field(default_factory=dict)
+    mock_bundle: Dict[str, Any] = Field(default_factory=dict)
+    provenance: Dict[str, Any] = Field(default_factory=dict)
 
 
 class TumorComparisonConfig(TumorSimulationConfig):

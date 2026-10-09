@@ -8,7 +8,7 @@ import os
 import subprocess
 from typing import Any, Dict, Optional
 
-from chain.config import get_base_sepolia_rpc_url, get_experience_registry_address, get_private_key
+from chain.config import get_rpc_url, get_experience_registry_address, get_private_key
 from chain.ipfs import pin_simulation
 
 EXPERIENCE_REGISTRY_WRITER_ABI = [
@@ -25,6 +25,7 @@ EXPERIENCE_REGISTRY_WRITER_ABI = [
                     {"internalType": "uint16", "name": "nanobotCount", "type": "uint16"},
                     {"internalType": "uint16", "name": "tumorRadius", "type": "uint16"},
                     {"internalType": "bytes32", "name": "datasetHash", "type": "bytes32"},
+                    {"internalType": "string", "name": "workerParamsJson", "type": "string"},
                 ],
                 "internalType": "struct ExperienceRegistry.StrategyMeta",
                 "name": "strategyMeta",
@@ -91,7 +92,7 @@ class ChainStrategyWriter:
             if w3 is None:
                 from web3 import Web3
 
-                rpc = rpc_url or get_base_sepolia_rpc_url()
+                rpc = rpc_url or get_rpc_url()
                 if not rpc:
                     return None
                 w3 = Web3(Web3.HTTPProvider(rpc))
@@ -108,22 +109,25 @@ class ChainStrategyWriter:
         return json.loads(result.stdout) if result.stdout.strip() else {}
 
     def _send_submit_with_cast(self, run_hash: str, ipfs_cid: str, data_hash: str, score: int, meta_tuple: tuple) -> str:
-        rpc_url = get_base_sepolia_rpc_url()
+        rpc_url = get_rpc_url()
         private_key = get_private_key()
         if not rpc_url:
-            raise ValueError("BASE_SEPOLIA_RPC_URL is not configured")
+            raise ValueError("chain RPC is not configured (ANTELLIGENCE_CHAIN / ANTELLIGENCE_RPC_URL)")
         if not private_key:
             raise ValueError("PRIVATE_KEY is not configured")
         args = [
             "cast",
             "send",
             self.address,
-            "submitExperience(bytes32,string,bytes32,uint256,(string,string,uint16,uint16,bytes32))",
+            "submitExperience(bytes32,string,bytes32,uint256,(string,string,uint16,uint16,bytes32,string))",
             run_hash,
             ipfs_cid,
             data_hash,
             str(score),
-            f"({meta_tuple[0]},{meta_tuple[1]},{meta_tuple[2]},{meta_tuple[3]},{meta_tuple[4]})",
+            (
+                f"({meta_tuple[0]},{meta_tuple[1]},{meta_tuple[2]},{meta_tuple[3]},{meta_tuple[4]},"
+                f"\"{meta_tuple[5].replace(chr(92), chr(92) * 2).replace(chr(34), chr(92) + chr(34))}\")"
+            ),
             "--rpc-url",
             rpc_url,
             "--private-key",
@@ -133,10 +137,10 @@ class ChainStrategyWriter:
         return str(self.cast_runner(args).get("transactionHash", ""))
 
     def _send_promotion_with_cast(self, run_hash: str) -> str:
-        rpc_url = get_base_sepolia_rpc_url()
+        rpc_url = get_rpc_url()
         private_key = get_private_key()
         if not rpc_url:
-            raise ValueError("BASE_SEPOLIA_RPC_URL is not configured")
+            raise ValueError("chain RPC is not configured (ANTELLIGENCE_CHAIN / ANTELLIGENCE_RPC_URL)")
         if not private_key:
             raise ValueError("PRIVATE_KEY is not configured")
         args = [
@@ -166,12 +170,17 @@ class ChainStrategyWriter:
             if score <= 0:
                 score = int(metrics.get("cells_killed", 0)) or 1
 
+            worker_params = strategy_meta.get("worker_params", config.get("pheromone_params", {}))
+            if not isinstance(worker_params, dict):
+                raise ValueError("worker parameters must be a JSON object")
+            worker_params_json = json.dumps(worker_params, sort_keys=True, separators=(",", ":"))
             meta_tuple = (
                 str(strategy_meta.get("strategyType", strategy_meta.get("strategy_type", "pheromone-guided"))),
                 str(strategy_meta.get("modelUsed", strategy_meta.get("model_used", config.get("selected_model", "heuristic")))),
                 int(strategy_meta.get("nanobotCount", strategy_meta.get("nanobot_count", config.get("nanobot_count", config.get("n_nanobots", 0))))),
                 int(strategy_meta.get("tumorRadius", strategy_meta.get("tumor_radius", config.get("tumor_radius", 0)))),
                 _bytes32_hex(str(strategy_meta.get("datasetHash", strategy_meta.get("dataset_hash", artifact_hash)))),
+                worker_params_json,
             )
 
             if self.use_cast or self.contract is None:

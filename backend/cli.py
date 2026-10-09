@@ -19,6 +19,8 @@ import argparse
 import json
 import os
 import sys
+from contextlib import redirect_stdout
+from pathlib import Path
 
 # Ensure backend package is importable when invoked as a script.
 _repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,13 +32,10 @@ if _backend_dir not in sys.path:
     sys.path.insert(0, _backend_dir)
 
 # Import at module level so tests can patch backend.cli.TumorNanobotModel
-try:
-    from nanobot_simulation import TumorNanobotModel
-except ImportError:
-    try:
-        from backend.nanobot_simulation import TumorNanobotModel  # type: ignore[no-redef]
-    except ImportError:
-        TumorNanobotModel = None  # type: ignore[assignment,misc]
+with redirect_stdout(sys.stderr):
+    from backend.nanobot_simulation import TumorNanobotModel
+from backend.config import SimulationConfig
+from backend.runtime_factory import run_simulation
 
 
 # ---------------------------------------------------------------------------
@@ -46,36 +45,11 @@ except ImportError:
 
 def cmd_simulate(args: argparse.Namespace) -> None:
     """Run a single simulation."""
-    import random
-    import numpy as np
-
-    if args.seed is not None:
-        random.seed(args.seed)
-        np.random.seed(args.seed)
-
-    voxel_size = 10.0
-    domain_size = float(args.grid_size) * voxel_size
-    tumor_radius = min(domain_size * 0.33, 200.0)
-
+    cfg = SimulationConfig(num_bots=args.bots, grid_size=args.grid_size,
+                           steps=args.steps, seed=args.seed)
     print(f"[simulate] bots={args.bots}, steps={args.steps}, grid={args.grid_size}×{args.grid_size}", file=sys.stderr)
-    model = TumorNanobotModel(
-        n_nanobots=args.bots,
-        domain_size=domain_size,
-        voxel_size=voxel_size,
-        tumor_radius=tumor_radius,
-    )
-
-    for step in range(args.steps):
-        model.step()
-        if (step + 1) % max(1, args.steps // 10) == 0:
-            print(f"  step {step + 1}/{args.steps}", file=sys.stderr)
-
-    metrics = dict(model.metrics)
-    stats = model.geometry.get_tumor_statistics()
-    total = max(1, stats.get("total_cells", 1))
-    living = stats.get("living_cells", total)
-    metrics["kill_rate"] = (total - living) / total
-    metrics["step_count"] = model.step_count
+    with redirect_stdout(sys.stderr):
+        _, metrics = run_simulation(cfg, model_factory=TumorNanobotModel)
 
     result = {
         "config": {
@@ -88,47 +62,31 @@ def cmd_simulate(args: argparse.Namespace) -> None:
     }
 
     if args.output:
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         with open(args.output, "w") as f:
             json.dump(result, f, indent=2)
-        print(f"[simulate] results written to {args.output}")
+        print(f"[simulate] results written to {args.output}", file=sys.stderr)
     else:
         print(json.dumps(result, indent=2))
 
 
 def cmd_benchmark(args: argparse.Namespace) -> None:
     """Run multiple simulations and aggregate statistics."""
-    import random
-    import numpy as np
-    from nanobot_simulation import TumorNanobotModel
-
+    if args.runs < 1:
+        raise ValueError("runs must be at least 1")
     results = []
     steps = getattr(args, "steps", 50)
     grid_size = getattr(args, "grid_size", 30)
     bots = getattr(args, "bots", 5)
-    voxel_size = 10.0
-    domain_size = float(grid_size) * voxel_size
-    tumor_radius = min(domain_size * 0.33, 200.0)
-
-    print(f"[benchmark] runs={args.runs}, steps={steps}, bots={bots}")
+    print(f"[benchmark] runs={args.runs}, steps={steps}, bots={bots}", file=sys.stderr)
 
     for i in range(args.runs):
         seed = i
-        random.seed(seed)
-        np.random.seed(seed)
-        model = TumorNanobotModel(
-            n_nanobots=bots,
-            domain_size=domain_size,
-            voxel_size=voxel_size,
-            tumor_radius=tumor_radius,
-        )
-        for _ in range(steps):
-            model.step()
-        stats = model.geometry.get_tumor_statistics()
-        total = max(1, stats.get("total_cells", 1))
-        living = stats.get("living_cells", total)
-        kill_rate = (total - living) / total
-        results.append({"run": i, "seed": seed, "kill_rate": kill_rate, **model.metrics})
-        print(f"  run {i + 1}/{args.runs}: kill_rate={kill_rate:.4f}")
+        cfg = SimulationConfig(num_bots=bots, grid_size=grid_size, steps=steps, seed=seed)
+        with redirect_stdout(sys.stderr):
+            _, metrics = run_simulation(cfg, model_factory=TumorNanobotModel)
+        results.append({"run": i, "seed": seed, **metrics})
+        print(f"  run {i + 1}/{args.runs}: kill_rate={metrics['kill_rate']:.4f}", file=sys.stderr)
 
     kill_rates = [r["kill_rate"] for r in results]
     summary = {
@@ -140,9 +98,10 @@ def cmd_benchmark(args: argparse.Namespace) -> None:
     }
 
     if args.output:
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
         with open(args.output, "w") as f:
             json.dump(summary, f, indent=2)
-        print(f"[benchmark] results written to {args.output}")
+        print(f"[benchmark] results written to {args.output}", file=sys.stderr)
     else:
         print(json.dumps(summary, indent=2))
 
@@ -150,35 +109,20 @@ def cmd_benchmark(args: argparse.Namespace) -> None:
 def cmd_leaderboard(args: argparse.Namespace) -> None:
     """Display the on-chain leaderboard."""
     try:
-        from chain.leaderboard import build_leaderboard, fetch_onchain_events, load_local_artifacts
-        from chain.config import get_base_sepolia_rpc_url
+        from chain.leaderboard import build_leaderboard, fetch_onchain_events, load_local_artifacts, onchain_artifacts
+        from chain.config import get_rpc_url
 
         artifacts: list = []
 
         if args.from_dir:
             artifacts = load_local_artifacts(args.from_dir)
         else:
-            rpc_url = get_base_sepolia_rpc_url()
+            rpc_url = get_rpc_url()
             if not rpc_url:
-                print("[leaderboard] BASE_SEPOLIA_RPC_URL not set; cannot fetch on-chain data.")
+                print("[leaderboard] chain RPC not configured (ANTELLIGENCE_CHAIN / ANTELLIGENCE_RPC_URL); cannot fetch on-chain data.")
                 print("[leaderboard] No entries to display (offline mode). Use --from-dir <dir> for local artifacts.")
                 return
-            events = fetch_onchain_events(rpc_url)
-            for evt in events:
-                artifacts.append({
-                    "type": "antelligence-simulation-v2",
-                    "config": {},
-                    "metrics": {"kill_rate": 0},
-                    "verification_status": {
-                        "schema_ok": True,
-                        "integrity_ok": False,
-                        "replay_ok": False,
-                        "proof_ok": False,
-                        "onchain_ok": True,
-                    },
-                    "proof_lifecycle": {"stage": "verified_onchain"},
-                    "tx_hash": evt.get("transactionHash", ""),
-                })
+            artifacts = onchain_artifacts(fetch_onchain_events(rpc_url))
 
         if not artifacts:
             print("[leaderboard] No simulation entries found.")

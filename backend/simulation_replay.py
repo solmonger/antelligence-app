@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from typing import Any, Dict, Tuple
 
 from backend.config import SimulationConfig
@@ -95,6 +97,7 @@ def replay_artifact_metrics(artifact: Dict[str, Any]) -> Dict[str, Any]:
         "seed": normalized_config.get("seed"),
         "normalized_config": normalized_config,
         "swarm_provenance": extract_swarm_provenance(artifact, runtime_metrics),
+        "deterministic_config_id": hashlib.sha256(json.dumps(config, sort_keys=True).encode()).hexdigest(),
     }
 
     return {

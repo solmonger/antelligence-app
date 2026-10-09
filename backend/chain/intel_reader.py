@@ -7,16 +7,17 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, List, Optional
 
-from chain.config import get_base_sepolia_rpc_url, get_tumor_intel_address
+from chain.config import get_rpc_url, get_tumor_intel_address
 
 PIN_TYPE_NAMES = {
     0: "HYPOXIC_CLUSTER",
     1: "STEM_CELL_DETECTED",
-    2: "HIGH_RESISTANCE",
-    3: "IMMUNE_ACTIVE",
+    2: "HIGH_RESISTANCE_AREA",
+    3: "VESSEL_LOCATION",
     4: "SUCCESSFUL_KILL",
-    5: "TARGET_ACQUIRED",
-    6: "DRUG_DELIVERY",
+    5: "DRUG_OVERDOSE_ZONE",
+    6: "TARGET_ACQUIRED",
+    7: "DRUG_DELIVERY",
 }
 
 TUMOR_INTEL_READER_ABI = [
@@ -98,7 +99,7 @@ class ChainIntelReader:
             if w3 is None:
                 from web3 import Web3
 
-                rpc = rpc_url or get_base_sepolia_rpc_url()
+                rpc = rpc_url or get_rpc_url()
                 if not rpc:
                     return None
                 w3 = Web3(Web3.HTTPProvider(rpc))
