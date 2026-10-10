@@ -12,6 +12,60 @@ Antelligence is a DeSci swarm-intelligence product for tumor simulation, nanobot
 
 ## Current product surface
 
+### Swarm Research Workbench
+
+Open `/research` to compare local LLMs using single answers, independent voting,
+peer critique and a typed expiring signal board. Choose public medical-literature
+or financial-report tasks, set explicit budgets and a target accuracy, inspect
+attributed prompts/outputs, and export saved domain-separated reports. Failed
+responses, abstentions and small-sample uncertainty stay visible; agreement is
+not the correctness score. Nothing runs on page load.
+
+This is the first reusable multi-domain research increment, not clinical/live
+finance readiness or evidence that swarms beat individual models. See
+[Swarm Research Workbench](docs/SWARM_RESEARCH.md) for sources, limitations,
+local model identities, execution gates and verification.
+
+### Experiment Lab
+
+Open `/experiments` (also linked from the home and tumor pages) to run matched,
+multi-seed tumor experiments: **no bots**, **fixed-rule bots**, and
+**pheromone-coordinated bots**. The lab saves all individual runs and a comparative
+report, offers playback links and JSON/CSV exports, and can recompute a saved case
+to check local replay equality.
+
+This advances the vision's measurable swarm coordination and reproducibility:
+the operator chooses a bounded experiment, rather than manually assembling and
+comparing individual animations. The report distinguishes natural cell loss from
+differences against controls and does not declare a winner on ties. Results remain
+synthetic 2D, short-horizon research—not clinical efficacy, modeled toxicity, or
+cryptographic verification. See [Experiment Lab](docs/EXPERIMENT_LAB.md) for usage,
+API routes, limits and the acceptance workflow.
+
+### Swarm engine (`antelligence/`)
+
+One engine runs every swarm experiment. Agents see only a local view and
+coordinate through typed, expiring, provenance-bearing signals; evidence
+memory invalidates stale facts; a model-free verifier owns outcomes; every run
+produces a hash-chained event log and a replayable bundle.
+
+Worlds on the engine: **foraging** (the paper's E13), **task_dag** (E15),
+**tumor** (the glioblastoma simulator) and **research_qa** (Workbench
+protocols, Python API only). Each port is checked against its original: E13
+oracle and E15 admission are reproduced exactly, the tumor world matches the
+legacy simulator's physics, and research QA matches `swarm_core`.
+
+```bash
+# engine API is mounted in backend.main under /engine (local-only)
+curl -X POST http://127.0.0.1:8001/engine/experiments -H 'content-type: application/json' \
+  -d '{"world": "foraging", "arms": ["baseline", "hive_memory", "signals"]}'
+curl -X POST http://127.0.0.1:8001/engine/runs/<run_id>/verify   # replay from the bundle
+```
+
+Bundles are `trust_tier=local_replay`, `proof_ok=false`: replayable
+provenance, not cryptographic proof. Design and results:
+[engine plan](docs/plans/2026-09-27-antelligence-engine-kernel.md).
+
 ### CLI
 
 The Python package exposes these entry points:
@@ -35,7 +89,9 @@ The project has two API servers:
 **`backend/main.py`** — the full-featured API used by the frontend. Start it with:
 
 ```bash
-uvicorn backend.main:app --host 0.0.0.0 --port 8001
+PYTHON_DOTENV_DISABLED=1 ANTELLIGENCE_OFFLINE=1 \
+ANTELLIGENCE_ENABLE_BLOCKCHAIN_TX=0 CHAIN_READ_ENABLED=0 CHAIN_WRITE_ENABLED=0 \
+uv run uvicorn backend.main:app --host 127.0.0.1 --port 8001
 ```
 
 Endpoints:
@@ -44,6 +100,7 @@ Endpoints:
 - `POST /simulation/run` — ant colony simulation
 - `POST /simulation/compare` — queen vs no-queen comparison
 - `POST /simulation/tumor/run` — tumor nanobot simulation
+- `GET /simulation/tumor/runs/{run_id}` — retrieve the persisted tumor run and its staged provenance
 - `POST /simulation/tumor/hunt` — tumor hunt v2
 - `POST /simulation/tumor/compare` — tumor simulation comparison
 - `GET /simulation/history` — simulation history
@@ -114,22 +171,32 @@ This writes a JSON artifact containing:
 - `config`
 - `metrics`
 
-### 3. Run the API
+### 3. Run the frontend-facing API locally
 
 ```bash
-uv run antelligence-api
+PYTHON_DOTENV_DISABLED=1 ANTELLIGENCE_OFFLINE=1 \
+ANTELLIGENCE_ENABLE_BLOCKCHAIN_TX=0 CHAIN_READ_ENABLED=0 CHAIN_WRITE_ENABLED=0 \
+uv run uvicorn backend.main:app --host 127.0.0.1 --port 8001
 ```
 
-The API listens on port `8001` by default when started through the packaged entry point.
+Use this server for the frontend. `antelligence-api` starts the separate minimal `/simulate` API; it does **not** implement the frontend routes. Do not run both on the same port. Offline mode rejects model/chain-dependent requests; select **Rule-Based** workers and keep LLM Queen disabled. No `.env` editing, credentials, paid model, wallet, or deployment is needed for this workflow.
 
 ### 4. Optional frontend
 
 If you want the frontend dev server:
 
 ```bash
-npm --prefix frontend install
-npm --prefix frontend run dev
+npm --prefix frontend ci
+npm --prefix frontend run dev -- --host 127.0.0.1
 ```
+
+Open `http://localhost:8081/tumor`. The frontend defaults to API port `8001`; override it at launch with `VITE_API_BASE_URL` if needed. Preview mode is deliberately read-only, not a simulation demo.
+
+## Research limits
+
+The current tumor runtime is a **synthetic 2D research model**, not validated treatment software, physical nanobot control, or a clinical efficacy predictor. Selecting unsupported patient geometry must fail rather than silently relabel a synthetic tumor. The field solver supports 2D/3D numerical tests; this is not a complete 3D tumor runtime.
+
+Pheromone and Queen comparisons are paired synthetic experiments. A measured change is not evidence of clinical benefit, and `kill_rate` includes model cell death rather than isolated treatment-attributable effect. Real SP1/Groth16 proof generation, independently accepted chain outcomes, patient-derived end-to-end geometry, and the richer typed pheromone protocol remain separate milestones. See [the delivery and development map](docs/LOCAL_DELIVERY.md).
 
 ## Base Sepolia scope
 
@@ -141,7 +208,14 @@ Run the narrow test suite you need while keeping the `uv` cache in a writable di
 
 ```bash
 mkdir -p /private/tmp/uv-cache
-UV_CACHE_DIR=/private/tmp/uv-cache uv run --extra test pytest -q
+PYTHON_DOTENV_DISABLED=1 ANTELLIGENCE_ENABLE_BLOCKCHAIN_TX=0 \
+CHAIN_READ_ENABLED=0 CHAIN_WRITE_ENABLED=0 \
+UV_CACHE_DIR=/private/tmp/uv-cache uv run --extra test pytest tests/ -q
+npm --prefix frontend run lint
+npm --prefix frontend run build
+node --test frontend/tests/runtimeConfig.test.ts
+# With both local servers running and Playwright available in python3:
+python3 frontend/tests/tumor_browser.py
 ```
 
 ## Repository layout

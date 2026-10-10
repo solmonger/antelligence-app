@@ -48,7 +48,7 @@ def spot_check_run(original_result, steps, n_bots, with_queen, episode_length):
     }
 
 
-def run_spot_checks(sweep_data, sample_pct=20, tolerance_pct=5.0, verbose=True):
+def run_spot_checks(sweep_data, sample_pct=20, tolerance_pct=5.0, verbose=True, dry_run=False):
     """Run spot checks on a sample of sweep results."""
     config = sweep_data.get("config", {})
     results = sweep_data.get("results", [])
@@ -59,6 +59,20 @@ def run_spot_checks(sweep_data, sample_pct=20, tolerance_pct=5.0, verbose=True):
     # Sample k%
     n_sample = max(1, int(len(results) * sample_pct / 100))
     sample = random.sample(results, min(n_sample, len(results)))
+
+    if dry_run:
+        return {
+            "ok": False,
+            "status": "dry_run_unverified",
+            "checked": 0,
+            "passed": 0,
+            "failed": 0,
+            "candidate_count": len(sample),
+            "sample_pct": sample_pct,
+            "tolerance_pct": tolerance_pct,
+            "checks": [],
+            "message": "Dry run selected candidates but did not execute or attest them.",
+        }
 
     checks = []
     for original in sample:
@@ -111,17 +125,28 @@ def main():
     parser.add_argument("--sample-pct", type=float, default=20)
     parser.add_argument("--tolerance", type=float, default=5.0)
     parser.add_argument("--json", action="store_true")
+    parser.add_argument("--dry-run", action="store_true", help="Perform a dry run without executing simulations")
     args = parser.parse_args()
 
-    text = Path(args.input).read_text()
-    start = text.find("{")
-    data = json.loads(text[start:])
+    if args.dry_run:
+        if not args.json:
+            print("Attestation Bot: DRY RUN mode enabled. No simulations will be executed.")
+            print("=" * 50)
+        # For dry run, we still need to load the JSON data to show what would be checked
+        text = Path(args.input).read_text()
+        start = text.find("{")
+        data = json.loads(text[start:])
+        result = run_spot_checks(data, args.sample_pct, args.tolerance, verbose=not args.json, dry_run=True)
+    else:
+        text = Path(args.input).read_text()
+        start = text.find("{")
+        data = json.loads(text[start:])
 
-    if not args.json:
-        print(f"Attestation Bot: spot-checking {args.sample_pct}% of runs (tolerance: {args.tolerance}%)")
-        print("=" * 50)
+        if not args.json:
+            print(f"Attestation Bot: spot-checking {args.sample_pct}% of runs (tolerance: {args.tolerance}%)")
+            print("=" * 50)
 
-    result = run_spot_checks(data, args.sample_pct, args.tolerance, verbose=not args.json)
+        result = run_spot_checks(data, args.sample_pct, args.tolerance, verbose=not args.json, dry_run=False)
 
     if args.json:
         print(json.dumps(result, indent=2))
