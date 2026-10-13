@@ -18,6 +18,8 @@ from typing import Any, Callable, Dict, List, Optional, Sequence
 
 import httpx
 
+from antelligence.providers.redact import register_secret, scrub
+
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
@@ -34,10 +36,13 @@ def http_rpc(url: str, timeout_s: float = 30.0) -> Rpc:
         if method not in READ_ONLY:
             raise ValueError(f"{method} is not a read-only method this script may send")
         r = client.post(url, json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params})
-        r.raise_for_status()
+        try:
+            r.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise RuntimeError(scrub(f"{method}: {type(exc).__name__}: {exc}")) from None
         body = r.json()
         if "error" in body:
-            raise RuntimeError(f"{method}: {body['error']}")
+            raise RuntimeError(scrub(f"{method}: {body['error']}"))
         return body.get("result")
 
     return call
@@ -92,7 +97,7 @@ def main(argv: Optional[Sequence[str]] = None, *, rpc: Optional[Rpc] = None) -> 
         try:
             changed += fill_row(row, call)
         except Exception as exc:
-            print(f"{row.get('run_id')}:{row.get('size', row.get('name'))}: {type(exc).__name__}: {exc}", file=sys.stderr)
+            print(f"{row.get('run_id')}:{row.get('size', row.get('name'))}: {scrub(f'{type(exc).__name__}: {exc}')}", file=sys.stderr)
         executed += bool(row.get("l1_execute_tx"))
     tmp = path.with_suffix(".json.tmp")
     tmp.write_text(json.dumps(rows, indent=1, sort_keys=True) + "\n", encoding="utf-8")

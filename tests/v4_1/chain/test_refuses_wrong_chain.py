@@ -66,6 +66,15 @@ def test_refuses_when_v4_1_is_not_deployed(fake, signer, clock, tmp_path):
         c.preflight()
 
 
+CODE_HASH = "0x" + bytes(__import__("web3").Web3.keccak(b"\x60\x80")).hex()
+
+
+def test_missing_code_hash_pin_refuses(make_client):
+    c = make_client(code_hashes={})
+    with pytest.raises(ChainConfigError, match="no code-hash pin"):
+        c.preflight()
+
+
 def test_deployer_and_addresses_come_from_the_v4_1_deployments_key(fake, signer, clock, tmp_path, monkeypatch):
     import json
 
@@ -75,7 +84,7 @@ def test_deployer_and_addresses_come_from_the_v4_1_deployments_key(fake, signer,
     d.mkdir()
     (d / "zksync-era-sepolia.json").write_text(json.dumps({
         "chain_id": 300, "deployer": "0x" + "00" * 20, "contracts": [],
-        "v4_1": {"deployer": signer.address, "contracts": [{"name": n, "address": a} for n, a in ADDRS.items()]},
+        "v4_1": {"deployer": signer.address, "contracts": [{"name": n, "address": a, "code_hash": CODE_HASH} for n, a in ADDRS.items()]},
     }))
     monkeypatch.setenv("ANTELLIGENCE_DEPLOYMENTS_DIR", str(d))
     c = ChainClientV41(fake, signer, TxQueue(tmp_path / "q.sqlite", clock=clock), clock=clock)

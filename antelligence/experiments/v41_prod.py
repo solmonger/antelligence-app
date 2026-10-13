@@ -17,6 +17,7 @@ from antelligence.experiments.v41_harness import BONSAI, D1, FW, Q4, Q9, QUEEN_M
 from antelligence.providers.decision_backends import (D1_REVISION, NOUS_URL, CachedDecision, D1Backend, LedgeredDecision,
                                                       LlamaCppBackend, NousFWBackend, VLLMLogprobBackend)
 from antelligence.providers.ledger import LedgerWriter, LedgeredChat
+from antelligence.providers.redact import register_secret
 from antelligence.providers.openai_compat import OpenAICompatProvider
 from antelligence.providers.wrappers import Cached
 
@@ -139,6 +140,7 @@ def build_live_workers(*, pod_state: Union[str, Path] = POD_STATE, bonsai_url: s
     if any(want(n) for n in (D1, Q4, Q9)):
         pod = read_pod_endpoint(pod_state)
         ledger.add_redaction(pod.secret)
+        register_secret(pod.secret)
         sub = lambda n: (cache_dir / n) if cache_dir else None  # noqa: E731
         if want(D1):
             out[D1] = _stack(D1Backend(pod.urls[D1], revision=D1_REVISION, api_key=pod.secret), pod_guard, ledger, sub(D1))
@@ -153,6 +155,7 @@ def build_live_workers(*, pod_state: Union[str, Path] = POD_STATE, bonsai_url: s
     if want(FW):
         key = nous_key()
         ledger.add_redaction(key)
+        register_secret(key)
         out[FW] = _stack(NousFWBackend(fw_url, api_key=key, **({"transport": transport} if transport else {})), BudgetGuard("nous", usage_ledger, pod_costs), ledger,
                          (cache_dir / FW) if cache_dir else None)
     return out
@@ -164,6 +167,7 @@ def build_live_queen(*, usage_ledger: Union[str, Path] = USAGE_LEDGER, pod_costs
     """The queen on Nous: cache -> budget stop -> ledger (cost field) -> provider."""
     key = nous_key()
     ledger = LedgerWriter(usage_ledger, redact=[key])
+    register_secret(key)
     provider: Any = LedgeredChat(OpenAICompatProvider(url, api_key=key), ledger, role="queen",
                                  expected_model=QUEEN_MODEL, backend="nous", prefix=True)
     provider = GuardedChat(provider, BudgetGuard("nous", usage_ledger, pod_costs))

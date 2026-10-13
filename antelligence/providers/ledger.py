@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, Optional, Tuple, Union
 
 from antelligence.providers.base import ChatRequest, ChatResponse, Provider, ProviderError
+from antelligence.providers.redact import scrub
 
 DEFAULT_LEDGER_PATH = Path("ledger/v4-pilot-usage.jsonl")
 ROLES = ("worker", "queen", "escalation", "every_agent", "calibration")
@@ -82,7 +83,7 @@ class LedgerWriter:
     def _clean(self, text: str) -> str:
         for secret in self._redact:
             text = text.replace(secret, "***")
-        return text
+        return scrub(text)
 
     def write(self, *, role: str, backend: str, model: str, served_model: Optional[str], request_hash: str,
               input_tokens: int = 0, output_tokens: int = 0, latency_s: float = 0.0, cost_usd: float = 0.0,
@@ -142,7 +143,7 @@ class LedgeredChat:
             response = await self.inner.complete(request)
         except Exception as exc:
             self._row(request, served_model=None, error=f"{type(exc).__name__}: {exc}")
-            raise
+            raise ProviderError(scrub(f"{type(exc).__name__}: {exc}")) from None
         ok = response.model.startswith(self.expected_model) if self.prefix else response.model == self.expected_model
         reported = response.extra.get("cost") if response.extra else None
         cost = float(reported) if isinstance(reported, (int, float)) else cost_usd(

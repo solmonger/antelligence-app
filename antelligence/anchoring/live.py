@@ -25,6 +25,7 @@ from antelligence.anchoring.chain_modes import BoardPostMode, ChainAnchorMode
 from antelligence.anchoring.ots import HttpOtsTransport, OtsClient
 from antelligence.anchoring.rekor import AnchorKey, HttpRekorTransport, RekorClient
 from antelligence.kernel.board import Board
+from antelligence.providers.redact import scrub
 
 REPO = Path(__file__).resolve().parents[2]
 DEFAULT_ARCHIVE = REPO / "docs/research/v4.1-20261013/chain/anchors.json"
@@ -83,7 +84,7 @@ class LiveAnchorer(Anchorer):
             try:
                 self.client.drain(timeout_s=self.drain_timeout_s)
             except Exception as exc:         # a chain problem is recorded, never raised into the run
-                self.errors.append({"mode": "C", "error": f"{type(exc).__name__}: {exc}"})
+                self.errors.append({"mode": "C", "error": scrub(f"{type(exc).__name__}: {exc}")})
         done = super().refresh_chain()
         for rec in self.records:
             row = {"kind": "board", "run_id": self.run_id, "size": rec["size"], "root": rec["root"],
@@ -93,7 +94,7 @@ class LiveAnchorer(Anchorer):
                 try:
                     info = self.client.receipt_info(tx)
                 except Exception as exc:
-                    self.errors.append({"mode": "C", "error": f"receipt: {type(exc).__name__}: {exc}"})
+                    self.errors.append({"mode": "C", "error": scrub(f"receipt: {type(exc).__name__}: {exc}")})
                     info = {}
                 rec["chain_block"], rec["chain_l1_batch"] = info.get("block"), info.get("l1_batch")
                 row.update(tx_hash=tx, l2_block=info.get("block"), l1_batch=info.get("l1_batch"),
@@ -119,7 +120,7 @@ class ChainPumper(threading.Thread):
                 try:
                     self.client.pump()
                 except Exception as exc:
-                    self.errors.append(f"{type(exc).__name__}: {exc}"[:240])
+                    self.errors.append(scrub(f"{type(exc).__name__}: {exc}")[:240])
 
     def stop(self) -> None:
         self._stop_evt.set()

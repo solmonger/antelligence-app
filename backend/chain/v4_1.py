@@ -35,6 +35,7 @@ from eth_abi import encode as abi_encode
 from eth_account import Account
 from web3 import Web3
 
+from antelligence.providers.redact import register_url, scrub
 from chain.config import (
     REPO_ROOT,
     ChainConfigError,
@@ -159,11 +160,16 @@ class LocalSigner:
     """Signs legacy transactions in-process. The key never appears in repr or logs."""
 
     def __init__(self, private_key: str):
-        self._account = Account.from_key(private_key)
-        self.address: str = self._account.address
+        account = Account.from_key(private_key)
+        self.address: str = account.address
+        # the raw key lives only in this closure, not in an attribute (vars(), copy and pickle cannot reach it)
+        self._sign = lambda tx: bytes(account.sign_transaction(tx).raw_transaction)
 
     def sign(self, tx: dict) -> bytes:
-        return bytes(self._account.sign_transaction(tx).raw_transaction)
+        return self._sign(tx)
+
+    def __reduce__(self):
+        raise TypeError("LocalSigner holds a private key and cannot be pickled or copied")
 
     def __repr__(self) -> str:  # pragma: no cover - trivial
         return f"LocalSigner({self.address})"
@@ -391,7 +397,7 @@ class ChainClientV41:
         for name in ABIS:
             want = self.code_hashes.get(name)
             if not want:
-                continue
+                raise ChainConfigError(f"no code-hash pin for {name}; refusing to sign (the deployments record needs code_hash)")
             got = "0x" + bytes(Web3.keccak(bytes(self.w3.eth.get_code(self._addr(name))))).hex()
             if got.lower() != want.lower():
                 raise ChainConfigError(f"code hash of {name} at {self.contracts[name]} is {got}, recorded {want}; refusing to sign")
@@ -548,7 +554,7 @@ class ChainClientV41:
                 return None
             if "nonce too low" in msg:
                 return "nonce_low"
-            return str(exc)
+            return scrub(exc)
 
     def _lookup(self, tx_hash: str) -> str:
         """'mined' (receipt), 'known' (node has the tx), 'absent' (node says not found), 'unresolved' (error)."""
@@ -613,10 +619,10 @@ class ChainClientV41:
                 if in_flight:
                     # Later jobs can depend on earlier in-flight ones (anchor prevRoot chain), and
                     # estimate_gas cannot see the mempool. Wait for the pipeline to settle, then retry.
-                    self.queue.update(job["id"], error=f"estimate deferred behind in-flight txs: {exc}")
+                    self.queue.update(job["id"], error=scrub(f"estimate deferred behind in-flight txs: {exc}"))
                     stats.deferred += 1
                     break
-                self.queue.update(job["id"], status=FAILED, error=f"would revert: {exc}")
+                self.queue.update(job["id"], status=FAILED, error=scrub(f"would revert: {exc}"))
                 stats.failed += 1
                 continue
             gas_limit = est * (100 + self.gas_limit_pad_pct) // 100
@@ -657,6 +663,7 @@ def open_live_client(queue_path: Optional[Path] = None, *, rpc_url: Optional[str
 
     if w3 is None:
         url = rpc_url or get_rpc_url()
+        register_url(url or "")
         if not url:
             raise ChainConfigError("no RPC configured (set ANTELLIGENCE_CHAIN and/or ZKSYNC_SEPOLIA_RPC_URL)")
         w3 = Web3(Web3.HTTPProvider(url, request_kwargs={"timeout": 30}))

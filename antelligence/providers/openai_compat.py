@@ -16,6 +16,7 @@ from typing import Any, Dict, FrozenSet, Iterable, Optional
 import httpx
 
 from antelligence.providers.base import ChatRequest, ChatResponse, ProviderError
+from antelligence.providers.redact import register_secret, scrub
 
 MAX_RESPONSE_BYTES = 2_000_000
 
@@ -38,6 +39,7 @@ class OpenAICompatProvider:
             raise ValueError("base_url must be http(s)")
         self.base_url = base_url.rstrip("/")
         self._api_key = api_key
+        register_secret(api_key or "")
         self.allowed_models: Optional[FrozenSet[str]] = None if allowed_models is None else frozenset(allowed_models)
         self.timeout_s = timeout_s
         self.require_model_match = require_model_match
@@ -46,6 +48,9 @@ class OpenAICompatProvider:
         self._semaphore = asyncio.Semaphore(max_concurrency)
         self._transport = transport
         self.max_concurrency = max_concurrency
+
+    def _key_for_scrub(self) -> str:
+        return self._api_key or ""
 
     def describe(self) -> Dict[str, Any]:
         return {"provider": "openai_compat", "base_url": self.base_url,
@@ -65,10 +70,10 @@ class OpenAICompatProvider:
                                              transport=self._transport) as client:
                     response = await client.post(f"{self.base_url}/chat/completions", json=body, headers=headers)
             except httpx.HTTPError as exc:
-                raise ProviderError(f"transport error: {type(exc).__name__}: {exc}") from exc
+                raise ProviderError(scrub(f"transport error: {type(exc).__name__}: {exc}", [self._key_for_scrub()])) from exc
             elapsed = time.monotonic() - start
         if response.status_code != 200:
-            raise ProviderError(f"HTTP {response.status_code}: {response.text[:200]}")
+            raise ProviderError(scrub(f"HTTP {response.status_code}: {response.text[:200]}", [self._key_for_scrub()]))
         if len(response.content) > MAX_RESPONSE_BYTES:
             raise ProviderError("response exceeds size limit")
         try:
@@ -78,7 +83,7 @@ class OpenAICompatProvider:
             usage = data["usage"]
             prompt_tokens, completion_tokens = usage["prompt_tokens"], usage["completion_tokens"]
         except (ValueError, KeyError, IndexError, TypeError) as exc:
-            raise ProviderError(f"malformed response: {exc}") from exc
+            raise ProviderError(scrub(f"malformed response: {exc}", [self._key_for_scrub()])) from exc
         served = data.get("model") or ""
         if self.require_model_match and served != request.model:
             raise ProviderError(f"served model {served!r} differs from requested {request.model!r}")

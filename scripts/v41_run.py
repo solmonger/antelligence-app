@@ -31,6 +31,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 from antelligence.anchoring import live  # noqa: E402
+from antelligence.providers.redact import scrub  # noqa: E402
 from antelligence.experiments import v41_live, v41_prod  # noqa: E402
 from antelligence.experiments.v41_conformal import ConformalThresholds  # noqa: E402
 from antelligence.experiments.v41_harness import (ARM_SPECS, ROUTER_MODELS_BY_ARM, GateConfig, KeyVault,  # noqa: E402
@@ -165,7 +166,7 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
     for (arm, case, seed), res in zip(runs, results):
         if isinstance(res, BaseException):
             failed += 1
-            print(f"FAILED {arm} {case} {seed}: {type(res).__name__}: {res}", file=sys.stderr)
+            print(f"FAILED {arm} {case} {seed}: {scrub(f'{type(res).__name__}: {res}')}", file=sys.stderr)
             cell: Any = error_cell(arm, case, seed, _split_of(args, case), res)
         else:
             cell = res.cell

@@ -47,6 +47,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Set, 
 
 import numpy as np
 
+from antelligence.providers.redact import scrub
 from antelligence.anchoring.rekor import AnchorKey
 from antelligence.experiments import v41_cells
 from antelligence.experiments.v41_conformal import (ConformalDeferral, ConformalThresholds, DeferralMonitor,
@@ -1053,7 +1054,7 @@ class V41Harness:
             "shared_store": shared, "calibration": ctx.calibration, "variant": spec.variant,
             "alarms": ctx.alarm_count, "dropped_cites": ctx.dropped_cites,
             "reputation": dict(ctx.reputation.score) if ctx.reputation else {}, "d_timeouts": ctx.d_timeouts,
-            "errors": list(ctx.errors) + ([f"{e['mode']}: {e['error']}" for e in ctx.anchorer.errors] if ctx.anchorer else [])}
+            "errors": [scrub(e) for e in list(ctx.errors) + ([f"{e['mode']}: {e['error']}" for e in ctx.anchorer.errors] if ctx.anchorer else [])]}
         bundle = self._bundle(ctx, cell, metrics, trace_hash, board if shared else None, anchors)
         run_dir = None
         if self.out_dir is not None:
@@ -1103,5 +1104,5 @@ def append_cell(path: Union[str, Path], cell: Mapping[str, Any]) -> None:
 def error_cell(arm: str, case: str, seed: int, split: str, error: BaseException) -> Dict[str, Any]:
     """A failed run's cell: required fields zeroed or null, plus ``error`` (the analysis excludes it)."""
     cell: Dict[str, Any] = {f.name: (None if f.nullable else (0 if f.kind == "int" else 0.0)) for f in v41_cells.FIELDS}
-    cell.update(run_id="0" * 64, arm=arm, case=case, seed=seed, split=split, error=f"{type(error).__name__}: {error}"[:300])
+    cell.update(run_id="0" * 64, arm=arm, case=case, seed=seed, split=split, error=scrub(f"{type(error).__name__}: {error}")[:300])
     return cell

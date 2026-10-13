@@ -35,6 +35,7 @@ from antelligence.anchoring.anchorer import single_shot_id  # noqa: E402
 from antelligence.anchoring.live import AnchorArchive  # noqa: E402
 from antelligence.anchoring.pins import study_key_in  # noqa: E402
 from antelligence.experiments import v41_gate  # noqa: E402
+from antelligence.providers.redact import scrub  # noqa: E402
 from antelligence.kernel.canonical import jcs_bytes  # noqa: E402
 
 DOC_DIR = REPO / "docs/research/v4.1-20261013"
@@ -133,7 +134,7 @@ def main(argv: Optional[Sequence[str]] = None, *, make_services: Optional[Callab
         receipt = lock_document(args.which, doc, client=svc["client"], ots=svc["ots"], rekor=svc["rekor"], study_key=study,
                                 out_dir=out, repo_root=Path(args.repo_root), prereg=Path(args.prereg))
     except (LockError, keymod.KeyError_) as exc:
-        print(f"refused: {exc}", file=sys.stderr)
+        print(f"refused: {scrub(exc)}", file=sys.stderr)
         return 2
     print(f"{args.which} locked: tx {receipt['tx_hash']} block {receipt['l2_block']} rekor {receipt['rekor_uuid']} "
           f"-> {out / (args.which + '-receipt.json')}")
