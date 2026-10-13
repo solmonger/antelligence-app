@@ -56,7 +56,7 @@ def test_fw_arm_asks_for_the_nous_worker_only(tmp_path, monkeypatch):
     monkeypatch.setattr(run.v41_live, "resolve_loader", lambda spec: (lambda c: None))
     args = run.parser().parse_args(["--backends", "live", "--allow-unanchored", "--out-dir", str(tmp_path), "--run", "FW:BRATS_001:1"])
     run.build_harness(args, lambda k: None)
-    assert seen["workers"]["needed"] == {FW}
+    assert seen["workers"]["needed"] == {D1, FW}   # every swarm arm takes a d1 local look
 
 
 def test_config_backends_still_need_config(tmp_path):

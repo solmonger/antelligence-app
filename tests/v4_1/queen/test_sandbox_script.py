@@ -270,3 +270,82 @@ def test_fake_backends_cli_builds_its_own_harness(tmp_path):
                     "--n-a", "1", "--n-b", "1", "--out", str(out), "--work-dir", str(tmp_path / "w"), "--world-yaml",
                     str(tmp_path / "w.yaml"), "--loader", "tests.v4_1.harness.test_dry_run:phantom_loader"])
     assert code == 0 and json.loads(out.read_text())["rounds"][0]["round"] == 1
+
+
+# --- aborts keep completed rounds -------------------------------------------------------------------------------------
+
+@pytest.mark.parametrize("exc,status", [(None, "aborted_budget"), (HarnessError("boom"), "aborted_error"),
+                                        (RuntimeError("odd"), "aborted_error")])
+def test_abort_mid_sandbox_writes_completed_rounds(tmp_path, exc, status):
+    from antelligence.kernel.decision import DecisionAbort
+    rig = build_rig(tmp_path / "rig")
+
+    def proposer(ctx):
+        if ctx["round"] == 1:
+            return patch("/router/cost_penalty", 0.3)
+        raise (exc or DecisionAbort("nous stop reached"))
+    out = tmp_path / "s.json"
+    code = sb.main(["--backends", "fake", "--anchors", "mock", "--router", "fake", "--thresholds", "none", "--rounds", "3",
+                    "--n-a", "2", "--n-b", "1", "--out", str(out), "--work-dir", str(tmp_path / "w")],
+                   harness=rig.harness, proposer=proposer)
+    doc = json.loads(out.read_text())
+    assert code == 3 and doc["status"] == status and doc["error"]
+    assert [r["round"] for r in doc["rounds"]] == [1] and doc["rounds"][0]["edit_entry_id"]
+    assert doc["rounds"][0]["dev_a"] is not None and doc["promotion_candidates"] == []
+    assert doc["board"]["entries"] == 1
+
+
+def test_run_sandbox_hands_out_rounds_as_they_finish():
+    got = []
+    h = FakeHarness()
+    loop = sb.EventLoop()
+    try:
+        evaluate, _ = evaluator(h, loop)
+        it = iter([patch("/router/cost_penalty", 0.3)])
+
+        def propose(ctx):
+            if ctx["round"] == 2:
+                assert len(got) == 1
+                raise RuntimeError("stop")
+            return next(it)
+        with pytest.raises(RuntimeError):
+            run_sandbox(Board(gv.test_header(), mode="A"), load_harness(), load_allowed_keys(), DEV_A, DEV_B, evaluate,
+                        propose, on_round=got.append)
+    finally:
+        loop.close()
+    assert len(got) == 1
+
+
+# --- results-cache context: code sha and worker identities --------------------------------------------------------------
+
+def test_results_context_changes_with_code_sha_and_worker_identity(tmp_path, monkeypatch):
+    rig = build_rig(tmp_path / "rig")
+    args = SimpleNamespace(router="fake", thresholds="none")
+    base = sb.results_context(rig.harness, args, "w" * 64)
+    assert base == sb.results_context(rig.harness, args, "w" * 64)
+    monkeypatch.setattr(sb, "_git_head", lambda: "a" * 40)
+    assert sb.results_context(rig.harness, args, "w" * 64) != base
+    monkeypatch.undo()
+    name = next(iter(rig.harness.workers))
+    w = rig.harness.workers[name]
+    object.__setattr__(w, "model", w.model + "@other-rev")
+    changed = sb.results_context(rig.harness, args, "w" * 64)
+    assert changed != base
+    path = tmp_path / "c.jsonl"
+    sb.ResultsCache(path, base).put("s" * 64, "SW-B", "BRATS_016", 1, 0.5, {})
+    assert sb.ResultsCache(path, changed).get("s" * 64, "SW-B", "BRATS_016", 1) is None
+
+
+# --- reply cache directories carry the revision --------------------------------------------------------------------------
+
+def test_reply_cache_dir_carries_revision_and_migrates_pinned(tmp_path):
+    from antelligence.experiments import v41_prod
+    d = v41_prod.reply_cache_dir
+    assert d(None, "d1", "r1", "r1") is None
+    (tmp_path / "d1").mkdir()
+    (tmp_path / "d1" / "x.jsonl").write_text("legacy")
+    other = d(tmp_path, "d1", "r2", "r1")                      # another revision: legacy cache untouched, never served
+    assert other == tmp_path / "d1@r2" and not other.exists() and (tmp_path / "d1" / "x.jsonl").exists()
+    pinned = d(tmp_path, "d1", "r1", "r1")                     # the pinned revision: legacy cache migrated
+    assert pinned == tmp_path / "d1@r1" and (pinned / "x.jsonl").read_text() == "legacy" and not (tmp_path / "d1").exists()
+    assert d(tmp_path, "d1", "r1", "r1") == pinned             # idempotent

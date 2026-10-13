@@ -289,6 +289,7 @@ def run_sandbox(
     propose: Proposer,
     *,
     max_rounds: int = MAX_ROUNDS,
+    on_round: Optional[Callable[["RoundRecord"], None]] = None,
 ) -> SandboxResult:
     """Run up to 4 rounds. ``propose`` gets aggregates and previous edits only and returns a raw proposal (or None to stop)."""
     validate_harness(harness)
@@ -333,6 +334,8 @@ def run_sandbox(
             candidate_sha256=harness_sha256(candidate) if candidate is not None else None,
             per_arm_points=dict(score.per_arm_points) if score else {},
             wins=score.wins if score else 0, losses=score.losses if score else 0, ties=score.ties if score else 0))
+        if on_round is not None:
+            on_round(records[-1])          # partial results survive a later abort
         history.append({"round": rnd, "keys": keys, "prediction": pred, "kept": kept, "rejected": rejected,
                         "score_points": None if score is None else round(score.score_points, 3)})
         if kept and candidate is not None:

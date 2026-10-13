@@ -21,6 +21,7 @@ import argparse
 import asyncio
 import hashlib
 import json
+import subprocess
 import sys
 import threading
 from datetime import datetime, timezone
@@ -293,6 +294,29 @@ def _file_sha(path: Optional[str]) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
+def _git_head() -> str:
+    out = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], capture_output=True, text=True)
+    sha = out.stdout.strip()
+    return sha if len(sha) == 40 else "0" * 40
+
+
+def worker_identities(h: V41Harness) -> Dict[str, Any]:
+    """Each worker's model id, revision and runtime identity as the backend describes itself."""
+    out: Dict[str, Any] = {}
+    for name, w in sorted(h.workers.items()):
+        describe = getattr(w.backend, "describe", None)
+        out[name] = {"model": w.model, "describe": json.loads(canonical_json(describe())) if callable(describe) else None}
+    return out
+
+
+def results_context(h: V41Harness, args: argparse.Namespace, world_sha: str) -> str:
+    """Fingerprint a results-cache row must match: code, frozen files, backends, worker identities, world, look T."""
+    return hashlib.sha256(canonical_json({
+        "code_sha": _git_head(), "router": _file_sha(args.router), "thresholds": _file_sha(args.thresholds),
+        "backends": h.backends_kind, "workers": worker_identities(h), "world": world_sha,
+        "look_temperature": h.look_temperature}).encode()).hexdigest()
+
+
 def _run_args(args: argparse.Namespace, work: Path, dev_a: Sequence[str]) -> argparse.Namespace:
     argv = ["--backends", args.backends, "--anchors", "mock", "--router", args.router, "--thresholds", args.thresholds,
             "--out-dir", str(work), "--concurrency", str(args.concurrency), "--world-yaml", args.world_yaml,
@@ -354,9 +378,7 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
     allowed_keys = load_allowed_keys(args.harness)
     base_sha = harness_sha256(base)
     world_sha = hashlib.sha256(Path(args.world_yaml).read_bytes()).hexdigest() if Path(args.world_yaml).exists() else "0" * 64
-    context = hashlib.sha256(canonical_json({"router": _file_sha(args.router), "thresholds": _file_sha(args.thresholds),
-                                             "backends": h.backends_kind, "world": world_sha,
-                                             "look_temperature": h.look_temperature}).encode()).hexdigest()
+    context = results_context(h, args, world_sha)
     cache = ResultsCache(work / "results-cache.jsonl", context)
     loop = EventLoop()
     board, anchorer = build_board(h, base_sha, world_sha, work / "sandbox-board")
@@ -368,10 +390,14 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
             proposer = fake_proposer()
     status, error = "complete", None
     result = None
+    partial: List[Any] = []                # rounds finished before an abort
     try:
-        result = run_sandbox(board, base, allowed_keys, dev_a, dev_b, evaluate, proposer, max_rounds=args.rounds)
+        result = run_sandbox(board, base, allowed_keys, dev_a, dev_b, evaluate, proposer, max_rounds=args.rounds,
+                             on_round=partial.append)
     except DecisionAbort as exc:           # the Nous stop: results so far are in the results cache, rerun to resume
         status, error = "aborted_budget", scrub(str(exc))
+    except Exception as exc:               # any other failure: keep what finished, say why
+        status, error = "aborted_error", scrub(f"{type(exc).__name__}: {exc}")
     finally:
         loop.close()
     anchors: List[Any] = []
@@ -400,6 +426,10 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
                 {"round": r.round, "proposal": r.proposal, "diff": [dict(d) for d in r.diff],
                  "dev_a_score_points": r.score_points, "dev_b_score_points": result.dev_b_scores[r.round]}
                 for r in result.rounds if r.round in cands]})
+    else:
+        doc["rounds"] = [_round_json(r, None, False) for r in partial]
+        doc["promotion_candidates"] = []
+        doc["note"] = "aborted: completed rounds are listed without a dev-B check; nothing is a candidate"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(f"sandbox {status}: {len(doc.get('rounds', []))} round(s), {cache.runs} episodes run, {cache.hits} cache hits, "
