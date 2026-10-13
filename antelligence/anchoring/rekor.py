@@ -218,6 +218,38 @@ class RekorRecord:
     set_b64: str = ""                # signedEntryTimestamp
     time_trusted: bool = False       # integrated_time is covered by a verified SET
 
+    # Rekor's public instance is SHARDED: ``log_index`` is a GLOBAL index across shards (informational only);
+    # checkpoints and inclusion proofs are per shard (tree). Anything compared with a checkpoint must use these.
+    @property
+    def tree_id(self) -> str:
+        """Decimal tree ID of the shard, from the 16-hex-digit prefix of an 80-hex entry UUID ('' if unsharded)."""
+        return entry_tree_id(self.uuid)
+
+    @property
+    def shard_index(self) -> Optional[int]:
+        """The shard-local leaf index (``inclusionProof.logIndex``); None without a proof."""
+        try:
+            return int((self.inclusion_proof or {})["logIndex"])
+        except (KeyError, ValueError, TypeError):
+            return None
+
+    @property
+    def tree_size(self) -> Optional[int]:
+        try:
+            return int((self.inclusion_proof or {})["treeSize"])
+        except (KeyError, ValueError, TypeError):
+            return None
+
+
+def entry_tree_id(uuid: str) -> str:
+    """Tree ID (decimal string, as in the checkpoint origin line) from a sharded entry UUID, else ''."""
+    if isinstance(uuid, str) and len(uuid) == 80:
+        try:
+            return str(int(uuid[:16], 16))
+        except ValueError:
+            return ""
+    return ""
+
 
 def parse_entry(uuid: str, entry: Dict[str, Any], raw_bytes: int = 0) -> RekorRecord:
     try:
@@ -313,6 +345,22 @@ def _checkpoint_problems(proof: Dict[str, Any], log_key: ec.EllipticCurvePublicK
     return out
 
 
+def _shard_problems(record: "RekorRecord", proof: Dict[str, Any]) -> List[str]:
+    """The entry UUID's tree ID, the proof's checkpoint origin and the shard-local index must agree."""
+    out: List[str] = []
+    try:
+        cp = parse_checkpoint(proof.get("checkpoint") or "")
+    except RekorError:
+        return out                       # already reported by _checkpoint_problems
+    uuid_tree = record.tree_id
+    if uuid_tree and cp.tree_id and uuid_tree != cp.tree_id:
+        out.append(f"entry UUID names tree {uuid_tree} but its checkpoint is for tree {cp.tree_id}")
+    idx = record.shard_index
+    if idx is None or idx < 0 or idx >= cp.size:
+        out.append("shard-local index lies outside the checkpoint's tree")
+    return out
+
+
 def set_payload(record: "RekorRecord") -> bytes:
     """Canonical JSON the log signs for the signed entry timestamp (SET)."""
     return json.dumps(
@@ -355,6 +403,7 @@ def check_record(
         if not ok:
             problems.append("inclusion proof does not reach the stated root")
         problems += _checkpoint_problems(proof, log_key)
+        problems += _shard_problems(record, proof)
     try:
         log_key.verify(base64.b64decode(record.set_b64), set_payload(record), ec.ECDSA(hashes.SHA256()))
         record.time_trusted = True

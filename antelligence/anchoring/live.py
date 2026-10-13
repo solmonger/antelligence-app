@@ -88,7 +88,7 @@ class LiveAnchorer(Anchorer):
         done = super().refresh_chain()
         for rec in self.records:
             row = {"kind": "board", "run_id": self.run_id, "size": rec["size"], "root": rec["root"],
-                   "digest": rec["digest"], **{k: rec[k] for k in ("rekor_uuid", "rekor_log_index", "ots_path") if k in rec}}
+                   "digest": rec["digest"], **{k: rec[k] for k in ("rekor_uuid", "rekor_log_index", "rekor_checkpoint", "rekor_tree_id", "rekor_shard_index", "rekor_tree_size", "ots_path") if k in rec}}
             tx = rec.get("chain_tx")
             if tx:
                 try:

@@ -126,8 +126,13 @@ class Anchorer:
     def _rekor(self, rec: Dict[str, Any], digest: bytes) -> None:
         entry = self.rekor.log_digest(digest, self.anchor_key)
         rec["rekor_uuid"] = entry.uuid
-        rec["rekor_log_index"] = entry.log_index
+        rec["rekor_log_index"] = entry.log_index          # GLOBAL across shards: informational only
         rec["rekor_checkpoint"] = self._checkpoint_of(entry)
+        if entry.inclusion_proof is None:
+            entry = self.rekor.get(entry.uuid)
+        rec["rekor_tree_id"] = entry.tree_id               # shard (tree) the checkpoint and proof belong to
+        rec["rekor_shard_index"] = entry.shard_index       # shard-local leaf index (inclusionProof.logIndex)
+        rec["rekor_tree_size"] = entry.tree_size
 
     def _checkpoint_of(self, entry) -> str:
         """The signed checkpoint the log showed us when it took the entry. The outside verifier later proves

@@ -102,8 +102,13 @@ class MockOtsTransport:
 class MockRekor:
     """Append-only transparency log with ``hashedrekord`` signature checking and RFC 6962 proofs."""
 
-    def __init__(self, clock: Callable[[], float] = time.time) -> None:
+    def __init__(self, clock: Callable[[], float] = time.time, *, tree_id: Optional[int] = None,
+                 global_offset: int = 0) -> None:
+        """``tree_id`` / ``global_offset`` model the sharded public instance: UUIDs carry the tree ID as a
+        16-hex prefix, the checkpoint origin names the tree, and the top-level ``logIndex`` is
+        ``global_offset + shard-local index`` (so it can exceed every checkpoint size, as on rekor.sigstore.dev)."""
         self.clock = clock
+        self.tree_id, self.global_offset = tree_id, global_offset
         self.bodies: List[bytes] = []
         self.meta: List[Dict[str, Any]] = []
         self.requests = 0
@@ -111,9 +116,9 @@ class MockRekor:
         self._log_key = ec.generate_private_key(ec.SECP256R1())     # the mock log's own signing key
         self.omit_proofs = False                                    # test switch: serve entries without proofs
 
-    @staticmethod
-    def _uuid(body: bytes) -> str:
-        return hashlib.sha256(b"\x00" + body).hexdigest()
+    def _uuid(self, body: bytes) -> str:
+        prefix = f"{self.tree_id:016x}" if self.tree_id is not None else ""
+        return prefix + hashlib.sha256(b"\x00" + body).hexdigest()
 
     def create(self, proposed: Dict[str, Any]) -> Dict[str, Any]:
         self.requests += 1
@@ -156,7 +161,9 @@ class MockRekor:
     def _sign(self, data: bytes) -> bytes:
         return self._log_key.sign(data, ec.ECDSA(hashes.SHA256()))
 
-    ORIGIN = "mock-rekor - 1"
+    @property
+    def ORIGIN(self) -> str:
+        return f"mock-rekor - {self.tree_id if self.tree_id is not None else 1}"
 
     def _signed_note(self, size: int) -> str:
         root = merkle_root(self.bodies[:size])
@@ -167,7 +174,7 @@ class MockRekor:
     def log_info(self) -> Dict[str, Any]:
         self.requests += 1
         n = len(self.bodies)
-        return {"signedTreeHead": self._signed_note(n), "treeID": "1", "treeSize": n,
+        return {"signedTreeHead": self._signed_note(n), "treeID": str(self.tree_id if self.tree_id is not None else 1), "treeSize": n,
                 "rootHash": merkle_root(self.bodies[:n]).hex(), "inactiveShards": []}
 
     def consistency_proof(self, first_size: int, last_size: int, tree_id: str = "") -> List[str]:
@@ -179,7 +186,7 @@ class MockRekor:
 
         Models the operator-colluding or compromised log that shows a second tree to another verifier.
         """
-        other = MockRekor(self.clock)
+        other = MockRekor(self.clock, tree_id=self.tree_id, global_offset=self.global_offset)
         other._log_key = self._log_key
         other.bodies = list(self.bodies)
         other.meta = list(self.meta)
@@ -194,7 +201,7 @@ class MockRekor:
         body_b64 = base64.b64encode(self.bodies[index]).decode()
         log_id = self.log_key_sha256
         set_payload = json.dumps(
-            {"body": body_b64, "integratedTime": self.meta[index]["time"], "logID": log_id, "logIndex": index},
+            {"body": body_b64, "integratedTime": self.meta[index]["time"], "logID": log_id, "logIndex": index + self.global_offset},
             sort_keys=True, separators=(",", ":"),
         ).encode()
         verification: Dict[str, Any] = {"signedEntryTimestamp": base64.b64encode(self._sign(set_payload)).decode()}
@@ -204,7 +211,7 @@ class MockRekor:
                 "hashes": [h.hex() for h in path], "checkpoint": self._signed_note(len(leaves)),
             }
         return {
-            "body": body_b64, "integratedTime": self.meta[index]["time"], "logID": log_id, "logIndex": index,
+            "body": body_b64, "integratedTime": self.meta[index]["time"], "logID": log_id, "logIndex": index + self.global_offset,
             "verification": verification,
         }
 

@@ -575,8 +575,15 @@ class OutsideVerifier:
                 problems.append(f"size {size}: archived checkpoint: {exc}")
                 continue
             archived.append(cp)
-            if cp.size <= entry.log_index:
-                problems.append(f"size {size}: the archived checkpoint (size {cp.size}) predates its own entry (index {entry.log_index})")
+            # Rekor is sharded: the global logIndex is NOT comparable with a checkpoint. Compare only within the
+            # entry's own shard, using the shard-local index from its (verified) inclusion proof.
+            if entry.tree_id and cp.tree_id != entry.tree_id:
+                problems.append(f"size {size}: the archived checkpoint is for tree {cp.tree_id!r}, the entry lives in tree {entry.tree_id!r}")
+            elif entry.shard_index is None or cp.size <= entry.shard_index:
+                problems.append(f"size {size}: the archived checkpoint (size {cp.size}) predates its own entry (shard index {entry.shard_index})")
+            for field, actual in (("rekor_tree_id", entry.tree_id), ("rekor_shard_index", entry.shard_index)):
+                if field in rec and rec[field] != actual:
+                    problems.append(f"size {size}: anchors.json {field} {rec[field]!r} differs from the log's {actual!r}")
         # every verified entry the run depends on needs its own archived view
         needed = {run.digest(s).hex() for s in required_sizes(n)}
         for r in good:
