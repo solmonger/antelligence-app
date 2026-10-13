@@ -94,8 +94,8 @@ def test_cut_orders():
     out = B.project(per_run, sandbox_per_round={"nous": 2.0})  # 4 rounds = 8 > 7.5
     assert [d["cut"] for d in out["decisions"]] == ["sandbox -> 3"] and out["plan"].sandbox_rounds == 3
     # RunPod: steps are atomic and drop whole arms
-    per_run["SW-B-missingFLAIR"]["runpod"] = 0.3  # 20 runs = 6.0
-    per_run["SW-staticQueen"]["runpod"] = 0.1  # 40 runs = 4.0 -> total 10 > 9.5
+    per_run["SW-B-missingFLAIR"]["runpod"] = 0.6  # 20 runs = 12.0
+    per_run["SW-staticQueen"]["runpod"] = 0.4  # 40 runs = 16.0 -> total 28 > 24
     out = B.project(per_run)
     assert [d["cut"] for d in out["decisions"]] == ["SW-B-missingFLAIR -> 0"] and out["plan"].cases["SW-B-missingFLAIR"] == 0
     # absurd costs: every cut applied, protected arms untouched, overage reported not hidden

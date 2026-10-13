@@ -2,7 +2,7 @@
 
 Arms (cases x seeds): S, S-prime 80x2; SW-B 80x2; SW-noBoard 80x2; FW 40x1; SW-D 12x1; SW-noQueen,
 SW-staticQueen, SW-Bonsai 40x1; SW-Byz-local, SW-Byz-chain 20x1; SW-B-missingFLAIR 20x1.
-Budgets: Nous $8 (stop $7.50), RunPod $10 (stop $9.50), testnet 0.04 ETH. ``project`` is pure.
+Budgets: Nous $8 (stop $7.50), RunPod $25 (stop $24; raised from $10/$9.50 on 2026-10-13), testnet 0.04 ETH. ``project`` is pure.
 Floors: SW-B and SW-noBoard never below 80x2 cases/seeds, FW never below 30 cases.
 """
 
@@ -16,8 +16,8 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 from antelligence.experiments import v4_budget
 from antelligence.kernel.decision import DecisionAbort
 
-BUDGETS = {"nous": 8.00, "runpod": 10.00}
-STOPS = {"nous": 7.50, "runpod": 9.50}
+BUDGETS = {"nous": 8.00, "runpod": 25.00}  # RunPod raised from $10 by the operator 2026-10-13 (measured throughput)
+STOPS = {"nous": 7.50, "runpod": 24.00}
 TESTNET_ETH = 0.04
 PLAN: Dict[str, Tuple[int, int]] = {
     "S": (80, 2), "S-prime": (80, 2), "SW-B": (80, 2), "SW-noBoard": (80, 2), "FW": (40, 1), "SW-D": (12, 1),
@@ -132,7 +132,7 @@ POD_COSTS = Path("ledger/v4.1-pod-costs.jsonl")
 
 
 class BudgetRefused(DecisionAbort):
-    """A paid call was refused because spend reached the hard stop (Nous 7.50, RunPod 9.50).
+    """A paid call was refused because spend reached the hard stop (Nous 7.50, RunPod 24.00).
 
     A :class:`DecisionAbort`: never retried, never turned into an error decision or a queen fallback."""
 

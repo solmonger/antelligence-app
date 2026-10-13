@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """v4.1 RunPod wrapper around scripts/v4_pod.py (reuses its functions; nothing is forked).
 
-Differences from v4: hard stop $9.50 (budget $10, ``v41_budget.STOPS``), ledger ``ledger/v4.1-pod-costs.jsonl`` (same
+Differences from v4: hard stop $24 (budget $25, ``v41_budget.STOPS``), ledger ``ledger/v4.1-pod-costs.jsonl`` (same
 schema ``v4_budget.pod_spend`` reads, plus an ``image`` field), state ``ledger/v4.1-pod-state.json`` (0600), a
 read-only ``quote`` command, a pinned image recorded in state and ledger, and an ``--auto-down-after-min`` deadline
 that ``status`` reports and ``cost`` warns about once passed. The key is never printed.
@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT))
 from antelligence.experiments import v41_budget  # noqa: E402
 from scripts import v4_pod  # noqa: E402
 
-HARD_STOP_USD = v41_budget.STOPS["runpod"]  # 9.50
+HARD_STOP_USD = v41_budget.STOPS["runpod"]  # 24.00
 GPU = "NVIDIA L40S"
 IMAGE = v4_pod.VLLM_IMAGE  # pinned by v4_pod (vLLM >= 0.17)
 MODEL = v4_pod.WORKERS_KEY

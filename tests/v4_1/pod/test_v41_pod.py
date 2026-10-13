@@ -57,10 +57,10 @@ def test_quote_uses_graphql_readonly(tmp_path):
 
 def test_up_refuses_over_v41_budget(tmp_path):
     transport, paths, log = make(tmp_path, quote_price=1.0)
-    v4_pod.append_cost(paths.costs, v4_pod.cost_row("start", "old", 9.0, "2026-10-13T00:00:00+00:00"))
-    v4_pod.append_cost(paths.costs, v4_pod.cost_row("stop", "old", 9.0, "2026-10-13T01:00:00+00:00"))
-    rc, out = run(["up", "v41-workers", "--scripts-commit", SHA], transport, paths)  # 9.00 spent + 1.00 > 9.50
-    assert rc == 1 and any("hard stop" in line and "9.50" in line for line in out)
+    v4_pod.append_cost(paths.costs, v4_pod.cost_row("start", "old", 23.5, "2026-10-13T00:00:00+00:00"))
+    v4_pod.append_cost(paths.costs, v4_pod.cost_row("stop", "old", 23.5, "2026-10-13T01:00:00+00:00"))
+    rc, out = run(["up", "v41-workers", "--scripts-commit", SHA], transport, paths)  # 23.50 spent + 1.00 > 24.00
+    assert rc == 1 and any("hard stop" in line and "24.00" in line for line in out)
     assert not any(m == "POST" and "rest.runpod.io" in u for m, u, _ in log)
     assert not paths.state.exists()
 
@@ -68,7 +68,7 @@ def test_up_refuses_over_v41_budget(tmp_path):
 def test_ledger_path_is_v41(tmp_path):
     assert v41_pod.v41_paths().costs.name == "v4.1-pod-costs.jsonl"
     assert v41_pod.v41_paths().state.name == "v4.1-pod-state.json"
-    assert v41_pod.HARD_STOP_USD == 9.50
+    assert v41_pod.HARD_STOP_USD == 24.00
     transport, paths, _ = make(tmp_path)
     rc, _ = run(["up", "v41-workers", "--scripts-commit", SHA, "--auto-down-after-min", "30"], transport, paths)
     assert rc == 0

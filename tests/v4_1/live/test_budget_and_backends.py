@@ -29,16 +29,16 @@ def test_nous_stops_at_7_50(tmp_path):
         v41_budget.check_or_refuse("nous", usage=usage, pods=None)
 
 
-def test_pod_stops_at_9_50_and_a_running_pod_keeps_billing(tmp_path):
+def test_pod_stops_at_24_and_a_running_pod_keeps_billing(tmp_path):
     pods = tmp_path / "p.jsonl"
-    start = (NOW - timedelta(hours=9)).isoformat()
+    start = (NOW - timedelta(hours=23.5)).isoformat()
     write_rows(pods, [{"event": "start", "pod_id": "p1", "utc": start, "rate_per_hr": 1.0}])
-    assert v41_budget.check_or_refuse("runpod", usage=None, pods=pods, now=NOW) == pytest.approx(9.0)
+    assert v41_budget.check_or_refuse("runpod", usage=None, pods=pods, now=NOW) == pytest.approx(23.5)
     with pytest.raises(v41_budget.BudgetRefused, match="runpod hard stop"):
         v41_budget.check_or_refuse("runpod", usage=None, pods=pods, now=NOW + timedelta(minutes=40))
     write_rows(pods, [{"event": "start", "pod_id": "p1", "utc": start, "rate_per_hr": 1.0},
                       {"event": "stop", "pod_id": "p1", "utc": (NOW - timedelta(hours=1)).isoformat(), "rate_per_hr": 1.0}])
-    assert v41_budget.check_or_refuse("runpod", usage=None, pods=pods, now=NOW + timedelta(days=3)) == pytest.approx(8.0)
+    assert v41_budget.check_or_refuse("runpod", usage=None, pods=pods, now=NOW + timedelta(days=3)) == pytest.approx(22.5)
 
 
 def test_preflight_probe_rows_without_cost_are_priced(tmp_path):
