@@ -61,7 +61,8 @@ WORKERS_HF, WORKERS_REVISION = "RedHatAI/Qwen3.5-9B-FP8-dynamic", "790f0576d2d77
 WORKERS_PORTS = ["8100/http", "8101/http", "8102/http", "8001/http"]  # 9B, 4B, d1 shim, read-only log
 # Launcher files the pod downloads at start-up: pod-side name -> repo path. Fetched from GitHub at a pinned commit and
 # sha256-verified (the pod exposes only HTTP ports and the vLLM image has no sshd, so nothing can be pushed to it).
-WORKERS_FETCH = {"serve.sh": "scripts/v41_pod_serve.sh", "v41_d1_server.py": "scripts/v41_d1_server.py"}
+WORKERS_FETCH = {"serve.sh": "scripts/v41_pod_serve.sh", "v41_d1_server.py": "scripts/v41_d1_server.py",
+                 "v41_pod_watchdog.py": "scripts/v41_pod_watchdog.py"}
 RAW_BASE = "https://raw.githubusercontent.com/solmonger/antelligence-app"
 WORKERS_DEST = "/opt/v41"
 COMMIT_RE = re.compile(r"[0-9a-f]{40}")
@@ -157,17 +158,40 @@ def fetch_fragment(pin: ScriptsPin, dest: str = WORKERS_DEST, log: str = "/dev/n
     return "\n".join(lines)
 
 
+# Pod-side self-termination with the pod-scoped RUNPOD_API_KEY / RUNPOD_POD_ID RunPod injects (never our account key):
+# DELETE the pod (terminate), else POST /stop. Inline so it works even when the launcher fetch itself failed.
+SELF_TERMINATE_PY = (
+    "import os,sys,urllib.request as u\n"
+    "i=os.environ.get('RUNPOD_POD_ID');k=os.environ.get('RUNPOD_API_KEY')\n"
+    "if not i or not k: print('selfterm: no pod credentials'); sys.exit(1)\n"
+    "for m,p in (('DELETE',''),('POST','/stop')):\n"
+    "  try:\n"
+    "    r=u.urlopen(u.Request('https://rest.runpod.io/v1/pods/'+i+p,method=m,headers={'Authorization':'Bearer '+k,"
+    "'User-Agent':'v41-pod/1'}),timeout=30);print('selfterm',m,r.status);sys.exit(0)\n"
+    "  except Exception as e: print('selfterm',m,'failed',type(e).__name__,getattr(e,'code',''))\n"
+    "sys.exit(1)\n")
+CRASH_GRACE_S = 120  # after the launcher ends, keep the log port up this long so a failure can be read
+
+
 def workers_start_script(log_token: str, pin: ScriptsPin) -> str:
     """Container command for the v4.1 worker pod. It serves the log read-only on :8001 first (so fetch progress is
     visible), downloads the launcher from GitHub at the pinned commit and verifies its sha256 (see
     ``fetch_fragment``; a mismatch exits non-zero before anything runs), then runs ``serve.sh``. Log (key redacted)
-    is under a secret path, as for ``up``."""
+    is under a secret path, as for ``up``. An EXIT trap terminates the pod (``SELF_TERMINATE_PY``) however the script
+    ends (fetch failure, hash mismatch, launcher exit or crash) after ``CRASH_GRACE_S``; if even that fails it
+    ``kill 1``s the container. It never idles on ``sleep infinity``."""
     log = f"/srv/{log_token}/workers.log"
+    selfterm = shlex.quote(SELF_TERMINATE_PY)
     return (f"mkdir -p /srv/{log_token} && : > /srv/index.html && "
             f"(python3 -m http.server 8001 --directory /srv >/dev/null 2>&1 &) && "
+            f"LOG={shlex.quote(log)}; "
+            f"on_exit() {{ trap - EXIT; echo \"launcher ended; self-terminating in {CRASH_GRACE_S}s\" >> \"$LOG\"; "
+            f"sleep {CRASH_GRACE_S}; python3 -c {selfterm} >> \"$LOG\" 2>&1 || "
+            f"{{ echo \"self-terminate failed; killing the container\" >> \"$LOG\"; kill 1; }}; }}; "
+            f"trap on_exit EXIT\n"
             f"{fetch_fragment(pin, WORKERS_DEST, log)}\n"
             f"{{ bash {WORKERS_DEST}/serve.sh 2>&1 | sed -u \"s/$VLLM_API_KEY/[redacted]/g\" >> {log}; }}; "
-            f"echo \"workers exited\" >> {log}; sleep infinity")
+            f"echo \"workers exited\" >> {log}")
 
 
 def deploy_payload_workers(api_secret: str, gpu: str, log_token: str, pin: Optional[ScriptsPin]) -> Dict[str, Any]:

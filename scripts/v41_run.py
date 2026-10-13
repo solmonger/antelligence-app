@@ -223,4 +223,5 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    from scripts.v41_pod import run_main_with_pod_down  # ends the run by bringing the pod down; --keep-pod skips it
+    raise SystemExit(run_main_with_pod_down(main))

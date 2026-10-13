@@ -37,7 +37,8 @@ def make(tmp_path, quote_price=1.0, log=None):
 
 def run(argv, transport, paths):
     out: list = []
-    rc = v41_pod.main(argv, paths=paths, transport=transport, api_key=FAKE_KEY, echo=out.append)
+    rc = v41_pod.main(argv, paths=paths, transport=transport, api_key=FAKE_KEY, echo=out.append,
+                      spawn=lambda *_a: 4242)
     return rc, out
 
 
