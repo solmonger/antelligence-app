@@ -68,6 +68,8 @@ def parser() -> argparse.ArgumentParser:
                          "'fake' = offline deterministic fakes (identity 'fake', dry plumbing runs, no network)")
     ap.add_argument("--pod-state", default=str(v41_prod.POD_STATE))
     ap.add_argument("--bonsai-url", default=v41_prod.DEFAULT_BONSAI_URL, help="llama.cpp server for the Bonsai arm")
+    ap.add_argument("--reply-cache", default=str(v41_prod.CACHE_DIR),
+                    help="episode reply cache for --backends live (worker replies and queen replies, keyed by request hash)")
     ap.add_argument("--usage-ledger", default=str(v41_prod.USAGE_LEDGER))
     ap.add_argument("--pod-costs", default=str(v41_prod.POD_COSTS))
     ap.add_argument("--chain-queue", default=str(live.DEFAULT_QUEUE))
@@ -147,8 +149,10 @@ def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[st
         if any(ARM_SPECS[a].kind in ("workers", "fw") for a in arms):
             needed.add(D1)  # every swarm arm, FW included, takes a d1 local look each round (goal 4.5)
         workers = v41_prod.build_live_workers(pod_state=args.pod_state, bonsai_url=args.bonsai_url, needed=needed,
-                                              usage_ledger=args.usage_ledger, pod_costs=args.pod_costs)
-        queen = v41_prod.build_live_queen(usage_ledger=args.usage_ledger, pod_costs=args.pod_costs) if needs_queen else None
+                                              usage_ledger=args.usage_ledger, pod_costs=args.pod_costs,
+                                              cache_dir=Path(args.reply_cache))
+        queen = v41_prod.build_live_queen(usage_ledger=args.usage_ledger, pod_costs=args.pod_costs,
+                                       cache_dir=Path(args.reply_cache)) if needs_queen else None
     else:
         workers = v41_live.build_workers(cfg, get_env)
         queen = v41_live.build_queen_provider(cfg, get_env) if needs_queen else None

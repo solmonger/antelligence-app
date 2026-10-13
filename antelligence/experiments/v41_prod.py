@@ -114,6 +114,18 @@ class GuardedChat:
         return await self.inner.complete(request)
 
 
+def reply_cache_dir(cache_dir: Optional[Path], name: str, revision: str, pinned: Optional[str] = None) -> Optional[Path]:
+    """Worker reply-cache subdirectory ``<worker>@<revision>``, so replies never cross model revisions. A legacy
+    ``<worker>`` directory (written before revisions were in the name, always under the pinned revision) is migrated by
+    rename when the requested revision is the pinned one, and left alone otherwise."""
+    if not cache_dir:
+        return None
+    new, old = Path(cache_dir) / f"{name}@{revision}", Path(cache_dir) / name
+    if pinned is not None and revision == pinned and old.exists() and not new.exists():
+        old.rename(new)
+    return new
+
+
 def _stack(backend: Any, guard: Optional[BudgetGuard], ledger: LedgerWriter, cache: Optional[Path]) -> Worker:
     """cache -> guard -> ledger -> backend: a cache hit makes no call, a refused call writes no row."""
     wrapped: Any = LedgeredDecision(backend, ledger, role="worker")
@@ -141,23 +153,23 @@ def build_live_workers(*, pod_state: Union[str, Path] = POD_STATE, bonsai_url: s
         pod = read_pod_endpoint(pod_state)
         ledger.add_redaction(pod.secret)
         register_secret(pod.secret)
-        sub = lambda n: (cache_dir / n) if cache_dir else None  # noqa: E731
+        sub = lambda n, rev: reply_cache_dir(cache_dir, n, rev, rev)  # noqa: E731  (the pinned revision for D1/Q9/Q4)
         if want(D1):
-            out[D1] = _stack(D1Backend(pod.urls[D1], revision=D1_REVISION, api_key=pod.secret), pod_guard, ledger, sub(D1))
+            out[D1] = _stack(D1Backend(pod.urls[D1], revision=D1_REVISION, api_key=pod.secret), pod_guard, ledger, sub(D1, D1_REVISION))
         if want(Q9):
-            out[Q9] = _stack(VLLMLogprobBackend(pod.urls[Q9], Q9_ID, Q9_REV, api_key=pod.secret), pod_guard, ledger, sub(Q9))
+            out[Q9] = _stack(VLLMLogprobBackend(pod.urls[Q9], Q9_ID, Q9_REV, api_key=pod.secret), pod_guard, ledger, sub(Q9, Q9_REV))
         if want(Q4):
-            out[Q4] = _stack(VLLMLogprobBackend(pod.urls[Q4], Q4_ID, Q4_REV, api_key=pod.secret), pod_guard, ledger, sub(Q4))
+            out[Q4] = _stack(VLLMLogprobBackend(pod.urls[Q4], Q4_ID, Q4_REV, api_key=pod.secret), pod_guard, ledger, sub(Q4, Q4_REV))
     if want(BONSAI):
         out[BONSAI] = _stack(LlamaCppBackend(bonsai_url, bonsai_id, bonsai_revision,
                                              prefill_empty_think=bonsai_prefill_empty_think), None, ledger,
-                             (cache_dir / BONSAI) if cache_dir else None)
+                             reply_cache_dir(cache_dir, BONSAI, bonsai_revision, BONSAI_REV))
     if want(FW):
         key = nous_key()
         ledger.add_redaction(key)
         register_secret(key)
         out[FW] = _stack(NousFWBackend(fw_url, api_key=key, **({"transport": transport} if transport else {})), BudgetGuard("nous", usage_ledger, pod_costs), ledger,
-                         (cache_dir / FW) if cache_dir else None)
+                         reply_cache_dir(cache_dir, FW, "none", "none"))
     return out
 
 
