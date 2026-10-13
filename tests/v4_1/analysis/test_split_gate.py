@@ -114,7 +114,7 @@ def test_gate_refuses_eval_before_lock(world):
 
 
 @pytest.mark.parametrize("over,msg", [
-    ({"tx_hash": ""}, "tx_hash"), ({"tx_hash": "0x" + "AB" * 32}, "tx_hash"), ({"tx_hash": "0xab"}, "tx_hash"),
+    ({"tx_hash": ""}, "tx_hash"), ({"tx_hash": "0x" + "AB" * 32}, "tx_hash"), ({"tx_hash": "0xab"}, "tx_hash"), ({"tx_hash": "0x" + "ab" * 32 + "\n"}, "tx_hash"),
     ({"status": 0}, "status"), ({"status": True}, "status"), ({"status": "1"}, "status"),
     ({"readback_ok": False}, "readback"), ({"chain_id": 1}, "chain_id"), ({"chain_id": "300"}, "chain_id"),
     ({"prereg_sha256": "0" * 64}, "prereg_sha256"), ({"prereg_sha256": None}, "prereg_sha256"),

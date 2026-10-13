@@ -16,7 +16,7 @@ from antelligence.experiments.v41_split import load_split, which_split
 
 CHAIN_ID = 300
 SPLIT_REL = Path("config/v4_1/split.json")
-_TX = re.compile(r"^0x[0-9a-f]{64}$")
+_TX = re.compile(r"0x[0-9a-f]{64}")
 _SPLIT_SHA = re.compile(r"split file sha256[^`\n]*`([0-9a-f]{64})`")
 _LISTS = ("dev_a", "dev_b", "eval", "reserve")
 
@@ -71,7 +71,7 @@ def _check_receipt(receipt_path: Path, prereg_path: Path) -> None:
         raise GateError(f"anchor receipt is not JSON: {exc}") from exc
     if not isinstance(rec, dict):
         raise GateError("anchor receipt is not an object")
-    if not isinstance(rec.get("tx_hash"), str) or not _TX.match(rec["tx_hash"]):
+    if not isinstance(rec.get("tx_hash"), str) or not _TX.fullmatch(rec["tx_hash"]):
         raise GateError("anchor receipt tx_hash is not 0x plus 64 lowercase hex")
     status = rec.get("status")
     if not (type(status) is int and status == 1):
