@@ -112,6 +112,7 @@ def build_brief(
     max_tokens: int = DEFAULT_MAX_TOKENS,
     tokenizer: Optional[Callable[[str], int]] = None,
     entry_types: Optional[Sequence[str]] = None,
+    own_route: Optional[Entry] = None,
 ) -> Brief:
     """Board-on brief for ``squad``: task, its route, knowledge on its regions, then recent evidence.
 
@@ -141,6 +142,8 @@ def build_brief(
         take(task)
     if isinstance(route_entry, Entry):
         take(route_entry)
+    elif own_route is not None:   # a draft route (live visibility) still carries the squad's own recorded route entry
+        take(own_route)
     knowledge = [e for e in visible if e.type == "knowledge"]
     for region in payload["region_ids"]:
         for e in reversed(knowledge):
@@ -163,6 +166,7 @@ def build_brief_board_off(
     cap: Tuple[int, int] = DEFAULT_CAP,
     max_tokens: int = DEFAULT_MAX_TOKENS,
     tokenizer: Optional[Callable[[str], int]] = None,
+    own_route: Optional[Entry] = None,
 ) -> Brief:
     """Board-off brief: task statement, perception's region signals, and this squad's own assignment.
 
@@ -179,6 +183,8 @@ def build_brief_board_off(
         chosen.append(task)
     if isinstance(route_entry, Entry):
         chosen.append(route_entry)
+    elif own_route is not None:
+        chosen.append(own_route)
     signals = [
         e for e in board.by_type("knowledge")
         if e.author["agent"] == "perception" and e.payload["source"] == "perception"

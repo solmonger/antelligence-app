@@ -31,8 +31,8 @@ def build_questions(candidate_labels: Sequence[str]) -> Dict[str, Question]:
     present = [l for l in CANDIDATE_LABELS if l in set(candidate_labels)]
     options = tuple(present) + (STAY, EXPLORE)
     criteria = {l: f"head to region {l}" for l in present}
-    criteria[STAY] = "stay here"
-    criteria[EXPLORE] = "explore somewhere new"
+    criteria[STAY] = "keep the current target (a squad with no target stays where it is)"
+    criteria[EXPLORE] = "go to the nearest perceived region no squad has visited, else the nearest most uncertain area"
     return {
         Q_TARGET: Question("choice", "Where should this squad go next?", options, criteria),
         Q_RELEASE: Question("noul", "Should this squad release drug here and now?",
@@ -50,12 +50,28 @@ def _band(x: float, cuts: Tuple[float, float, float], words: Tuple[str, str, str
     return words[-1]
 
 
+def _where(fields: Mapping[str, Any]) -> str:
+    """Position and current target, as the world holds them (the spec's state: position, payload, last release)."""
+    pos = fields.get("position_vox")
+    at = f"Position: voxel ({pos[0]}, {pos[1]}, {pos[2]})." if pos else ""
+    if "goal_dist_mm" not in fields:
+        return at
+    d = fields["goal_dist_mm"]
+    now = ("Current target: none, standing still." if d is None else
+           "Current target: reached." if d <= 0 else f"Current target: moving, {int(round(d))} mm to go.")
+    if d is not None and fields.get("target_source") == "queen":
+        now = now[:-1] + " (assigned by the queen)."
+    return f"{at} {now}".strip()
+
+
 def render_state(fields: Mapping[str, Any], brief: str = "") -> str:
     """Words, not raw numbers, from the observation fields (never truth). Truncated to MAX_STATE_CHARS."""
     p, unc, dose = fields["local_p_tumour"], fields["local_unc"], fields["local_dose"]
     look = fields.get("local_look")
     parts = [
+        "Task: deliver drug to the tumour; the score is the share of tumour tissue that gets enough drug.",
         f"Round {fields['round'] + 1} of {fields['rounds']}, tick {fields['tick']}.",
+        _where(fields),
         f"Payload left: {_pct(fields['payload_fraction'])}.",
         f"Here the scan says tumour is {_band(p, (0.2, 0.5, 0.8), ('unlikely', 'possible', 'likely', 'very likely'))}"
         f" and the scan is {_band(unc, (0.15, 0.35, 0.6), ('sure', 'fairly sure', 'unsure', 'very unsure'))}.",
@@ -72,7 +88,7 @@ def render_state(fields: Mapping[str, Any], brief: str = "") -> str:
             for c in cands) + ".")
     else:
         parts.append("No regions known.")
-    text = " ".join(parts)
+    text = " ".join(x for x in parts if x)
     if brief:
         room = MAX_STATE_CHARS - len(text) - len(" Brief: ")
         if room > 0:
