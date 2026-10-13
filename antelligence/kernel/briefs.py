@@ -111,12 +111,14 @@ def build_brief(
     cap: Tuple[int, int] = DEFAULT_CAP,
     max_tokens: int = DEFAULT_MAX_TOKENS,
     tokenizer: Optional[Callable[[str], int]] = None,
+    entry_types: Optional[Sequence[str]] = None,
 ) -> Brief:
     """Board-on brief for ``squad``: task, its route, knowledge on its regions, then recent evidence.
 
     Priority order (also the drop order when over the token cap, last dropped first):
     task, the squad's route entry, knowledge for route regions in priority order, other knowledge,
     evidence/decisions/alarms newest first. Only entries up to the route's seq are visible.
+    ``entry_types`` (a harness knob) limits which entry types may fill the brief beyond the task and the route.
     """
     lo, hi = cap
     if not 1 <= lo <= hi:
@@ -124,7 +126,7 @@ def build_brief(
     payload, upto = _route_parts(route_entry)
     if payload["squad"] != squad:
         raise BriefError("route entry belongs to a different squad")
-    visible = [e for e in board.entries() if upto is None or e.seq <= upto]
+    visible = [e for e in board.entries() if (upto is None or e.seq <= upto) and (entry_types is None or e.type in entry_types)]
     objective, task = _objective(board, upto)
 
     ordered: List[Entry] = []

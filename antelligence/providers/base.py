@@ -24,6 +24,7 @@ class ChatRequest:
     temperature: float = 0.0
     seed: Optional[int] = None
     response_format: Optional[Mapping[str, Any]] = None
+    extra_body: Optional[Mapping[str, Any]] = None  # provider-specific body keys, e.g. {"thinking": {"type": "disabled"}}
 
     def __post_init__(self) -> None:
         if not self.model:
@@ -35,11 +36,14 @@ class ChatRequest:
         object.__setattr__(self, "messages", messages)
         if self.response_format is not None:
             object.__setattr__(self, "response_format", plain(dict(self.response_format)))
+        if self.extra_body is not None:
+            object.__setattr__(self, "extra_body", plain(dict(self.extra_body)))
         if self.max_tokens < 1:
             raise ValueError("max_tokens must be positive")
 
     def payload(self) -> Dict[str, Any]:
         body: Dict[str, Any] = {
+            **(self.extra_body or {}),
             "model": self.model,
             "messages": list(self.messages),
             "max_tokens": self.max_tokens,
