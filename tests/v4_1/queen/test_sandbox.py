@@ -57,7 +57,8 @@ def test_patch_rejects_forbidden_keys():
                         ("/router/slm_conf_min", 1.5), ("/briefs/entry_types", ["truth"]), ("/briefs/objective_template", "{secret}")):
         with pytest.raises(PatchError, match="invalid"):
             apply_patch(base, parse_proposal(patch(path, value), ALLOWED))
-    new = apply_patch(base, parse_proposal(patch("/playbook_notes/-", "Look near the core first.", op="add"), ALLOWED))
+    notes = base["playbook_notes"] + ["Look near the core first."]
+    new = apply_patch(base, parse_proposal(patch("/playbook_notes", notes), ALLOWED), ALLOWED)
     assert new["playbook_notes"][-1] == "Look near the core first." and len(base["playbook_notes"]) == 2   # base untouched
     assert apply_patch(base, parse_proposal(patch("/briefs/count", 10), ALLOWED))["briefs"]["count"] == 10
 
@@ -187,3 +188,45 @@ def test_llm_proposer_with_fake_provider():
     assert parse_proposal(out, ALLOWED).keys == ["/router/cost_penalty"]
     assert provider.requests[0].max_tokens == 800
     assert llm_proposer(FakeProvider(lambda r: "nope"), "fake")({"round": 1}) != None
+
+
+def test_patch_cannot_reach_forbidden_keys():
+    base = load_harness()
+    bad_paths = [
+        "/router/../scorer", "/router/..", "/..", "/router/cost_penalty/..", "/router~1cost_penalty", "/router/cost~0penalty",
+        "/~1", "/router/cost_penalty/0", "/playbook_notes/0", "/playbook_notes/-", "/briefs/entry_types/0", "/", "", "router/cost_penalty",
+        "/router", "/briefs", "/queen", "/harness", "/allowed_keys", "/allowed_keys/0", "/router/", "//router/cost_penalty",
+    ]
+    for path in bad_paths:
+        for op in ("replace", "add"):
+            with pytest.raises(PatchError):
+                parse_proposal(patch(path, {"cost_penalty": 1, "scorer": 1}, op=op), ALLOWED)
+    # replacing a parent object (even with a valid-looking one) is not a leaf match
+    with pytest.raises(PatchError):
+        parse_proposal(patch("/router", dict(base["router"])), ALLOWED)
+    # move / copy / remove / test never pass, from or to forbidden keys
+    for op in ("move", "copy", "remove", "test"):
+        for frm, to in (("/scorer", "/router/cost_penalty"), ("/router/cost_penalty", "/scorer"), ("/allowed_keys", "/playbook_notes")):
+            with pytest.raises(PatchError):
+                parse_proposal({"patch": [{"op": op, "from": frm, "path": to, "value": 1}], "prediction": pred()}, ALLOWED)
+            with pytest.raises(PatchError):
+                parse_proposal({"patch": [{"op": op, "path": to, "value": 1}], "prediction": pred()}, ALLOWED)
+    # duplicate keys in the proposal JSON
+    dup = ('{"patch": [{"op": "replace", "path": "/scorer/x", "path": "/router/cost_penalty", "value": 0.2}], '
+           '"prediction": {"metric": "coverage", "delta_ppm": 5}}')
+    with pytest.raises(PatchError, match="duplicate"):
+        parse_proposal(dup, ALLOWED)
+    dup2 = '{"patch": [], "patch": [], "prediction": {"metric": "c", "delta_ppm": 5}}'
+    with pytest.raises(PatchError, match="duplicate"):
+        parse_proposal(dup2, ALLOWED)
+    # apply_patch re-checks even a hand-built Proposal
+    from antelligence.experiments.v41_sandbox import Proposal
+    forged = Proposal(patch=({"op": "replace", "path": "/router", "value": {}},), prediction=pred())
+    with pytest.raises(PatchError):
+        apply_patch(base, forged, ALLOWED)
+    forged = Proposal(patch=({"op": "move", "path": "/router/cost_penalty", "value": 1},), prediction=pred())
+    with pytest.raises(PatchError):
+        apply_patch(base, forged, ALLOWED)
+    # the only accepted shape: replace/add on an exact allowed leaf
+    for key in ALLOWED:
+        assert parse_proposal(patch(key, 1), ALLOWED).keys == [key]

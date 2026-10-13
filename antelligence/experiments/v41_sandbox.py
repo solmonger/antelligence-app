@@ -24,7 +24,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequ
 
 from antelligence.kernel.board import Board
 from antelligence.kernel.canonical import canonical_json
-from antelligence.kernel.policies.v41_harness import HarnessError, harness_sha256, validate_harness
+from antelligence.kernel.policies.v41_harness import HarnessError, harness_sha256, load_allowed_keys, validate_harness
 from antelligence.providers.base import ChatRequest, Provider
 
 ARMS = ("SW-B", "SW-noBoard")
@@ -80,7 +80,17 @@ def _segments(path: str) -> List[str]:
 
 
 def _is_allowed(path: str, allowed_keys: Sequence[str]) -> bool:
-    return any(path == k or path.startswith(k + "/") for k in allowed_keys)
+    """Leaf paths only: the path must equal an allowed key exactly (no children, indices, '-', escapes or '..')."""
+    return path in allowed_keys
+
+
+def _no_duplicates(pairs: List[Tuple[str, Any]]) -> Dict[str, Any]:
+    out: Dict[str, Any] = {}
+    for k, v in pairs:
+        if k in out:
+            raise PatchError(f"duplicate key {k!r} in proposal JSON")
+        out[k] = v
+    return out
 
 
 def parse_proposal(raw: Any, allowed_keys: Sequence[str]) -> Proposal:
@@ -89,7 +99,7 @@ def parse_proposal(raw: Any, allowed_keys: Sequence[str]) -> Proposal:
         text = raw.strip()
         fenced = _FENCE.match(text)
         try:
-            raw = json.loads(fenced.group(1) if fenced else text)
+            raw = json.loads(fenced.group(1) if fenced else text, object_pairs_hook=_no_duplicates)
         except json.JSONDecodeError as exc:
             raise PatchError(f"not JSON ({exc.msg})") from exc
     if not isinstance(raw, Mapping) or set(raw) != {"patch", "prediction"}:
@@ -117,10 +127,15 @@ def parse_proposal(raw: Any, allowed_keys: Sequence[str]) -> Proposal:
     return Proposal(patch=tuple(clean), prediction={"metric": pred["metric"], "delta_ppm": d})
 
 
-def apply_patch(harness: Mapping[str, Any], proposal: Proposal) -> Dict[str, Any]:
-    """Apply the (already allowed-key checked) patch to a deep copy and re-validate the whole harness."""
+def apply_patch(harness: Mapping[str, Any], proposal: Proposal, allowed_keys: Optional[Sequence[str]] = None) -> Dict[str, Any]:
+    """Apply the patch to a deep copy and re-validate the whole harness. Re-checks ops and paths (defence in depth)."""
+    if allowed_keys is None:
+        allowed_keys = load_allowed_keys()
     out = copy.deepcopy(dict(harness))
     for op in proposal.patch:
+        if op["op"] not in OPS or not _is_allowed(op["path"], allowed_keys) \
+                or any(s.lower() in FORBIDDEN_SEGMENTS for s in _segments(op["path"])):
+            raise PatchError(f"{op['path']!r} is not an allowed leaf key")
         segs = _segments(op["path"])
         node: Any = out
         for s in segs[:-1]:
@@ -286,7 +301,7 @@ def run_sandbox(
         kept = False
         try:
             proposal = parse_proposal(raw, allowed_keys)
-            candidate = apply_patch(current, proposal)
+            candidate = apply_patch(current, proposal, allowed_keys)
             if harness_sha256(candidate) == harness_sha256(current):
                 raise PatchError("the edit changes nothing")
         except PatchError as exc:

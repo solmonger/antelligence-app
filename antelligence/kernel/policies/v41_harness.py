@@ -35,14 +35,20 @@ def _num(v: Any, lo: float, hi: float) -> bool:
 
 
 def _template_ok(text: Any, fields: set) -> bool:
+    """Plain ``{name}`` fields from ``fields`` only: no format spec, conversion, attribute/index access or positional field."""
     import string
     if not isinstance(text, str) or not text or len(text) > MAX_TEMPLATE_CHARS:
         return False
     try:
-        names = {name for _, name, _, _ in string.Formatter().parse(text) if name is not None}
+        parsed = list(string.Formatter().parse(text))
     except ValueError:
         return False
-    return names <= fields
+    for _, name, spec, conv in parsed:
+        if name is None:
+            continue
+        if name not in fields or spec or conv is not None:
+            return False
+    return True
 
 
 def validate_harness(h: Mapping[str, Any]) -> None:
@@ -74,8 +80,31 @@ def validate_harness(h: Mapping[str, Any]) -> None:
         raise HarnessError(f"playbook_notes: at most {MAX_NOTES} strings of at most {MAX_NOTE_CHARS} chars")
 
 
+MAX_YAML_BYTES = 64 * 1024
+
+
+class _NoAliasLoader(yaml.SafeLoader):
+    """SafeLoader that refuses anchors and aliases (no shared or recursive structures)."""
+
+    def compose_node(self, parent: Any, index: Any) -> Any:
+        if self.check_event(yaml.events.AliasEvent):
+            raise HarnessError("YAML aliases are not allowed")
+        if getattr(self.peek_event(), "anchor", None) is not None:
+            raise HarnessError("YAML anchors are not allowed")
+        return super().compose_node(parent, index)
+
+
+def load_yaml_text(text: str) -> Any:
+    if len(text.encode("utf-8")) > MAX_YAML_BYTES:
+        raise HarnessError(f"harness YAML over {MAX_YAML_BYTES} bytes")
+    return yaml.load(text, Loader=_NoAliasLoader)  # noqa: S506 - SafeLoader subclass
+
+
 def load_harness_doc(path: Union[str, Path] = DEFAULT_PATH) -> Dict[str, Any]:
-    doc = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    p = Path(path)
+    if p.stat().st_size > MAX_YAML_BYTES:
+        raise HarnessError(f"harness YAML over {MAX_YAML_BYTES} bytes")
+    doc = load_yaml_text(p.read_text(encoding="utf-8"))
     if not isinstance(doc, dict) or set(doc) != {"harness", "allowed_keys"}:
         raise HarnessError("harness.yaml needs exactly harness and allowed_keys")
     validate_harness(doc["harness"])
