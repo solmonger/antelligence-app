@@ -414,3 +414,33 @@ def test_logprob_extraction_tolerates_stripped_empty_think_block():
         pass
     else:
         raise AssertionError("unexpected prefix text must be refused")
+
+
+# --- S13: transient 401 is retried on the worker HTTP path ---------------------------------------------------------
+
+
+def test_worker_backend_retries_transient_401_but_not_403():
+    state = {"n": 0}
+    base = vllm_recorder(make_request(served()))
+
+    def flaky(r):
+        state["n"] += 1
+        return httpx.Response(401, text="invalid key") if state["n"] == 1 else base.post(r)
+    req = make_request(served())
+    rec = Recorder(flaky, version={"version": "0.30.0"})
+    b = VLLMLogprobBackend("http://pod:8100", *QWEN9, runtime_version="0.30.0", api_key="key-123", retries=3,
+                           backoff_s=0, transport=rec.transport())
+    assert run(b.decide(req)).served_model
+    assert state["n"] == 2
+
+    hits403 = {"n": 0}
+
+    def forbidden(r):
+        hits403["n"] += 1
+        return httpx.Response(403, text="no")
+    rec403 = Recorder(forbidden, version={"version": "0.30.0"})
+    b = VLLMLogprobBackend("http://pod:8100", *QWEN9, runtime_version="0.30.0", api_key="key-123", retries=3,
+                           backoff_s=0, transport=rec403.transport())
+    with pytest.raises(DecisionError, match="403"):
+        run(b.decide(req))
+    assert hits403["n"] == 1  # 403 is permanent: exactly one attempt

@@ -180,11 +180,33 @@ def test_transient_errors_recover():
     assert len(seen) == 4
 
 
-def test_permanent_http_error_is_not_retried():
-    backend, seen = jev(lambda r: httpx.Response(401, text="no"))
-    with pytest.raises(DecisionError, match="401"):
+@pytest.mark.parametrize("code", [400, 403, 404, 422])
+def test_permanent_http_error_is_not_retried(code):
+    backend, seen = jev(lambda r: httpx.Response(code, text="no"))
+    with pytest.raises(DecisionError, match=str(code)):
         run(backend.decide(jev_request()))
     assert len(seen) == 1
+
+
+def test_transient_401_then_200_succeeds():
+    state = {"n": 0}
+
+    def handler(request):
+        state["n"] += 1
+        return httpx.Response(401, text="invalid key") if state["n"] == 1 else httpx.Response(200, json=JEV["response"])
+    backend, seen = jev(handler)
+    assert run(backend.decide(jev_request())).answers["move"].value == "move north"
+    assert len(seen) == 2
+
+
+def test_persistent_401_fails_after_retries_plus_one(tmp_path):
+    writer = LedgerWriter(tmp_path / "l.jsonl")
+    backend, seen = jev(lambda r: httpx.Response(401, text="invalid key"))
+    with pytest.raises(DecisionError, match="4 attempts"):
+        run(LedgeredDecision(backend, writer).decide(jev_request()))
+    assert len(seen) == 4
+    rows = writer.rows()
+    assert len(rows) == 1 and "DecisionError" in rows[0]["error"]
 
 
 def test_served_model_mismatch_rejected_without_retry():

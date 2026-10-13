@@ -10,7 +10,7 @@ kernel contract. Stack for a run (innermost first)::
 
 Keys are passed in by the caller and only ever used in the Authorization header;
 they are scrubbed from every error message. Retry policy: transport errors,
-HTTP 429/5xx and malformed bodies are retried ``retries`` times (default 3, so up
+HTTP 401/429/5xx (a 401 from a provider is transient: see S13) and malformed bodies are retried ``retries`` times (default 3, so up
 to 4 attempts), then :class:`DecisionError`. Other 4xx and a served-model mismatch
 fail at once. No backend reads the environment or any file for credentials.
 """
@@ -101,6 +101,10 @@ def parse_wire_answers(request: DecisionRequest, wire: Mapping[str, Any]) -> Dic
 # --- HTTP backends ---------------------------------------------------------
 
 
+# 401 is retried like 429: providers return transient 401s (S13); 400/403/404/422 stay permanent.
+_RETRYABLE_4XX = frozenset({401, 429})
+
+
 class _TypedHTTPBackend:
     """POST /v1/systemone with retries, identity check, accounting."""
 
@@ -166,7 +170,7 @@ class _TypedHTTPBackend:
         except httpx.HTTPError as exc:
             raise _Transient(f"transport error: {type(exc).__name__}") from None
         elapsed = time.monotonic() - start
-        if reply.status_code == 429 or reply.status_code >= 500:
+        if reply.status_code in _RETRYABLE_4XX or reply.status_code >= 500:
             raise _Transient(f"HTTP {reply.status_code}")
         if reply.status_code != 200:
             raise _Permanent(f"HTTP {reply.status_code}: {reply.text[:200]}")
@@ -888,7 +892,7 @@ class _WorkerHTTPBackend(_TypedHTTPBackend):
         except httpx.HTTPError as exc:
             raise _Transient(f"transport error: {type(exc).__name__}") from None
         elapsed = time.monotonic() - start
-        if reply.status_code == 429 or reply.status_code >= 500:
+        if reply.status_code in _RETRYABLE_4XX or reply.status_code >= 500:
             raise _Transient(f"HTTP {reply.status_code}")
         if reply.status_code != 200:
             raise _Permanent(f"HTTP {reply.status_code}: {reply.text[:200]}")
