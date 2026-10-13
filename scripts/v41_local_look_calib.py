@@ -165,7 +165,7 @@ def main() -> int:
            "measured": {"raw": overall, "after": after}, "n_patches": len(samples), "seed": a.seed,
            "model": identity, "split_sha256": hashlib.sha256(split_path.read_bytes()).hexdigest(),
            "sha256": data_sha, "sha256_of": "case|xyz|label|p_raw over the calibration patches, in sample order"}
-    Path(a.temp_out).write_text(json.dumps(cfg, indent=1) + "\n")
+    Path(a.temp_out).write_text(json.dumps(ll.seal_temperature_doc(cfg), indent=1) + "\n")
     if a.raw_out:
         np.savez_compressed(a.raw_out, p=p, y=y, case=case)
     print(json.dumps({"raw": overall, "after": after, "T": temp, "check": split_report,

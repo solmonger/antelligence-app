@@ -287,3 +287,60 @@ def test_fake_dry_run_cells_carry_fake_stamps_and_are_rejected_by_eval_analysis(
     assert v41_cells.isolation_problems(rows, allow_router_none=True)       # fake is never accepted unless asked
     with pytest.raises(IsolationError):
         analyze([{**r, "split": "eval"} for r in rows])
+
+
+# --- frozen look temperature -----------------------------------------------------------------------------------------
+
+from antelligence.experiments import v41_local_look as _ll  # noqa: E402
+
+
+def test_default_look_temperature_is_the_frozen_value_and_is_recorded(tmp_path):
+    frozen = _ll.load_frozen_temperature()
+    assert frozen != 1.0
+    rig = build_rig(tmp_path)
+    assert rig.harness.look_temperature == frozen and rig.harness.look_temperature_source == "frozen"
+    res = run(rig, "SW-B")
+    assert (res.cell["look_temperature"], res.cell["look_temperature_source"]) == (frozen, "frozen")
+    log = json.loads((Path(res.run_dir) / "run_log.json").read_text())
+    assert (log["look_temperature"], log["look_temperature_source"]) == (frozen, "frozen")
+    assert v41_cells.validate_cell(res.cell) == []
+
+
+def test_look_temperature_override_is_recorded_on_dev(tmp_path):
+    res = run(build_rig(tmp_path, look_temperature=1.0), "SW-B")
+    assert (res.cell["look_temperature"], res.cell["look_temperature_source"]) == (1.0, "override")
+
+
+def test_eval_override_differing_from_frozen_is_refused(tmp_path, world):  # noqa: F811
+    eval_case = world["doc"]["eval"][0]
+    rig = _locked_rig(tmp_path, world, backends_kind="live", look_temperature=1.0)
+    with pytest.raises(HarnessError, match="differs from the frozen"):
+        run(rig, "SW-B", case=eval_case)
+    rig.harness.look_temperature = _ll.load_frozen_temperature()  # equal to the frozen value: allowed, still "override"
+    res = run(rig, "SW-B", case=eval_case)
+    assert res.cell["look_temperature_source"] == "override"
+
+
+def test_corrupt_or_tampered_temperature_file_is_refused(tmp_path):
+    good = json.loads(_ll.FROZEN_TEMPERATURE_PATH.read_text())
+    ok = tmp_path / "ok.json"
+    ok.write_text(json.dumps(good))
+    assert _ll.load_frozen_temperature(ok) == good["temperature"]
+    edited = tmp_path / "edited.json"
+    edited.write_text(json.dumps({**good, "temperature": 1.0}))  # value changed, sha not
+    corrupt = tmp_path / "corrupt.json"
+    corrupt.write_text("{not json")
+    unsealed = tmp_path / "unsealed.json"
+    unsealed.write_text(json.dumps({k: v for k, v in good.items() if k != "file_sha256"}))
+    for bad in (edited, corrupt, unsealed, tmp_path / "missing.json"):
+        with pytest.raises(_ll.TemperatureFileError):
+            _ll.load_frozen_temperature(bad)
+
+
+def test_run_script_default_is_frozen_and_override_flag_parses():
+    spec = importlib.util.spec_from_file_location("v41_run_t", ROOT / "scripts" / "v41_run.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    base = ["--run", "SW-B:X:1", "--out-dir", "o"]
+    assert mod.parser().parse_args(base).look_temperature is None
+    assert mod.parser().parse_args(base + ["--look-temperature", "0.9"]).look_temperature == 0.9

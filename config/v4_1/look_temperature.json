@@ -28,5 +28,6 @@
  },
  "split_sha256": "76ec40c52f85db4060e58c4aca14fd62e355445d073f4ca539cf8614d725dd53",
  "sha256": "9b6a1a498697fb1fd4b5b54150c8261955d60013531742f104f230e0906cba8a",
- "sha256_of": "case|xyz|label|p_raw over the calibration patches, in sample order"
+ "sha256_of": "case|xyz|label|p_raw over the calibration patches, in sample order",
+ "file_sha256": "bc6d54846559c552b7ed7b4c83df090464774f53a6b772ff60a2edbe975a0f6c"
 }

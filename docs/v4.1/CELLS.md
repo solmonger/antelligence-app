@@ -47,6 +47,8 @@ the same seeds, so a single-seed arm (FW, SW-D, ...) is paired with SW-B on the 
 | `backends_kind` | `live` / `config` / `fake` | yes | where worker answers came from; evaluation analysis accepts only `live` (null only on error cells) |
 | `router_kind` | `frozen` / `none` / `fake` | yes | evaluation analysis accepts only `frozen`; `none` is the Phase 0 bootstrap (development only) |
 | `router_sha256` | hex64 | yes | sha256 of the frozen router; null unless `router_kind` is `frozen` |
+| `look_temperature` | float | yes | temperature applied to d1's local-look probability; null only on error cells |
+| `look_temperature_source` | str | yes | `frozen` (config/v4_1/look_temperature.json, sha256-verified) or `override`; null only on error cells |
 | `identities` | comma list | yes | served-model identities seen in the run; `fake` marks fake backends and is rejected for analysis; null for scripted arms |
 
 ## Secondary outcomes S1 to S12 (goal section 7)

@@ -13,6 +13,7 @@ FLAIR + T1c patch. It is a sensor, identical in every arm. This module draws the
 from __future__ import annotations
 
 import hashlib
+import json
 import math
 from dataclasses import dataclass
 from pathlib import Path
@@ -30,6 +31,41 @@ ECE_THRESHOLD = 0.10
 LOOK_QUESTION = "look"
 LOOK_STATE = "Two axial MRI patches centred on a squad: FLAIR first, then T1c (contrast)."
 LOOK_INSTRUCTIONS = "Is the centre of this patch tumour?"
+
+
+FROZEN_TEMPERATURE_PATH = Path(__file__).resolve().parents[2] / "config" / "v4_1" / "look_temperature.json"
+SEAL_KEY = "file_sha256"
+
+
+class TemperatureFileError(ValueError):
+    """The frozen look-temperature file is missing, corrupt, or its recorded sha256 does not match its content."""
+
+
+def _seal_digest(doc: Mapping[str, Any]) -> str:
+    body = {k: v for k, v in doc.items() if k != SEAL_KEY}
+    return hashlib.sha256(json.dumps(body, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def seal_temperature_doc(doc: Mapping[str, Any]) -> Dict[str, Any]:
+    """Return ``doc`` plus ``file_sha256``: sha256 of the canonical JSON of every other key."""
+    out = {k: v for k, v in doc.items() if k != SEAL_KEY}
+    out[SEAL_KEY] = _seal_digest(out)
+    return out
+
+
+def load_frozen_temperature(path: Union[str, Path, None] = None) -> float:
+    """The frozen look temperature, after verifying the file's recorded ``file_sha256`` against its content."""
+    p = Path(path or FROZEN_TEMPERATURE_PATH)
+    try:
+        doc = json.loads(p.read_text(encoding="utf-8"))
+        recorded, t = doc[SEAL_KEY], doc["temperature"]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise TemperatureFileError(f"{p}: unreadable or malformed ({type(exc).__name__}: {exc})") from exc
+    if not isinstance(doc, dict) or recorded != _seal_digest(doc):
+        raise TemperatureFileError(f"{p}: sha256 mismatch (file edited or corrupt)")
+    if isinstance(t, bool) or not isinstance(t, (int, float)) or not math.isfinite(t) or t <= 0:
+        raise TemperatureFileError(f"{p}: temperature {t!r} is not a positive number")
+    return float(t)
 
 
 def dev_cases(split_path: Union[str, Path]) -> frozenset:

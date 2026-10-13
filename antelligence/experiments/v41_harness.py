@@ -36,6 +36,7 @@ import asyncio
 import dataclasses
 import hashlib
 import json
+import math
 import random
 import statistics
 import sys
@@ -53,7 +54,8 @@ from antelligence.experiments import v41_cells
 from antelligence.experiments.v41_conformal import (ConformalDeferral, ConformalThresholds, DeferralMonitor,
                                                     audit_coverage, audit_selected, decision_labels)
 from antelligence.experiments.v41_gate import assert_eval_allowed
-from antelligence.experiments.v41_local_look import apply_temperature, look_request, LOOK_QUESTION
+from antelligence.experiments.v41_local_look import (apply_temperature, load_frozen_temperature, look_request,
+                                                     LOOK_QUESTION)
 from antelligence.experiments.v41_router import KNNRouter, router_features, sprime_labels
 from antelligence.kernel import briefs as briefs_mod
 from antelligence.kernel.board import (DEFAULT_AUTHORS, Board, Entry, RunKeys, anchor_sizes,
@@ -421,7 +423,7 @@ class V41Harness:
                  promoted_harness: Optional[Mapping[str, Any]] = None, base_harness: Optional[Mapping[str, Any]] = None,
                  router: Optional[KNNRouter] = None, bonsai_router: Optional[KNNRouter] = None,
                  thresholds: Optional[ConformalThresholds] = None,
-                 bonsai_thresholds: Optional[ConformalThresholds] = None, look_temperature: float = 1.0,
+                 bonsai_thresholds: Optional[ConformalThresholds] = None, look_temperature: Optional[float] = None,
                  anchorer_factory: Optional[Callable[[Board, AnchorKey, Path], Any]] = None,
                  allow_unanchored: bool = False, post_mode_factory: Optional[Callable[[], Any]] = None,
                  reputation_client: Any = None, outbox: Any = None, keys: Optional[KeyVault] = None,
@@ -439,7 +441,10 @@ class V41Harness:
         validate_harness(self.promoted_harness)
         self.router, self.bonsai_router = router, bonsai_router
         self.thresholds, self.bonsai_thresholds = thresholds, bonsai_thresholds
-        self.look_temperature = look_temperature
+        # default = the frozen, sha-verified temperature; an explicit value is an override and is recorded as such
+        self.frozen_look_temperature = load_frozen_temperature()
+        self.look_temperature_source = "frozen" if look_temperature is None else "override"
+        self.look_temperature = self.frozen_look_temperature if look_temperature is None else float(look_temperature)
         self.anchorer_factory, self.allow_unanchored = anchorer_factory, allow_unanchored
         self.post_mode_factory, self.reputation_client = post_mode_factory, reputation_client
         self.outbox, self.keys = outbox, keys or KeyVault()
@@ -487,6 +492,9 @@ class V41Harness:
         if split not in ("dev", "eval"):
             raise HarnessError(f"gate returned {split!r}")
         self._check_isolation(split)
+        if split == "eval" and not math.isclose(self.look_temperature, self.frozen_look_temperature, rel_tol=0, abs_tol=1e-9):
+            raise HarnessError(f"look temperature override {self.look_temperature} differs from the frozen "
+                               f"{self.frozen_look_temperature}: refused on an eval case (it must match the prereg)")
         if calibration and (spec.name not in CALIBRATION_ARMS or split != "dev"):
             raise HarnessError("calibration mode is for SW-B and SW-noBoard on development cases only")
         if spec.kind in ("workers", "fw"):
@@ -1090,6 +1098,7 @@ class V41Harness:
             "truth_outside_crop": float(metrics["truth_share_outside_crop"]),
             "backends_kind": self.backends_kind, "router_kind": self.router_kind,
             "router_sha256": self._router_sha(ctx.spec), "identities": self._identities(ctx),
+            "look_temperature": self.look_temperature, "look_temperature_source": self.look_temperature_source,
         }
         problems = v41_cells.validate_cell(cell)
         if problems:
@@ -1108,6 +1117,7 @@ class V41Harness:
             "alarms": ctx.alarm_count, "dropped_cites": ctx.dropped_cites,
             "identities": sorted({str((r.get("identity") or {}).get("served_model") or "none") for r in ctx.log}),
             "backends_kind": self.backends_kind, "router_kind": self.router_kind,
+            "look_temperature": self.look_temperature, "look_temperature_source": self.look_temperature_source,
             "reputation": dict(ctx.reputation.score) if ctx.reputation else {}, "d_timeouts": ctx.d_timeouts,
             "errors": [scrub(e) for e in list(ctx.errors) + ([f"{e['mode']}: {e['error']}" for e in ctx.anchorer.errors] if ctx.anchorer else [])]}
         bundle = self._bundle(ctx, cell, metrics, trace_hash, board if shared else None, anchors)

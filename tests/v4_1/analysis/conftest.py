@@ -21,7 +21,7 @@ def make_cell(arm, case, seed, score, split="eval", **kw):
                 audit_conformal_coverage=0.9, citation_validity=1.0, uncited_decisions=0, perception_dice=0.8,
                 locallook_ece=0.05, truth_outside_crop=0.02,
                 unread_frac=0.2, brief_age_median=10.0, router_top_share=0.5, perception_ece=0.05, cost_usd=0.0,
-                backends_kind="live", router_kind="frozen", router_sha256="a" * 64, identities="d1,qwen3.5-9b")
+                backends_kind="live", router_kind="frozen", router_sha256="a" * 64, identities="d1,qwen3.5-9b", look_temperature=0.44102, look_temperature_source="frozen")
     cell.update(kw)
     return cell
 
