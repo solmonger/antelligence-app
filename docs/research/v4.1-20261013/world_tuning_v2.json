@@ -1,0 +1,1771 @@
+{
+ "status": "fallback_gap_unmet",
+ "band": "widened_medians_only",
+ "targets": {
+  "strict": {
+   "sprime": [
+    0.7,
+    0.8
+   ],
+   "s": [
+    0.3,
+    0.5
+   ],
+   "gap": 0.15,
+   "gap_frac": 0.8
+  },
+  "widened": {
+   "sprime": [
+    0.6,
+    0.85
+   ],
+   "s": [
+    0.2,
+    0.55
+   ],
+   "gap": 0.15,
+   "gap_frac": 0.8
+  }
+ },
+ "drug_mode": "per_perceived_volume",
+ "seeds": [
+  1,
+  2
+ ],
+ "n_cases": 40,
+ "dev_only": true,
+ "chosen": {
+  "drug_scale_k": 0.3559008534420454,
+  "dose_threshold": 5.0,
+  "ratio_dt_over_k": 14.048856448764306
+ },
+ "dt_k_degeneracy": "dose and budget are both linear in k, so only D_t / k matters; every (k, D_t) with the same ratio is identical",
+ "summary": {
+  "median_s": 0.5388516919272814,
+  "median_sprime": 0.6741903034505186,
+  "gap_ge_0.15_fraction": 0.475,
+  "median_gap": 0.137756,
+  "min_gap": 0.041394,
+  "mean_s": 0.53435135,
+  "mean_sprime": 0.683855325,
+  "median_v_perceived": 8813.408133819896
+ },
+ "gap_by_truth_volume_bin": [
+  {
+   "bin": "<3k",
+   "n": 6,
+   "median_s": 0.463505,
+   "median_sprime": 0.616544,
+   "median_gap": 0.13947800000000002,
+   "gap_ge_0.15_fraction": 0.5
+  },
+  {
+   "bin": "3-8k",
+   "n": 13,
+   "median_s": 0.516742,
+   "median_sprime": 0.636922,
+   "median_gap": 0.15556900000000007,
+   "gap_ge_0.15_fraction": 0.5384615384615384
+  },
+  {
+   "bin": "8-15k",
+   "n": 12,
+   "median_s": 0.5809815,
+   "median_sprime": 0.7378469999999999,
+   "median_gap": 0.13199950000000005,
+   "gap_ge_0.15_fraction": 0.3333333333333333
+  },
+  {
+   "bin": ">15k",
+   "n": 9,
+   "median_s": 0.531381,
+   "median_sprime": 0.65771,
+   "median_gap": 0.15350799999999998,
+   "gap_ge_0.15_fraction": 0.5555555555555556
+  }
+ ],
+ "drug_efficiency": {
+  "definition": "smallest k (drug per perceived voxel, D_t=5 equivalent) at which the dev median coverage reaches the level; log-linear interpolation on the grid. median_case_total_drug = k x median V_perceived.",
+  "S_median_cov_50": {
+   "k": 0.3175552590827034,
+   "median_case_total_drug": 2798.7441033367822
+  },
+  "S_median_cov_70": {
+   "k": 0.5440773415375013,
+   "median_case_total_drug": 4795.1756673337195
+  },
+  "Sprime_median_cov_50": {
+   "k": 0.2562283357589422,
+   "median_case_total_drug": 2258.2448984929965
+  },
+  "Sprime_median_cov_70": {
+   "k": 0.369961220961834,
+   "median_case_total_drug": 3260.6192340229672
+  }
+ },
+ "seconds_per_episode": {
+  "script_S_mean": 0.2779960436891997,
+  "oracle_Sprime_mean": 3.6211174624433626,
+  "oracle_Sprime_max": 7.7865616250783205,
+  "n_episodes": 80
+ },
+ "rerun_max_abs_drift_all": 0.0,
+ "rerun_2cases_max_abs_drift": 0.0,
+ "rerun_cases": [
+  "BRATS_016",
+  "BRATS_034"
+ ],
+ "per_case": [
+  {
+   "case": "BRATS_016",
+   "split": "dev_a",
+   "v_perceived": 10287.271835798689,
+   "truth_vox": 10336,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 3661.249,
+   "s": 0.616147,
+   "sprime": 0.738825,
+   "s_by_seed": [
+    0.619195,
+    0.6131
+   ],
+   "sprime_by_seed": [
+    0.728522,
+    0.749129
+   ],
+   "gap": 0.122678
+  },
+  {
+   "case": "BRATS_034",
+   "split": "dev_a",
+   "v_perceived": 24655.24660789904,
+   "truth_vox": 27214,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 8774.823,
+   "s": 0.531381,
+   "sprime": 0.654424,
+   "s_by_seed": [
+    0.516205,
+    0.546557
+   ],
+   "sprime_by_seed": [
+    0.664254,
+    0.644595
+   ],
+   "gap": 0.123043
+  },
+  {
+   "case": "BRATS_056",
+   "split": "dev_a",
+   "v_perceived": 15439.223848302907,
+   "truth_vox": 18515,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 5494.833,
+   "s": 0.494518,
+   "sprime": 0.65771,
+   "s_by_seed": [
+    0.518499,
+    0.470537
+   ],
+   "sprime_by_seed": [
+    0.66195,
+    0.65347
+   ],
+   "gap": 0.163192
+  },
+  {
+   "case": "BRATS_067",
+   "split": "dev_b",
+   "v_perceived": 5941.259461510301,
+   "truth_vox": 6941,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 2114.499,
+   "s": 0.545166,
+   "sprime": 0.63341,
+   "s_by_seed": [
+    0.55698,
+    0.533353
+   ],
+   "sprime_by_seed": [
+    0.634203,
+    0.632618
+   ],
+   "gap": 0.088244
+  },
+  {
+   "case": "BRATS_069",
+   "split": "dev_a",
+   "v_perceived": 7392.820150052707,
+   "truth_vox": 6716,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 2631.111,
+   "s": 0.444982,
+   "sprime": 0.62366,
+   "s_by_seed": [
+    0.427487,
+    0.462478
+   ],
+   "sprime_by_seed": [
+    0.616438,
+    0.630881
+   ],
+   "gap": 0.178678
+  },
+  {
+   "case": "BRATS_101",
+   "split": "dev_b",
+   "v_perceived": 12596.626113323146,
+   "truth_vox": 10432,
+   "outside_crop_truth_voxels": 29,
+   "total_drug": 4483.15,
+   "s": 0.52667,
+   "sprime": 0.755282,
+   "s_by_seed": [
+    0.515629,
+    0.537711
+   ],
+   "sprime_by_seed": [
+    0.757767,
+    0.752796
+   ],
+   "gap": 0.228611
+  },
+  {
+   "case": "BRATS_113",
+   "split": "dev_a",
+   "v_perceived": 18688.34606165407,
+   "truth_vox": 20014,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 6651.198,
+   "s": 0.556585,
+   "sprime": 0.721945,
+   "s_by_seed": [
+    0.518487,
+    0.594684
+   ],
+   "sprime_by_seed": [
+    0.747127,
+    0.696762
+   ],
+   "gap": 0.165359
+  },
+  {
+   "case": "BRATS_120",
+   "split": "dev_a",
+   "v_perceived": 5134.590853710222,
+   "truth_vox": 4040,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 1827.405,
+   "s": 0.628589,
+   "sprime": 0.784158,
+   "s_by_seed": [
+    0.575248,
+    0.681931
+   ],
+   "sprime_by_seed": [
+    0.785891,
+    0.782426
+   ],
+   "gap": 0.155569
+  },
+  {
+   "case": "BRATS_149",
+   "split": "dev_b",
+   "v_perceived": 13598.98160513716,
+   "truth_vox": 15630,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 4839.889,
+   "s": 0.532438,
+   "sprime": 0.61318,
+   "s_by_seed": [
+    0.501791,
+    0.563084
+   ],
+   "sprime_by_seed": [
+    0.6119,
+    0.614459
+   ],
+   "gap": 0.080742
+  },
+  {
+   "case": "BRATS_161",
+   "split": "dev_b",
+   "v_perceived": 15784.11984200307,
+   "truth_vox": 13469,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 5617.582,
+   "s": 0.578625,
+   "sprime": 0.744896,
+   "s_by_seed": [
+    0.594031,
+    0.563219
+   ],
+   "sprime_by_seed": [
+    0.70369,
+    0.786101
+   ],
+   "gap": 0.166271
+  },
+  {
+   "case": "BRATS_167",
+   "split": "dev_b",
+   "v_perceived": 2630.1055523545074,
+   "truth_vox": 2841,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 936.057,
+   "s": 0.464273,
+   "sprime": 0.573214,
+   "s_by_seed": [
+    0.439634,
+    0.488912
+   ],
+   "sprime_by_seed": [
+    0.56811,
+    0.578317
+   ],
+   "gap": 0.108941
+  },
+  {
+   "case": "BRATS_183",
+   "split": "dev_a",
+   "v_perceived": 8832.79589806826,
+   "truth_vox": 2088,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 3143.6,
+   "s": 0.658046,
+   "sprime": 1.0,
+   "s_by_seed": [
+    0.559387,
+    0.756705
+   ],
+   "sprime_by_seed": [
+    1.0,
+    1.0
+   ],
+   "gap": 0.341954
+  },
+  {
+   "case": "BRATS_193",
+   "split": "dev_a",
+   "v_perceived": 10404.164648866252,
+   "truth_vox": 9059,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 3702.851,
+   "s": 0.613478,
+   "sprime": 0.826747,
+   "s_by_seed": [
+    0.635501,
+    0.591456
+   ],
+   "sprime_by_seed": [
+    0.841594,
+    0.8119
+   ],
+   "gap": 0.213269
+  },
+  {
+   "case": "BRATS_205",
+   "split": "dev_a",
+   "v_perceived": 16527.10435456531,
+   "truth_vox": 18017,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 5882.011,
+   "s": 0.526503,
+   "sprime": 0.700949,
+   "s_by_seed": [
+    0.515069,
+    0.537936
+   ],
+   "sprime_by_seed": [
+    0.706111,
+    0.695787
+   ],
+   "gap": 0.174446
+  },
+  {
+   "case": "BRATS_238",
+   "split": "dev_a",
+   "v_perceived": 2267.863442320522,
+   "truth_vox": 2050,
+   "outside_crop_truth_voxels": 3,
+   "total_drug": 807.135,
+   "s": 0.462737,
+   "sprime": 0.613249,
+   "s_by_seed": [
+    0.452021,
+    0.473453
+   ],
+   "sprime_by_seed": [
+    0.61471,
+    0.611788
+   ],
+   "gap": 0.150511
+  },
+  {
+   "case": "BRATS_246",
+   "split": "dev_a",
+   "v_perceived": 8793.766289214342,
+   "truth_vox": 10225,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 3129.709,
+   "s": 0.547482,
+   "sprime": 0.646895,
+   "s_by_seed": [
+    0.568998,
+    0.525966
+   ],
+   "sprime_by_seed": [
+    0.651051,
+    0.642738
+   ],
+   "gap": 0.099413
+  },
+  {
+   "case": "BRATS_286",
+   "split": "dev_a",
+   "v_perceived": 18956.368860713133,
+   "truth_vox": 18490,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 6746.588,
+   "s": 0.604191,
+   "sprime": 0.766198,
+   "s_by_seed": [
+    0.596863,
+    0.61152
+   ],
+   "sprime_by_seed": [
+    0.753326,
+    0.77907
+   ],
+   "gap": 0.162006
+  },
+  {
+   "case": "BRATS_287",
+   "split": "dev_a",
+   "v_perceived": 3015.6954498462146,
+   "truth_vox": 2686,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 1073.289,
+   "s": 0.592703,
+   "sprime": 0.721147,
+   "s_by_seed": [
+    0.574832,
+    0.610573
+   ],
+   "sprime_by_seed": [
+    0.726359,
+    0.715934
+   ],
+   "gap": 0.128444
+  },
+  {
+   "case": "BRATS_290",
+   "split": "dev_b",
+   "v_perceived": 8196.592745389658,
+   "truth_vox": 7636,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 2917.174,
+   "s": 0.487559,
+   "sprime": 0.667627,
+   "s_by_seed": [
+    0.525799,
+    0.449319
+   ],
+   "sprime_by_seed": [
+    0.656627,
+    0.678628
+   ],
+   "gap": 0.180068
+  },
+  {
+   "case": "BRATS_297",
+   "split": "dev_b",
+   "v_perceived": 4574.936530726642,
+   "truth_vox": 3743,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 1628.224,
+   "s": 0.510954,
+   "sprime": 0.636922,
+   "s_by_seed": [
+    0.498531,
+    0.523377
+   ],
+   "sprime_by_seed": [
+    0.633449,
+    0.640395
+   ],
+   "gap": 0.125968
+  },
+  {
+   "case": "BRATS_303",
+   "split": "dev_a",
+   "v_perceived": 20395.647794577453,
+   "truth_vox": 22892,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 7258.828,
+   "s": 0.514896,
+   "sprime": 0.609798,
+   "s_by_seed": [
+    0.511969,
+    0.517823
+   ],
+   "sprime_by_seed": [
+    0.621702,
+    0.597894
+   ],
+   "gap": 0.094902
+  },
+  {
+   "case": "BRATS_328",
+   "split": "dev_a",
+   "v_perceived": 11487.07112376418,
+   "truth_vox": 11423,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 4088.258,
+   "s": 0.625974,
+   "sprime": 0.750635,
+   "s_by_seed": [
+    0.623129,
+    0.628819
+   ],
+   "sprime_by_seed": [
+    0.757769,
+    0.7435
+   ],
+   "gap": 0.124661
+  },
+  {
+   "case": "BRATS_337",
+   "split": "dev_a",
+   "v_perceived": 4611.457642664973,
+   "truth_vox": 4659,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 1641.222,
+   "s": 0.516742,
+   "sprime": 0.59326,
+   "s_by_seed": [
+    0.468341,
+    0.565143
+   ],
+   "sprime_by_seed": [
+    0.588753,
+    0.597768
+   ],
+   "gap": 0.076519
+  },
+  {
+   "case": "BRATS_343",
+   "split": "dev_a",
+   "v_perceived": 9594.466960168545,
+   "truth_vox": 10390,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 3414.679,
+   "s": 0.461405,
+   "sprime": 0.645861,
+   "s_by_seed": [
+    0.481232,
+    0.441578
+   ],
+   "sprime_by_seed": [
+    0.645236,
+    0.646487
+   ],
+   "gap": 0.184456
+  },
+  {
+   "case": "BRATS_355",
+   "split": "dev_b",
+   "v_perceived": 2594.1446482336178,
+   "truth_vox": 2616,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 923.258,
+   "s": 0.242164,
+   "sprime": 0.619839,
+   "s_by_seed": [
+    0.426223,
+    0.058104
+   ],
+   "sprime_by_seed": [
+    0.625,
+    0.614679
+   ],
+   "gap": 0.377676
+  },
+  {
+   "case": "BRATS_356",
+   "split": "dev_a",
+   "v_perceived": 17503.557559351597,
+   "truth_vox": 17731,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 6229.531,
+   "s": 0.583582,
+   "sprime": 0.673199,
+   "s_by_seed": [
+    0.566973,
+    0.600192
+   ],
+   "sprime_by_seed": [
+    0.674525,
+    0.671874
+   ],
+   "gap": 0.089617
+  },
+  {
+   "case": "BRATS_368",
+   "split": "dev_a",
+   "v_perceived": 10515.183226588371,
+   "truth_vox": 9634,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 3742.363,
+   "s": 0.616203,
+   "sprime": 0.736869,
+   "s_by_seed": [
+    0.609197,
+    0.623209
+   ],
+   "sprime_by_seed": [
+    0.733652,
+    0.740087
+   ],
+   "gap": 0.120666
+  },
+  {
+   "case": "BRATS_373",
+   "split": "dev_a",
+   "v_perceived": 899.0977466456097,
+   "truth_vox": 918,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 319.99,
+   "s": 0.323529,
+   "sprime": 0.364924,
+   "s_by_seed": [
+    0.339869,
+    0.30719
+   ],
+   "sprime_by_seed": [
+    0.362745,
+    0.367102
+   ],
+   "gap": 0.041394
+  },
+  {
+   "case": "BRATS_374",
+   "split": "dev_b",
+   "v_perceived": 5582.728371781384,
+   "truth_vox": 5383,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 1986.898,
+   "s": 0.513933,
+   "sprime": 0.675181,
+   "s_by_seed": [
+    0.453465,
+    0.574401
+   ],
+   "sprime_by_seed": [
+    0.678989,
+    0.671373
+   ],
+   "gap": 0.161248
+  },
+  {
+   "case": "BRATS_375",
+   "split": "dev_a",
+   "v_perceived": 4160.009069383319,
+   "truth_vox": 3939,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 1480.551,
+   "s": 0.614369,
+   "sprime": 0.711221,
+   "s_by_seed": [
+    0.604722,
+    0.624016
+   ],
+   "sprime_by_seed": [
+    0.709063,
+    0.713379
+   ],
+   "gap": 0.096852
+  },
+  {
+   "case": "BRATS_389",
+   "split": "dev_a",
+   "v_perceived": 4934.31139701666,
+   "truth_vox": 4753,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 1756.126,
+   "s": 0.533873,
+   "sprime": 0.621292,
+   "s_by_seed": [
+    0.503682,
+    0.564065
+   ],
+   "sprime_by_seed": [
+    0.628866,
+    0.613718
+   ],
+   "gap": 0.087418
+  },
+  {
+   "case": "BRATS_406",
+   "split": "dev_a",
+   "v_perceived": 2724.780094709233,
+   "truth_vox": 3053,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 969.752,
+   "s": 0.337537,
+   "sprime": 0.530462,
+   "s_by_seed": [
+    0.185719,
+    0.489355
+   ],
+   "sprime_by_seed": [
+    0.540452,
+    0.520472
+   ],
+   "gap": 0.192925
+  },
+  {
+   "case": "BRATS_420",
+   "split": "dev_a",
+   "v_perceived": 9757.956672295622,
+   "truth_vox": 10251,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 3472.865,
+   "s": 0.581797,
+   "sprime": 0.687152,
+   "s_by_seed": [
+    0.629012,
+    0.534582
+   ],
+   "sprime_by_seed": [
+    0.681494,
+    0.69281
+   ],
+   "gap": 0.105356
+  },
+  {
+   "case": "BRATS_423",
+   "split": "dev_b",
+   "v_perceived": 8794.020369571532,
+   "truth_vox": 6883,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 3129.799,
+   "s": 0.635406,
+   "sprime": 0.859654,
+   "s_by_seed": [
+    0.724975,
+    0.545838
+   ],
+   "sprime_by_seed": [
+    0.853698,
+    0.865611
+   ],
+   "gap": 0.224248
+  },
+  {
+   "case": "BRATS_441",
+   "split": "dev_a",
+   "v_perceived": 17328.55310755527,
+   "truth_vox": 19214,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 6167.247,
+   "s": 0.46833,
+   "sprime": 0.621838,
+   "s_by_seed": [
+    0.450661,
+    0.486
+   ],
+   "sprime_by_seed": [
+    0.623035,
+    0.620641
+   ],
+   "gap": 0.153508
+  },
+  {
+   "case": "BRATS_462",
+   "split": "dev_a",
+   "v_perceived": 4303.406581931646,
+   "truth_vox": 4776,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 1531.586,
+   "s": 0.501989,
+   "sprime": 0.597048,
+   "s_by_seed": [
+    0.508375,
+    0.495603
+   ],
+   "sprime_by_seed": [
+    0.603643,
+    0.590452
+   ],
+   "gap": 0.095059
+  },
+  {
+   "case": "BRATS_464",
+   "split": "dev_a",
+   "v_perceived": 11764.01231115943,
+   "truth_vox": 11461,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 4186.822,
+   "s": 0.634238,
+   "sprime": 0.770962,
+   "s_by_seed": [
+    0.638862,
+    0.629613
+   ],
+   "sprime_by_seed": [
+    0.775325,
+    0.7666
+   ],
+   "gap": 0.136725
+  },
+  {
+   "case": "BRATS_468",
+   "split": "dev_a",
+   "v_perceived": 9657.037811504459,
+   "truth_vox": 10073,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 3436.948,
+   "s": 0.54383,
+   "sprime": 0.682617,
+   "s_by_seed": [
+    0.5891,
+    0.498561
+   ],
+   "sprime_by_seed": [
+    0.691353,
+    0.673881
+   ],
+   "gap": 0.138787
+  },
+  {
+   "case": "BRATS_479",
+   "split": "dev_a",
+   "v_perceived": 7710.974695571931,
+   "truth_vox": 6955,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 2744.342,
+   "s": 0.621064,
+   "sprime": 0.814522,
+   "s_by_seed": [
+    0.61064,
+    0.631488
+   ],
+   "sprime_by_seed": [
+    0.819267,
+    0.809777
+   ],
+   "gap": 0.193458
+  },
+  {
+   "case": "BRATS_483",
+   "split": "dev_a",
+   "v_perceived": 8076.77198640877,
+   "truth_vox": 8077,
+   "outside_crop_truth_voxels": 0,
+   "total_drug": 2874.53,
+   "s": 0.580166,
+   "sprime": 0.707441,
+   "s_by_seed": [
+    0.57348,
+    0.586852
+   ],
+   "sprime_by_seed": [
+    0.711527,
+    0.703355
+   ],
+   "gap": 0.127275
+  }
+ ],
+ "grid": [
+  {
+   "drug_scale_k": 0.02,
+   "dose_threshold": 2.5,
+   "median_s": 0.002258,
+   "median_sprime": 0.045537,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.027006,
+   "dose_threshold": 2.5,
+   "median_s": 0.010843,
+   "median_sprime": 0.07239,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.036467,
+   "dose_threshold": 2.5,
+   "median_s": 0.029045,
+   "median_sprime": 0.112317,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.049242,
+   "dose_threshold": 2.5,
+   "median_s": 0.074008,
+   "median_sprime": 0.166158,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.066492,
+   "dose_threshold": 2.5,
+   "median_s": 0.167046,
+   "median_sprime": 0.243433,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.089785,
+   "dose_threshold": 2.5,
+   "median_s": 0.280315,
+   "median_sprime": 0.349506,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.121238,
+   "dose_threshold": 2.5,
+   "median_s": 0.396712,
+   "median_sprime": 0.469564,
+   "gap_frac": 0.2,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.163709,
+   "dose_threshold": 2.5,
+   "median_s": 0.509032,
+   "median_sprime": 0.634986,
+   "gap_frac": 0.325,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.221059,
+   "dose_threshold": 2.5,
+   "median_s": 0.625826,
+   "median_sprime": 0.792265,
+   "gap_frac": 0.675,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.298499,
+   "dose_threshold": 2.5,
+   "median_s": 0.72649,
+   "median_sprime": 0.921603,
+   "gap_frac": 0.725,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.30331,
+   "dose_threshold": 2.5,
+   "median_s": 0.731976,
+   "median_sprime": 0.917987,
+   "gap_frac": 0.675,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.308199,
+   "dose_threshold": 2.5,
+   "median_s": 0.737687,
+   "median_sprime": 0.922728,
+   "gap_frac": 0.625,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.313167,
+   "dose_threshold": 2.5,
+   "median_s": 0.74344,
+   "median_sprime": 0.926505,
+   "gap_frac": 0.65,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.318214,
+   "dose_threshold": 2.5,
+   "median_s": 0.747393,
+   "median_sprime": 0.935342,
+   "gap_frac": 0.6,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.323343,
+   "dose_threshold": 2.5,
+   "median_s": 0.751461,
+   "median_sprime": 0.925073,
+   "gap_frac": 0.625,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.328555,
+   "dose_threshold": 2.5,
+   "median_s": 0.755541,
+   "median_sprime": 0.934416,
+   "gap_frac": 0.575,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.333851,
+   "dose_threshold": 2.5,
+   "median_s": 0.759741,
+   "median_sprime": 0.938517,
+   "gap_frac": 0.65,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.339232,
+   "dose_threshold": 2.5,
+   "median_s": 0.763567,
+   "median_sprime": 0.940999,
+   "gap_frac": 0.575,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.3447,
+   "dose_threshold": 2.5,
+   "median_s": 0.76785,
+   "median_sprime": 0.941614,
+   "gap_frac": 0.55,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.350255,
+   "dose_threshold": 2.5,
+   "median_s": 0.771629,
+   "median_sprime": 0.941222,
+   "gap_frac": 0.525,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.355901,
+   "dose_threshold": 2.5,
+   "median_s": 0.775162,
+   "median_sprime": 0.942222,
+   "gap_frac": 0.55,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.361637,
+   "dose_threshold": 2.5,
+   "median_s": 0.778252,
+   "median_sprime": 0.957243,
+   "gap_frac": 0.525,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.367466,
+   "dose_threshold": 2.5,
+   "median_s": 0.782398,
+   "median_sprime": 0.950048,
+   "gap_frac": 0.575,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.403068,
+   "dose_threshold": 2.5,
+   "median_s": 0.803212,
+   "median_sprime": 0.959706,
+   "gap_frac": 0.45,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.544268,
+   "dose_threshold": 2.5,
+   "median_s": 0.877074,
+   "median_sprime": 0.982042,
+   "gap_frac": 0.1,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.734932,
+   "dose_threshold": 2.5,
+   "median_s": 0.925138,
+   "median_sprime": 0.993032,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.99239,
+   "dose_threshold": 2.5,
+   "median_s": 0.95803,
+   "median_sprime": 0.997399,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 1.340038,
+   "dose_threshold": 2.5,
+   "median_s": 0.980432,
+   "median_sprime": 0.998498,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 1.809471,
+   "dose_threshold": 2.5,
+   "median_s": 0.992399,
+   "median_sprime": 0.999614,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 2.443355,
+   "dose_threshold": 2.5,
+   "median_s": 0.997579,
+   "median_sprime": 0.999921,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 3.299296,
+   "dose_threshold": 2.5,
+   "median_s": 0.998181,
+   "median_sprime": 1.0,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 4.455086,
+   "dose_threshold": 2.5,
+   "median_s": 0.999287,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 6.015765,
+   "dose_threshold": 2.5,
+   "median_s": 1.0,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 8.123172,
+   "dose_threshold": 2.5,
+   "median_s": 1.0,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 10.968833,
+   "dose_threshold": 2.5,
+   "median_s": 1.0,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 14.811369,
+   "dose_threshold": 2.5,
+   "median_s": 1.0,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 20.0,
+   "dose_threshold": 2.5,
+   "median_s": 1.0,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.02,
+   "dose_threshold": 5.0,
+   "median_s": 0.0,
+   "median_sprime": 0.013156,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.027006,
+   "dose_threshold": 5.0,
+   "median_s": 5e-05,
+   "median_sprime": 0.023486,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.036467,
+   "dose_threshold": 5.0,
+   "median_s": 0.001292,
+   "median_sprime": 0.039218,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.049242,
+   "dose_threshold": 5.0,
+   "median_s": 0.007053,
+   "median_sprime": 0.063505,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.066492,
+   "dose_threshold": 5.0,
+   "median_s": 0.021461,
+   "median_sprime": 0.099438,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.089785,
+   "dose_threshold": 5.0,
+   "median_s": 0.056305,
+   "median_sprime": 0.148007,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.121238,
+   "dose_threshold": 5.0,
+   "median_s": 0.133236,
+   "median_sprime": 0.217355,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.163709,
+   "dose_threshold": 5.0,
+   "median_s": 0.245027,
+   "median_sprime": 0.312267,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.221059,
+   "dose_threshold": 5.0,
+   "median_s": 0.361046,
+   "median_sprime": 0.42405,
+   "gap_frac": 0.175,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.298499,
+   "dose_threshold": 5.0,
+   "median_s": 0.47664,
+   "median_sprime": 0.582258,
+   "gap_frac": 0.2,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.30331,
+   "dose_threshold": 5.0,
+   "median_s": 0.485052,
+   "median_sprime": 0.593715,
+   "gap_frac": 0.225,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.308199,
+   "dose_threshold": 5.0,
+   "median_s": 0.490596,
+   "median_sprime": 0.603851,
+   "gap_frac": 0.25,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.313167,
+   "dose_threshold": 5.0,
+   "median_s": 0.495744,
+   "median_sprime": 0.608304,
+   "gap_frac": 0.275,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.318214,
+   "dose_threshold": 5.0,
+   "median_s": 0.500634,
+   "median_sprime": 0.613907,
+   "gap_frac": 0.275,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.323343,
+   "dose_threshold": 5.0,
+   "median_s": 0.505018,
+   "median_sprime": 0.629951,
+   "gap_frac": 0.275,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.328555,
+   "dose_threshold": 5.0,
+   "median_s": 0.510122,
+   "median_sprime": 0.635101,
+   "gap_frac": 0.325,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.333851,
+   "dose_threshold": 5.0,
+   "median_s": 0.515841,
+   "median_sprime": 0.652446,
+   "gap_frac": 0.35,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.339232,
+   "dose_threshold": 5.0,
+   "median_s": 0.521498,
+   "median_sprime": 0.653613,
+   "gap_frac": 0.35,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.3447,
+   "dose_threshold": 5.0,
+   "median_s": 0.526808,
+   "median_sprime": 0.671196,
+   "gap_frac": 0.45,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.350255,
+   "dose_threshold": 5.0,
+   "median_s": 0.532321,
+   "median_sprime": 0.67158,
+   "gap_frac": 0.425,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.355901,
+   "dose_threshold": 5.0,
+   "median_s": 0.538852,
+   "median_sprime": 0.67419,
+   "gap_frac": 0.475,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.361637,
+   "dose_threshold": 5.0,
+   "median_s": 0.546819,
+   "median_sprime": 0.690579,
+   "gap_frac": 0.45,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.367466,
+   "dose_threshold": 5.0,
+   "median_s": 0.554176,
+   "median_sprime": 0.696844,
+   "gap_frac": 0.5,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.403068,
+   "dose_threshold": 5.0,
+   "median_s": 0.592807,
+   "median_sprime": 0.739976,
+   "gap_frac": 0.5,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.544268,
+   "dose_threshold": 5.0,
+   "median_s": 0.700108,
+   "median_sprime": 0.893533,
+   "gap_frac": 0.775,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.734932,
+   "dose_threshold": 5.0,
+   "median_s": 0.782398,
+   "median_sprime": 0.950048,
+   "gap_frac": 0.575,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.99239,
+   "dose_threshold": 5.0,
+   "median_s": 0.852948,
+   "median_sprime": 0.977494,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 1.340038,
+   "dose_threshold": 5.0,
+   "median_s": 0.913812,
+   "median_sprime": 0.988016,
+   "gap_frac": 0.075,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 1.809471,
+   "dose_threshold": 5.0,
+   "median_s": 0.947982,
+   "median_sprime": 0.996082,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 2.443355,
+   "dose_threshold": 5.0,
+   "median_s": 0.974873,
+   "median_sprime": 0.997681,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 3.299296,
+   "dose_threshold": 5.0,
+   "median_s": 0.989887,
+   "median_sprime": 0.999428,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 4.455086,
+   "dose_threshold": 5.0,
+   "median_s": 0.996693,
+   "median_sprime": 0.999978,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 6.015765,
+   "dose_threshold": 5.0,
+   "median_s": 0.998181,
+   "median_sprime": 1.0,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 8.123172,
+   "dose_threshold": 5.0,
+   "median_s": 0.998962,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 10.968833,
+   "dose_threshold": 5.0,
+   "median_s": 0.999878,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 14.811369,
+   "dose_threshold": 5.0,
+   "median_s": 1.0,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 20.0,
+   "dose_threshold": 5.0,
+   "median_s": 1.0,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.02,
+   "dose_threshold": 10.0,
+   "median_s": 0.0,
+   "median_sprime": 0.001041,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.027006,
+   "dose_threshold": 10.0,
+   "median_s": 0.0,
+   "median_sprime": 0.004967,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.036467,
+   "dose_threshold": 10.0,
+   "median_s": 0.0,
+   "median_sprime": 0.010732,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.049242,
+   "dose_threshold": 10.0,
+   "median_s": 0.0,
+   "median_sprime": 0.019861,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.066492,
+   "dose_threshold": 10.0,
+   "median_s": 0.000731,
+   "median_sprime": 0.033737,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.089785,
+   "dose_threshold": 10.0,
+   "median_s": 0.004518,
+   "median_sprime": 0.054391,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.121238,
+   "dose_threshold": 10.0,
+   "median_s": 0.016373,
+   "median_sprime": 0.086252,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.163709,
+   "dose_threshold": 10.0,
+   "median_s": 0.042723,
+   "median_sprime": 0.130683,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.221059,
+   "dose_threshold": 10.0,
+   "median_s": 0.104414,
+   "median_sprime": 0.193713,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.298499,
+   "dose_threshold": 10.0,
+   "median_s": 0.211613,
+   "median_sprime": 0.279898,
+   "gap_frac": 0.1,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.30331,
+   "dose_threshold": 10.0,
+   "median_s": 0.218343,
+   "median_sprime": 0.286218,
+   "gap_frac": 0.1,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.308199,
+   "dose_threshold": 10.0,
+   "median_s": 0.224118,
+   "median_sprime": 0.290422,
+   "gap_frac": 0.1,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.313167,
+   "dose_threshold": 10.0,
+   "median_s": 0.22959,
+   "median_sprime": 0.29629,
+   "gap_frac": 0.1,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.318214,
+   "dose_threshold": 10.0,
+   "median_s": 0.235057,
+   "median_sprime": 0.301837,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.323343,
+   "dose_threshold": 10.0,
+   "median_s": 0.240613,
+   "median_sprime": 0.304647,
+   "gap_frac": 0.125,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.328555,
+   "dose_threshold": 10.0,
+   "median_s": 0.24627,
+   "median_sprime": 0.312866,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.333851,
+   "dose_threshold": 10.0,
+   "median_s": 0.252269,
+   "median_sprime": 0.322542,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.339232,
+   "dose_threshold": 10.0,
+   "median_s": 0.259035,
+   "median_sprime": 0.32523,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.3447,
+   "dose_threshold": 10.0,
+   "median_s": 0.265815,
+   "median_sprime": 0.333245,
+   "gap_frac": 0.125,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.350255,
+   "dose_threshold": 10.0,
+   "median_s": 0.272078,
+   "median_sprime": 0.33732,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.355901,
+   "dose_threshold": 10.0,
+   "median_s": 0.277284,
+   "median_sprime": 0.348326,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.361637,
+   "dose_threshold": 10.0,
+   "median_s": 0.282765,
+   "median_sprime": 0.354052,
+   "gap_frac": 0.125,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.367466,
+   "dose_threshold": 10.0,
+   "median_s": 0.288684,
+   "median_sprime": 0.355776,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.403068,
+   "dose_threshold": 10.0,
+   "median_s": 0.323485,
+   "median_sprime": 0.39023,
+   "gap_frac": 0.125,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.544268,
+   "dose_threshold": 10.0,
+   "median_s": 0.437338,
+   "median_sprime": 0.533227,
+   "gap_frac": 0.175,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.734932,
+   "dose_threshold": 10.0,
+   "median_s": 0.554176,
+   "median_sprime": 0.696844,
+   "gap_frac": 0.5,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 0.99239,
+   "dose_threshold": 10.0,
+   "median_s": 0.671468,
+   "median_sprime": 0.845378,
+   "gap_frac": 0.775,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 1.340038,
+   "dose_threshold": 10.0,
+   "median_s": 0.760854,
+   "median_sprime": 0.941162,
+   "gap_frac": 0.6,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 1.809471,
+   "dose_threshold": 10.0,
+   "median_s": 0.828601,
+   "median_sprime": 0.971486,
+   "gap_frac": 0.3,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 2.443355,
+   "dose_threshold": 10.0,
+   "median_s": 0.899817,
+   "median_sprime": 0.987906,
+   "gap_frac": 0.075,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 3.299296,
+   "dose_threshold": 10.0,
+   "median_s": 0.937826,
+   "median_sprime": 0.99208,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 4.455086,
+   "dose_threshold": 10.0,
+   "median_s": 0.967687,
+   "median_sprime": 0.9981,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 6.015765,
+   "dose_threshold": 10.0,
+   "median_s": 0.986237,
+   "median_sprime": 0.999434,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 8.123172,
+   "dose_threshold": 10.0,
+   "median_s": 0.995221,
+   "median_sprime": 0.999878,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 10.968833,
+   "dose_threshold": 10.0,
+   "median_s": 0.99806,
+   "median_sprime": 1.0,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 14.811369,
+   "dose_threshold": 10.0,
+   "median_s": 0.998448,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "drug_scale_k": 20.0,
+   "dose_threshold": 10.0,
+   "median_s": 0.999609,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  }
+ ],
+ "notes": "Per-case coverage is the mean over seeds; per-seed values are in s_by_seed / sprime_by_seed. Aggregates and public MSD case ids only. truth_vox is the in-crop WT voxel count (scorer side, report-only)."
+}

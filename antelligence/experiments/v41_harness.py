@@ -650,7 +650,7 @@ class V41Harness:
     # -- queen / static assignments --
 
     def _squad_states(self, ctx: _Ctx) -> List[SquadState]:
-        share = self.world_config.total_drug / self.world_config.n_squads
+        share = ctx.world.total_drug / self.world_config.n_squads  # per-case budget
         return [SquadState(i, tuple(int(c) for c in pos), _ppm(pay / share))
                 for i, (pos, pay) in enumerate(zip(ctx.world.squad_positions(), ctx.world.squad_payloads()))]
 
@@ -805,12 +805,13 @@ class V41Harness:
     # -- evidence, lies, contradictions --
 
     def _write_evidence(self, ctx: _Ctx, i: int, o: Mapping[str, Any], look: Optional[float], tick: int) -> str:
-        share = self.world_config.total_drug / self.world_config.n_squads
+        total = ctx.world.total_drug  # per-case budget (k x V_perceived in per_perceived_volume mode)
+        share = total / self.world_config.n_squads
         p_here = _ppm(o["local_p_tumour"])
         payload = {"squad": i, "pos_vox": [int(c) for c in o["position_vox"]],
                    "look_p_ppm": p_here if look is None else _ppm(look), "p_tumour_ppm": p_here,
-                   "dose_ug": _ppm(o["local_dose"] / self.world_config.total_drug),
-                   "released_ug": _ppm((share - o["payload"]) / self.world_config.total_drug)}
+                   "dose_ug": _ppm(o["local_dose"] / total),
+                   "released_ug": _ppm((share - o["payload"]) / total)}
         return ctx.board.append("evidence", f"squad-{i}", payload, tick).id
 
     def _write_lie(self, ctx: _Ctx, liar: int, obs: Sequence[Mapping[str, Any]], looks: Sequence[Optional[float]],

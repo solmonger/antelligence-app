@@ -464,5 +464,6 @@ class OracleSPrime:
 
 def oracle_for(world) -> OracleSPrime:
     """Wire S' to a world (scorer accessor + live dose + squad positions)."""
-    return OracleSPrime(world.scorer_truth(), world.squad_positions, world.field, world.config, voxel_mm=world.voxel_mm,
+    cfg = world.config.with_(drug_mode="fixed", total_drug=world.total_drug)  # the resolved per-case budget
+    return OracleSPrime(world.scorer_truth(), world.squad_positions, world.field, cfg, voxel_mm=world.voxel_mm,
                         payloads=world.squad_payloads, pathfinder=world.pathfinder)

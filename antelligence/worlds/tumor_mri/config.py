@@ -6,9 +6,16 @@ from dataclasses import asdict, dataclass, fields, replace
 from pathlib import Path
 from typing import Any, Dict, Tuple, Union
 
+import numpy as np
 import yaml
 
 AMOUNT_FRACTIONS = (0.10, 0.25, 0.50, 0.75, 1.00)  # levels 1..5, share of the squad's remaining payload
+DRUG_MODES = ("fixed", "per_perceived_volume")
+
+
+def perceived_volume_vox(p_tumour: Any) -> float:
+    """V_perceived: sum of calibrated p_tumour over the crop, in voxels."""
+    return float(np.asarray(p_tumour, dtype=np.float64).sum())
 
 
 @dataclass(frozen=True)
@@ -17,7 +24,9 @@ class WorldConfig:
     ticks: int = 120
     decision_every: int = 5
     queen_every: int = 30  # queen hook at tick 0 and every `queen_every`
-    total_drug: float = 1000.0  # placeholder until tuned (scripts/v41_tune_world.py); equal shares per squad
+    total_drug: float = 1000.0  # drug_mode "fixed": the per-case budget (equal shares per squad)
+    drug_mode: str = "fixed"  # "fixed" | "per_perceived_volume": total = drug_scale_k x V_perceived (perception only)
+    drug_scale_k: float = 0.0  # drug per perceived tumour voxel; required (> 0) in per_perceived_volume mode
     dose_threshold: float = 5.0  # D_t, placeholder until tuned; coverage counts truth voxels with dose >= D_t
     release_sigma_mm: float = 2.0
     diffuse_sigma_vox: float = 1.0
@@ -35,6 +44,10 @@ class WorldConfig:
             raise ValueError("counts must be positive")
         if self.total_drug <= 0 or self.dose_threshold <= 0:
             raise ValueError("total_drug and dose_threshold must be positive")
+        if self.drug_mode not in DRUG_MODES:
+            raise ValueError(f"drug_mode must be one of {DRUG_MODES}, got {self.drug_mode!r}")
+        if self.drug_mode == "per_perceived_volume" and self.drug_scale_k <= 0:
+            raise ValueError("drug_scale_k must be positive in per_perceived_volume mode")
         if not 0.0 <= self.decay < 1.0:
             raise ValueError("decay must be in [0, 1)")
         if len(self.amount_fractions) != 5:
@@ -45,9 +58,18 @@ class WorldConfig:
     def rounds(self) -> int:
         return self.ticks // self.decision_every
 
+    def resolve_total_drug(self, p_tumour: Any) -> float:
+        """The case's total drug. ``fixed``: ``total_drug``. ``per_perceived_volume``: ``drug_scale_k`` x V_perceived, with
+        V_perceived the sum of calibrated ``p_tumour`` over the crop (voxels). Perception only: truth is never an input."""
+        if self.drug_mode == "fixed":
+            return float(self.total_drug)
+        return float(self.drug_scale_k) * perceived_volume_vox(p_tumour)
+
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
         d["amount_fractions"] = list(self.amount_fractions)
+        if self.drug_mode == "per_perceived_volume":
+            del d["total_drug"]  # the budget is per case (k x V_perceived); a fixed total would mislead
         return d
 
     @classmethod
@@ -56,6 +78,8 @@ class WorldConfig:
         extra = set(d) - known
         if extra:
             raise ValueError(f"unknown world config keys: {sorted(extra)}")
+        if d.get("drug_mode") == "per_perceived_volume" and "total_drug" in d:
+            raise ValueError("total_drug must not be set when drug_mode is per_perceived_volume (the budget is k x V_perceived)")
         return cls(**{k: (tuple(v) if k == "amount_fractions" else v) for k, v in d.items()})
 
     @classmethod
