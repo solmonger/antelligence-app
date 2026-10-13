@@ -122,7 +122,7 @@ _PAYLOADS: Dict[str, Dict[str, Callable[[Any], bool]]] = {
     "edit": {
         "round": _int(), "patch_sha256": lambda v: isinstance(v, str) and bool(_HEX64.match(v)),
         "keys": lambda v: isinstance(v, list) and all(isinstance(x, str) for x in v),
-        "prediction": _prediction, "kept": lambda v: v is None or v in (0, 1) and _is_int(v),
+        "prediction": _prediction, "kept": lambda v: v is None or (_is_int(v) and v in (0, 1)),
     },
     "alarm": {
         "kind": _enum("defer_rate", "timeout", "identity", "other"), "value_ppm": _int(), "note": _str(140),
@@ -511,7 +511,7 @@ class Board:
             raise BoardError("database belongs to a different run")
         else:
             for _, body in self._db.execute("SELECT seq, body FROM entries ORDER BY seq"):
-                self._accept(Entry.from_dict(json.loads(body)), verify_known=True)
+                self._accept(Entry.from_dict(json.loads(body)))
 
     # -- reads ---------------------------------------------------------------
     def size(self) -> int:
@@ -584,7 +584,7 @@ class Board:
         self._by_id[entry.id] = len(self._entries)
         self._entries.append(entry)
 
-    def _accept(self, entry: Entry, verify_known: bool = False) -> None:
+    def _accept(self, entry: Entry) -> None:
         """Verify ``entry`` as the next link and register it (used by import and reopen)."""
         _validate_shape(entry)
         seq = len(self._entries)
