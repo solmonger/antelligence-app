@@ -91,5 +91,83 @@
       "explorer_address_url": "https://sepolia.explorer.zksync.io/address/0x2d77EE763987ab6131Ad5e9627C22EFE1FB29c3b",
       "explorer_tx_url": "https://sepolia.explorer.zksync.io/tx/0xf557209bf7baccff12ca156ca214441c3b450f7d227e85a49f5727563035744e"
     }
-  ]
+  ],
+  "v4_1": {
+    "schema": "antelligence.deployment.v4_1/v1",
+    "complete": true,
+    "deployer": "0xF822f19C0FEc804f002e9087523677195a3C96cE",
+    "deployed_at_utc": "2026-10-13T14:08:53.864Z",
+    "git_commit": "7d68023a952406b39e3819175d60e5c2a543ff33",
+    "git_tree_dirty_for_blockchain_dir": false,
+    "compiler": {
+      "zksolc": "1.5.15",
+      "solc": "zkVM-0.8.24-1.0.2",
+      "zksolc_settings": {
+        "optimizer": {
+          "enabled": true,
+          "mode": "3"
+        },
+        "compilerPath": "/Users/operator/Library/Caches/hardhat-nodejs/compilers-v2/zksolc/zksolc-v1.5.15",
+        "missingLibrariesPath": "./.zksolc-libraries-cache/missingLibraryDependencies.json",
+        "areLibrariesMissing": false,
+        "experimental": {},
+        "codegen": "yul",
+        "libraries": {},
+        "enableEraVMExtensions": false,
+        "forceEVMLA": false
+      },
+      "solc_optimizer": {
+        "enabled": true,
+        "mode": "3"
+      },
+      "via_ir": true
+    },
+    "gas": {
+      "balance_before_wei": "84780178375000000",
+      "estimated_deploy_fee_wei": "114942500000000",
+      "balance_after_wei": "84725890200000000",
+      "spent_wei": "54288175000000"
+    },
+    "contracts": [
+      {
+        "name": "AnchorRegistry",
+        "address": "0x61fD3DAf9777C99B9f6985E265A44e1192B67e61",
+        "code_hash": "0xecd4193f65b19caddfc9472e2307997c047be3db69c5c081c4761b7089d9783e",
+        "deploy_tx_hash": "0xb1311fe31134e4811bdb2c29d4e2e614f2c958bb8d105ae88483958e708b447b",
+        "block_number": 8685233,
+        "deployer": "0xF822f19C0FEc804f002e9087523677195a3C96cE",
+        "is_mock": false,
+        "constructor_args": [],
+        "gas_used": "782016",
+        "explorer_address_url": "https://sepolia.explorer.zksync.io/address/0x61fD3DAf9777C99B9f6985E265A44e1192B67e61",
+        "explorer_tx_url": "https://sepolia.explorer.zksync.io/tx/0xb1311fe31134e4811bdb2c29d4e2e614f2c958bb8d105ae88483958e708b447b"
+      },
+      {
+        "name": "BoardLog",
+        "address": "0xE5d77A4Bf522471519aF86B7F0e8B1CcA7595FBF",
+        "code_hash": "0xa180b1b6908f58a0e77c5bd6dbde5803443c9afd3aa1baf78edad457af222b6a",
+        "deploy_tx_hash": "0x6ba45f234d4b54a1319a1c0ea6664dfb22a8e8e661e5cb06e966d473a48753c8",
+        "block_number": 8685234,
+        "deployer": "0xF822f19C0FEc804f002e9087523677195a3C96cE",
+        "is_mock": false,
+        "constructor_args": [],
+        "gas_used": "736193",
+        "explorer_address_url": "https://sepolia.explorer.zksync.io/address/0xE5d77A4Bf522471519aF86B7F0e8B1CcA7595FBF",
+        "explorer_tx_url": "https://sepolia.explorer.zksync.io/tx/0x6ba45f234d4b54a1319a1c0ea6664dfb22a8e8e661e5cb06e966d473a48753c8"
+      },
+      {
+        "name": "ReputationRegistry",
+        "address": "0x1c7B9305d7027CB0a40D744e57848A8B9c2B5816",
+        "code_hash": "0xf41d89836544138fd03ca2a66c4edb80d01fbfeb1ceaaf89f5267289ad6bdba0",
+        "deploy_tx_hash": "0x2eafb8bb7e68b6a4a152507c8bfe1cc331da30261defa4c633a57430ea0d0873",
+        "block_number": 8685235,
+        "deployer": "0xF822f19C0FEc804f002e9087523677195a3C96cE",
+        "is_mock": false,
+        "constructor_args": [],
+        "gas_used": "653318",
+        "explorer_address_url": "https://sepolia.explorer.zksync.io/address/0x1c7B9305d7027CB0a40D744e57848A8B9c2B5816",
+        "explorer_tx_url": "https://sepolia.explorer.zksync.io/tx/0x2eafb8bb7e68b6a4a152507c8bfe1cc331da30261defa4c633a57430ea0d0873"
+      }
+    ]
+  }
 }
