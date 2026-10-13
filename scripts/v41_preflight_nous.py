@@ -23,6 +23,9 @@ PROBES = [
     ("none", {}),
     ("thinking_type_disabled", {"thinking": {"type": "disabled"}}),
     ("chat_template_kwargs_thinking_false", {"chat_template_kwargs": {"thinking": False}}),
+    ("reasoning_enabled_false", {"reasoning": {"enabled": False}}),
+    ("reasoning_effort_none", {"reasoning": {"effort": "none"}}),
+    ("reasoning_max_tokens_0", {"reasoning": {"max_tokens": 0}}),
 ]
 
 
@@ -33,7 +36,11 @@ def _key() -> str:
 def main() -> None:
     headers = {"Authorization": f"Bearer {_key()}"}
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
+    import sys
+    only = set(sys.argv[sys.argv.index("--only") + 1].split(",")) if "--only" in sys.argv else None
     for label, extra in PROBES:
+        if only and label not in only:
+            continue
         body = {"model": MODEL, "messages": [{"role": "user", "content": "Reply with the single word: ok"}],
                 "max_tokens": 64, "temperature": 0, **extra}
         t0 = time.time()
