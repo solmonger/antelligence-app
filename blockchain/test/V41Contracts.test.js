@@ -171,6 +171,16 @@ describe("BoardLog", function () {
     expect(await log.nextSeq(run)).to.equal(5);
   });
 
+  it("a duplicate batch reverts and emits nothing (replay-safe)", async function () {
+    const { entries, last } = chainEntries(3);
+    await log.postBatch(run, 0, ZERO, entries);
+    await expect(log.postBatch(run, 0, ZERO, entries)).to.be.revertedWithCustomError(log, "SeqMismatch");
+    // Also a partial overlap: restart from seq 2 with the right prevHash of a stale view.
+    await expect(log.postBatch(run, 2, ZERO, entries.slice(2))).to.be.revertedWithCustomError(log, "SeqMismatch");
+    expect(await log.nextSeq(run)).to.equal(3);
+    expect(await log.lastId(run)).to.equal(last);
+  });
+
   it("rejects a wrong batch prevHash", async function () {
     const a = chainEntries(2);
     await log.postBatch(run, 0, ZERO, a.entries);

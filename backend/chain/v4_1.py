@@ -575,9 +575,11 @@ class ChainClientV41:
             self._next_nonce = nonce + 1
             err = self._broadcast(job["id"], raw)
             if err == "nonce_low":
-                self.queue.update(job["id"], status=PENDING, nonce=None, tx_hashes=[], sent_at=None,
-                                  error="nonce too low; resynced")
+                # Keep the job SENT with its nonce and hash. It is never moved to a fresh nonce: the poll
+                # confirms it if it landed, _replace_dropped sends it to FAILED_REVIEW if the nonce is foreign.
+                self.queue.update(job["id"], error="nonce too low; resyncing, awaiting resolution")
                 self._next_nonce = None
+                stats.sent += 1
                 break
             if err:
                 self.queue.update(job["id"], error=err)

@@ -123,3 +123,22 @@ def test_gives_up_after_max_attempts(make_client, fake, clock):
         clock.advance(2)
     assert c.queue.get(jid)["status"] == "failed"
     assert {t["nonce"] for t in fake.sent_log} == {0}
+
+
+def test_nonce_too_low_keeps_job_sent_and_never_resends_under_a_fresh_nonce(make_client, fake, clock, signer):
+    c = make_client(replace_after_s=1)
+    c.pump()  # nonce manager syncs at 0
+    fake.mined_nonce[signer.address.lower()] = 1  # a foreign tx takes nonce 0 behind our back
+    jid = c.enqueue_anchor(b32(4), 50, b32(50), b32(0))
+    c.pump()  # broadcast at nonce 0 -> "nonce too low"
+    job = c.queue.get(jid)
+    assert job["status"] == "sent" and job["nonce"] == 0 and len(job["tx_hashes"]) == 1
+    assert fake.sent_log == []  # the node rejected it outright
+    clock.advance(5)
+    c.pump()
+    assert c.queue.get(jid)["status"] == "failed_review"
+    for _ in range(3):
+        clock.advance(5)
+        c.pump()
+    assert fake.sent_log == [] and fake.root_at == {}  # nothing resent, nothing applied
+    assert c.queue.get(jid)["nonce"] == 0
