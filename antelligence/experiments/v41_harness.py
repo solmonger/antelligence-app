@@ -56,6 +56,7 @@ from antelligence.experiments.v41_conformal import (ConformalDeferral, Conformal
 from antelligence.experiments.v41_gate import assert_eval_allowed
 from antelligence.experiments.v41_local_look import (apply_temperature, load_frozen_temperature, look_request,
                                                      LOOK_QUESTION)
+from antelligence.experiments.v41_override import is_override, queen_region, resolve_target_region
 from antelligence.experiments.v41_router import KNNRouter, router_features, sprime_labels
 from antelligence.kernel import briefs as briefs_mod
 from antelligence.kernel.board import (DEFAULT_AUTHORS, Board, Entry, RunKeys, anchor_sizes,
@@ -85,7 +86,8 @@ DECISION_LOG_FIELDS = (
     "server_ms", "network_ms", "queue_ms", "tokens_in", "tokens_out", "cost_usd", "router_pick", "deferred",
     "escalated", "cited_ids", "brief_ids", "target", "release", "amount", "p_target_ppm", "p_release_ppm",
     "p_amount_ppm", "look_p_ppm", "prob_method", "identity", "calls", "counterfactual", "audit", "sprime",
-    "error", "error_reason", "attempts", "notes", "failures", "kind", "features")
+    "error", "error_reason", "attempts", "notes", "failures", "kind", "features", "queen_region", "target_region",
+    "override")
 RUN_LOG_FIELDS = (
     "run_id", "arm", "case", "seed", "split", "wall_s", "ticks", "ticks_to_50", "seconds_to_50", "queen_calls",
     "board_size", "anchors", "anchor_latency_s", "visibility_latency_ms", "decisions", "rounds", "shared_store",
@@ -429,6 +431,8 @@ class _Ctx:
     errors: List[str] = field(default_factory=list)
     decision_errors: int = 0
     look_errors: int = 0
+    override_count: int = 0       # worker override rate (decision 2026-10-13, rule e): overrides ...
+    override_decisions: int = 0   # ... out of the decisions that had a queen assignment and were not error fallbacks
     look_rows: List[Dict[str, Any]] = field(default_factory=list)
     attempt_log: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
     replay_attempts: Optional[Mapping[str, Any]] = None
@@ -1129,6 +1133,12 @@ class V41Harness:
             raise HarnessError(f"world refused squad-{i}'s decision at tick {tick}: {world_outcome.reason}")
         calls = rec["calls"]
         look = rec["look"]
+        fields = rec["fields"]
+        assigned = queen_region(ctx.routes.get(i))
+        override = None if error else is_override(d["target"], fields.get("target"), fields.get("candidates", []), assigned)
+        if override is not None:
+            ctx.override_decisions += 1
+            ctx.override_count += int(override)
         ctx.log.append({
             "run_id": ctx.run_id, "arm": ctx.arm, "case": ctx.case, "seed": ctx.seed, "squad": i, "round": payload["round"],
             "tick": tick, "backend": rec["final_name"], "model": final.served_model, "revision": revision,
@@ -1143,6 +1153,9 @@ class V41Harness:
             "p_amount_ppm": payload["p_amount_ppm"], "look_p_ppm": None if look is None else _ppm(look),
             "prob_method": final.prob_method, "identity": ident, "calls": calls,
             "counterfactual": rec["counterfactual"], "audit": rec["audit"], "features": rec.get("features"),
+            "queen_region": assigned,
+            "target_region": resolve_target_region(d["target"], fields.get("target"), fields.get("candidates", [])),
+            "override": override,
             "sprime": rec["sprime"], "entry_id": entry_id, "kind": "decision", "error": bool(error), "error_reason": error,
             "attempts": sum(1 for t in rec["trail"] if t["error"]) + (0 if error else 1),
             "notes": [t["note"] for t in rec["trail"] if t["note"]],
@@ -1217,6 +1230,7 @@ class V41Harness:
             "decision_errors": ctx.decision_errors, "look_errors": ctx.look_errors,
             "decision_error_share": (ctx.decision_errors / n_dec) if n_dec else 0.0,
             "decision_error_alarm": int(bool(n_dec) and ctx.decision_errors / n_dec > DECISION_ERROR_ALARM),
+            "override_decisions": ctx.override_decisions, "override_count": ctx.override_count,
             "look_temperature": self.look_temperature, "look_temperature_source": self.look_temperature_source,
         }
         problems = v41_cells.validate_cell(cell)

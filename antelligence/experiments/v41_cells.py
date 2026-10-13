@@ -55,6 +55,8 @@ FIELDS: Tuple[Field, ...] = (
     Field("look_errors", "int", False, "d1 local looks that still failed after 3 retries (look = None for that squad-round); counted apart from decision_errors"),
     Field("decision_error_share", "frac", False, "decision_errors / decisions in the run"),
     Field("decision_error_alarm", "int", False, "1 when decision_error_share > 0.05 (explained-null checklist), else 0"),
+    Field("override_decisions", "int", False, "decisions with a queen assignment, not error fallbacks: the denominator of the worker override rate"),
+    Field("override_count", "int", False, "of those, decisions where the worker's resolved target differs from the queen's assignment"),
     Field("backends_kind", "str", True, "live | config | fake: where the worker answers came from (null only on error cells)"),
     Field("router_kind", "str", True, "frozen | none | fake (null only on error cells)"),
     Field("router_sha256", "hex64", True, "sha256 of the frozen router; null unless router_kind is frozen"),
@@ -107,6 +109,9 @@ def validate_cell(cell: Mapping[str, Any]) -> List[str]:
         errs.append(f"backends_kind: {cell['backends_kind']!r} must be one of {BACKENDS_KINDS}")
     if cell.get("router_kind") is not None and cell["router_kind"] not in ROUTER_KINDS:
         errs.append(f"router_kind: {cell['router_kind']!r} must be one of {ROUTER_KINDS}")
+    od, oc = cell.get("override_decisions"), cell.get("override_count")
+    if isinstance(od, int) and isinstance(oc, int) and not isinstance(od, bool) and oc > od:
+        errs.append("override_count: cannot exceed override_decisions")
     if cell.get("router_kind") == "frozen" and not cell.get("router_sha256") and not cell.get("error"):
         errs.append("router_sha256: required when router_kind is frozen")
     if cell.get("router_kind") in ("none", "fake") and cell.get("router_sha256"):

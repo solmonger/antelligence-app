@@ -63,7 +63,8 @@ def test_fixed_mode_unchanged_and_validation():
 def test_widened_band_matches_goal():
     assert STRICT["sprime"] == (0.70, 0.80) and STRICT["s"] == (0.30, 0.50)
     assert WIDENED["sprime"] == (0.60, 0.85) and WIDENED["s"] == (0.20, 0.55)
-    assert STRICT["gap"] == WIDENED["gap"] == 0.15 and STRICT["gap_frac"] == WIDENED["gap_frac"] == 0.80
+    assert STRICT["gap"] == WIDENED["gap"] == 0.15
+    assert "gap_frac" not in STRICT and "gap_frac" not in WIDENED  # the share is reported, no longer a gate (2026-10-13)
 
 
 def test_report_helpers():

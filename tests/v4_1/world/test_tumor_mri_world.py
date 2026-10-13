@@ -494,10 +494,11 @@ def test_oracle_beats_script_on_average(crop):
     assert sp > s  # single seeds can favour the script (it may stumble onto the tumour first); the mean must not
 
 
-def test_grid_search_gap_unmet_prefers_medians_in_widened_band():
-    # medians sit in the widened bands but S' - S is only 0.12 everywhere: neither band is met on the gap criterion
+def test_grid_search_gap_share_is_reported_not_a_gate():
+    # medians sit in the widened bands and S' - S is only 0.12 everywhere. The old "gap >= 0.15 on >= 80% of cases"
+    # condition was dropped as a gate (decision 2026-10-13): the widened band is met, the share (0.0) is just reported.
     res = grid_search({"a": None, "b": None}, WorldConfig(), [100.0, 200.0], [5.0], seeds=[1, 2],
                       evaluate=lambda c, cfg, s: (0.54, 0.66))
-    assert res["status"] == "fallback_gap_unmet" and res["band"] == "widened_medians_only"
+    assert res["status"] == "fallback_widened_band" and res["band"] == "widened"
     assert res["best"]["gap_frac"] == 0.0 and res["seeds"] == [1, 2]
     assert res["per_case"]["a"]["s_by_seed"] == [0.54, 0.54]  # mean over seeds, per-seed values kept
