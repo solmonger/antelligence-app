@@ -11,6 +11,7 @@ Pure helpers (payload, command line, cost rows, refusal, state) are separate fro
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import secrets
@@ -51,6 +52,14 @@ MODELS: Dict[str, Dict[str, Optional[str]]] = {
 }
 
 
+# v4.1 worker pod (goal 4.5): Qwen3.5-9B + 4B on vLLM and d1-3B, launched by scripts/v41_pod_serve.sh. It reuses the
+# same budget guard, cost ledger and one-pod rule; only the start command and the ports differ.
+WORKERS_KEY = "v41-workers"
+WORKERS_HF, WORKERS_REVISION = "RedHatAI/Qwen3.5-9B-FP8-dynamic", "790f0576d2d77dd5322aa0603a470bd9e3a3d1f6"
+WORKERS_PORTS = ["8100/http", "8101/http", "8102/http", "8001/http"]  # 9B, 4B, d1 shim, read-only log
+WORKERS_FILES = {"serve.sh": ROOT / "scripts" / "v41_pod_serve.sh", "v41_d1_server.py": ROOT / "scripts" / "v41_d1_server.py"}
+
+
 @dataclass
 class Paths:
     state: Path = ROOT / "ledger" / "v4-pod-state.json"
@@ -61,6 +70,8 @@ class Paths:
 
 
 def served_name(model: str) -> str:
+    if model == WORKERS_KEY:  # the 9B's name; the launcher waits for all three servers before it finishes
+        return f"{WORKERS_HF}@{WORKERS_REVISION}"
     return str(MODELS[model]["hf"])
 
 
@@ -86,8 +97,31 @@ def start_script(model: str, log_token: str) -> str:
             f"echo \"vllm exited\" >> {log}; sleep infinity")
 
 
+def workers_start_script(log_token: str, files: Optional[Mapping[str, Path]] = None) -> str:
+    """Container command for the v4.1 worker pod: the two launcher files travel inside it (base64), so the pod needs
+    nothing but the vLLM image. Log (key redacted) is served read-only on :8001 under a secret path, as for ``up``."""
+    files = files or WORKERS_FILES
+    blobs = {name: base64.b64encode(Path(path).read_bytes()).decode("ascii") for name, path in files.items()}
+    log = f"/srv/{log_token}/workers.log"
+    unpack = " && ".join(f"echo {blob} | base64 -d > /opt/v41/{name}" for name, blob in blobs.items())
+    return (f"mkdir -p /srv/{log_token} /opt/v41 && : > /srv/index.html && {unpack} && "
+            f"(python3 -m http.server 8001 --directory /srv >/dev/null 2>&1 &) && "
+            f"{{ bash /opt/v41/serve.sh 2>&1 | sed -u \"s/$VLLM_API_KEY/[redacted]/g\" > {log}; }}; "
+            f"echo \"workers exited\" >> {log}; sleep infinity")
+
+
+def deploy_payload_workers(api_secret: str, gpu: str, log_token: str) -> Dict[str, Any]:
+    """REST body for the v4.1 worker pod. Pure: builds, never sends."""
+    return {"name": "v41-workers", "imageName": VLLM_IMAGE, "gpuTypeIds": [gpu], "gpuCount": 1,
+            "containerDiskInGb": CONTAINER_DISK_GB, "volumeInGb": 0, "ports": WORKERS_PORTS,
+            "env": {"VLLM_API_KEY": api_secret}, "dockerEntrypoint": ["bash", "-c"],
+            "dockerStartCmd": [workers_start_script(log_token)]}
+
+
 def deploy_payload(model: str, api_secret: str, gpu: str, log_token: str) -> Dict[str, Any]:
     """REST body for one on-demand pod. Pure: builds, never sends."""
+    if model == WORKERS_KEY:
+        return deploy_payload_workers(api_secret, gpu, log_token)
     return {"name": f"v4-pilot-{model}", "imageName": VLLM_IMAGE, "gpuTypeIds": [gpu], "gpuCount": 1,
             "containerDiskInGb": CONTAINER_DISK_GB, "volumeInGb": 0, "ports": ["8000/http", "8001/http"],
             "env": {"VLLM_API_KEY": api_secret}, "dockerEntrypoint": ["bash", "-c"],
@@ -223,8 +257,8 @@ def wait_ready(state: Mapping[str, Any], timeout_s: float, transport: Optional[h
 
 def cmd_up(model: str, client: RunPod, paths: Paths, echo: Echo = print, wait: bool = False,
            transport: Optional[httpx.BaseTransport] = None, sleep: Callable[[float], None] = time.sleep) -> int:
-    if model not in MODELS:
-        echo(f"unknown model {model!r}; choose from {sorted(MODELS)}")
+    if model not in MODELS and model != WORKERS_KEY:
+        echo(f"unknown model {model!r}; choose from {sorted([*MODELS, WORKERS_KEY])}")
         return 2
     state = load_state(paths.state)
     if state:
@@ -257,9 +291,10 @@ def cmd_up(model: str, client: RunPod, paths: Paths, echo: Echo = print, wait: b
     rate = float(pod.get("costPerHr") or ASSUMED_RATE_PER_HR)
     append_cost(paths.costs, cost_row("start", pod["id"], rate))
     state = {"pod_id": pod["id"], "api_secret": api_secret, "model": model, "served": served_name(model),
-             "hf": MODELS[model]["hf"], "revision": MODELS[model]["revision"], "image": VLLM_IMAGE, "gpu": gpu,
-             "cost_per_hr": rate, "created_utc": utc_now(),
-             "base_url": f"https://{pod['id']}-8000.proxy.runpod.net/v1",
+             "hf": WORKERS_HF if model == WORKERS_KEY else MODELS[model]["hf"],
+             "revision": WORKERS_REVISION if model == WORKERS_KEY else MODELS[model]["revision"],
+             "image": VLLM_IMAGE, "gpu": gpu, "cost_per_hr": rate, "created_utc": utc_now(),
+             "base_url": f"https://{pod['id']}-{8100 if model == WORKERS_KEY else 8000}.proxy.runpod.net/v1",
              "log_url": f"https://{pod['id']}-8001.proxy.runpod.net/{log_token}/vllm.log"}
     save_state(paths.state, state)
     echo(f"pod {pod['id']} on {gpu} at ${rate:.3f}/hr; base_url {state['base_url']}")
@@ -319,7 +354,7 @@ def main(argv: Optional[List[str]] = None, *, paths: Optional[Paths] = None,
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
     up = sub.add_parser("up")
-    up.add_argument("model", choices=sorted(MODELS))
+    up.add_argument("model", choices=sorted([*MODELS, WORKERS_KEY]))
     up.add_argument("--wait", action="store_true", help="after creating, block until vLLM serves the model")
     for name in ("status", "wait", "down", "cost"):
         sub.add_parser(name)
