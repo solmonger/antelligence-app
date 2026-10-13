@@ -1,0 +1,19 @@
+# v4.1 tumor_mri world. total_drug and dose_threshold are PLACEHOLDERS until
+# `python scripts/v41_tune_world.py` is run on the dev split (it overwrites this file).
+world:
+  n_squads: 8
+  ticks: 120
+  decision_every: 5
+  queen_every: 30
+  total_drug: 1000.0
+  dose_threshold: 5.0
+  release_sigma_mm: 2.0
+  diffuse_sigma_vox: 1.0
+  decay: 0.02
+  entry_shell_mm: 4.0
+  entry_min_dist_mm: 10.0
+  visit_radius_mm: 6.0
+  explore_unc_quantile: 0.95
+  path_weight: 1.5
+  path_max_expand: 40000
+  amount_fractions: [0.1, 0.25, 0.5, 0.75, 1.0]
