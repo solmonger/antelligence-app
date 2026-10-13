@@ -1,0 +1,140 @@
+{
+ "conformal": {
+  "alpha": {
+   "amount": 0.365,
+   "release": 0.415,
+   "target": 0.73
+  },
+  "d1_argmax_matches_label": {
+   "amount": 0.6681640625,
+   "release": 0.4895833333333333,
+   "target": 0.2583984375
+  },
+  "defer_rate_by_arm": {
+   "SW-B": 0.5524739583333333,
+   "SW-noBoard": 0.5864583333333333
+  },
+  "defer_target": 0.2,
+  "empty_set_share": 0.2967447916666667,
+  "frozen_to": "/Volumes/WD_BLACK/antelligence-v4.1/worktrees/v41-integration/config/v4_1/conformal.json",
+  "joint_defer_rate": 0.5694661458333333,
+  "joint_on_target": false,
+  "n_decisions": 15360,
+  "per_question_defer_rate": {
+   "amount": 0.18216145833333333,
+   "release": 0.10618489583333333,
+   "target": 0.41725260416666665
+  },
+  "qhat": {
+   "amount": 0.72819819127692,
+   "release": 0.5,
+   "target": 0.7513009969313948
+  },
+  "sha256": "2ccd3e19ca88c905d7bf8f3e5a5b6f6fcfcd999b93f1cb68797a60b7118726a3"
+ },
+ "inputs": {
+  "arms": {
+   "SW-B": 40,
+   "SW-noBoard": 40
+  },
+  "cases": 40,
+  "cells_file_lines": 80,
+  "decisions": 15360,
+  "dev_only": true,
+  "run_dirs": 80,
+  "skipped": {},
+  "usable_decisions": 15360
+ },
+ "kind": "phase0-fit",
+ "power": {
+  "alpha": 0.05,
+  "dev_cases": 40,
+  "dev_paired_sd": 0.1401055497888514,
+  "eval_cases": 80,
+  "mdd_p1": 0.04490849401652172,
+  "mdd_p1_points": 4.490849401652172,
+  "mean_coverage_SW-B": 0.30334878211500244,
+  "mean_coverage_SW-noBoard": 0.1339091440828177,
+  "method": "Wilcoxon ARE-adjusted normal approximation",
+  "power": 0.8
+ },
+ "router": {
+  "cross_validated": {
+   "agreement": 0.7153645833333333,
+   "folds": 40,
+   "majority_baseline": 0.6167317708333333,
+   "per_arm_agreement": {
+    "SW-B": 0.7774739583333333,
+    "SW-noBoard": 0.6532552083333333
+   },
+   "pick_shares": {
+    "d1": 0.6776041666666667,
+    "qwen3.5-4b": 0.23268229166666668,
+    "qwen3.5-9b": 0.08971354166666666
+   }
+  },
+  "driver": "qwen3.5-9b",
+  "frozen_to": "/Volumes/WD_BLACK/antelligence-v4.1/worktrees/v41-integration/config/v4_1/router.json",
+  "in_sample_pick_shares": {
+   "d1": 0.6606119791666667,
+   "qwen3.5-4b": 0.25319010416666665,
+   "qwen3.5-9b": 0.08619791666666667
+  },
+  "k": 15,
+  "label_shares": {
+   "d1": 0.6167317708333333,
+   "qwen3.5-4b": 0.23580729166666667,
+   "qwen3.5-9b": 0.1474609375
+  },
+  "models": [
+   "d1",
+   "qwen3.5-4b",
+   "qwen3.5-9b"
+  ],
+  "n_decisions": 15360,
+  "sha256": "ad1758cb84c0428d789b0cc31695156f43d8d1e27abe74bcec081ad26728d81e",
+  "sprime_match_share_all_three": {
+   "d1": 0.027994791666666668,
+   "qwen3.5-4b": 0.008463541666666666,
+   "qwen3.5-9b": 0.022005208333333335
+  },
+  "sprime_match_share_per_question": {
+   "d1": {
+    "amount": 0.1634765625,
+    "release": 0.6044921875,
+    "target": 0.335546875
+   },
+   "qwen3.5-4b": {
+    "amount": 0.08255208333333333,
+    "release": 0.5924479166666666,
+    "target": 0.32643229166666665
+   },
+   "qwen3.5-9b": {
+    "amount": 0.17669270833333334,
+    "release": 0.8292317708333333,
+    "target": 0.10065104166666666
+   }
+  }
+ },
+ "status": "ok",
+ "study": "v4.1",
+ "tag": "calib1",
+ "throughput": {
+  "concurrency_assumed": 8,
+  "decisions": 15360,
+  "decisions_per_episode_mean": 192.0,
+  "decisions_per_second_at_concurrency": 3.5930388483423936,
+  "decisions_per_second_per_run": 0.4491298560427992,
+  "episodes_per_hour_at_concurrency": 67.36947840641989,
+  "runs": 80,
+  "seconds_per_episode_mean": 427.4932904520683,
+  "seconds_per_episode_median": 419.4796817085589,
+  "server_ms_median_by_model": {
+   "d1": 106.0,
+   "qwen3.5-4b": 0.0,
+   "qwen3.5-9b": 0.0
+  },
+  "total_run_wall_s": 34199.463236165466
+ },
+ "variant": "main"
+}
