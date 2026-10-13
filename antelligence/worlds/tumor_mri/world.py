@@ -43,7 +43,7 @@ from antelligence.worlds.tumor_mri.questions import CANDIDATE_LABELS, EXPLORE, S
 ACTION_DECIDE = "decide"
 QUEEN_HOOK_AGENT = "queen"
 OBS_KEYS = ("squad", "tick", "round", "rounds", "position_vox", "payload", "payload_fraction", "last_release",
-            "local_p_tumour", "local_unc", "local_look", "local_dose", "local_dose_rel", "target", "candidates")
+            "local_p_tumour", "local_unc", "local_look", "local_dose", "local_dose_rel", "target", "candidates", "goal_dist_mm")
 
 LookFn = Callable[[int, Vox, int], Optional[float]]
 QueenHook = Callable[[int, "TumorMRIWorld"], None]
@@ -225,6 +225,7 @@ class TumorMRIWorld:
             "local_look": None if look is None else float(look),
             "local_dose": dose, "local_dose_rel": dose / cfg.dose_threshold,
             "target": sq.target, "candidates": cands,
+            "goal_dist_mm": None if sq.goal is None else round(self.voxel_mm * math.dist(sq.pos, sq.goal), 3),
         }
         return Observation(data=data)
 
