@@ -1,0 +1,36 @@
+{
+ "models": [
+  {
+   "name": "MONAI bundle (perception)",
+   "revision": "370f7f9d062745fbac445e7fe6d6616d35df04ec"
+  },
+  {
+   "name": "MONAI model.pt sha256 (antelligence/perception/model.py WEIGHTS_SHA256)",
+   "revision": "860ccb3f1c21c99d0410ad8a1ac4ef6b8fab60cec0a503b0ba42675741a750ae"
+  },
+  {
+   "name": "d1-3B",
+   "revision": "051bcc464b01b9f92942b364d9586b0ef5912432"
+  },
+  {
+   "name": "Qwen3.5-9B-FP8",
+   "revision": "790f0576d2d77dd5322aa0603a470bd9e3a3d1f6"
+  },
+  {
+   "name": "Qwen3.5-4B-FP8",
+   "revision": "397b7ba47a99b3221ebfc0cfc5a279118cb733ad"
+  },
+  {
+   "name": "Ternary-Bonsai-8B gguf",
+   "revision": "c2aefbeb4b24469cd11579c3384b990404c17a30"
+  },
+  {
+   "name": "prism-ml/Ternary-Bonsai-8B-unpacked (tokenizer)",
+   "revision": "ac20f03fc62e872399218b659c8e949dfca05769"
+  },
+  {
+   "name": "queen deepseek/deepseek-v4.1-flash via Nous",
+   "revision": "api (no pinned weights)"
+  }
+ ]
+}

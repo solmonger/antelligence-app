@@ -1,7 +1,6 @@
 import json
 import math
 
-import numpy as np
 import pytest
 
 from antelligence.experiments import v41_analysis as A

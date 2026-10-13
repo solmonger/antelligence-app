@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, Mapping, NamedTuple, Optional, Sequence, Tuple
+from typing import Any, List, Mapping, NamedTuple, Optional, Sequence, Tuple
 
 ARMS = ("S", "S-prime", "SW-B", "SW-noBoard", "FW", "SW-D", "SW-noQueen", "SW-staticQueen", "SW-Bonsai",
         "SW-Byz-local", "SW-Byz-chain", "SW-B-missingFLAIR")

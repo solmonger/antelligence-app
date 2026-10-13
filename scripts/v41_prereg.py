@@ -9,7 +9,7 @@ import json
 import string
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Sequence
+from typing import Any, Dict, List, Mapping, Optional
 
 from antelligence.experiments import v41_analysis as A
 
@@ -38,8 +38,8 @@ def _static_sections() -> Dict[str, str]:
 
 
 def render_prereg(*, code_sha: Optional[str], world_yaml: Optional[Path], harness_yaml: Optional[Path],
-                  conformal_json: Optional[Path], split_json: Optional[Path], router_model: Optional[str],
-                  model_revisions: Optional[Sequence[str]], contracts: Optional[Mapping[str, Mapping[str, str]]],
+                  conformal_json: Optional[Path], split_json: Optional[Path], router_model_file: Optional[Path],
+                  model_revisions_json: Optional[Path], contracts: Optional[Mapping[str, Mapping[str, str]]],
                   template: Path = TEMPLATE) -> str:
     missing: List[str] = []
     if not code_sha:
@@ -50,16 +50,24 @@ def render_prereg(*, code_sha: Optional[str], world_yaml: Optional[Path], harnes
             missing.append(f"{key} ({path})")
         else:
             values[key.split("_")[0] + "_sha256"] = sha256_file(Path(path))
-    if not router_model:
-        missing.append("router_model")
-    if not model_revisions:
-        missing.append("model_revisions")
+    revisions: List[str] = []
+    for key, slot, path in (("router_model_file", "router_sha256", router_model_file),
+                            ("model_revisions_json", "revisions_sha256", model_revisions_json)):
+        if path is None or not Path(path).is_file() or Path(path).stat().st_size == 0:
+            missing.append(f"{key} ({path})")
+        else:
+            values[slot] = sha256_file(Path(path))
+    if model_revisions_json is not None and Path(model_revisions_json).is_file():
+        entries = json.loads(Path(model_revisions_json).read_text()).get("models", [])
+        if not entries or any(not e.get("name") or not e.get("revision") or "TODO" in e["revision"] for e in entries):
+            missing.append("model_revisions_json (empty list or TODO revision)")
+        revisions = [f"{e.get('name')}@{e.get('revision')}" for e in entries]
     if not contracts or any(not v.get("address") or not v.get("code_hash") for v in contracts.values()):
         missing.append("contracts (each needs address and code_hash)")
     if missing:
         raise PreregError("cannot render preregistration, missing: " + ", ".join(missing))
-    values.update(code_sha=code_sha, router_model=router_model,
-                  model_revisions="\n".join(f"- {m}" for m in model_revisions or ()),
+    values.update(code_sha=code_sha, router_model=Path(router_model_file).name,
+                  model_revisions="\n".join(f"- {m}" for m in revisions),
                   contracts="\n".join(f"- {n}: `{v['address']}`, `{v['code_hash']}`" for n, v in sorted((contracts or {}).items())),
                   **_static_sections())
     return string.Template(Path(template).read_text()).substitute(values)
@@ -72,16 +80,15 @@ def main(argv: Optional[list] = None) -> int:
     ap.add_argument("--harness", type=Path, default=Path("config/v4_1/harness.yaml"))
     ap.add_argument("--conformal", type=Path, default=Path("config/v4_1/conformal.json"))
     ap.add_argument("--split", type=Path, default=Path("config/v4_1/split.json"))
-    ap.add_argument("--router-model")
-    ap.add_argument("--model-revisions", type=Path, help="JSON list of 'model@revision' strings")
+    ap.add_argument("--router-model-file", type=Path, help="the frozen router model file")
+    ap.add_argument("--model-revisions", type=Path, default=Path("config/v4_1/model_revisions.json"))
     ap.add_argument("--contracts", type=Path, help="JSON {name: {address, code_hash}}")
     ap.add_argument("--out", type=Path, default=Path("PREREGISTRATION.md"))
     a = ap.parse_args(argv)
     try:
         text = render_prereg(
             code_sha=git_sha(a.repo), world_yaml=a.world, harness_yaml=a.harness, conformal_json=a.conformal,
-            split_json=a.split, router_model=a.router_model,
-            model_revisions=json.loads(a.model_revisions.read_text()) if a.model_revisions and a.model_revisions.is_file() else None,
+            split_json=a.split, router_model_file=a.router_model_file, model_revisions_json=a.model_revisions,
             contracts=json.loads(a.contracts.read_text()) if a.contracts and a.contracts.is_file() else None)
     except PreregError as exc:
         raise SystemExit(str(exc))

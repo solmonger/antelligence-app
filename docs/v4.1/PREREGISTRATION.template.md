@@ -10,7 +10,9 @@ Code commit SHA: `$code_sha`
 | config/v4_1/harness.yaml sha256 | `$harness_sha256` |
 | conformal thresholds sha256 | `$conformal_sha256` |
 | split file sha256 | `$split_sha256` |
-| router model | `$router_model` |
+| router model file | `$router_model` |
+| router model file sha256 | `$router_sha256` |
+| model revisions list (config/v4_1/model_revisions.json) sha256 | `$revisions_sha256` |
 
 ### Model revisions
 
@@ -103,6 +105,8 @@ Seeds set the entry sites. Arms that share cases use the same seeds. Evaluation 
 3. SW-noQueen;
 4. the SW-Byz arms down to 10 cases each;
 5. SW-D down to 8 cases.
+
+Reading of section 8 (the lead's): each numbered step is atomic. RunPod steps 1 to 3 drop the named arm entirely (0 cases). Step 4 cuts both Byzantine arms to 10 in one step. Nous step 3 cuts all three arms to 20 in one step. A step is applied only while the projection is above the stop, and never raises an arm.
 
 Never cut SW-B or SW-noBoard below 80 x 2, or FW below 30 x 1. If that still isn't enough, ask Eshaan at G1.
 

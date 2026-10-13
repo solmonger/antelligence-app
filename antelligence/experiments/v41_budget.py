@@ -23,12 +23,25 @@ DEFAULT_SANDBOX_ROUNDS = 4  # goal 4.6 and 8: 4 rounds x 60 runs; the first Nous
 FLOORS = {"SW-B": 80, "SW-noBoard": 80, "FW": 30}
 SEED_FLOORS = {"SW-B": 2, "SW-noBoard": 2}
 
-# (step name, target) in the order the goal fixes. "sandbox" is a pseudo-arm: target = rounds.
-NOUS_CUT_ORDER: Tuple[Tuple[str, int], ...] = (
-    ("sandbox", 3), ("FW", 30), ("SW-B-missingFLAIR", 20), ("SW-Bonsai", 20), ("SW-staticQueen", 20))
-RUNPOD_CUT_ORDER: Tuple[Tuple[str, int], ...] = (
-    ("SW-B-missingFLAIR", 10), ("SW-staticQueen", 10), ("SW-noQueen", 10), ("SW-Byz-local", 10),
-    ("SW-Byz-chain", 10), ("SW-D", 8))
+# Goal 8 cut orders, lead's reading: each numbered step is atomic. A target of 0 drops the arm entirely.
+# "sandbox" is a pseudo-arm whose target is the number of rounds.
+Step = Tuple[Tuple[str, int], ...]
+NOUS_CUT_ORDER: Tuple[Step, ...] = (
+    (("sandbox", 3),),
+    (("FW", 30),),
+    (("SW-B-missingFLAIR", 20), ("SW-Bonsai", 20), ("SW-staticQueen", 20)),
+)
+RUNPOD_CUT_ORDER: Tuple[Step, ...] = (
+    (("SW-B-missingFLAIR", 0),),
+    (("SW-staticQueen", 0),),
+    (("SW-noQueen", 0),),
+    (("SW-Byz-local", 10), ("SW-Byz-chain", 10)),
+    (("SW-D", 8),),
+)
+
+
+def step_name(step: Step) -> str:
+    return "; ".join(f"{n} -> {v}" for n, v in step)
 
 
 class FloorViolation(ValueError):
@@ -69,12 +82,15 @@ def totals(plan: Plan, per_run: Mapping[str, Mapping[str, float]], sandbox_per_r
     return out
 
 
-def _apply(plan: Plan, name: str, target: int) -> Plan:
-    if name == "sandbox":
-        return dataclasses.replace(plan, sandbox_rounds=min(plan.sandbox_rounds, target))
-    cases = dict(plan.cases)
-    cases[name] = min(cases[name], target)
-    return dataclasses.replace(plan, cases=cases)
+def _apply(plan: Plan, step: Step) -> Plan:
+    """Apply one whole step; a cut never raises an arm above its current size."""
+    rounds, cases = plan.sandbox_rounds, dict(plan.cases)
+    for name, target in step:
+        if name == "sandbox":
+            rounds = min(rounds, target)
+        else:
+            cases[name] = min(cases[name], target)
+    return dataclasses.replace(plan, cases=cases, sandbox_rounds=rounds)
 
 
 def project(per_run: Mapping[str, Mapping[str, float]], *, sandbox_per_round: Optional[Mapping[str, float]] = None,
@@ -86,16 +102,16 @@ def project(per_run: Mapping[str, Mapping[str, float]], *, sandbox_per_round: Op
     initial = totals(current, per_run, sandbox_per_round)
     decisions: List[Dict[str, Any]] = []
     for provider, order in (("nous", NOUS_CUT_ORDER), ("runpod", RUNPOD_CUT_ORDER)):
-        for name, target in order:
+        for step in order:
             before = totals(current, per_run, sandbox_per_round)[provider]
             if before <= stops[provider]:
                 break
-            nxt = _apply(current, name, target)
+            nxt = _apply(current, step)
             if nxt == current:
                 continue
             check_floors(nxt)
             current = nxt
-            decisions.append({"provider": provider, "cut": f"{name} -> {target}", "projected_before": before,
+            decisions.append({"provider": provider, "cut": step_name(step), "projected_before": before,
                               "projected_after": totals(current, per_run, sandbox_per_round)[provider],
                               "stop": stops[provider]})
     final = totals(current, per_run, sandbox_per_round)
