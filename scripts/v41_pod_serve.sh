@@ -21,6 +21,8 @@ Q9_REV="790f0576d2d77dd5322aa0603a470bd9e3a3d1f6"
 Q4_ID="RedHatAI/Qwen3.5-4B-FP8-dynamic"
 Q4_REV="397b7ba47a99b3221ebfc0cfc5a279118cb733ad"
 D1_REV="051bcc464b01b9f92942b364d9586b0ef5912432"
+# Exact transformers for the d1 venv: the version d1-3B was saved with (config.json transformers_version, README: >=5.14).
+D1_TRANSFORMERS="5.14.1"
 
 GPU_UTIL_9B="${V41_GPU_UTIL_9B:-0.42}"
 GPU_UTIL_4B="${V41_GPU_UTIL_4B:-0.24}"
@@ -80,7 +82,7 @@ serve_qwen qwen3.5-4b "$Q4_ID" "$Q4_REV" "$GPU_UTIL_4B" 8101
 # d1-3B: its own venv, because transformers >= 5.14 may clash with vLLM's own pin.
 if [[ ! -x "$D1_VENV/bin/python" ]]; then
   uv venv "$D1_VENV"
-  uv pip install --python "$D1_VENV/bin/python" "transformers>=5.14" torch pillow
+  uv pip install --python "$D1_VENV/bin/python" "transformers==${D1_TRANSFORMERS}" torch torchvision pillow
 fi
 echo "start: d1-3B revision $D1_REV"
 V41_D1_TOKEN="$VLLM_API_KEY" "$D1_VENV/bin/python" "$D1_SCRIPT" --host 0.0.0.0 --port 8102 --revision "$D1_REV" &

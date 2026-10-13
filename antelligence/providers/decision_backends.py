@@ -20,11 +20,12 @@ from __future__ import annotations
 import asyncio
 import dataclasses
 import json
+import logging
 import math
 import re
 import time
 from pathlib import Path
-from typing import Any, Callable, Dict, Mapping, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union
 
 import httpx
 
@@ -39,6 +40,7 @@ JEV_URL = "https://api.typesafe.ai"
 LAYA_MODEL = "convaiinnovations/laya-typed-decisions"
 LAYA_URL = "http://127.0.0.1:8520"
 MAX_RESPONSE_BYTES = 2_000_000
+logger = logging.getLogger(__name__)
 
 
 class _Transient(Exception):
@@ -405,7 +407,9 @@ def response_to_dict(response: DecisionResponse) -> Dict[str, Any]:
             "request_hash": response.request_hash, "input_tokens": response.input_tokens,
             "output_tokens": response.output_tokens, "cost_usd": response.cost_usd, "elapsed_s": response.elapsed_s,
             "escalated": list(response.escalated), "identity": dict(response.identity),
-            "timing": dict(response.timing), "cites": list(response.cites), "prob_method": response.prob_method}
+            "timing": dict(response.timing), "cites": list(response.cites), "prob_method": response.prob_method,
+            "degraded": response.degraded, "reasoning_tokens": response.reasoning_tokens,
+            "alarm": dict(response.alarm)}
 
 
 def response_from_dict(data: Mapping[str, Any], *, cached: bool = False) -> DecisionResponse:
@@ -416,7 +420,8 @@ def response_from_dict(data: Mapping[str, Any], *, cached: bool = False) -> Deci
                             cost_usd=data["cost_usd"], elapsed_s=data["elapsed_s"], cached=cached,
                             escalated=tuple(data["escalated"]), identity=dict(data.get("identity") or {}),
                             timing=dict(data.get("timing") or {}), cites=tuple(data.get("cites") or ()),
-                            prob_method=data.get("prob_method", ""))
+                            prob_method=data.get("prob_method", ""), degraded=bool(data.get("degraded", False)),
+                            reasoning_tokens=int(data.get("reasoning_tokens", 0)), alarm=dict(data.get("alarm") or {}))
 
 
 class CachedDecision:
@@ -557,7 +562,8 @@ QWEN_4B = ("RedHatAI/Qwen3.5-4B-FP8-dynamic", "397b7ba47a99b3221ebfc0cfc5a279118
 NOUS_URL = "https://inference-api.nousresearch.com/v1"
 NOUS_FW_MODEL = "deepseek/deepseek-v4.1-flash"
 NOUS_FW_PRICE = (0.106, 0.513)  # $ per million tokens in / out (providers/ledger.py)
-DEFAULT_THINKING_OFF: Mapping[str, Any] = {"thinking": {"type": "disabled"}}  # pending the lead's live probe
+DEFAULT_THINKING_OFF: Mapping[str, Any] = {"reasoning": {"enabled": False}}  # live probe: 0 reasoning tokens; the
+# {"thinking": ...} and chat_template_kwargs forms do NOT switch it off on the Nous portal
 EMPTY_THINK = "<think>\n\n</think>\n\n"
 
 
@@ -675,12 +681,16 @@ def extract_label_probs(request: DecisionRequest, content: str, logprob_content:
     2. Find ``"<qid>": "`` in ``content``; the answer position is the token that starts at the next character. That
        token must be exactly ``L`` (a single-token label). A multi-token label is an error, not a guess.
     3. At that position, ``mass[label] = exp(logprob)`` for every offered label found in ``top_logprobs`` (the chosen
-       token's own logprob is used if it is missing there). Labels absent from the top list get mass 0.
-    4. Probabilities are ``mass`` renormalised over the offered labels only. Servers report logprobs from the raw
+       token's own logprob is used if it is missing there).
+    4. **Floor for absent labels.** A label missing from the top list is not zero, it is unseen. With
+       ``residual = max(0, 1 - sum(found mass))`` and ``n_missing`` absent labels, each absent label gets
+       ``min(residual / n_missing, min(found mass))``: it can never outrank a label that was actually seen. The
+       question is then ``degraded`` (returned, logged with a warning, and set on the reply).
+    5. Probabilities are the masses renormalised over the offered labels. Servers report logprobs from the raw
        distribution (before the JSON grammar masks illegal tokens), so renormalising removes the mass the grammar
-       forbids. The mass outside the offered labels is returned as ``residual`` per question for the log.
+       forbids.
 
-    Returns ({qid: {label: p}}, {"labels": {qid: chosen}, "residual": {qid: float}}).
+    Returns ({qid: {label: p}}, {"labels": {qid: chosen}, "residual": {qid: float}, "degraded": [qid, ...]}).
     """
     try:
         chosen = json.loads(content)
@@ -701,6 +711,7 @@ def extract_label_probs(request: DecisionRequest, content: str, logprob_content:
         raise DecisionError("logprobs: tokens do not reassemble to the reply text")
     out: Dict[str, Dict[str, float]] = {}
     residual: Dict[str, float] = {}
+    degraded: List[str] = []
     for qid, q in request.questions.items():
         labels, label = _question_labels(q), chosen[qid]
         if label not in labels:
@@ -713,20 +724,31 @@ def extract_label_probs(request: DecisionRequest, content: str, logprob_content:
         if idx is None or spans[idx][1] - spans[idx][0] != len(label) or content[start:spans[idx][1]] != label:
             raise DecisionError(f"logprobs: label {label!r} for {qid!r} is not a single token")
         entry = logprob_content[idx]
-        mass = {l: 0.0 for l in labels}
+        mass: Dict[str, float] = {}
         for cand in entry.get("top_logprobs") or ():
             tok, lp = cand.get("token"), cand.get("logprob")
-            if tok in mass and isinstance(lp, (int, float)) and math.isfinite(lp):
-                mass[tok] = max(mass[tok], math.exp(lp))
+            if tok in labels and isinstance(lp, (int, float)) and math.isfinite(lp):
+                mass[tok] = max(mass.get(tok, 0.0), math.exp(lp))
         own = entry.get("logprob")
-        if mass[label] == 0.0 and isinstance(own, (int, float)) and math.isfinite(own):
+        if label not in mass and isinstance(own, (int, float)) and math.isfinite(own):
             mass[label] = math.exp(own)
+        if not mass or sum(mass.values()) <= 0.0:
+            raise DecisionError(f"logprobs: no label of {qid!r} appears in the top logprobs")
+        found = sum(mass.values())
+        residual[qid] = max(0.0, 1.0 - found)
+        missing = [l for l in labels if l not in mass]
+        if missing:
+            floor = min(residual[qid] / len(missing), min(mass.values()))
+            mass.update({l: floor for l in missing})
+            degraded.append(qid)
+            logger.warning("logprobs: %s: %d label(s) %s absent from the top %d; floored at %.3g", qid, len(missing),
+                           missing, TOP_LOGPROBS, floor)
         total = sum(mass.values())
         if total <= 0.0:
-            raise DecisionError(f"logprobs: no label of {qid!r} appears in the top logprobs")
-        residual[qid] = max(0.0, 1.0 - total)
-        out[qid] = {l: m / total for l, m in mass.items()}
-    return out, {"labels": {qid: chosen[qid] for qid in request.questions}, "residual": residual}
+            raise DecisionError(f"logprobs: no label of {qid!r} has positive mass")
+        out[qid] = {l: mass[l] / total for l in labels}
+    return out, {"labels": {qid: chosen[qid] for qid in request.questions}, "residual": residual,
+                 "degraded": degraded}
 
 
 class _WorkerHTTPBackend(_TypedHTTPBackend):
@@ -804,7 +826,9 @@ class _WorkerHTTPBackend(_TypedHTTPBackend):
             cost_usd=float(cost) if isinstance(cost, (int, float)) else cost_usd(tokens_in, tokens_out, self.price),
             elapsed_s=elapsed, identity=identity,
             timing=_timing(elapsed, meta.get("server_ms", 0), meta.get("queue_ms", 0)),
-            cites=tuple(meta.get("cites", ())), prob_method=meta.get("prob_method", self.prob_method))
+            cites=tuple(meta.get("cites", ())), prob_method=meta.get("prob_method", self.prob_method),
+            degraded=bool(meta.get("degraded", False)), reasoning_tokens=int(meta.get("reasoning_tokens", 0)),
+            alarm=meta.get("alarm") or {})
 
 
 class D1Backend(_WorkerHTTPBackend):
@@ -859,7 +883,7 @@ class _ChatLabelBackend(_WorkerHTTPBackend):
             raise DecisionError(f"{self.name}: generation did not finish normally ({choice.get('finish_reason')})")
         content = choice["message"]["content"]
         logprobs = (choice.get("logprobs") or {}).get("content")
-        probs, method = self._label_probs(request, content, logprobs)
+        probs, method, degraded = self._label_probs(request, content, logprobs)
         short = _short_ids(tuple(request.brief_ids))
         listed = json.loads(content).get("cites", [])
         cites = tuple(sorted({short[c] for c in listed if c in short})) if isinstance(listed, list) else ()
@@ -869,10 +893,12 @@ class _ChatLabelBackend(_WorkerHTTPBackend):
             "identity": {"served_model": served, "revision": revision, "runtime": self.identity.runtime,
                          "runtime_version": self._runtime_version},
             "tokens_in": usage["prompt_tokens"], "tokens_out": usage["completion_tokens"], "cites": cites,
-            "server_ms": int(timings.get("prompt_ms", 0) + timings.get("predicted_ms", 0)), "prob_method": method}
+            "server_ms": int(timings.get("prompt_ms", 0) + timings.get("predicted_ms", 0)), "prob_method": method,
+            "degraded": degraded}
 
     def _label_probs(self, request, content, logprobs):
-        return extract_label_probs(request, content, logprobs)[0], self.prob_method
+        probs, info = extract_label_probs(request, content, logprobs)
+        return probs, self.prob_method, bool(info["degraded"])
 
 
 class VLLMLogprobBackend(_ChatLabelBackend):
@@ -935,7 +961,7 @@ class LlamaCppBackend(_ChatLabelBackend):
 
     def _label_probs(self, request, content, logprobs):
         if logprobs or not self.onehot_fallback:
-            return extract_label_probs(request, content, logprobs)[0], self.prob_method
+            return super()._label_probs(request, content, logprobs)
         chosen = json.loads(content)
         out = {}
         for qid, q in request.questions.items():
@@ -943,7 +969,7 @@ class LlamaCppBackend(_ChatLabelBackend):
             if chosen.get(qid) not in labels:
                 raise DecisionError(f"llamacpp: {qid}={chosen.get(qid)!r} is not one of {list(labels)}")
             out[qid] = {l: float(l == chosen[qid]) for l in labels}
-        return out, "onehot"
+        return out, "onehot", False
 
 
 class NousFWBackend(_WorkerHTTPBackend):
@@ -951,7 +977,8 @@ class NousFWBackend(_WorkerHTTPBackend):
 
     Probabilities are verbalised (the model writes them), not logprobs; ``prob_method="verbalised"`` and the reply is
     parsed by :func:`parse_slm_object`. ``thinking_param`` is merged into the request body; the default
-    ``{"thinking": {"type": "disabled"}}`` is a placeholder until the lead's live probe confirms the switch.
+    ``{"reasoning": {"enabled": false}}`` is the form the live probe showed to work (0 reasoning tokens). Reasoning
+    tokens from ``usage.completion_tokens_details`` are recorded; any above 0 sets an ``alarm`` payload on the reply.
     ``cites`` (optional list in the reply) is kept only for ids that are in ``request.brief_ids``.
     """
 
@@ -996,11 +1023,14 @@ class NousFWBackend(_WorkerHTTPBackend):
         cites = (tuple(sorted({short.get(c, c) for c in listed if isinstance(c, str)} & set(request.brief_ids)))
                  if isinstance(listed, list) else ())
         usage = data.get("usage") or {}
+        reasoning = int((usage.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)
         return parse_slm_object(request, raw), {
             "identity": {"served_model": str(data.get("model") or ""), "revision": "none", "runtime": "nous-portal",
                          "runtime_version": "none"},
             "tokens_in": usage["prompt_tokens"], "tokens_out": usage["completion_tokens"], "cites": cites,
-            "cost": usage.get("cost")}
+            "cost": usage.get("cost"), "reasoning_tokens": reasoning,
+            "alarm": ({"kind": "other", "value_ppm": reasoning,
+                       "note": f"{reasoning} hidden reasoning tokens with thinking off"[:140]} if reasoning > 0 else {})}
 
 
 # --- local-look patches ------------------------------------------------------------------------------------

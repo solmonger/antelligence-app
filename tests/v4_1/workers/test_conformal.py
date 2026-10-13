@@ -35,30 +35,36 @@ def rate(records, qhat_by_q) -> dict:
     return {q: np.mean([len(prediction_set(r.probs[q], qhat_by_q[q])) != 1 for r in records]) for q in qhat_by_q}
 
 
+def joint_rate(records, th) -> float:
+    return float(np.mean([ConformalDeferral(th).decide(r.probs).deferred for r in records]))
+
+
 def test_conformal_target_20pct_on_synthetic():
     dev = synthetic(2000, seed=1)
     th = freeze_thresholds(dev, arm="main", target_model="qwen3.5-9b")
+    # the JOINT rate (any question defers) is what lands on 20%, within 2 points, on dev and on fresh draws
+    assert th.joint_on_target and th.joint_dev_defer_rate == pytest.approx(0.20, abs=0.02)
+    assert joint_rate(dev, th) == pytest.approx(th.joint_dev_defer_rate)
+    assert joint_rate(synthetic(4000, seed=2), th) == pytest.approx(0.20, abs=0.04)
     for q in ("target", "release", "amount"):
         info = th.per_question[q]
-        assert info["n"] == 2000 and 0.0 < info["alpha"] < 1.0
-        assert info["dev_defer_rate"] == pytest.approx(0.20, abs=0.02) and info["on_target"], (q, info)
-    # the dev rate is what the thresholds reproduce on the dev records, and it generalises to fresh draws
-    fresh = synthetic(4000, seed=2)
-    got = rate(fresh, {q: th.qhat(q) for q in ("target", "release", "amount")})
-    for q, r in got.items():
-        assert r == pytest.approx(0.20, abs=0.04), (q, r)
-    assert th.joint_dev_defer_rate >= max(th.per_question[q]["dev_defer_rate"] for q in th.per_question) - 1e-9
-    # a d1 that is rarely sure cannot reach 20% (sets are never singletons): the nearest rate is reported and flagged
+        assert info["n"] == 2000 and 0.0 < info["alpha"] < 1.0 and info["dev_defer_rate"] <= th.joint_dev_defer_rate + 1e-9
+        assert math.isfinite(th.qhat(q))
+    # the independent per-question search would over-defer jointly: the joint search must beat it
+    indep = {q: choose_alpha(dev, q) for q in ("target", "release", "amount")}
+    assert max(v["dev_defer_rate"] for v in indep.values()) <= 0.22
+    ind_th = ConformalThresholds("main", "t", {q: {**v} for q, v in indep.items()}, 0.0)
+    assert joint_rate(dev, ind_th) > 0.25
+    # a d1 that is rarely sure cannot reach 20%: reported, not hidden
     poor = freeze_thresholds(synthetic(2000, seed=1, scale=(0.1, 0.5)), arm="main", target_model="t")
-    assert not all(v["on_target"] for v in poor.per_question.values())
-    assert all(v["dev_defer_rate"] > 0.2 for v in poor.per_question.values() if not v["on_target"])
+    assert not poor.joint_on_target and poor.joint_dev_defer_rate > 0.22
     # quantile arithmetic: rank = ceil((n+1)(1-alpha)); beyond n -> +inf (every label in the set)
     assert conformal_quantile([0.1, 0.2, 0.3, 0.4], 0.5) == 0.3
     assert math.isinf(conformal_quantile([0.1, 0.2], 0.1))
     with pytest.raises(ConformalError):
         conformal_quantile([], 0.1)
     with pytest.raises(ConformalError):
-        choose_alpha([], "target")
+        freeze_thresholds([], arm="a", target_model="b")
 
 
 def test_empty_set_defers():

@@ -1,8 +1,9 @@
 """kNN router (goal 4.5): which worker answers this squad-round. Frozen before G1, trained on development logs only.
 
-* **Features** (standardised with the training mean/std; ten numbers): for each of target, release, amount, d1's top
+* **Features** (standardised with the training mean/std; eleven numbers): for each of target, release, amount, d1's top
   probability and entropy (nats); then region uncertainty (``local_unc``), payload left (``payload_fraction``),
-  distance in mm to d1's chosen target region (0 for stay ``S`` and explore ``X``), and the round index.
+  distance in mm to d1's chosen target region (0 for stay ``S`` and explore ``X``), the round index, and a binary
+  ``is_stay_or_explore`` (1 when d1 chose ``S`` or ``X``, so a distance of 0 there is not read as "at the target").
 * **Labels from S'**, evaluated at the swarm's own state: ``target`` = the S'-mapped candidate label
   (``sprime_candidate_label``, else ``X``), ``release`` = yes iff S' would release there, ``amount`` = the level whose
   fraction is nearest S's fraction.
@@ -35,7 +36,7 @@ K = 15
 ROUTER_MODELS = ("d1", "qwen3.5-4b", "qwen3.5-9b")  # cheapest first
 BONSAI_ROUTER_MODELS = ("d1", "bonsai-8b")
 FEATURE_NAMES = ("target_top", "target_entropy", "release_top", "release_entropy", "amount_top", "amount_entropy",
-                 "region_unc", "payload", "dist_target_mm", "round")
+                 "region_unc", "payload", "dist_target_mm", "round", "is_stay_or_explore")
 QUESTIONS = ("target", "release", "amount")
 
 
@@ -48,16 +49,16 @@ def entropy(probs: Sequence[float]) -> float:
 
 
 def router_features(fields: Mapping[str, Any], d1_answers: Mapping[str, Answer]) -> List[float]:
-    """The ten live features for one squad-round, from the observation ``fields`` and d1's answers."""
+    """The eleven live features for one squad-round, from the observation ``fields`` and d1's answers."""
     row: List[float] = []
     for q in QUESTIONS:
         probs = list(d1_answers[q].probabilities.values())
         row += [max(probs), entropy(probs)]
     target = d1_answers["target"].value
-    dist = 0.0
-    if target not in (STAY, EXPLORE):
+    dist, stay_or_explore = 0.0, float(target in (STAY, EXPLORE))
+    if not stay_or_explore:
         dist = next((float(c["dist_mm"]) for c in fields.get("candidates", []) if c["label"] == target), 0.0)
-    row += [float(fields["local_unc"]), float(fields["payload_fraction"]), dist, float(fields["round"])]
+    row += [float(fields["local_unc"]), float(fields["payload_fraction"]), dist, float(fields["round"]), stay_or_explore]
     return row
 
 

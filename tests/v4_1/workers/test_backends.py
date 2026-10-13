@@ -11,7 +11,7 @@ import httpx
 import numpy as np
 import pytest
 
-from antelligence.kernel.decision import Answer, DecisionError
+from antelligence.kernel.decision import Answer, DecisionError, DecisionRequest, Question
 from antelligence.providers.decision_backends import (CachedDecision, D1Backend, LlamaCppBackend, NousFWBackend,
                                                       VLLMLogprobBackend, answer_schema, extract_label_probs,
                                                       patch_to_images)
@@ -59,6 +59,52 @@ def test_logprob_extraction_single_token_labels():
     assert info["labels"] == DEFAULT_CHOSEN
 
 
+def test_missing_labels_get_a_floor_and_degrade(caplog):
+    req = make_request(served())
+    tops = default_tops()
+    tops["target"] = {"B": 0.7, "A": 0.2}  # C, S, X absent from the top list: residual 0.1 over 3 labels
+    reply = chat_reply(req, DEFAULT_CHOSEN, tops, "m")
+    entries = reply["choices"][0]["logprobs"]["content"]
+    with caplog.at_level("WARNING"):
+        probs, info = extract_label_probs(req, json.dumps(DEFAULT_CHOSEN), entries)
+    floor = min(0.1 / 3, 0.2)  # residual / n_missing, capped at the smallest found probability
+    t = probs["target"]
+    assert info["degraded"] == ["target"] and "absent from the top" in caplog.text
+    assert t["C"] == t["S"] == t["X"] == pytest.approx(floor / (0.9 + 3 * floor))
+    assert t["B"] > t["A"] > t["C"] and sum(t.values()) == pytest.approx(1.0)  # a seen label always outranks an unseen one
+    # a tiny found mass caps the floor at the smallest found probability
+    tops["target"] = {"B": 0.02}
+    probs2, _ = extract_label_probs(req, json.dumps(DEFAULT_CHOSEN), chat_reply(req, DEFAULT_CHOSEN, tops, "m")["choices"][0]["logprobs"]["content"])
+    assert probs2["target"]["A"] == pytest.approx(probs2["target"]["B"]) and probs2["target"]["B"] == pytest.approx(1 / 5)
+    # nothing degraded when every label is seen; the reply flag follows
+    full = {"target": {"B": 0.5, "A": 0.2, "C": 0.1, "S": 0.1, "X": 0.1}, "release": {"yes": 0.8, "no": 0.2},
+            "amount": {"3": 0.4, "1": 0.15, "2": 0.15, "4": 0.15, "5": 0.15}}
+    rec = vllm_recorder(req, tops=full)
+    assert run(vllm(rec).decide(req)).degraded is False
+    rec = vllm_recorder(req, tops={**full, "target": {"B": 0.7, "A": 0.2}})
+    resp = run(vllm(rec).decide(req))
+    assert resp.degraded is True and resp.answers["target"].value == "B"
+
+
+def test_cache_roundtrips_new_flags(tmp_path):
+    req = make_request(served())
+    rec = vllm_recorder(req, tops={**default_tops(), "target": {"B": 0.7, "A": 0.2}})
+    first = run(CachedDecision(vllm(rec), tmp_path).decide(req))
+    again = run(CachedDecision(vllm(Recorder(lambda r: httpx.Response(500))), tmp_path, offline=True).decide(req))
+    assert first.degraded and again.degraded and again.reasoning_tokens == 0 and again.alarm == {}
+
+
+def test_golden_pre_v41_request_hash():
+    """A pre-v4.1 DecisionRequest hashes exactly as it did on the integration base (bee3ab9): cache keys survive."""
+    q = Question
+    req = DecisionRequest("jev-1.13.0", "Round 3 of 24. Payload left: 50%.", seed=7, questions={
+        "target": q("choice", "Where next?", ("A", "B", "S", "X"), {"A": "region A", "B": "region B", "S": "stay", "X": "explore"}),
+        "release": q("noul", "Release?", criteria={"true": "release", "false": "keep"}),
+        "amount": q("score", "How much?", ("1", "2", "3", "4", "5"))})
+    assert req.request_hash == "22f4f64eb9f6782f5ef4b900648ab6ac315315503281cd646825b76b7b783212"
+    assert "images" not in req.payload() and "brief_ids" not in req.payload()
+
+
 def test_logprob_extraction_rejects_multi_token_labels():
     req = make_request(served())
     content = '{"target": "B", "release": "yes", "amount": " 3"}'  # leading-space digit = two tokens on Qwen/Bonsai (L2)
@@ -79,7 +125,7 @@ def test_logprob_extraction_with_whitespace_and_compact_json():
         entries = [{"token": t, "logprob": -0.2, "top_logprobs": [{"token": t, "logprob": -0.2}]} for t in tokens]
         probs, info = extract_label_probs(req, content, entries)
         assert info["labels"] == {"target": "A", "release": "no", "amount": "5"}
-        assert probs["target"]["A"] == 1.0  # only the chosen token appears in the top list
+        assert probs["target"]["A"] == max(probs["target"].values()) and info["degraded"]  # others unseen -> floored
 
 
 # --- real tokenizers (cached only) ------------------------------------------------------------------------------
@@ -298,12 +344,14 @@ def test_d1_backend_request_shape_with_images():
 # --- Nous / DeepSeek V4.1 Flash ---------------------------------------------------------------------------------
 
 
-def _nous(req, *, content=None, model="deepseek/deepseek-v4.1-flash", finish="stop", thinking=None):
+def _nous(req, *, content=None, model="deepseek/deepseek-v4.1-flash", finish="stop", thinking=None, reasoning_tokens=None):
     content = content if content is not None else json.dumps({
         "target": {"A": 0.5, "B": 0.3, "C": 0.1, "S": 0.05, "X": 0.05}, "release": 0.9,
         "amount": {"0": 0.0, "1": 0.1, "2": 0.6, "3": 0.2, "4": 0.1}, "cites": [BRIEF[0][:8], "deadbeef"]})
     reply = {"model": model, "choices": [{"finish_reason": finish, "message": {"content": content}}],
              "usage": {"prompt_tokens": 300, "completion_tokens": 60}}
+    if reasoning_tokens is not None:
+        reply["usage"]["completion_tokens_details"] = {"reasoning_tokens": reasoning_tokens}
     rec = Recorder(lambda r: httpx.Response(200, json=reply))
     be = NousFWBackend("https://nous.test/v1", api_key="nk", retries=0, transport=rec.transport(),
                        **({"thinking_param": thinking} if thinking is not None else {}))
@@ -316,7 +364,7 @@ def test_nous_fw_verbalised_parse():
     be = _nous(req)
     resp = run(be.decide(req))
     body = json.loads(be.rec.posts[0].content)
-    assert be.rec.posts[0].url.path == "/v1/chat/completions" and body["thinking"] == {"type": "disabled"}
+    assert be.rec.posts[0].url.path == "/v1/chat/completions" and body["reasoning"] == {"enabled": False} and "thinking" not in body
     assert body["temperature"] == 0.0 and body["response_format"] == {"type": "json_object"}
     assert resp.prob_method == "verbalised"
     assert resp.identity == {"served_model": "deepseek/deepseek-v4.1-flash", "revision": "none",
@@ -326,9 +374,14 @@ def test_nous_fw_verbalised_parse():
     assert resp.cites == (BRIEF[0],)  # the unknown id "deadbeef" is dropped
     assert resp.cost_usd == pytest.approx((300 * 0.106 + 60 * 0.513) / 1e6)
     # thinking switch is configurable; fenced replies parse; cut-off replies fail
-    be2 = _nous(req, thinking={"reasoning": {"enabled": False}})
+    assert resp.reasoning_tokens == 0 and resp.alarm == {}
+    be2 = _nous(req, thinking={"thinking": {"type": "disabled"}})
     run(be2.decide(req))
-    assert "thinking" not in json.loads(be2.rec.posts[0].content) and json.loads(be2.rec.posts[0].content)["reasoning"] == {"enabled": False}
+    assert "reasoning" not in json.loads(be2.rec.posts[0].content)
+    # hidden reasoning tokens with thinking off -> recorded, and an alarm payload (INTERFACES section 4) is attached
+    loud = _nous(req, reasoning_tokens=37)
+    r = run(loud.decide(req))
+    assert r.reasoning_tokens == 37 and r.alarm["kind"] == "other" and r.alarm["value_ppm"] == 37 and len(r.alarm["note"]) <= 140
     fenced = _nous(req, content="```json\n" + json.dumps({"target": {"A": 1.0}, "release": 0.1, "amount": {"2": 1.0}}) + "\n```")
     assert run(fenced.decide(req)).answers["target"].value == "A"
     with pytest.raises(DecisionError, match="finish normally"):

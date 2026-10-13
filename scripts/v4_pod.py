@@ -11,7 +11,6 @@ Pure helpers (payload, command line, cost rows, refusal, state) are separate fro
 from __future__ import annotations
 
 import argparse
-import base64
 import json
 import os
 import secrets
@@ -97,17 +96,45 @@ def start_script(model: str, log_token: str) -> str:
             f"echo \"vllm exited\" >> {log}; sleep infinity")
 
 
-def workers_start_script(log_token: str, files: Optional[Mapping[str, Path]] = None) -> str:
-    """Container command for the v4.1 worker pod: the two launcher files travel inside it (base64), so the pod needs
-    nothing but the vLLM image. Log (key redacted) is served read-only on :8001 under a secret path, as for ``up``."""
-    files = files or WORKERS_FILES
-    blobs = {name: base64.b64encode(Path(path).read_bytes()).decode("ascii") for name, path in files.items()}
+def workers_start_script(log_token: str) -> str:
+    """Tiny container command for the v4.1 worker pod. It does NOT carry the launcher: it waits until the files have
+    been pushed (``push-scripts``) and the ``/opt/v41/.pushed`` marker exists, then runs ``serve.sh``. Log (key
+    redacted) is served read-only on :8001 under a secret path, as for ``up``."""
     log = f"/srv/{log_token}/workers.log"
-    unpack = " && ".join(f"echo {blob} | base64 -d > /opt/v41/{name}" for name, blob in blobs.items())
-    return (f"mkdir -p /srv/{log_token} /opt/v41 && : > /srv/index.html && {unpack} && "
+    return (f"mkdir -p /srv/{log_token} /opt/v41 && : > /srv/index.html && "
             f"(python3 -m http.server 8001 --directory /srv >/dev/null 2>&1 &) && "
+            f"until [ -f /opt/v41/.pushed ]; do sleep 2; done; "
             f"{{ bash /opt/v41/serve.sh 2>&1 | sed -u \"s/$VLLM_API_KEY/[redacted]/g\" > {log}; }}; "
             f"echo \"workers exited\" >> {log}; sleep infinity")
+
+
+def push_commands(host: str, port: int, identity: Optional[str] = None, user: str = "root",
+                  files: Optional[Mapping[str, Path]] = None) -> List[List[str]]:
+    """scp each launcher file to ``/opt/v41/<name>.part``, then one ssh that moves them into place and writes the
+    ``.pushed`` marker (so the pod never runs a half-copied script). Pure: paths and host only, no key material;
+    ``identity`` is the path of the caller's private key and is passed to ssh, never read or printed here."""
+    files = files or WORKERS_FILES
+    opts = ["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new"]
+    if identity:
+        opts += ["-i", identity]
+    cmds = [["scp", *opts, "-P", str(port), str(path), f"{user}@{host}:/opt/v41/{name}.part"]
+            for name, path in files.items()]
+    move = " && ".join(f"mv /opt/v41/{n}.part /opt/v41/{n}" for n in files) + " && touch /opt/v41/.pushed"
+    return cmds + [["ssh", *opts, "-p", str(port), f"{user}@{host}", move]]
+
+
+def cmd_push_scripts(host: str, port: int, identity: Optional[str], echo: "Echo" = print,
+                     run: Callable[..., Any] = None) -> int:
+    import subprocess
+
+    run = run or subprocess.run
+    for cmd in push_commands(host, port, identity):
+        echo("run: " + " ".join(shlex.quote(c) for c in cmd[:1] + [c for c in cmd[1:] if c != identity]))
+        if run(cmd).returncode != 0:
+            echo("push failed")
+            return 1
+    echo("pushed: the pod will start serve.sh now")
+    return 0
 
 
 def deploy_payload_workers(api_secret: str, gpu: str, log_token: str) -> Dict[str, Any]:
@@ -356,12 +383,18 @@ def main(argv: Optional[List[str]] = None, *, paths: Optional[Paths] = None,
     up = sub.add_parser("up")
     up.add_argument("model", choices=sorted([*MODELS, WORKERS_KEY]))
     up.add_argument("--wait", action="store_true", help="after creating, block until vLLM serves the model")
+    push = sub.add_parser("push-scripts", help="copy the v4.1 launcher to the worker pod over ssh/scp")
+    push.add_argument("--host", required=True)
+    push.add_argument("--port", type=int, required=True)
+    push.add_argument("--identity", help="path to the ssh private key file (path only; never read here)")
     for name in ("status", "wait", "down", "cost"):
         sub.add_parser(name)
     args = parser.parse_args(argv)
     paths = paths or Paths()
     if args.cmd == "cost":
         return cmd_cost(paths, echo)
+    if args.cmd == "push-scripts":
+        return cmd_push_scripts(args.host, args.port, args.identity, echo)
     if args.cmd == "wait":  # talks to the pod with its own secret, not the RunPod key
         return cmd_wait(paths, echo, transport, sleep)
     client = RunPod(api_key or runpod_key(), transport)

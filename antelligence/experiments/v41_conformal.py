@@ -10,11 +10,14 @@ development logs from both arms:
   (infinite when that rank exceeds n, which puts every label in the set).
 * **Prediction set** = labels ``l`` with ``1 - p_d1(l) <= qhat``. A question defers unless its set has exactly one
   label: more than one label is doubt, and an **empty set also defers**.
-* **alpha per question** is chosen from a grid so that development deferral is closest to 20% (ties go to the smaller
-  alpha). Deferral is not monotone in alpha (tiny alpha gives big sets, large alpha gives empty sets), so the grid is
-  searched, not bisected.
-* A decision defers when any of its three questions defers (``DeferralResult.deferred``). The frozen file also records
-  the joint development rate, which is higher than 20% when the questions defer on different states.
+* **A decision defers when ANY of its three questions defers** (``DeferralResult.deferred``; lead decision), so the
+  quantity held at 20% is the **joint** development defer rate. ``freeze_thresholds`` runs one search over
+  (alpha_target, alpha_release, alpha_amount): coordinate descent on the alpha grid, started from each question's
+  independent best alpha and from each question's least-deferring alpha, minimising |joint - 0.20| with ties to the
+  smaller alpha sum. Deferral is not monotone in alpha (tiny alpha gives big sets, large alpha gives empty sets), so
+  the grid is searched, not bisected. Per-question qhat is kept; ``joint_on_target`` records whether the joint rate
+  landed within 2 points of 20% (a d1 that is rarely sure cannot, and the file says so).
+* ``choose_alpha`` (one question alone) is kept for diagnostics and as the search's starting point.
 
 Thresholds are frozen into JSON with a sha256 of their canonical body and never adapt during evaluation. A 10%
 audit sample (deterministic hash of the decision key) has the deferral target answer even when d1 kept the decision;
@@ -30,6 +33,8 @@ import math
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+
+import numpy as np
 
 from antelligence.kernel.canonical import canonical_json, content_hash
 from antelligence.kernel.decision import Answer, DecisionRequest
@@ -141,13 +146,14 @@ class ConformalThresholds:
     per_question: Mapping[str, Mapping[str, Any]]
     joint_dev_defer_rate: float
     defer_target: float = DEFER_TARGET
+    joint_on_target: bool = False
 
     def body(self) -> Dict[str, Any]:
         # inf is not JSON: it is stored as null and read back as inf
         pq = {q: {**v, "qhat": None if math.isinf(v["qhat"]) else v["qhat"]} for q, v in self.per_question.items()}
         return {"study": "v4.1", "kind": "conformal-thresholds", "arm": self.arm, "target_model": self.target_model,
                 "defer_target": self.defer_target, "per_question": pq,
-                "joint_dev_defer_rate": self.joint_dev_defer_rate}
+                "joint_dev_defer_rate": self.joint_dev_defer_rate, "joint_on_target": self.joint_on_target}
 
     @property
     def sha256(self) -> str:
@@ -168,16 +174,57 @@ class ConformalThresholds:
             raise ConformalError(f"{path}: thresholds do not match their sha256")
         pq = {q: {**v, "qhat": math.inf if v["qhat"] is None else float(v["qhat"])}
               for q, v in body["per_question"].items()}
-        return cls(body["arm"], body["target_model"], pq, body["joint_dev_defer_rate"], body["defer_target"])
+        return cls(body["arm"], body["target_model"], pq, body["joint_dev_defer_rate"], body["defer_target"],
+                   body["joint_on_target"])
 
 
-def freeze_thresholds(records: Sequence[DevRecord], *, arm: str, target_model: str,
-                      target: float = DEFER_TARGET) -> ConformalThresholds:
-    """Fit all three question types on development records (from both SW-B and SW-noBoard runs) and freeze."""
-    per_question = {q: choose_alpha(records, q, target) for q in QTYPES}
-    draft = ConformalThresholds(arm, target_model, per_question, 0.0, target)
-    joint = sum(ConformalDeferral(draft).decide(r.probs).deferred for r in records) / len(records)
-    return ConformalThresholds(arm, target_model, per_question, joint, target)
+def _deferral_table(records: Sequence[DevRecord], qtype: str, grid: Sequence[float]) -> Tuple[List[float], np.ndarray]:
+    """qhat and the per-record defer flags for every alpha on the grid (rows = alphas)."""
+    scores = [nonconformity(r.probs[qtype], r.labels[qtype]) for r in records]
+    qhats = [conformal_quantile(scores, a) for a in grid]
+    flags = np.array([[defers(prediction_set(r.probs[qtype], q)) for r in records] for q in qhats], dtype=bool)
+    return qhats, flags
+
+
+def freeze_thresholds(records: Sequence[DevRecord], *, arm: str, target_model: str, target: float = DEFER_TARGET,
+                      grid: Sequence[float] = ALPHA_GRID) -> ConformalThresholds:
+    """Fit all three question types on development records (from both SW-B and SW-noBoard runs) and freeze.
+
+    One joint search over the three alphas so that the rate at which ANY question defers is closest to ``target``."""
+    if not records:
+        raise ConformalError("no development records")
+    grid = tuple(grid)
+    tables = {q: _deferral_table(records, q, grid) for q in QTYPES}
+
+    def joint(idx: Mapping[str, int]) -> float:
+        return float(np.logical_or.reduce([tables[q][1][idx[q]] for q in QTYPES]).mean())
+
+    def key(idx: Mapping[str, int]) -> Tuple[float, float]:
+        return (round(abs(joint(idx) - target), 12), sum(grid[idx[q]] for q in QTYPES))
+
+    starts = [{q: grid.index(choose_alpha(records, q, target, grid)["alpha"]) for q in QTYPES}]
+    starts += [{q: int(np.argmin(tables[q][1].mean(axis=1))) for q in QTYPES}]
+    best: Optional[Dict[str, int]] = None
+    for start in starts:
+        idx = dict(start)
+        for _ in range(20):  # coordinate descent to a fixed point
+            changed = False
+            for q in QTYPES:
+                cand = min(range(len(grid)), key=lambda i: key({**idx, q: i}))
+                if key({**idx, q: cand}) < key(idx):
+                    idx[q], changed = cand, True
+            if not changed:
+                break
+        if best is None or key(idx) < key(best):
+            best = idx
+    assert best is not None
+    per_question = {q: {"alpha": grid[best[q]], "qhat": tables[q][0][best[q]], "n": len(records),
+                        "dev_defer_rate": float(tables[q][1][best[q]].mean()),
+                        "on_target": bool(tables[q][1][best[q]].mean() <= target + TARGET_TOLERANCE)}
+                    for q in QTYPES}
+    rate = joint(best)
+    return ConformalThresholds(arm, target_model, per_question, rate, target,
+                               joint_on_target=bool(abs(rate - target) <= TARGET_TOLERANCE))
 
 
 # --- applying ---------------------------------------------------------------------------------------------------

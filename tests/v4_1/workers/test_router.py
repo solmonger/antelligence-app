@@ -44,11 +44,11 @@ def test_router_features_shape():
                "amount": Answer("score", 2.0, {"0": 0.0, "1": 0.2, "2": 0.6, "3": 0.2, "4": 0.0}, 0.6)}
     fields = {"local_unc": 0.3, "payload_fraction": 0.5, "round": 4, "candidates": CANDS}
     f = router_features(fields, answers)
-    assert len(f) == len(FEATURE_NAMES) == 10
-    assert f[0] == 0.7 and f[2] == 0.9 and f[4] == 0.6 and f[6:] == [0.3, 0.5, 20.0, 4.0]
+    assert len(f) == len(FEATURE_NAMES) == 11
+    assert f[0] == 0.7 and f[2] == 0.9 and f[4] == 0.6 and f[6:] == [0.3, 0.5, 20.0, 4.0, 0.0]
     assert f[1] > 0 and f[3] == pytest.approx(-(0.9 * np.log(0.9) + 0.1 * np.log(0.1)))
     stay = {**answers, "target": Answer("choice", "S", {"A": 0.1, "B": 0.1, "C": 0.1, "S": 0.6, "X": 0.1}, 0.6)}
-    assert router_features(fields, stay)[8] == 0.0
+    assert router_features(fields, stay)[8] == 0.0 and router_features(fields, stay)[10] == 1.0
 
 
 def rows_with_labels(counts, spread=0.0):
@@ -64,21 +64,21 @@ def test_router_knn_ties_to_cheaper():
     # 15 identical points, 5 per model: every neighbour is at distance 0, votes tie 5/5/5 -> the cheapest (d1)
     rows = rows_with_labels({"qwen3.5-9b": 5, "qwen3.5-4b": 5, "d1": 5})
     r = KNNRouter.fit(rows, k=K)
-    assert r.k == 15 and r.predict([0.0] * 10) == "d1"
+    assert r.k == 15 and r.predict([0.0] * 11) == "d1"
     # tie between the two costlier models only -> 4B
     r2 = KNNRouter.fit(rows_with_labels({"qwen3.5-9b": 4, "qwen3.5-4b": 4, "d1": 1}), k=K)
-    assert r2.predict([0.0] * 10) == "qwen3.5-4b"
+    assert r2.predict([0.0] * 11) == "qwen3.5-4b"
     # plurality still wins when not tied
     r3 = KNNRouter.fit(rows_with_labels({"qwen3.5-9b": 8, "qwen3.5-4b": 4, "d1": 3}), k=K)
-    assert r3.predict([0.0] * 10) == "qwen3.5-9b"
+    assert r3.predict([0.0] * 11) == "qwen3.5-9b"
     # k is capped by the training size; features are standardised (a far feature does not dominate by scale)
     assert KNNRouter.fit(rows_with_labels({"d1": 3}), k=K).k == 3
-    a = [TrainRow([0.0] * 9 + [0.0], "d1")] * 5 + [TrainRow([0.0] * 9 + [100.0], "qwen3.5-9b")] * 5
+    a = [TrainRow([0.0] * 11, "d1")] * 5 + [TrainRow([0.0] * 10 + [100.0], "qwen3.5-9b")] * 5
     r4 = KNNRouter.fit(a, k=5)
-    assert r4.predict([0.0] * 9 + [90.0]) == "qwen3.5-9b" and r4.predict([0.0] * 9 + [5.0]) == "d1"
+    assert r4.predict([0.0] * 10 + [90.0]) == "qwen3.5-9b" and r4.predict([0.0] * 10 + [5.0]) == "d1"
     # a tie in the TRAINING labels goes to the cheaper model as well (make_rows)
     d = {"d1": dec("A", 0, 1), "qwen3.5-4b": dec("A", 0, 1), "qwen3.5-9b": dec("A", 0, 1)}
-    assert make_rows([([0.0] * 10, d, {"target": "A", "release": "no", "amount": "1"})])[0].label == "d1"
+    assert make_rows([([0.0] * 11, d, {"target": "A", "release": "no", "amount": "1"})])[0].label == "d1"
 
 
 def test_router_freeze_roundtrip_and_bonsai_variant(tmp_path):
@@ -87,7 +87,7 @@ def test_router_freeze_roundtrip_and_bonsai_variant(tmp_path):
     assert r.models == BONSAI_ROUTER_MODELS
     digest = r.save(tmp_path / "router.json")
     again = KNNRouter.load(tmp_path / "router.json", expect_sha256=digest)
-    probes = np.random.default_rng(1).normal(0, 1, (20, 10))
+    probes = np.random.default_rng(1).normal(0, 1, (20, 11))
     assert [again.predict(p) for p in probes] == [r.predict(p) for p in probes] and again.sha256 == digest
     (tmp_path / "router.json").write_text((tmp_path / "router.json").read_text().replace('"k":12', '"k":11'))
     with pytest.raises(RouterError):

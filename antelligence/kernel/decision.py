@@ -209,6 +209,12 @@ class DecisionResponse:
     timing: Mapping[str, int] = field(default_factory=dict)
     cites: Tuple[str, ...] = ()
     prob_method: str = ""
+    # degraded: some label was missing from the top logprobs and got a floor (see extract_label_probs).
+    # reasoning_tokens: hidden reasoning tokens the provider reported; alarm: an INTERFACES section 4 alarm payload
+    # ({} when none) that the harness writes to the board.
+    degraded: bool = False
+    reasoning_tokens: int = 0
+    alarm: Mapping[str, Any] = field(default_factory=dict)
 
     @property
     def usage(self) -> Dict[str, Any]:
@@ -220,7 +226,8 @@ class DecisionResponse:
                                "input_tokens": self.input_tokens, "output_tokens": self.output_tokens,
                                "escalated": list(self.escalated)}
         if self.identity:  # deterministic, so a cache replay hashes equal
-            out.update(identity=dict(self.identity), prob_method=self.prob_method, cites=list(self.cites))
+            out.update(identity=dict(self.identity), prob_method=self.prob_method, cites=list(self.cites),
+                       degraded=self.degraded, reasoning_tokens=self.reasoning_tokens)
         return out
 
 
