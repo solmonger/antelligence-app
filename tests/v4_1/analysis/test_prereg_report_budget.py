@@ -23,7 +23,15 @@ def test_prereg_refuses_missing_inputs(inputs, tmp_path):
     pre = load_script("v41_prereg")
     text = pre.render_prereg(**inputs)
     assert not re.search(r"\$[a-z_]+", text) and "a" * 40 in text and "AnchorRegistry" in text and "qwen3-4b@abc123" in text
-    assert "SW-D: 12 x 1" in text and "sandbox -> 3" in text and "never cut" in text.lower()
+    assert "SW-D** | as SW-B | promoted harness | D (board on-chain) | 12 x 1" in text
+    assert "sandbox rounds down to 3" in text and "Never cut SW-B or SW-noBoard below 80 x 2" in text
+    assert "lower end of a two-sided 90% BCa" in text and "(seed 1)" in text and "$8, with a hard stop at $7.50" in text
+    assert "Changes after the lock" in text and "None, except cuts made for a budget hard stop" in text
+    assert "outside its band (5% to 40% per run) in more than 25% of runs" in text
+    for arm, (cases, seeds) in B.PLAN.items():  # template sizes agree with the budget module
+        name = arm.replace("-prime", "'")
+        row = next(l for l in text.splitlines() if l.startswith(f"| {name} |") or l.startswith(f"| **{name}** |"))
+        assert row.rstrip(" |").endswith(f"{cases} x {seeds}"), arm
     import hashlib
     assert hashlib.sha256(b"content of world.yaml").hexdigest() in text
     for key in ("code_sha", "router_model", "model_revisions", "contracts", "world_yaml", "split_json"):

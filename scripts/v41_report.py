@@ -51,7 +51,7 @@ def render(results: Dict[str, Any]) -> str:
     add("")
     add(f"Split analysed: {results['split']}. Cells used: {n('n_cells')}.")
     add("")
-    add("## P1 board effect (SW-B vs SW-noBoard)")
+    add("## P1 board effect (SW-B vs SW-noBoard, coverage)")
     add(f"- Cases: {n('p1.n_cases')}; mean paired difference {n('p1.mean_diff')} "
         f"(BCa confidence interval {n('p1.ci_low')} to {n('p1.ci_high')}); Wilcoxon p = {n('p1.p_value')}.")
     add(f"- Passed: {n('p1.passed')} (needs p below {n('thresholds.alpha', 2)} and a positive mean).")
@@ -78,17 +78,32 @@ def render(results: Dict[str, Any]) -> str:
         add(f"- {name}: {n(f'explained_null.items.{name}.value')} against {n(f'explained_null.items.{name}.threshold', 2)}; "
             f"flagged: {n(f'explained_null.items.{name}.flagged')}.")
     add("")
-    add("## Secondary measures")
-    for sid, block in results["secondary"].items():
-        if "arms" in block and sid != "S9":
-            add(f"### {sid} ({block['field']})")
-            for arm, v in block["arms"].items():
-                add(f"- {arm}: mean {n(f'secondary.{sid}.arms.{arm}.mean')} over {n(f'secondary.{sid}.arms.{arm}.n')} runs.")
-    s9 = results["secondary"]["S9"]
-    add("### S9 (normalised score, ratio of means)")
-    add(f"- Cases with gap at least {n('secondary.S9.min_gap', 2)}: {n('secondary.S9.n_cases_gap')}.")
-    for arm in s9["arms"]:
-        add(f"- {arm}: {n(f'secondary.S9.arms.{arm}.ratio')} over {n(f'secondary.S9.arms.{arm}.n_cases')} cases.")
+    add("## Secondary measures (reported, not used to declare a win)")
+    for sid in (f"S{i}" for i in range(1, 13)):
+        block = results["secondary"][sid]
+        add(f"### {sid}")
+        if "comparisons" in block:
+            for name in block["comparisons"]:
+                k = f"secondary.{sid}.comparisons.{name}"
+                add(f"- {name}: coverage difference {n(k + '.mean_diff')} (BCa interval {n(k + '.ci_low')} to "
+                    f"{n(k + '.ci_high')}) over {n(k + '.n_cases')} cases.")
+        elif "fields" in block:
+            for field, arms in block["fields"].items():
+                for arm in arms:
+                    k = f"secondary.{sid}.fields.{field}.{arm}"
+                    add(f"- {field}, {arm}: mean {n(k + '.mean')} over {n(k + '.n')} runs.")
+        elif sid == "S9":
+            add(f"- Cases with gap at least {n('secondary.S9.min_gap', 2)}: {n('secondary.S9.n_cases_gap')}.")
+            for arm in block["arms"]:
+                add(f"- {arm}: ratio of means {n(f'secondary.S9.arms.{arm}.ratio')} over "
+                    f"{n(f'secondary.S9.arms.{arm}.n_cases')} cases.")
+        else:
+            add(f"- Latency benchmark available: {n('secondary.S12.available')} (source: {block['source']}).")
+            for name in block["metrics"]:
+                add(f"- {name}: {n(f'secondary.S12.metrics.{name}')}.")
+    add("")
+    add("## Live check (separate from the explained-null band)")
+    add(f"- Mean development defer rate {n('live_check.mean_defer_rate')}; inside the live-check band: {n('live_check.in_band')}.")
     add("")
     return "\n".join(R.lines) + "\n"
 

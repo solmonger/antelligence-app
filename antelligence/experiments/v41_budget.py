@@ -19,7 +19,7 @@ PLAN: Dict[str, Tuple[int, int]] = {
     "SW-noQueen": (40, 1), "SW-staticQueen": (40, 1), "SW-Bonsai": (40, 1), "SW-Byz-local": (20, 1),
     "SW-Byz-chain": (20, 1), "SW-B-missingFLAIR": (20, 1),
 }
-DEFAULT_SANDBOX_ROUNDS = 5  # assumption: the goal's starting sandbox depth is not in the brief; pass it explicitly
+DEFAULT_SANDBOX_ROUNDS = 4  # goal 4.6 and 8: 4 rounds x 60 runs; the first Nous cut is 3 rounds
 FLOORS = {"SW-B": 80, "SW-noBoard": 80, "FW": 30}
 SEED_FLOORS = {"SW-B": 2, "SW-noBoard": 2}
 
