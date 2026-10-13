@@ -8,6 +8,9 @@
 from the environment variables the config names, nowhere else. The gate (``v41_gate``) runs before every episode; an
 evaluation case needs the committed preregistration, its confirmed anchor receipt and the G1 approval file.
 ``--calibration`` is Phase 0 step 7 (Qwen3.5-9B drives, d1 and Qwen3.5-4B answer counterfactually, development only).
+``--log-counterfactuals all`` is Phase 0 step 9: the live router and deferral policy drive, and d1, Qwen3.5-4B and
+Qwen3.5-9B (Bonsai 8B in the Bonsai arm) all answer every decision counterfactually (logged, never used), so the one
+allowed refit fits on step-9 logs. Development cases, worker arms, not together with --calibration.
 ``--anchors mock`` anchors to in-process mock OTS/Rekor/chain (plumbing and tests). ``--anchors live`` is the real thing:
 OTS public calendars, Rekor (rekor.sigstore.dev), AnchorRegistry (chain 300), BoardLog for SW-D and ReputationRegistry for
 SW-Byz-chain, over the persistent queue in ledger/. It WRITES TO PUBLIC NETWORKS and needs the chain signer in the
@@ -80,6 +83,9 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--cases-root", help="L1 store (default data/v4_1/cases); the missing_flair variant reads <root>_missing_flair")
     ap.add_argument("--concurrency", type=int, default=4)
     ap.add_argument("--calibration", action="store_true")
+    ap.add_argument("--log-counterfactuals", choices=("none", "all"), default="none",
+                    help="'all': with the live router + deferral policy driving, every model of the arm answers every "
+                         "decision counterfactually (logged only); development cases (Phase 0 step 9)")
     ap.add_argument("--anchors", choices=("none", "mock", "live"), default="none")
     ap.add_argument("--allow-unanchored", action="store_true",
                     help="let anchored arms (SW-B, FW, SW-D, SW-Byz-*) run without anchors; refused by default")
@@ -199,7 +205,8 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
     h = harness or build_harness(args, get_env)
     print(f"look temperature {h.look_temperature} ({h.look_temperature_source})")
     try:
-        results = asyncio.run(h.run_many(runs, concurrency=args.concurrency, calibration=args.calibration))
+        results = asyncio.run(h.run_many(runs, concurrency=args.concurrency, calibration=args.calibration,
+                                       log_counterfactuals=args.log_counterfactuals))
     finally:
         if args.live_anchoring is not None:
             print(f"chain queue at exit: {args.live_anchoring.close()}")

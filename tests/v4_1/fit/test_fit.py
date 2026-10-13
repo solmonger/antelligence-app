@@ -54,7 +54,8 @@ def make_run(root: Path, case, arm="SW-B", *, seed=1, rows=40, rng_seed=0, drive
     for n in range(rows):
         truth = (rng.choice(TARGETS), rng.randint(0, 1), rng.randint(1, 5))
         t, r, a = _answer(rng, *truth, 0.8)
-        sp = {"target": rng.choice(TARGETS), "release": rng.choice(["yes", "no"]), "amount": str(rng.randint(1, 5))}
+        # S' is the truth the models are noisy copies of (the conformity label is S''s label)
+        sp = {"target": truth[0], "release": "yes" if truth[1] else "no", "amount": str(truth[2])}
         row = {"kind": "decision", "run_id": run_id, "arm": f"{arm}:calibration", "case": mismatch or case, "seed": seed,
                "squad": n % 8, "round": n // 8, "tick": n, "backend": driver, "target": t, "release": r, "amount": a,
                "calls": [{"worker": driver, "server_ms": 100, "network_ms": 0, "queue_ms": 0, "tokens_in": 1, "tokens_out": 1,
@@ -97,7 +98,7 @@ def test_joint_defer_rate_is_about_20_percent(synthetic):
     assert abs(th.joint_dev_defer_rate - 0.20) <= 0.02 and th.joint_on_target
     # recomputing the joint rate by applying the frozen thresholds agrees with what was frozen
     dec = ConformalDeferral(th)
-    rate = np.mean([dec.decide(s.probs).deferred for s in samples])
+    rate = np.mean([dec.decide(s.resolved_probs()).deferred for s in samples])
     assert rate == pytest.approx(th.joint_dev_defer_rate)
     rep = v41_fit.conformal_report(th, samples)
     assert set(rep["defer_rate_by_arm"]) == {"SW-B", "SW-noBoard"} and rep["sha256"] == th.sha256
@@ -147,7 +148,7 @@ def test_frozen_files_reload_to_identical_predictions(synthetic, tmp_path):
     th2, router2 = ConformalThresholds.load(cp, th.sha256), KNNRouter.load(rp, router.sha256)
     assert th2.sha256 == th.sha256 and router2.sha256 == router.sha256
     d1, d2 = ConformalDeferral(th), ConformalDeferral(th2)
-    assert [d1.decide(s.probs) for s in samples] == [d2.decide(s.probs) for s in samples]
+    assert [d1.decide(s.resolved_probs()) for s in samples] == [d2.decide(s.resolved_probs()) for s in samples]
     feats = np.array([s.features for s in samples])
     assert v41_fit.predict_many(router, feats) == v41_fit.predict_many(router2, feats)
     doc = json.loads(cp.read_text())
@@ -250,3 +251,92 @@ def test_cli_end_to_end_and_no_silent_overwrite(tmp_path):
     assert not any(c in json.dumps(rep) for c in DEV)                       # aggregates only: no case ids
     assert cli.main(args) == 1                                              # frozen files are not overwritten ...
     assert cli.main(args + ["--force"]) == 0                                # ... without --force
+
+
+# --- step-9 logs: the live router/deferral policy drove, every model answered counterfactually -----------------------
+
+def make_mixed_run(root: Path, case, arm="SW-B", rows=60, rng_seed=0):
+    rng = random.Random(f"mixed|{case}|{arm}|{rng_seed}")
+    run_id = f"{abs(hash(('mixed', case, arm, rng_seed))) % 10**12:064d}"
+    d = root / "runs" / run_id
+    d.mkdir(parents=True)
+    out = []
+    for n in range(rows):
+        truth = (rng.choice(TARGETS), rng.randint(0, 1), rng.randint(1, 5))
+        cf = {"d1": _cf(rng, truth, 0.55, 0.2, 1.5), "qwen3.5-4b": _cf(rng, truth, 0.6, 0.2, 1.0),
+              "qwen3.5-9b": _cf(rng, truth, 0.85, 0.2, 1.0)}
+        driver = rng.choice(["d1", "qwen3.5-4b", "qwen3.5-9b"])       # whoever the router/deferral chose
+        sp = {"target": truth[0], "release": "yes" if truth[1] else "no", "amount": str(truth[2])}
+        out.append({"kind": "decision", "run_id": run_id, "arm": f"{arm}:cf-all", "case": case, "seed": 1, "squad": n % 8,
+                    "round": n // 8, "tick": n, "backend": driver, "target": cf[driver]["target"],
+                    "release": cf[driver]["release"], "amount": cf[driver]["amount"], "calls": [], "counterfactual": cf,
+                    "sprime": sp, "features": [rng.random() for _ in range(11)], "error": False})
+    (d / "decisions.jsonl").write_text("".join(json.dumps(r) + "\n" for r in out))
+    (d / "run_log.json").write_text(json.dumps({"run_id": run_id, "arm": arm, "case": case, "seed": 1, "split": "dev",
+                                                "calibration": False, "log_counterfactuals": "all", "wall_s": 5.0}))
+    (d / "cell.json").write_text(json.dumps({"run_id": run_id, "arm": arm, "case": case, "seed": 1, "split": "dev",
+                                             "wall_s": 5.0, "coverage": rng.random()}))
+    return d
+
+
+def test_fit_from_mixed_driver_logs(tmp_path):
+    for c in DEV[:6]:
+        make_mixed_run(tmp_path, c)
+    split = json.loads(SPLIT.read_text())
+    runs = [v41_fit.load_run(d, split) for d in v41_fit.discover([tmp_path])]
+    assert all(r.mixed for r in runs)
+    samples, skipped = v41_fit.samples_from(runs)             # drivers differ row by row: no "made by" refusal
+    assert len(samples) == 6 * 60 and not skipped
+    assert {s.driver for s in samples} == {"d1", "qwen3.5-4b", "qwen3.5-9b"}
+    assert all(set(s.decisions) == {"d1", "qwen3.5-4b", "qwen3.5-9b"} for s in samples)
+    th = v41_fit.fit_conformal(samples)
+    # the 9B is 85% right against S', d1 55%: the 9B is the best candidate on every question and clears 5 points
+    assert {q: th.deferral[q]["model"] for q in th.deferral} == {q: "qwen3.5-9b" for q in th.deferral}
+    assert all(th.deferral[q]["defers"] for q in th.deferral)
+    router, rep = v41_fit.fit_router(samples)
+    assert rep["n_decisions"] == 6 * 60 and set(rep["sprime_match_share_all_three"]) == set(ROUTER_MODELS)
+
+
+def test_a_step7_log_still_has_to_be_driven_by_the_9b(tmp_path):
+    make_run(tmp_path, DEV[0], driver="qwen3.5-4b")
+    split = json.loads(SPLIT.read_text())
+    runs = [v41_fit.load_run(d, split) for d in v41_fit.discover([tmp_path])]
+    with pytest.raises(v41_fit.FitError, match="decisions were made by"):
+        v41_fit.samples_from(runs)
+
+
+def test_a_run_that_is_neither_calibration_nor_step9_is_refused(tmp_path):
+    d = make_mixed_run(tmp_path, DEV[0])
+    log = json.loads((d / "run_log.json").read_text())
+    log["log_counterfactuals"] = "none"
+    (d / "run_log.json").write_text(json.dumps(log))
+    with pytest.raises(v41_fit.FitError, match="log-counterfactuals"):
+        v41_fit.load_run(d, json.loads(SPLIT.read_text()))
+
+
+def test_match_script_prints_raw_and_resolved_for_a_run_dir(tmp_path, capsys):
+    make_set(tmp_path, DEV[:3], rows=20)
+    spec = importlib.util.spec_from_file_location("v41_match", ROOT / "scripts/v41_match.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    out_json = tmp_path / "match.json"
+    assert mod.main([str(tmp_path), "--json", str(out_json)]) == 0
+    text = capsys.readouterr().out
+    assert "raw" in text and "resolved" in text and "qwen3.5-9b" in text and "d1" in text
+    rep = json.loads(out_json.read_text())
+    assert rep["n"] == 3 * 2 * 20 and set(rep["models"]) == {"d1", "qwen3.5-4b", "qwen3.5-9b"}
+    assert rep["models"]["d1"]["target"]["resolved"] == rep["models"]["d1"]["target"]["raw"]   # no state logged: raw
+
+
+def test_legacy_logs_are_resolved_from_the_boards_route_entries(tmp_path):
+    d = make_run(tmp_path, DEV[0], rows=16)
+    run_id = d.name
+    # one route entry per squad at tick 0 puts region 11 + 12 first for every squad
+    board = "".join(json.dumps({"type": "route", "tick": 0, "payload": {"squad": s, "region_ids": [11, 12], "priority": 1}})
+                    + "\n" for s in range(8))
+    (d / f"{run_id}.jsonl").write_text(board)
+    runs = [v41_fit.load_run(p, None) for p in v41_fit.discover([tmp_path])]
+    samples, _ = v41_fit.samples_from(runs)
+    assert samples and all(s.resolution == "derived" for s in samples)
+    assert all(s.target_map["A"] == "r11" and s.target_map["B"] == "r12" for s in samples)
+    assert all(s.sprime_resolved["target"] == s.target_map[s.sprime["target"]] for s in samples)

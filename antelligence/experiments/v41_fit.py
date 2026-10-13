@@ -6,8 +6,12 @@ optionally, ``cells.jsonl``. A calibration run logs, per decision, the driving m
 for the Bonsai variant) at the row's top level and d1 and Qwen3.5-4B in ``counterfactual``, plus the S' labels and the
 eleven router ``features``.
 
-* Conformal: label = the driving model's decision on the same state, from both arms; ``freeze_thresholds`` does the
-  per-question split-conformal fit with one joint alpha search for the ANY-of-3 defer rate (~20%).
+* Conformal (S'-resolved, decision 2026-10-13): label = S''s label with its target resolved to the region it refers to
+  (``v41_resolve``); d1's target probabilities are summed per resolved region. Each question defers to the candidate model
+  with the best dev resolved match to S' only if it beats d1 by 5 points (``choose_deferral_models``). One joint alpha
+  search over the deferring questions holds the ANY-of-them defer rate near 20%.
+* Logs: step-7 logs are driven by the 9B (Bonsai); step-9 logs (``log_counterfactuals == "all"``) are driven by the live
+  router and deferral policy, with d1, 4B and 9B (Bonsai) all answering counterfactually, so any model may drive a row.
 * Router: label = the cheapest model whose three answers best match S' (ties to the cheaper), kNN k=15 on standardised
   features, trained on both arms. Reported: pick shares, leave-one-case-out agreement with the labels, and the share of
   decisions where each model matches S'.
@@ -21,7 +25,7 @@ from __future__ import annotations
 import json
 import statistics
 from collections import Counter, defaultdict
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
@@ -29,7 +33,8 @@ import numpy as np
 
 from antelligence.experiments import v41_analysis
 from antelligence.experiments.v41_conformal import (DEFER_TARGET, QTYPES, ConformalDeferral, ConformalThresholds,
-                                                    DevRecord, freeze_thresholds)
+                                                    DevRecord, choose_deferral_models, freeze_thresholds)
+from antelligence.experiments.v41_resolve import derive_resolutions, load_routes, resolve_distribution
 from antelligence.experiments.v41_router import (BONSAI_ROUTER_MODELS, FEATURE_NAMES, K, ROUTER_MODELS, KNNRouter,
                                                  TrainRow, best_model, match_count)
 from antelligence.experiments.v41_split import load_split, which_split
@@ -37,6 +42,7 @@ from antelligence.experiments.v41_split import load_split, which_split
 D1, Q4, Q9, BONSAI = "d1", "qwen3.5-4b", "qwen3.5-9b", "bonsai-8b"
 CALIBRATION_ARMS = ("SW-B", "SW-noBoard")
 TARGET_BACKEND = {False: Q9, True: BONSAI}
+DEFERRAL_CANDIDATES = {False: (Q4, Q9), True: (BONSAI,)}   # cheapest first; Bonsai is the only candidate in its arm
 
 
 class FitError(ValueError):
@@ -52,6 +58,7 @@ class Run:
     wall_s: float
     cell: Mapping[str, Any]
     rows: Tuple[Mapping[str, Any], ...]   # decision rows only (look rows dropped)
+    mixed: bool = False                   # step-9 log: the live router/deferral policy drove, every model answered
 
 
 @dataclass(frozen=True)
@@ -60,11 +67,33 @@ class Sample:
 
     arm: str
     case: str
-    probs: Mapping[str, Mapping[str, float]]      # d1's label distributions (conformal scores)
-    labels: Mapping[str, str]                     # the driving model's decision (conformal labels)
+    probs: Mapping[str, Mapping[str, float]]      # d1's raw label distributions
+    labels: Mapping[str, str]                     # the driving model's decision (kept for reports; not a conformity label)
     features: Tuple[float, ...]
-    decisions: Mapping[str, Mapping[str, Any]]    # {model: {target, release, amount}} incl. the driving model
-    sprime: Mapping[str, str]
+    decisions: Mapping[str, Mapping[str, Any]]    # {model: {target, release, amount}} for every model that answered
+    sprime: Mapping[str, str]                     # S' labels as logged
+    # Resolution (v41_resolve): target label -> resolved key for this squad-round, and S''s labels with the target
+    # resolved. Empty = not available (the raw labels are used and ``resolution`` says "raw").
+    target_map: Mapping[str, str] = field(default_factory=dict)
+    sprime_resolved: Mapping[str, str] = field(default_factory=dict)
+    resolution: str = "raw"                       # "exact" (logged by the harness) | "derived" (rebuilt) | "raw"
+    stale: bool = False
+    driver: str = ""
+
+    def resolved_probs(self) -> Dict[str, Dict[str, float]]:
+        """d1's distributions with the target summed over the labels that resolve to the same region."""
+        out = {q: dict(p) for q, p in self.probs.items()}
+        out["target"] = resolve_distribution(self.probs["target"], self.target_map)
+        return out
+
+    def sprime_labels(self) -> Dict[str, str]:
+        """The conformity labels: S''s labels, target resolved."""
+        return {**self.sprime, **self.sprime_resolved}
+
+    def resolved_labels(self, model: str) -> Dict[str, str]:
+        lab = _labels(self.decisions[model])
+        lab["target"] = self.target_map.get(lab["target"], lab["target"])
+        return lab
 
 
 # --- loading ---------------------------------------------------------------------------------------------------------
@@ -106,8 +135,9 @@ def load_run(path: Path, split_doc: Optional[Mapping[str, Any]]) -> Run:
     where = str(path)
     if run_log.get("split") != "dev" or cell.get("split") != "dev":
         raise FitError(f"{where}: split is {run_log.get('split')!r}/{cell.get('split')!r}; only dev logs may be fitted")
-    if not run_log.get("calibration"):
-        raise FitError(f"{where}: not a --calibration run; the fit needs the counterfactual logs")
+    mixed = run_log.get("log_counterfactuals") == "all"
+    if not (run_log.get("calibration") or mixed):
+        raise FitError(f"{where}: not a --calibration or --log-counterfactuals all run; the fit needs the counterfactual logs")
     if run_log.get("arm", "").split(":")[0] not in CALIBRATION_ARMS:
         raise FitError(f"{where}: arm {run_log.get('arm')!r} is not SW-B or SW-noBoard")
     check_dev(split_doc, run_log["case"], where)
@@ -122,7 +152,7 @@ def load_run(path: Path, split_doc: Optional[Mapping[str, Any]]) -> Run:
             raise FitError(f"{where}: a decision row names case {row.get('case')!r}, the run is {run_log['case']!r}")
         rows.append(row)
     return Run(path, run_log["arm"].split(":")[0], run_log["case"], int(run_log["seed"]), float(run_log["wall_s"]),
-               cell, tuple(rows))
+               cell, tuple(rows), mixed)
 
 
 def load_cells(path: Path, split_doc: Optional[Mapping[str, Any]]) -> List[Dict[str, Any]]:
@@ -153,20 +183,34 @@ def _label_probs(cf_probs: Mapping[str, Mapping[str, float]]) -> Dict[str, Dict[
 
 def samples_from(runs: Sequence[Run], *, bonsai: bool = False) -> Tuple[List[Sample], Dict[str, int]]:
     """Usable decisions of all runs. Error decisions, rows without counterfactual answers, S' labels or features are
-    counted in the returned ``skipped`` tally, never guessed."""
+    counted in the returned ``skipped`` tally, never guessed.
+
+    A step-7 run is driven by the driver model (9B, or Bonsai): its answer is the row's top level and d1 and 4B are in
+    ``counterfactual``. A step-9 run (``mixed``) is driven by whichever model the router/deferral policy chose, and every
+    model's answer is in ``counterfactual``; the "decisions were made by" check does not apply to it.
+
+    The resolution of each row is the harness's own (``resolution`` in the row) when logged; otherwise it is rebuilt from
+    the decision rows and the board's route entries (``v41_resolve.derive_resolutions``, exact for the route regions, see
+    there), and otherwise left raw (``Sample.resolution`` says which)."""
     driver = TARGET_BACKEND[bonsai]
+    needed = (D1, Q4, driver)
     skipped: Counter = Counter()
     out: List[Sample] = []
     for run in runs:
-        for row in run.rows:
+        derived: Dict[int, Dict[str, Any]] = {}
+        if not run.mixed or any("resolution" not in r for r in run.rows):
+            derived = derive_resolutions(run.rows, load_routes(run.path))
+        for idx, row in enumerate(run.rows):
             if row.get("error"):
                 skipped["error_decision"] += 1
                 continue
-            if row.get("backend") != driver:
+            if not run.mixed and row.get("backend") != driver:
                 raise FitError(f"{run.path}: decisions were made by {row.get('backend')!r}, expected {driver!r}"
                                + ("" if bonsai else " (use --bonsai for a Bonsai calibration)"))
-            cf = row.get("counterfactual")
-            if not cf or D1 not in cf or Q4 not in cf:
+            cf = dict(row.get("counterfactual") or {})
+            if not run.mixed and driver not in cf and row.get("backend") == driver:
+                cf[driver] = row   # the driver's own answer is the row's top level
+            if D1 not in cf or any(m not in cf or "target" not in cf[m] for m in needed):
                 skipped["no_counterfactual"] += 1
                 continue
             sp = row.get("sprime")
@@ -175,9 +219,17 @@ def samples_from(runs: Sequence[Run], *, bonsai: bool = False) -> Tuple[List[Sam
                 skipped["no_sprime"] += 1
             if feats is None:
                 skipped["no_features"] += 1
-            decisions = {D1: _decision(cf[D1]), Q4: _decision(cf[Q4]), driver: _decision(row)}
+            decisions = {m: _decision(cf[m]) for m in cf if "target" in cf[m]}
+            res = row.get("resolution") or derived.get(idx)
+            if res:
+                src = res.get("source", "exact")
+                tmap = dict(res["target_map"])
+                sp_res = {"target": res["sprime_target"]} if sp and "sprime_target" in res else {}
+            else:
+                src, tmap, sp_res = "raw", {}, {}
             out.append(Sample(run.arm, run.case, _label_probs(cf[D1]["probs"]), _labels(row),
-                              tuple(float(x) for x in feats) if feats is not None else (), decisions, sp or {}))
+                              tuple(float(x) for x in feats) if feats is not None else (), decisions, sp or {},
+                              tmap, sp_res, src, bool(res and res.get("stale")), str(row.get("backend", ""))))
     return out, dict(skipped)
 
 
@@ -185,29 +237,42 @@ def samples_from(runs: Sequence[Run], *, bonsai: bool = False) -> Tuple[List[Sam
 
 
 def fit_conformal(samples: Sequence[Sample], *, bonsai: bool = False, target: float = DEFER_TARGET) -> ConformalThresholds:
-    if not samples:
-        raise FitError("no usable decisions for the conformal fit")
-    records = [DevRecord(s.probs, s.labels) for s in samples]
+    """Conformity label = S', target resolved; per-question deferral model by best dev resolved match (5-point rule)."""
+    use = [s for s in samples if s.sprime]
+    if not use:
+        raise FitError("no usable decisions with S' labels for the conformal fit")
+    cands = DEFERRAL_CANDIDATES[bonsai]
+    deferral = choose_deferral_models([{m: s.resolved_labels(m) for m in (D1, *cands)} for s in use],
+                                      [s.sprime_labels() for s in use], cands)
+    records = [DevRecord(s.resolved_probs(), s.sprime_labels()) for s in use]
     return freeze_thresholds(records, arm="SW-Bonsai" if bonsai else "SW-B+SW-noBoard",
-                             target_model=TARGET_BACKEND[bonsai], target=target)
+                             target_model=TARGET_BACKEND[bonsai], target=target, deferral=deferral)
 
 
 def conformal_report(th: ConformalThresholds, samples: Sequence[Sample]) -> Dict[str, Any]:
+    use = [s for s in samples if s.sprime]
     dec = ConformalDeferral(th)
-    flags = [(s.arm, dec.decide(s.probs)) for s in samples]
+    flags = [(s.arm, dec.decide(s.resolved_probs())) for s in use]
     by_arm: Dict[str, List[bool]] = defaultdict(list)
     for arm, r in flags:
         by_arm[arm].append(r.deferred)
-    agree = {q: float(np.mean([max(s.probs[q], key=lambda l: (s.probs[q][l], -list(s.probs[q]).index(l))) == s.labels[q]
-                               for s in samples])) for q in QTYPES}
-    return {"n_decisions": len(samples), "alpha": {q: th.per_question[q]["alpha"] for q in QTYPES},
+    agree = {}
+    for q in QTYPES:
+        hits = []
+        for s in use:
+            p = s.resolved_probs()[q]
+            hits.append(max(p, key=lambda l: (p[l], -list(p).index(l))) == s.sprime_labels()[q])
+        agree[q] = float(np.mean(hits))
+    return {"n_decisions": len(use), "alpha": {q: th.per_question[q]["alpha"] for q in QTYPES},
             "qhat": {q: (None if th.qhat(q) == float("inf") else th.qhat(q)) for q in QTYPES},
             "per_question_defer_rate": {q: th.per_question[q]["dev_defer_rate"] for q in QTYPES},
             "joint_defer_rate": th.joint_dev_defer_rate, "joint_on_target": th.joint_on_target,
-            "defer_target": th.defer_target,
+            "defer_target": th.defer_target, "conformity_label": "sprime-resolved",
+            "deferral": {q: dict(v) for q, v in th.deferral.items()},
+            "deferring_questions": list(th.deferring()),
             "defer_rate_by_arm": {a: float(np.mean(v)) for a, v in sorted(by_arm.items())},
             "empty_set_share": float(np.mean([r.empty for _, r in flags])),
-            "d1_argmax_matches_label": agree, "sha256": th.sha256}
+            "d1_argmax_matches_sprime": agree, "sha256": th.sha256}
 
 
 # --- router ----------------------------------------------------------------------------------------------------------
@@ -351,6 +416,7 @@ def run_fit(inputs: Sequence[Path], *, tag: str, cells_path: Optional[Path] = No
         "inputs": {"run_dirs": len(runs), "arms": dict(Counter(r.arm for r in runs)),
                    "cases": len({r.case for r in runs}), "decisions": sum(len(r.rows) for r in runs),
                    "usable_decisions": len(samples), "skipped": skipped,
+                   "resolution": dict(Counter(x.resolution for x in samples)), "mixed_driver_logs": any(r.mixed for r in runs),
                    "cells_file_lines": len(cells) if cells_path else None,
                    "dev_only": True},
         "conformal": conformal_report(th, samples)}
