@@ -1,0 +1,934 @@
+{
+ "status": "fallback_gap_unmet",
+ "band": "widened_medians_only",
+ "targets": {
+  "strict": {
+   "sprime": [
+    0.7,
+    0.8
+   ],
+   "s": [
+    0.3,
+    0.5
+   ],
+   "gap": 0.15,
+   "gap_frac": 0.8
+  },
+  "widened": {
+   "sprime": [
+    0.65,
+    0.85
+   ],
+   "s": [
+    0.25,
+    0.55
+   ],
+   "gap": 0.15,
+   "gap_frac": 0.7
+  }
+ },
+ "seeds": [
+  1,
+  2
+ ],
+ "n_cases": 40,
+ "dev_only": true,
+ "chosen": {
+  "total_drug": 3100.4039936808626,
+  "dose_threshold": 5.0,
+  "ratio_dt_over_drug": 0.001612693058772608
+ },
+ "summary": {
+  "median_s": 0.5455167898937981,
+  "median_sprime": 0.6987960776997209,
+  "gap_ge_0.15_fraction": 0.25,
+  "median_gap": 0.09738,
+  "min_gap": 0.0,
+  "mean_s": 0.591791325,
+  "mean_sprime": 0.706754975
+ },
+ "seconds_per_episode": {
+  "script_S_mean": 0.22657570108713115,
+  "oracle_Sprime_mean": 2.849381849441852,
+  "oracle_Sprime_max": 4.951469708001241,
+  "n_episodes": 80
+ },
+ "rerun_max_abs_drift": 0.0,
+ "per_case": [
+  {
+   "case": "BRATS_016",
+   "split": "dev_a",
+   "s": 0.546682,
+   "sprime": 0.640625,
+   "s_by_seed": [
+    0.539087,
+    0.554276
+   ],
+   "sprime_by_seed": [
+    0.639319,
+    0.641931
+   ],
+   "gap": 0.093943
+  },
+  {
+   "case": "BRATS_034",
+   "split": "dev_a",
+   "s": 0.238866,
+   "sprime": 0.254501,
+   "s_by_seed": [
+    0.233666,
+    0.244066
+   ],
+   "sprime_by_seed": [
+    0.254428,
+    0.254575
+   ],
+   "gap": 0.015635
+  },
+  {
+   "case": "BRATS_056",
+   "split": "dev_a",
+   "s": 0.316419,
+   "sprime": 0.373724,
+   "s_by_seed": [
+    0.329571,
+    0.303268
+   ],
+   "sprime_by_seed": [
+    0.370834,
+    0.376614
+   ],
+   "gap": 0.057305
+  },
+  {
+   "case": "BRATS_067",
+   "split": "dev_b",
+   "s": 0.68614,
+   "sprime": 0.881429,
+   "s_by_seed": [
+    0.703501,
+    0.66878
+   ],
+   "sprime_by_seed": [
+    0.870336,
+    0.892523
+   ],
+   "gap": 0.195289
+  },
+  {
+   "case": "BRATS_069",
+   "split": "dev_a",
+   "s": 0.526355,
+   "sprime": 0.698928,
+   "s_by_seed": [
+    0.500298,
+    0.552412
+   ],
+   "sprime_by_seed": [
+    0.679273,
+    0.718582
+   ],
+   "gap": 0.172573
+  },
+  {
+   "case": "BRATS_101",
+   "split": "dev_b",
+   "s": 0.436956,
+   "sprime": 0.591244,
+   "s_by_seed": [
+    0.428257,
+    0.445655
+   ],
+   "sprime_by_seed": [
+    0.597266,
+    0.585221
+   ],
+   "gap": 0.154287
+  },
+  {
+   "case": "BRATS_113",
+   "split": "dev_a",
+   "s": 0.306036,
+   "sprime": 0.351704,
+   "s_by_seed": [
+    0.298991,
+    0.313081
+   ],
+   "sprime_by_seed": [
+    0.348856,
+    0.354552
+   ],
+   "gap": 0.045668
+  },
+  {
+   "case": "BRATS_120",
+   "split": "dev_a",
+   "s": 0.843688,
+   "sprime": 0.980569,
+   "s_by_seed": [
+    0.818317,
+    0.869059
+   ],
+   "sprime_by_seed": [
+    0.980693,
+    0.980446
+   ],
+   "gap": 0.136881
+  },
+  {
+   "case": "BRATS_149",
+   "split": "dev_b",
+   "s": 0.385125,
+   "sprime": 0.422297,
+   "s_by_seed": [
+    0.344722,
+    0.425528
+   ],
+   "sprime_by_seed": [
+    0.416507,
+    0.428087
+   ],
+   "gap": 0.037172
+  },
+  {
+   "case": "BRATS_161",
+   "split": "dev_b",
+   "s": 0.38184,
+   "sprime": 0.45382,
+   "s_by_seed": [
+    0.403965,
+    0.359715
+   ],
+   "sprime_by_seed": [
+    0.444651,
+    0.462989
+   ],
+   "gap": 0.07198
+  },
+  {
+   "case": "BRATS_167",
+   "split": "dev_b",
+   "s": 0.984688,
+   "sprime": 0.998944,
+   "s_by_seed": [
+    0.991904,
+    0.977473
+   ],
+   "sprime_by_seed": [
+    1.0,
+    0.997888
+   ],
+   "gap": 0.014256
+  },
+  {
+   "case": "BRATS_183",
+   "split": "dev_a",
+   "s": 0.651341,
+   "sprime": 1.0,
+   "s_by_seed": [
+    0.551724,
+    0.750958
+   ],
+   "sprime_by_seed": [
+    1.0,
+    1.0
+   ],
+   "gap": 0.348659
+  },
+  {
+   "case": "BRATS_193",
+   "split": "dev_a",
+   "s": 0.558561,
+   "sprime": 0.706369,
+   "s_by_seed": [
+    0.575119,
+    0.542002
+   ],
+   "sprime_by_seed": [
+    0.720499,
+    0.69224
+   ],
+   "gap": 0.147809
+  },
+  {
+   "case": "BRATS_205",
+   "split": "dev_a",
+   "s": 0.296553,
+   "sprime": 0.382111,
+   "s_by_seed": [
+    0.319421,
+    0.273686
+   ],
+   "sprime_by_seed": [
+    0.384193,
+    0.38003
+   ],
+   "gap": 0.085558
+  },
+  {
+   "case": "BRATS_238",
+   "split": "dev_a",
+   "s": 0.920117,
+   "sprime": 0.998539,
+   "s_by_seed": [
+    0.921578,
+    0.918656
+   ],
+   "sprime_by_seed": [
+    0.998539,
+    0.998539
+   ],
+   "gap": 0.078422
+  },
+  {
+   "case": "BRATS_246",
+   "split": "dev_a",
+   "s": 0.544352,
+   "sprime": 0.631443,
+   "s_by_seed": [
+    0.565966,
+    0.522738
+   ],
+   "sprime_by_seed": [
+    0.63423,
+    0.628655
+   ],
+   "gap": 0.08709
+  },
+  {
+   "case": "BRATS_286",
+   "split": "dev_a",
+   "s": 0.337155,
+   "sprime": 0.390535,
+   "s_by_seed": [
+    0.340292,
+    0.334018
+   ],
+   "sprime_by_seed": [
+    0.396755,
+    0.384316
+   ],
+   "gap": 0.05338
+  },
+  {
+   "case": "BRATS_287",
+   "split": "dev_a",
+   "s": 0.956441,
+   "sprime": 1.0,
+   "s_by_seed": [
+    0.951229,
+    0.961653
+   ],
+   "sprime_by_seed": [
+    1.0,
+    1.0
+   ],
+   "gap": 0.043559
+  },
+  {
+   "case": "BRATS_290",
+   "split": "dev_b",
+   "s": 0.499411,
+   "sprime": 0.698664,
+   "s_by_seed": [
+    0.542954,
+    0.455867
+   ],
+   "sprime_by_seed": [
+    0.693033,
+    0.704295
+   ],
+   "gap": 0.199254
+  },
+  {
+   "case": "BRATS_297",
+   "split": "dev_b",
+   "s": 0.765562,
+   "sprime": 0.948971,
+   "s_by_seed": [
+    0.743788,
+    0.787336
+   ],
+   "sprime_by_seed": [
+    0.939353,
+    0.958589
+   ],
+   "gap": 0.183409
+  },
+  {
+   "case": "BRATS_303",
+   "split": "dev_a",
+   "s": 0.238992,
+   "sprime": 0.294754,
+   "s_by_seed": [
+    0.230736,
+    0.247248
+   ],
+   "sprime_by_seed": [
+    0.300149,
+    0.289359
+   ],
+   "gap": 0.055762
+  },
+  {
+   "case": "BRATS_328",
+   "split": "dev_a",
+   "s": 0.515977,
+   "sprime": 0.584873,
+   "s_by_seed": [
+    0.499256,
+    0.532697
+   ],
+   "sprime_by_seed": [
+    0.580058,
+    0.589687
+   ],
+   "gap": 0.068896
+  },
+  {
+   "case": "BRATS_337",
+   "split": "dev_a",
+   "s": 0.755956,
+   "sprime": 0.902232,
+   "s_by_seed": [
+    0.714102,
+    0.797811
+   ],
+   "sprime_by_seed": [
+    0.900622,
+    0.903842
+   ],
+   "gap": 0.146276
+  },
+  {
+   "case": "BRATS_343",
+   "split": "dev_a",
+   "s": 0.417132,
+   "sprime": 0.598989,
+   "s_by_seed": [
+    0.430799,
+    0.403465
+   ],
+   "sprime_by_seed": [
+    0.600096,
+    0.597883
+   ],
+   "gap": 0.181858
+  },
+  {
+   "case": "BRATS_355",
+   "split": "dev_b",
+   "s": 0.922783,
+   "sprime": 0.999618,
+   "s_by_seed": [
+    0.998471,
+    0.847095
+   ],
+   "sprime_by_seed": [
+    0.999235,
+    1.0
+   ],
+   "gap": 0.076835
+  },
+  {
+   "case": "BRATS_356",
+   "split": "dev_a",
+   "s": 0.297558,
+   "sprime": 0.394084,
+   "s_by_seed": [
+    0.264847,
+    0.330269
+   ],
+   "sprime_by_seed": [
+    0.396424,
+    0.391743
+   ],
+   "gap": 0.096526
+  },
+  {
+   "case": "BRATS_368",
+   "split": "dev_a",
+   "s": 0.536018,
+   "sprime": 0.649574,
+   "s_by_seed": [
+    0.528337,
+    0.543699
+   ],
+   "sprime_by_seed": [
+    0.643762,
+    0.655387
+   ],
+   "gap": 0.113556
+  },
+  {
+   "case": "BRATS_373",
+   "split": "dev_a",
+   "s": 1.0,
+   "sprime": 1.0,
+   "s_by_seed": [
+    1.0,
+    1.0
+   ],
+   "sprime_by_seed": [
+    1.0,
+    1.0
+   ],
+   "gap": 0.0
+  },
+  {
+   "case": "BRATS_374",
+   "split": "dev_b",
+   "s": 0.658462,
+   "sprime": 0.893182,
+   "s_by_seed": [
+    0.583689,
+    0.733234
+   ],
+   "sprime_by_seed": [
+    0.915289,
+    0.871076
+   ],
+   "gap": 0.23472
+  },
+  {
+   "case": "BRATS_375",
+   "split": "dev_a",
+   "s": 0.932597,
+   "sprime": 0.988703,
+   "s_by_seed": [
+    0.923331,
+    0.941863
+   ],
+   "sprime_by_seed": [
+    0.993907,
+    0.983498
+   ],
+   "gap": 0.056106
+  },
+  {
+   "case": "BRATS_389",
+   "split": "dev_a",
+   "s": 0.778035,
+   "sprime": 0.920892,
+   "s_by_seed": [
+    0.721018,
+    0.835052
+   ],
+   "sprime_by_seed": [
+    0.922154,
+    0.91963
+   ],
+   "gap": 0.142857
+  },
+  {
+   "case": "BRATS_406",
+   "split": "dev_a",
+   "s": 0.86849,
+   "sprime": 0.986407,
+   "s_by_seed": [
+    0.831313,
+    0.905667
+   ],
+   "sprime_by_seed": [
+    0.987226,
+    0.985588
+   ],
+   "gap": 0.117917
+  },
+  {
+   "case": "BRATS_420",
+   "split": "dev_a",
+   "s": 0.541215,
+   "sprime": 0.63945,
+   "s_by_seed": [
+    0.588918,
+    0.493513
+   ],
+   "sprime_by_seed": [
+    0.656716,
+    0.622183
+   ],
+   "gap": 0.098234
+  },
+  {
+   "case": "BRATS_423",
+   "split": "dev_b",
+   "s": 0.63112,
+   "sprime": 0.861107,
+   "s_by_seed": [
+    0.721924,
+    0.540317
+   ],
+   "sprime_by_seed": [
+    0.860817,
+    0.861398
+   ],
+   "gap": 0.229987
+  },
+  {
+   "case": "BRATS_441",
+   "split": "dev_a",
+   "s": 0.263714,
+   "sprime": 0.335172,
+   "s_by_seed": [
+    0.257104,
+    0.270324
+   ],
+   "sprime_by_seed": [
+    0.335693,
+    0.334652
+   ],
+   "gap": 0.071458
+  },
+  {
+   "case": "BRATS_462",
+   "split": "dev_a",
+   "s": 0.833333,
+   "sprime": 0.947446,
+   "s_by_seed": [
+    0.85469,
+    0.811977
+   ],
+   "sprime_by_seed": [
+    0.932789,
+    0.962102
+   ],
+   "gap": 0.114112
+  },
+  {
+   "case": "BRATS_464",
+   "split": "dev_a",
+   "s": 0.522686,
+   "sprime": 0.604092,
+   "s_by_seed": [
+    0.527266,
+    0.518105
+   ],
+   "sprime_by_seed": [
+    0.615653,
+    0.592531
+   ],
+   "gap": 0.081407
+  },
+  {
+   "case": "BRATS_468",
+   "split": "dev_a",
+   "s": 0.504666,
+   "sprime": 0.626477,
+   "s_by_seed": [
+    0.548794,
+    0.460538
+   ],
+   "sprime_by_seed": [
+    0.620967,
+    0.631986
+   ],
+   "gap": 0.121811
+  },
+  {
+   "case": "BRATS_479",
+   "split": "dev_a",
+   "s": 0.664342,
+   "sprime": 0.887275,
+   "s_by_seed": [
+    0.640403,
+    0.688282
+   ],
+   "sprime_by_seed": [
+    0.89504,
+    0.879511
+   ],
+   "gap": 0.222933
+  },
+  {
+   "case": "BRATS_483",
+   "split": "dev_a",
+   "s": 0.606289,
+   "sprime": 0.751455,
+   "s_by_seed": [
+    0.596137,
+    0.616442
+   ],
+   "sprime_by_seed": [
+    0.747555,
+    0.755355
+   ],
+   "gap": 0.145165
+  }
+ ],
+ "grid": [
+  {
+   "total_drug": 150.0,
+   "dose_threshold": 5.0,
+   "median_s": 0.0,
+   "median_sprime": 0.009313,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 199.525716,
+   "dose_threshold": 5.0,
+   "median_s": 0.0,
+   "median_sprime": 0.016993,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 265.403409,
+   "dose_threshold": 5.0,
+   "median_s": 0.0,
+   "median_sprime": 0.028988,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 353.032034,
+   "dose_threshold": 5.0,
+   "median_s": 0.001317,
+   "median_sprime": 0.046047,
+   "gap_frac": 0.05,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 469.593129,
+   "dose_threshold": 5.0,
+   "median_s": 0.010445,
+   "median_sprime": 0.072497,
+   "gap_frac": 0.075,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 624.639368,
+   "dose_threshold": 5.0,
+   "median_s": 0.028169,
+   "median_sprime": 0.111302,
+   "gap_frac": 0.1,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 830.877447,
+   "dose_threshold": 5.0,
+   "median_s": 0.065525,
+   "median_sprime": 0.162795,
+   "gap_frac": 0.175,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 1105.20945,
+   "dose_threshold": 5.0,
+   "median_s": 0.141457,
+   "median_sprime": 0.223886,
+   "gap_frac": 0.125,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 1470.118044,
+   "dose_threshold": 5.0,
+   "median_s": 0.254303,
+   "median_sprime": 0.323812,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 1955.509035,
+   "dose_threshold": 5.0,
+   "median_s": 0.375554,
+   "median_sprime": 0.453746,
+   "gap_frac": 0.15,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 2601.162267,
+   "dose_threshold": 5.0,
+   "median_s": 0.476169,
+   "median_sprime": 0.598495,
+   "gap_frac": 0.225,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 2717.879237,
+   "dose_threshold": 5.0,
+   "median_s": 0.493483,
+   "median_sprime": 0.620287,
+   "gap_frac": 0.25,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 2839.833425,
+   "dose_threshold": 5.0,
+   "median_s": 0.510051,
+   "median_sprime": 0.645804,
+   "gap_frac": 0.225,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 2967.259829,
+   "dose_threshold": 5.0,
+   "median_s": 0.528134,
+   "median_sprime": 0.670202,
+   "gap_frac": 0.225,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 3100.403994,
+   "dose_threshold": 5.0,
+   "median_s": 0.545517,
+   "median_sprime": 0.698796,
+   "gap_frac": 0.25,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 3239.522482,
+   "dose_threshold": 5.0,
+   "median_s": 0.561852,
+   "median_sprime": 0.735832,
+   "gap_frac": 0.3,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 3384.883367,
+   "dose_threshold": 5.0,
+   "median_s": 0.579966,
+   "median_sprime": 0.742732,
+   "gap_frac": 0.3,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 3459.991756,
+   "dose_threshold": 5.0,
+   "median_s": 0.588789,
+   "median_sprime": 0.756204,
+   "gap_frac": 0.325,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 3536.766753,
+   "dose_threshold": 5.0,
+   "median_s": 0.595802,
+   "median_sprime": 0.788081,
+   "gap_frac": 0.3,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 3695.46531,
+   "dose_threshold": 5.0,
+   "median_s": 0.611838,
+   "median_sprime": 0.805017,
+   "gap_frac": 0.275,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 3861.284845,
+   "dose_threshold": 5.0,
+   "median_s": 0.626805,
+   "median_sprime": 0.817775,
+   "gap_frac": 0.3,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 4034.544881,
+   "dose_threshold": 5.0,
+   "median_s": 0.644223,
+   "median_sprime": 0.827376,
+   "gap_frac": 0.3,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 4215.579283,
+   "dose_threshold": 5.0,
+   "median_s": 0.659443,
+   "median_sprime": 0.86194,
+   "gap_frac": 0.325,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 4404.736895,
+   "dose_threshold": 5.0,
+   "median_s": 0.675122,
+   "median_sprime": 0.863319,
+   "gap_frac": 0.35,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 4602.382214,
+   "dose_threshold": 5.0,
+   "median_s": 0.691203,
+   "median_sprime": 0.899902,
+   "gap_frac": 0.375,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 6121.957373,
+   "dose_threshold": 5.0,
+   "median_s": 0.7749,
+   "median_sprime": 0.948884,
+   "gap_frac": 0.325,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 8143.25285,
+   "dose_threshold": 5.0,
+   "median_s": 0.847277,
+   "median_sprime": 0.973036,
+   "gap_frac": 0.25,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 10831.922363,
+   "dose_threshold": 5.0,
+   "median_s": 0.896797,
+   "median_sprime": 0.989032,
+   "gap_frac": 0.25,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 14408.313759,
+   "dose_threshold": 5.0,
+   "median_s": 0.936926,
+   "median_sprime": 0.990642,
+   "gap_frac": 0.225,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 19165.527449,
+   "dose_threshold": 5.0,
+   "median_s": 0.964689,
+   "median_sprime": 0.99715,
+   "gap_frac": 0.05,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 25493.43723,
+   "dose_threshold": 5.0,
+   "median_s": 0.980554,
+   "median_sprime": 0.998283,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 33910.64209,
+   "dose_threshold": 5.0,
+   "median_s": 0.989883,
+   "median_sprime": 0.999879,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 45106.967592,
+   "dose_threshold": 5.0,
+   "median_s": 0.995351,
+   "median_sprime": 0.999963,
+   "gap_frac": 0.025,
+   "n_cases": 40
+  },
+  {
+   "total_drug": 60000.0,
+   "dose_threshold": 5.0,
+   "median_s": 0.997841,
+   "median_sprime": 1.0,
+   "gap_frac": 0.0,
+   "n_cases": 40
+  }
+ ],
+ "notes": "Per-case coverage is the mean over seeds; per-seed values are in s_by_seed / sprime_by_seed. Aggregates and public MSD case ids only."
+}

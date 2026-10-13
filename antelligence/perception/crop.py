@@ -50,3 +50,11 @@ def truth_share_outside(truth_wt: np.ndarray, box: tuple[slice, slice, slice] | 
     if box is None:
         return 1.0
     return float(1.0 - truth_wt[box].sum() / total)
+
+
+def truth_voxels_outside(truth_wt: np.ndarray, box: tuple[slice, slice, slice] | None) -> int:
+    """Count of truth-WT voxels (2 mm grid) that fall outside the crop (all of them if there is no crop)."""
+    total = int(truth_wt.sum())
+    if box is None:
+        return total
+    return total - int(truth_wt[box].sum())

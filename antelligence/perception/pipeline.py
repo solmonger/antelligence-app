@@ -110,6 +110,7 @@ def finalize_case(case_id: str, raw_dir: Path, out_root: Path, calibrator: cal.C
         box = tuple(slice(int(i.min()), int(i.max()) + 1) for i in idx) if idx[0].size else tuple(
             slice(0, s) for s in brain.shape)
     outside = crp.truth_share_outside(truth[0], box)  # against the crop actually stored
+    outside_vox = crp.truth_voxels_outside(truth[0], box)
 
     sub = lambda a: np.ascontiguousarray(a[box])  # noqa: E731
     p_c, u_c = sub(p_cal), sub(r["std"][0])
@@ -142,9 +143,32 @@ def finalize_case(case_id: str, raw_dir: Path, out_root: Path, calibrator: cal.C
             "ece_wt_raw": cal.ece(p_raw[bv], y_wt), "ece_wt_cal": cal.ece(p_cal[bv], y_wt),
             "brier_wt_raw": cal.brier(p_raw[bv], y_wt), "brier_wt_cal": cal.brier(p_cal[bv], y_wt),
             "truth_wt_share_outside_crop": outside,
+            "truth_wt_outside_crop_voxels": outside_vox,
         })
     (case_dir / "metrics.json").write_text(json.dumps(metrics, indent=1))
     return metrics
+
+
+def outside_crop_voxels_from_raw(case_id: str, raw_dir: Path, out_root: Path) -> int:
+    """Truth-WT voxels outside the stored crop (2 mm), from the raw bundle and the crop box in metrics.json.
+
+    Raw truth is read, so this is for dev cases and for eval cases after the preregistration lock only.
+    """
+    m = json.loads((out_root / case_id / "metrics.json").read_text())
+    box = tuple(slice(int(o), int(o) + int(n)) for o, n in zip(m["crop_origin_vox"], m["crop_shape_vox"]))
+    return crp.truth_voxels_outside(load_raw(raw_dir, case_id)["truth"][0], box)
+
+
+def backfill_outside_voxels(case_id: str, raw_dir: Path, out_root: Path) -> int:
+    """Dev-only metrics backfill: add ``truth_wt_outside_crop_voxels`` to an existing metrics.json (idempotent)."""
+    path = out_root / case_id / "metrics.json"
+    m = json.loads(path.read_text())
+    if not m.get("truth_metrics_computed", True):
+        raise ValueError(f"{case_id}: truth metrics are withheld; not backfilling")
+    n = outside_crop_voxels_from_raw(case_id, raw_dir, out_root)
+    m["truth_wt_outside_crop_voxels"] = n
+    path.write_text(json.dumps(m, indent=1))
+    return n
 
 
 def summarise(out_root: Path, calibration_path: Path | None = None) -> dict:
