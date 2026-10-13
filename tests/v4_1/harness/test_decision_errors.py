@@ -200,7 +200,7 @@ def test_cache_does_not_store_invalid_replies(tmp_path):
     for _ in range(2):
         with pytest.raises(DecisionError):
             asyncio.run(cache.decide(REQ))
-    assert not list((tmp_path / "cache").glob("*")) and len(be.seen_notes) == 2        # nothing stored, both calls went out
+    assert not list((tmp_path / "cache").glob("*.json")) and len(be.seen_notes) == 2        # nothing stored, both calls went out
     good = FakeBackend(hashed_answers, model="m")
     fresh = CachedDecision(good, tmp_path / "cache")
     assert not asyncio.run(fresh.decide(REQ)).cached and asyncio.run(fresh.decide(REQ)).cached

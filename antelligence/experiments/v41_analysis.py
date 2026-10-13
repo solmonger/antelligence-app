@@ -224,6 +224,37 @@ def secondary(cells: Sequence[Mapping[str, Any]], latency: Optional[Mapping[str,
     return out
 
 
+DECISION_ERROR_SHARE_MAX = 0.05  # goal 8 failure policy: above this in any arm, the sensitivity analysis is run
+DECISION_ERROR_CAVEAT = (
+    "P2 (SW-B vs FW noninferiority) compares arms whose decision error rates may differ: an error decision is a neutral "
+    "fallback (target S, release no), and FW alone gets a corrective note on retries 2 and 3. Read P2 together with this "
+    "sensitivity result.")
+
+
+def decision_error_sensitivity(cells: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    """Secondary: decision_error_share per arm, and (only if some arm's mean share exceeds 5%) P1 and P2 recomputed on the
+    runs with no error decision. Error decisions are not separable inside a run's coverage, so the unit excluded is the
+    run. Reported, never used to declare a win; the sensitivity P2 is always exploratory."""
+    per_arm: Dict[str, Any] = {}
+    for arm in sorted({c["arm"] for c in cells}):
+        rows = [c for c in cells if c["arm"] == arm]
+        shares = [float(c.get("decision_error_share") or 0.0) for c in rows]
+        per_arm[arm] = {"n_runs": len(rows), "mean_share": mean(shares),
+                        "decision_errors": sum(int(c.get("decision_errors") or 0) for c in rows),
+                        "look_errors": sum(int(c.get("look_errors") or 0) for c in rows),
+                        "runs_with_errors": sum(1 for c in rows if int(c.get("decision_errors") or 0) > 0),
+                        "runs_alarmed": sum(1 for c in rows if int(c.get("decision_error_alarm") or 0))}
+    triggered = any((a["mean_share"] or 0.0) > DECISION_ERROR_SHARE_MAX for a in per_arm.values())
+    out: Dict[str, Any] = {"threshold": DECISION_ERROR_SHARE_MAX, "per_arm": per_arm, "triggered": triggered,
+                           "caveat": DECISION_ERROR_CAVEAT, "sensitivity": None}
+    if triggered:
+        clean = [c for c in cells if int(c.get("decision_errors") or 0) == 0]
+        r1 = p1(clean)
+        r2 = {**p2(clean, r1), "status": "exploratory"}
+        out["sensitivity"] = {"excluded_runs": len(cells) - len(clean), "kept_runs": len(clean), "p1": r1, "p2": r2}
+    return out
+
+
 def minimum_detectable_diff(sd: float, n: int, *, alpha: float = ALPHA, power: float = POWER,
                             are: float = WILCOXON_ARE) -> Optional[float]:
     """Smallest true paired mean diff the Wilcoxon test detects with the given power.
@@ -318,7 +349,8 @@ def analyze(cells: Sequence[Mapping[str, Any]], split: Optional[str] = "eval",
         counts[c["arm"]] += 1
     return {"study": "v4.1", "split": split, "n_cells": len(scoped), "cells_by_arm": dict(sorted(counts.items())),
             "thresholds": thresholds(), "p1": r1, "p2": p2(scoped, r1), "p4": p4(scoped),
-            "secondary": secondary(scoped, latency), "power": power_analysis(dev),
+            "secondary": secondary(scoped, latency),
+            "decision_errors": decision_error_sensitivity(scoped), "power": power_analysis(dev),
             "explained_null": explained_null(scoped, dev_cells=dev), "live_check": live_check(dev)}
 
 

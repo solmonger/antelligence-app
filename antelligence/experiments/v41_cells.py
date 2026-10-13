@@ -52,6 +52,7 @@ FIELDS: Tuple[Field, ...] = (
     Field("locallook_ece", "frac", True, "d1 local-look ECE; null if not measured"),
     Field("truth_outside_crop", "frac", True, "share of truth tumour voxels outside the perception crop"),
     Field("decision_errors", "int", False, "decisions marked as errors after 3 retries (squad took the neutral fallback)"),
+    Field("look_errors", "int", False, "d1 local looks that still failed after 3 retries (look = None for that squad-round); counted apart from decision_errors"),
     Field("decision_error_share", "frac", False, "decision_errors / decisions in the run"),
     Field("decision_error_alarm", "int", False, "1 when decision_error_share > 0.05 (explained-null checklist), else 0"),
     Field("backends_kind", "str", True, "live | config | fake: where the worker answers came from (null only on error cells)"),

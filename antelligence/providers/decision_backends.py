@@ -48,7 +48,11 @@ class _Transient(Exception):
 
 
 class _Permanent(Exception):
-    """Retrying cannot help."""
+    """Retrying cannot help. ``billed`` is the usage a rejected reply was still charged."""
+
+    def __init__(self, message: str = "", billed: Optional[Mapping[str, Any]] = None) -> None:
+        super().__init__(message)
+        self.billed = billed
 
 
 # --- wire <-> Answer -------------------------------------------------------
@@ -118,7 +122,7 @@ class _TypedHTTPBackend:
             try:
                 return await self._once(request)
             except _Permanent as exc:
-                raise DecisionError(self._scrub(f"{self.name}: {exc}")) from None
+                raise DecisionError(self._scrub(f"{self.name}: {exc}"), billed=exc.billed) from None
             except _Transient as exc:
                 last = self._scrub(str(exc))
                 if attempt < self.retries:
@@ -438,17 +442,35 @@ class CachedDecision:
 
     A hit returns the stored reply (``cached=True``) and calls nothing, so a
     wrapped :class:`LedgeredDecision` writes no row. ``offline=True`` raises on a miss.
+
+    Only valid replies are stored as ``<hash>.json``. Failed attempts (a :class:`DecisionError` with its billed usage)
+    are appended to ``<hash>.failures.jsonl``, never to a reply file, so an offline replay can raise the same failures,
+    in order, before it serves the stored reply: retries, billed cost and decision errors then reproduce. A live run
+    restarts that file at its first call for the key and ignores it for serving; only ``offline=True`` replays it.
     """
 
     def __init__(self, inner: DecisionBackend, cache_dir: Union[str, Path], *, offline: bool = False) -> None:
         self.inner, self.cache_dir, self.offline = inner, Path(cache_dir), offline
         self._locks: Dict[str, asyncio.Lock] = {}
+        self._calls: Dict[str, int] = {}
 
     def describe(self) -> Dict[str, Any]:
         return self.inner.describe()  # transparent: a replay shares the live run's config
 
     def _path(self, key: str) -> Path:
         return self.cache_dir / f"{key}.json"
+
+    def _failures_path(self, key: str) -> Path:
+        return self.cache_dir / f"{key}.failures.jsonl"
+
+    def _failures(self, key: str) -> list:
+        path = self._failures_path(key)
+        if not path.exists():
+            return []
+        try:
+            return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        except (ValueError, OSError):
+            return []
 
     @staticmethod
     def _load(path: Path, request: DecisionRequest) -> Optional[DecisionResponse]:
@@ -463,15 +485,32 @@ class CachedDecision:
     async def decide(self, request: DecisionRequest) -> DecisionResponse:
         key = request.request_hash
         async with self._locks.setdefault(key, asyncio.Lock()):  # identical concurrent requests call once
+            n = self._calls.get(key, 0)
+            self._calls[key] = n + 1
             path = self._path(key)
+            if self.offline:
+                failures = self._failures(key)
+                if n < len(failures):
+                    raise DecisionError(str(failures[n].get("error") or "recorded failure"),
+                                        billed=failures[n].get("billed"))
             if path.exists():
                 hit = self._load(path, request)
                 if hit is not None:
                     return hit
             if self.offline:
                 raise DecisionError(f"cache miss in offline mode ({key[:12]})")
-            response = await self.inner.decide(request)
-            check_answers(request, response.answers)  # an invalid reply is never stored as a valid one
+            if n == 0:
+                self._failures_path(key).unlink(missing_ok=True)
+            try:
+                response = await self.inner.decide(request)
+                check_answers(request, response.answers)  # an invalid reply is never stored as a valid one
+            except DecisionAbort:
+                raise
+            except DecisionError as exc:
+                self.cache_dir.mkdir(parents=True, exist_ok=True)
+                with self._failures_path(key).open("a", encoding="utf-8") as handle:
+                    handle.write(json.dumps({"error": str(exc), "billed": exc.billed}, sort_keys=True) + "\n")
+                raise
             self.cache_dir.mkdir(parents=True, exist_ok=True)
             tmp = path.with_suffix(".tmp")
             tmp.write_text(canonical_json(response_to_dict(response)), encoding="utf-8")
@@ -493,8 +532,11 @@ class LedgeredDecision:
         try:
             response = await self.inner.decide(request)
         except Exception as exc:
+            billed = getattr(exc, "billed", None) or {}  # a rejected reply the provider still charged for
             self.writer.write(role=self.role, backend=self.backend, model=request.model, served_model=None,
-                              request_hash=request.request_hash, error=f"{type(exc).__name__}: {exc}")
+                              request_hash=request.request_hash, error=f"{type(exc).__name__}: {exc}",
+                              input_tokens=billed.get("input_tokens", 0), output_tokens=billed.get("output_tokens", 0),
+                              cost_usd=billed.get("cost_usd", 0.0))
             raise
         self.writer.write(role=self.role, backend=self.backend, model=request.model,
                           served_model=response.served_model, request_hash=request.request_hash,
@@ -841,7 +883,7 @@ class _WorkerHTTPBackend(_TypedHTTPBackend):
         except _Permanent:
             raise
         except DecisionError as exc:
-            raise _Permanent(str(exc)) from None
+            raise _Permanent(str(exc), billed=exc.billed) from None
         except (ValueError, KeyError, TypeError, AttributeError, IndexError) as exc:
             raise _Transient(f"malformed response: {type(exc).__name__}: {exc}") from None
         identity = self.identity.check(meta["identity"])  # mismatch -> _Permanent -> DecisionError
@@ -1040,6 +1082,19 @@ class NousFWBackend(_WorkerHTTPBackend):
                 "response_format": {"type": "json_object"}}
 
     def _parse(self, request, data):
+        usage = data.get("usage") or {}
+        billed = None
+        if "prompt_tokens" in usage and "completion_tokens" in usage:  # a rejected reply is still billed by the portal
+            reported = usage.get("cost")
+            billed = {"input_tokens": int(usage["prompt_tokens"]), "output_tokens": int(usage["completion_tokens"]),
+                      "cost_usd": float(reported) if isinstance(reported, (int, float)) else cost_usd(
+                          int(usage["prompt_tokens"]), int(usage["completion_tokens"]), self.price)}
+        try:
+            return self._parse_reply(request, data, usage)
+        except DecisionError as exc:
+            raise DecisionError(str(exc), billed=billed) from None
+
+    def _parse_reply(self, request, data, usage):
         choice = data["choices"][0]
         if choice.get("finish_reason") != "stop":
             raise DecisionError(f"{self.name}: generation did not finish normally ({choice.get('finish_reason')})")
@@ -1055,7 +1110,6 @@ class NousFWBackend(_WorkerHTTPBackend):
         listed = raw.pop("cites", [])
         cites = (tuple(sorted({short.get(c, c) for c in listed if isinstance(c, str)} & set(request.brief_ids)))
                  if isinstance(listed, list) else ())
-        usage = data.get("usage") or {}
         reasoning = int((usage.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)
         return parse_slm_object(request, raw), {
             "identity": {"served_model": str(data.get("model") or ""), "revision": "none", "runtime": "nous-portal",

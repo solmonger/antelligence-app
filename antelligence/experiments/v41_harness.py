@@ -83,11 +83,11 @@ DECISION_LOG_FIELDS = (
     "server_ms", "network_ms", "queue_ms", "tokens_in", "tokens_out", "cost_usd", "router_pick", "deferred",
     "escalated", "cited_ids", "brief_ids", "target", "release", "amount", "p_target_ppm", "p_release_ppm",
     "p_amount_ppm", "look_p_ppm", "prob_method", "identity", "calls", "counterfactual", "audit", "sprime",
-    "error", "error_reason", "attempts", "notes")
+    "error", "error_reason", "attempts", "notes", "kind")
 RUN_LOG_FIELDS = (
     "run_id", "arm", "case", "seed", "split", "wall_s", "ticks", "ticks_to_50", "seconds_to_50", "queen_calls",
     "board_size", "anchors", "anchor_latency_s", "visibility_latency_ms", "decisions", "rounds", "shared_store",
-    "calibration", "variant", "alarms", "dropped_cites", "reputation", "d_timeouts", "decision_errors", "errors")
+    "calibration", "variant", "alarms", "dropped_cites", "reputation", "d_timeouts", "decision_errors", "look_errors", "errors")
 # What a replay from cache must reproduce: every cell field except the wall-clock ones and the anchor count
 # (checked separately against ``anchor_sizes``).
 METRIC_FIELDS = tuple(f for f in v41_cells.FIELD_NAMES
@@ -426,6 +426,8 @@ class _Ctx:
     d_timeouts: int = 0
     errors: List[str] = field(default_factory=list)
     decision_errors: int = 0
+    look_errors: int = 0
+    look_rows: List[Dict[str, Any]] = field(default_factory=list)
     oracle: Any = None
 
 
@@ -814,8 +816,19 @@ class V41Harness:
         patch = local_patch(ctx.case, pos, arrays={"flair": crop.flair, "t1c": crop.t1c})
         worker = self.workers[D1]
         req = look_request(worker.model, patch, seed=derive_seed(ctx.seed, f"squad-{i}", tick))
-        resp = await worker.backend.decide(req)
-        self._tally(ctx, resp)
+        trail: List[Dict[str, Any]] = []
+        try:
+            resp = await self._attempts(ctx, D1, req, trail)
+        except _DecisionFailed as failed:
+            # the local look failed for good: no look (the squad decides without it), an error row and an alarm
+            reason = f"look_error: {failed.reason}"
+            ctx.look_errors += 1
+            ctx.look_rows.append({"kind": "look", "run_id": ctx.run_id, "arm": ctx.arm, "case": ctx.case,
+                                  "seed": ctx.seed, "squad": i, "round": tick // self.world_config.decision_every,
+                                  "tick": tick, "backend": D1, "error": True, "error_reason": reason,
+                                  "attempts": DECISION_RETRIES + 1, "notes": [t["note"] for t in trail if t["note"]]})
+            ctx.board.append("alarm", "harness", {"kind": "other", "value_ppm": 0, "note": reason[:140]}, tick)
+            return None
         return float(apply_temperature(resp.answers[LOOK_QUESTION].p_yes, self.look_temperature))
 
     @staticmethod
@@ -911,38 +924,47 @@ class V41Harness:
 
     # -- decision --
 
-    async def _call(self, ctx: _Ctx, name: str, fields: Mapping[str, Any], text: str, brief: briefs_mod.Brief,
-                    tick: int, squad: int, trail: Optional[List[Dict[str, Any]]] = None
-                    ) -> Tuple[DecisionRequest, DecisionResponse]:
-        """One backend call under the decision failure policy (goal 8), identical for every backend and arm.
+    async def _attempts(self, ctx: _Ctx, name: str, req: DecisionRequest, trail: Optional[List[Dict[str, Any]]]
+                        ) -> DecisionResponse:
+        """One backend call under the decision failure policy (goal 8), identical for every backend, arm and question set.
 
         A :class:`DecisionError` is retried up to ``DECISION_RETRIES`` times with the same request; on retries 2 and 3 a
         verbalised backend also gets a one-line corrective note (not hashed, so a good reply is cached under the
-        original request hash). After the last failure :class:`_DecisionFailed` carries the reasons. A
-        :class:`DecisionAbort` (spent budget) is never absorbed."""
-        worker = self.workers[name]
-        req = build_request(worker.model, fields, text, seed=derive_seed(ctx.seed, f"squad-{squad}", tick))
-        if ctx.spec.board_on:
-            req = dataclasses.replace(req, brief_ids=tuple(brief.brief_ids))
-        verbalised = worker.backend.describe().get("prob_method") == "verbalised"
+        original request hash). Usage the provider billed for a rejected reply is tallied. After the last failure
+        :class:`_DecisionFailed` carries the reason. A :class:`DecisionAbort` (spent budget) is never absorbed."""
+        backend = self.workers[name].backend
+        verbalised = backend.describe().get("prob_method") == "verbalised"
         reason = ""
         for attempt in range(DECISION_RETRIES + 1):
             note = CORRECTIVE_NOTE.format(reason=reason) if (attempt >= 2 and verbalised) else ""
             sent = dataclasses.replace(req, note=note) if note else req
             try:
-                resp = await worker.backend.decide(sent)
+                resp = await backend.decide(sent)
             except DecisionAbort:
                 raise
             except DecisionError as exc:
                 reason = scrub(str(exc))[:160]
+                if exc.billed:
+                    ctx.tokens_in += int(exc.billed.get("input_tokens", 0))
+                    ctx.tokens_out += int(exc.billed.get("output_tokens", 0))
+                    ctx.cost += float(exc.billed.get("cost_usd", 0.0))
                 if trail is not None:
                     trail.append({"worker": name, "attempt": attempt, "error": reason, "note": note})
                 continue
             if trail is not None and note:
                 trail.append({"worker": name, "attempt": attempt, "error": None, "note": note})
             self._tally(ctx, resp)
-            return req, resp
+            return resp
         raise _DecisionFailed(name, reason)
+
+    async def _call(self, ctx: _Ctx, name: str, fields: Mapping[str, Any], text: str, brief: briefs_mod.Brief,
+                    tick: int, squad: int, trail: Optional[List[Dict[str, Any]]] = None
+                    ) -> Tuple[DecisionRequest, DecisionResponse]:
+        worker = self.workers[name]
+        req = build_request(worker.model, fields, text, seed=derive_seed(ctx.seed, f"squad-{squad}", tick))
+        if ctx.spec.board_on:
+            req = dataclasses.replace(req, brief_ids=tuple(brief.brief_ids))
+        return req, await self._attempts(ctx, name, req, trail)
 
     def _call_info(self, name: str, resp: DecisionResponse) -> Dict[str, Any]:
         t = dict(resp.timing)
@@ -1093,7 +1115,7 @@ class V41Harness:
             "p_amount_ppm": payload["p_amount_ppm"], "look_p_ppm": None if look is None else _ppm(look),
             "prob_method": final.prob_method, "identity": ident, "calls": calls,
             "counterfactual": rec["counterfactual"], "audit": rec["audit"], "sprime": rec["sprime"],
-            "entry_id": entry_id, "error": bool(error), "error_reason": error,
+            "entry_id": entry_id, "kind": "decision", "error": bool(error), "error_reason": error,
             "attempts": sum(1 for t in rec["trail"] if t["error"]) + (0 if error else 1),
             "notes": [t["note"] for t in rec["trail"] if t["note"]]})
 
@@ -1162,7 +1184,7 @@ class V41Harness:
             "truth_outside_crop": float(metrics["truth_share_outside_crop"]),
             "backends_kind": self.backends_kind, "router_kind": self.router_kind,
             "router_sha256": self._router_sha(ctx.spec), "identities": self._identities(ctx),
-            "decision_errors": ctx.decision_errors,
+            "decision_errors": ctx.decision_errors, "look_errors": ctx.look_errors,
             "decision_error_share": (ctx.decision_errors / n_dec) if n_dec else 0.0,
             "decision_error_alarm": int(bool(n_dec) and ctx.decision_errors / n_dec > DECISION_ERROR_ALARM),
         }
@@ -1183,7 +1205,7 @@ class V41Harness:
             "alarms": ctx.alarm_count, "dropped_cites": ctx.dropped_cites,
             "identities": sorted({str((r.get("identity") or {}).get("served_model") or "none")
                                   for r in ctx.log if not r["error"]}),
-            "decision_errors": ctx.decision_errors,
+            "decision_errors": ctx.decision_errors, "look_errors": ctx.look_errors,
             "backends_kind": self.backends_kind, "router_kind": self.router_kind,
             "reputation": dict(ctx.reputation.score) if ctx.reputation else {}, "d_timeouts": ctx.d_timeouts,
             "errors": [scrub(e) for e in list(ctx.errors) + ([f"{e['mode']}: {e['error']}" for e in ctx.anchorer.errors] if ctx.anchorer else [])]}
@@ -1220,7 +1242,7 @@ class V41Harness:
         if board is not None:
             board.export_jsonl(run_dir / f"{ctx.run_id}.jsonl")
         (run_dir / "decisions.jsonl").write_text(
-            "".join(canonical_json(r) + "\n" for r in ctx.log), encoding="utf-8")
+            "".join(canonical_json(r) + "\n" for r in [*ctx.log, *ctx.look_rows]), encoding="utf-8")
         (run_dir / "run_log.json").write_text(json.dumps(run_log, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         (run_dir / "cell.json").write_text(json.dumps(cell, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         (run_dir / "bundle.json").write_text(canonical_json(dict(bundle)) + "\n", encoding="utf-8")

@@ -126,3 +126,24 @@ def test_analyze_json_roundtrip(tmp_path):
     A.write_results(res, tmp_path / "results.json")
     assert json.loads((tmp_path / "results.json").read_text())["p1"]["passed"] is True
     assert res["p4"]["significance_tested"] is False and res["p4"]["seconds_to_50_overhead"]["n_cases"] == 30
+
+
+def test_decision_error_sensitivity_only_when_an_arm_exceeds_five_percent():
+    clean = synth(n_cases=12, arms={"SW-B", "SW-noBoard", "FW"})
+    quiet = A.decision_error_sensitivity(A.usable(clean))
+    assert not quiet["triggered"] and quiet["sensitivity"] is None and set(quiet["per_arm"]) == {"SW-B", "SW-noBoard", "FW"}
+    assert quiet["per_arm"]["FW"]["mean_share"] == 0.0 and quiet["caveat"]
+    noisy = []
+    for c in clean:
+        bad = c["arm"] == "FW" and c["case"].endswith(("0", "1", "2", "3"))
+        noisy.append({**c, "decision_errors": 4 if bad else 0, "decision_error_share": 0.2 if bad else 0.0,
+                      "decision_error_alarm": int(bad)})
+    out = A.decision_error_sensitivity(A.usable(noisy))
+    fw = out["per_arm"]["FW"]
+    assert out["triggered"] and fw["mean_share"] > A.DECISION_ERROR_SHARE_MAX and fw["runs_alarmed"] == fw["runs_with_errors"] > 0
+    sens = out["sensitivity"]
+    assert sens["excluded_runs"] == fw["runs_with_errors"] and sens["kept_runs"] == len(noisy) - sens["excluded_runs"]
+    assert sens["p1"]["n_cases"] > 0 and sens["p2"]["status"] == "exploratory" and sens["p2"]["n_cases"] < 12
+    # the full payload carries it as a secondary; nothing else changes
+    res = A.analyze(noisy + synth(n_cases=12, split="dev", arms={"SW-B", "SW-noBoard"}), "eval")
+    assert res["decision_errors"]["triggered"] and res["p1"]["n_cases"] == 12

@@ -28,6 +28,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 from antelligence.kernel.board import Board, Entry
 from antelligence.kernel.briefs import Brief, build_brief, build_brief_board_off, estimate_tokens
 from antelligence.kernel.canonical import canonical_json
+from antelligence.kernel.decision import DecisionAbort
 from antelligence.kernel.policies.v41_harness import load_harness, validate_harness
 from antelligence.providers.base import ChatRequest, Provider
 
@@ -329,7 +330,9 @@ class V41Queen:
                 if response.completion_tokens > MAX_OUTPUT_TOKENS or response.finish_reason == "length":
                     raise QueenReplyError("output over the 800-token cap")
                 parsed = self.parse(response.content, regions)
-            except Exception as exc:   # invalid reply, provider failure and budget trips all land here
+            except DecisionAbort:      # a budget hard stop ends the run; it is never a queen fallback
+                raise
+            except Exception as exc:   # invalid reply, provider failure and per-run call/token trips land here
                 why = f"{type(exc).__name__}: {str(exc)[:90]}"
         if replan and called:
             self.progress.replans += 1

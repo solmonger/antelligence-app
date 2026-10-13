@@ -33,7 +33,14 @@ MAX_CHECKS = 2  # judgement questions per agent per tick
 
 
 class DecisionError(RuntimeError):
-    """A backend failed or returned an answer that breaks the contract."""
+    """A backend failed or returned an answer that breaks the contract.
+
+    ``billed`` (optional) is the usage the provider charged for the failed attempt:
+    ``{"input_tokens", "output_tokens", "cost_usd"}``. A rejected reply still cost money."""
+
+    def __init__(self, *args: Any, billed: Optional[Mapping[str, Any]] = None) -> None:
+        super().__init__(*args)
+        self.billed = dict(billed) if billed else None
 
 
 class DecisionAbort(DecisionError):
