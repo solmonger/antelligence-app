@@ -1,0 +1,208 @@
+{
+ "study": "v4.1",
+ "step": "local-look calibration (goal 5 step 6)",
+ "split": "dev only (dev_a + dev_b)",
+ "model": {
+  "revision": "051bcc464b01b9f92942b364d9586b0ef5912432",
+  "runtime": "transformers",
+  "runtime_version": "5.14.1",
+  "served_model": "LiquidAI/d1-3B"
+ },
+ "hardware": "Apple M4 Max, MPS, bf16 (NOT the L40S pod). Assumption: same weights and revision, so probabilities should match the pod's d1 up to bf16/kernel numerics; not verified here.",
+ "versions": {
+  "transformers": "5.14.1",
+  "torch": "2.14.1",
+  "torchvision": "0.29.1"
+ },
+ "sampling": {
+  "seed": 41,
+  "n": 2000,
+  "per_case": 50,
+  "cases": [
+   "BRATS_016",
+   "BRATS_034",
+   "BRATS_056",
+   "BRATS_067",
+   "BRATS_069",
+   "BRATS_101",
+   "BRATS_113",
+   "BRATS_120",
+   "BRATS_149",
+   "BRATS_161",
+   "BRATS_167",
+   "BRATS_183",
+   "BRATS_193",
+   "BRATS_205",
+   "BRATS_238",
+   "BRATS_246",
+   "BRATS_286",
+   "BRATS_287",
+   "BRATS_290",
+   "BRATS_297",
+   "BRATS_303",
+   "BRATS_328",
+   "BRATS_337",
+   "BRATS_343",
+   "BRATS_355",
+   "BRATS_356",
+   "BRATS_368",
+   "BRATS_373",
+   "BRATS_374",
+   "BRATS_375",
+   "BRATS_389",
+   "BRATS_406",
+   "BRATS_420",
+   "BRATS_423",
+   "BRATS_441",
+   "BRATS_462",
+   "BRATS_464",
+   "BRATS_468",
+   "BRATS_479",
+   "BRATS_483"
+  ],
+  "n_tumour": 1000,
+  "n_outside": 1000,
+  "patch": "64x64 axial FLAIR+T1c",
+  "question": "Is the centre of this patch tumour?"
+ },
+ "ece_bins": 15,
+ "raw": {
+  "n": 2000,
+  "ece": 0.11539,
+  "brier": 0.20968,
+  "auroc": 0.76628
+ },
+ "reliability_raw": [
+  {
+   "bin": "0.000-0.067",
+   "n": 0,
+   "mean_p": null,
+   "frac_tumour": null
+  },
+  {
+   "bin": "0.067-0.133",
+   "n": 0,
+   "mean_p": null,
+   "frac_tumour": null
+  },
+  {
+   "bin": "0.133-0.200",
+   "n": 0,
+   "mean_p": null,
+   "frac_tumour": null
+  },
+  {
+   "bin": "0.200-0.267",
+   "n": 6,
+   "mean_p": 0.2451,
+   "frac_tumour": 0.1667
+  },
+  {
+   "bin": "0.267-0.333",
+   "n": 75,
+   "mean_p": 0.3068,
+   "frac_tumour": 0.12
+  },
+  {
+   "bin": "0.333-0.400",
+   "n": 187,
+   "mean_p": 0.3666,
+   "frac_tumour": 0.262
+  },
+  {
+   "bin": "0.400-0.467",
+   "n": 407,
+   "mean_p": 0.4243,
+   "frac_tumour": 0.2924
+  },
+  {
+   "bin": "0.467-0.533",
+   "n": 614,
+   "mean_p": 0.4973,
+   "frac_tumour": 0.4251
+  },
+  {
+   "bin": "0.533-0.600",
+   "n": 249,
+   "mean_p": 0.5766,
+   "frac_tumour": 0.6908
+  },
+  {
+   "bin": "0.600-0.667",
+   "n": 178,
+   "mean_p": 0.6361,
+   "frac_tumour": 0.7753
+  },
+  {
+   "bin": "0.667-0.733",
+   "n": 207,
+   "mean_p": 0.7034,
+   "frac_tumour": 0.8744
+  },
+  {
+   "bin": "0.733-0.800",
+   "n": 67,
+   "mean_p": 0.7698,
+   "frac_tumour": 0.9104
+  },
+  {
+   "bin": "0.800-0.867",
+   "n": 10,
+   "mean_p": 0.8282,
+   "frac_tumour": 0.9
+  },
+  {
+   "bin": "0.867-0.933",
+   "n": 0,
+   "mean_p": null,
+   "frac_tumour": null
+  },
+  {
+   "bin": "0.933-1.000",
+   "n": 0,
+   "mean_p": null,
+   "frac_tumour": null
+  }
+ ],
+ "latency_ms": {
+  "mean_wall": 342.6,
+  "median_wall": 339.1,
+  "p95_wall": 343.0,
+  "mean_server": 171.5,
+  "n_cached_this_run": 2000,
+  "note": "elapsed_s as stored when each reply was first computed; concurrency 2, wall-clock includes queueing behind the shim lock"
+ },
+ "run_wall_s": 0.8,
+ "temperature": {
+  "value": 0.44102,
+  "ece_threshold": 0.1,
+  "refit": true,
+  "dev_a_dev_b_check": {
+   "fit_on": "dev_a",
+   "n_fit": 1500,
+   "temperature_dev_a": 0.42738,
+   "held_out": "dev_b",
+   "n_held_out": 500,
+   "before": {
+    "n": 500,
+    "ece": 0.10422,
+    "brier": 0.20989,
+    "auroc": 0.75758
+   },
+   "after": {
+    "n": 500,
+    "ece": 0.0522,
+    "brier": 0.19875,
+    "auroc": 0.75758
+   }
+  },
+  "method": "single temperature T minimising NLL of sigmoid(logit(p)/T) (bounded search over log T in [ln 0.05, ln 20]); validated fit-on-dev_a / test-on-dev_b, then refit on all dev patches",
+  "after_all_dev": {
+   "n": 2000,
+   "ece": 0.05221,
+   "brier": 0.19622,
+   "auroc": 0.76628
+  }
+ },
+ "calibration_data_sha256": "9b6a1a498697fb1fd4b5b54150c8261955d60013531742f104f230e0906cba8a"
+}
