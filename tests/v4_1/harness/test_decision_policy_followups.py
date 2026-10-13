@@ -268,3 +268,63 @@ def test_live_then_offline_replay_reproduces_metrics(tmp_path):
                                      cache / "queen.jsonl", offline=True))
     verdict = asyncio.run(offline.harness.replay(res.bundle))
     assert verdict == {"replay_ok": True, "mismatched_fields": [], "trace_hash": res.trace_hash}
+
+
+# --- 5. replay is tied to the run's own attempts, not to a shared failures file ------------------------------------------
+
+def _cached_workers(cache, live: bool, fw_inner=None):
+    out = {}
+    for name, worker in fake_workers().items():
+        inner = worker.backend
+        if name == FW and fw_inner is not None:
+            inner = fw_inner
+        elif not live:
+            inner = FakeBackend(lambda r: (_ for _ in ()).throw(AssertionError("backend called during replay")),
+                                model=worker.model, name=name)
+        out[name] = Worker(CachedDecision(inner, cache / name, offline=not live), worker.model)
+    return out
+
+
+def test_warm_cache_hit_run_replays_with_no_stale_failures(tmp_path):
+    cache, vault = tmp_path / "cache", KeyVault()
+    first = run(build_rig(tmp_path / "l1", vault=vault, workers=_cached_workers(cache, True, Scripted()),
+                          queen=Cached(queen_provider(), cache / "queen.jsonl")), "FW")
+    assert first.cell["decision_errors"] == 1 and any((cache / FW).glob("*.failures.jsonl"))   # audit log is on disk
+    # a second LIVE run over the same cache: the rescued decision is a warm hit, the errored one is served live and fine
+    second = run(build_rig(tmp_path / "l2", vault=vault, workers=_cached_workers(cache, True, FakeBackend(
+        model="fw-fake", name=FW)), queen=Cached(queen_provider(), cache / "queen.jsonl")), "FW")
+    assert second.bundle["extra"]["attempts"] == {} and second.cell["decision_errors"] == 0
+    assert all(r["attempts"] == 1 and r["failures"] == [] for r in second.decision_log)
+    assert second.cell["cost_usd"] == pytest.approx(0.0)
+    offline = build_rig(tmp_path / "r2", vault=vault, workers=_cached_workers(cache, False),
+                        queen=Cached(queen_provider(lambda r: (_ for _ in ()).throw(AssertionError("queen"))),
+                                     cache / "queen.jsonl", offline=True))
+    verdict = asyncio.run(offline.harness.replay(second.bundle))
+    assert verdict == {"replay_ok": True, "mismatched_fields": [], "trace_hash": second.trace_hash}
+    again = asyncio.run(offline.harness.run("FW", CASE_DEV, 1, anchor=False, replay_attempts={}))
+    assert again.cell["cost_usd"] == second.cell["cost_usd"] and again.cell["decision_errors"] == 0
+    assert all(r["attempts"] == 1 for r in again.decision_log)                         # 0 extra attempts
+
+
+# --- 6. usage billed on transient (malformed) replies ----------------------------------------------------------------------
+
+def _flaky_nous(first_bad, retries=1):
+    good, state = _nous_handler(bad_first=0)
+
+    def handle(request):
+        state["calls"] = state.get("calls", 0) + 1
+        if state["calls"] <= first_bad:   # no "choices": malformed, but the portal billed it
+            return httpx.Response(200, json={"model": "deepseek/deepseek-v4.1-flash",
+                                             "usage": {"prompt_tokens": 100, "completion_tokens": 10, "cost": 0.002}})
+        return good(request)
+    return NousFWBackend("https://nous.test/v1", api_key="nk", retries=retries, backoff_s=0.0,
+                         transport=httpx.MockTransport(handle))
+
+
+def test_transient_malformed_reply_usage_is_tallied():
+    req = make_request("deepseek/deepseek-v4.1-flash")
+    ok = asyncio.run(_flaky_nous(1).decide(req))                                       # malformed, then good
+    assert ok.cost_usd == pytest.approx(0.001 + 0.002) and ok.input_tokens == 300 + 100 and ok.output_tokens == 60 + 10
+    with pytest.raises(DecisionError) as err:                                          # malformed twice: error, but billed
+        asyncio.run(_flaky_nous(2).decide(req))
+    assert err.value.billed == {"input_tokens": 200, "output_tokens": 20, "cost_usd": pytest.approx(0.004)}

@@ -110,10 +110,12 @@ fallbacks.
   `DecisionAbort`: not retried, not an error decision, not a queen fallback. They end the run.
 - **Billed failures.** A rejected reply that the provider charged for (Nous returns `usage`) is added to `cost_usd`,
   `tokens_in` and `tokens_out` and gets a usage-ledger row with its cost (so the budget stop sees it).
-- **Replay.** `CachedDecision` stores valid replies as `<hash>.json` and failed attempts (with billed usage) in
-  `<hash>.failures.jsonl`. An offline replay raises those failures in order before serving the stored reply, so retries,
-  cost and error decisions reproduce. A live run restarts the failure file at its first call for a key and never serves
-  from it.
+- **Replay.** A run's failed attempts (reason and billed usage) are in its decision log (`failures`) and in the bundle
+  (`extra.attempts`, keyed by decision or look slot). `replay()` re-plays exactly those attempts, then lets the offline
+  cache serve the stored reply, so retries, cost and error decisions reproduce. `CachedDecision` stores valid replies
+  as `<hash>.json`; `<hash>.failures.jsonl` is a shared audit log and is never read back, so a stale failure from an
+  earlier run cannot enter another run's replay. Usage billed on malformed or invalid replies (also inside the backend's
+  own transport retries) is counted too.
 - **Asymmetry.** The corrective note on retries 2 and 3 exists only for verbalised backends (FW and the SLMs). Logprob
   backends (d1, Qwen, Bonsai) get the identical request on every retry, and at temperature 0 a retry usually repeats the
   failure. FW therefore has more chances to recover a decision than the other arms. This is a difference in how failures

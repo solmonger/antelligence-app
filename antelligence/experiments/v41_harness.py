@@ -83,7 +83,7 @@ DECISION_LOG_FIELDS = (
     "server_ms", "network_ms", "queue_ms", "tokens_in", "tokens_out", "cost_usd", "router_pick", "deferred",
     "escalated", "cited_ids", "brief_ids", "target", "release", "amount", "p_target_ppm", "p_release_ppm",
     "p_amount_ppm", "look_p_ppm", "prob_method", "identity", "calls", "counterfactual", "audit", "sprime",
-    "error", "error_reason", "attempts", "notes", "kind")
+    "error", "error_reason", "attempts", "notes", "failures", "kind")
 RUN_LOG_FIELDS = (
     "run_id", "arm", "case", "seed", "split", "wall_s", "ticks", "ticks_to_50", "seconds_to_50", "queen_calls",
     "board_size", "anchors", "anchor_latency_s", "visibility_latency_ms", "decisions", "rounds", "shared_store",
@@ -428,6 +428,8 @@ class _Ctx:
     decision_errors: int = 0
     look_errors: int = 0
     look_rows: List[Dict[str, Any]] = field(default_factory=list)
+    attempt_log: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
+    replay_attempts: Optional[Mapping[str, Any]] = None
     oracle: Any = None
 
 
@@ -495,7 +497,7 @@ class V41Harness:
     # ---- public --------------------------------------------------------------------------------
 
     async def run(self, arm: str, case: str, seed: int, *, calibration: bool = False,
-                  anchor: bool = True) -> EpisodeResult:
+                  anchor: bool = True, replay_attempts: Optional[Mapping[str, Any]] = None) -> EpisodeResult:
         """One episode. The gate is the first thing that happens; nothing is loaded or called before it passes."""
         if arm not in ARM_SPECS:
             raise HarnessError(f"unknown arm {arm!r}")
@@ -512,6 +514,7 @@ class V41Harness:
                 raise HarnessError(f"arm {spec.name} must be anchored: pass anchorer_factory (or allow_unanchored)")
         t0 = self.clock()
         ctx = self._build(spec, case, int(seed), split, calibration, anchor)
+        ctx.replay_attempts = replay_attempts
         if spec.kind in ("script", "oracle"):
             wall_marks = self._run_scripted(ctx, t0)
         else:
@@ -536,7 +539,8 @@ class V41Harness:
         """Re-run a bundle's episode (this harness must read the same caches offline and hold the same keys) and require
         the same trace hash, every metric field and the same anchor sizes."""
         spec = bundle["spec"]
-        again = await self.run(spec["arm"], spec["case"], spec["seed"], calibration=spec["calibration"], anchor=False)
+        again = await self.run(spec["arm"], spec["case"], spec["seed"], calibration=spec["calibration"], anchor=False,
+                                 replay_attempts=bundle["extra"].get("attempts") or {})
         recorded = bundle["extra"]["cell"]
         mismatched = [f for f in METRIC_FIELDS if recorded.get(f) != again.cell.get(f)]
         if again.trace_hash != bundle["trace_hash"]:
@@ -818,7 +822,7 @@ class V41Harness:
         req = look_request(worker.model, patch, seed=derive_seed(ctx.seed, f"squad-{i}", tick))
         trail: List[Dict[str, Any]] = []
         try:
-            resp = await self._attempts(ctx, D1, req, trail)
+            resp = await self._attempts(ctx, D1, req, trail, f"look|{i}|{tick}")
         except _DecisionFailed as failed:
             # the local look failed for good: no look (the squad decides without it), an error row and an alarm
             reason = f"look_error: {failed.reason}"
@@ -826,7 +830,9 @@ class V41Harness:
             ctx.look_rows.append({"kind": "look", "run_id": ctx.run_id, "arm": ctx.arm, "case": ctx.case,
                                   "seed": ctx.seed, "squad": i, "round": tick // self.world_config.decision_every,
                                   "tick": tick, "backend": D1, "error": True, "error_reason": reason,
-                                  "attempts": DECISION_RETRIES + 1, "notes": [t["note"] for t in trail if t["note"]]})
+                                  "attempts": DECISION_RETRIES + 1, "notes": [t["note"] for t in trail if t["note"]],
+                                  "failures": [{"attempt": t["attempt"], "error": t["error"], "billed": t["billed"]}
+                                               for t in trail if t["error"]]})
             ctx.board.append("alarm", "harness", {"kind": "other", "value_ppm": 0, "note": reason[:140]}, tick)
             return None
         return float(apply_temperature(resp.answers[LOOK_QUESTION].p_yes, self.look_temperature))
@@ -924,37 +930,49 @@ class V41Harness:
 
     # -- decision --
 
-    async def _attempts(self, ctx: _Ctx, name: str, req: DecisionRequest, trail: Optional[List[Dict[str, Any]]]
-                        ) -> DecisionResponse:
+    async def _attempts(self, ctx: _Ctx, name: str, req: DecisionRequest, trail: Optional[List[Dict[str, Any]]],
+                        slot: str) -> DecisionResponse:
         """One backend call under the decision failure policy (goal 8), identical for every backend, arm and question set.
 
         A :class:`DecisionError` is retried up to ``DECISION_RETRIES`` times with the same request; on retries 2 and 3 a
         verbalised backend also gets a one-line corrective note (not hashed, so a good reply is cached under the
         original request hash). Usage the provider billed for a rejected reply is tallied. After the last failure
-        :class:`_DecisionFailed` carries the reason. A :class:`DecisionAbort` (spent budget) is never absorbed."""
+        :class:`_DecisionFailed` carries the reason. A :class:`DecisionAbort` (spent budget) is never absorbed.
+
+        ``slot`` names this decision or look in the run. The failed attempts a run experienced are kept in
+        ``ctx.attempt_log[slot]`` (reason and billed usage) and go into the bundle; in a replay they are re-played from
+        there (``ctx.replay_attempts``) without calling the backend, and only then does the backend (the offline cache)
+        serve the stored reply. Nothing is read from a failures file shared with other runs."""
         backend = self.workers[name].backend
         verbalised = backend.describe().get("prob_method") == "verbalised"
+        replayed = None if ctx.replay_attempts is None else list(ctx.replay_attempts.get(slot, []))
         reason = ""
         for attempt in range(DECISION_RETRIES + 1):
             note = CORRECTIVE_NOTE.format(reason=reason) if (attempt >= 2 and verbalised) else ""
-            sent = dataclasses.replace(req, note=note) if note else req
-            try:
-                resp = await backend.decide(sent)
-            except DecisionAbort:
-                raise
-            except DecisionError as exc:
-                reason = scrub(str(exc))[:160]
-                if exc.billed:
-                    ctx.tokens_in += int(exc.billed.get("input_tokens", 0))
-                    ctx.tokens_out += int(exc.billed.get("output_tokens", 0))
-                    ctx.cost += float(exc.billed.get("cost_usd", 0.0))
-                if trail is not None:
-                    trail.append({"worker": name, "attempt": attempt, "error": reason, "note": note})
-                continue
-            if trail is not None and note:
-                trail.append({"worker": name, "attempt": attempt, "error": None, "note": note})
-            self._tally(ctx, resp)
-            return resp
+            billed = None
+            if replayed is not None and attempt < len(replayed):
+                reason, billed = str(replayed[attempt]["error"]), replayed[attempt].get("billed")
+            else:
+                sent = dataclasses.replace(req, note=note) if note else req
+                try:
+                    resp = await backend.decide(sent)
+                except DecisionAbort:
+                    raise
+                except DecisionError as exc:
+                    reason, billed = scrub(str(exc))[:160], exc.billed
+                else:
+                    if trail is not None and note:
+                        trail.append({"worker": name, "attempt": attempt, "error": None, "note": note})
+                    self._tally(ctx, resp)
+                    return resp
+                if replayed is None:
+                    ctx.attempt_log.setdefault(slot, []).append({"attempt": attempt, "error": reason, "billed": billed})
+            if billed:
+                ctx.tokens_in += int(billed.get("input_tokens", 0))
+                ctx.tokens_out += int(billed.get("output_tokens", 0))
+                ctx.cost += float(billed.get("cost_usd", 0.0))
+            if trail is not None:
+                trail.append({"worker": name, "attempt": attempt, "error": reason, "note": note, "billed": billed})
         raise _DecisionFailed(name, reason)
 
     async def _call(self, ctx: _Ctx, name: str, fields: Mapping[str, Any], text: str, brief: briefs_mod.Brief,
@@ -964,7 +982,7 @@ class V41Harness:
         req = build_request(worker.model, fields, text, seed=derive_seed(ctx.seed, f"squad-{squad}", tick))
         if ctx.spec.board_on:
             req = dataclasses.replace(req, brief_ids=tuple(brief.brief_ids))
-        return req, await self._attempts(ctx, name, req, trail)
+        return req, await self._attempts(ctx, name, req, trail, f"decision|{squad}|{tick}|{name}")
 
     def _call_info(self, name: str, resp: DecisionResponse) -> Dict[str, Any]:
         t = dict(resp.timing)
@@ -1117,7 +1135,9 @@ class V41Harness:
             "counterfactual": rec["counterfactual"], "audit": rec["audit"], "sprime": rec["sprime"],
             "entry_id": entry_id, "kind": "decision", "error": bool(error), "error_reason": error,
             "attempts": sum(1 for t in rec["trail"] if t["error"]) + (0 if error else 1),
-            "notes": [t["note"] for t in rec["trail"] if t["note"]]})
+            "notes": [t["note"] for t in rec["trail"] if t["note"]],
+            "failures": [{"attempt": t["attempt"], "error": t["error"], "billed": t["billed"]}
+                         for t in rec["trail"] if t["error"]]})
 
     # ---- finishing -------------------------------------------------------------------------------------
 
@@ -1233,7 +1253,8 @@ class V41Harness:
                  "anchors": [dict(a) for a in anchors], "board_head": board.get(board.size() - 1).id if board and board.size() else None,
                  "board_root": board.root().hex() if board and board.size() else None,
                  "decision_log_sha256": content_hash([{k: r[k] for k in _TRACE_KEYS} for r in ctx.log]),
-                 "shared_store": bool(board)}
+                 "shared_store": bool(board),
+                 "attempts": {k: [dict(a) for a in v] for k, v in sorted(ctx.attempt_log.items())}}
         return build_bundle(result, spec, extra=extra)
 
     def _write(self, ctx: _Ctx, cell: Mapping[str, Any], run_log: Mapping[str, Any], bundle: Mapping[str, Any],
