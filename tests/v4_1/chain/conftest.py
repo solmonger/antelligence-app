@@ -1,5 +1,6 @@
 import pytest
 from eth_account import Account
+from web3 import Web3
 
 from chain.v4_1 import ChainClientV41, LocalSigner, TxQueue
 
@@ -57,6 +58,7 @@ def make_client(fake, signer, clock, tmp_path):
     def _make(db=None, **kw):
         q = TxQueue(db or tmp_path / "q.sqlite", clock=clock)
         kw.setdefault("expected_deployer", signer.address)
+        kw.setdefault("code_hashes", {n: "0x" + bytes(Web3.keccak(b"\x60\x80")).hex() for n in ADDRS})
         return ChainClientV41(fake, signer, q, ADDRS, clock=clock, **kw)
     return _make
 

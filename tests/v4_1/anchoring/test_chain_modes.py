@@ -25,7 +25,8 @@ def rig(tmp_path):
     clock, fake = Clock(), FakeChain(300, ADDRS.values())
     fake.contract_deployer = signer.address
     queue = TxQueue(tmp_path / "q.sqlite", clock=clock)
-    client = ChainClientV41(fake, signer, queue, ADDRS, expected_deployer=signer.address, clock=clock)
+    client = ChainClientV41(fake, signer, queue, ADDRS, expected_deployer=signer.address, clock=clock,
+                           code_hashes={n: "0x" + bytes(__import__("web3").Web3.keccak(b"\x60\x80")).hex() for n in ADDRS})
     return client, fake, clock
 
 

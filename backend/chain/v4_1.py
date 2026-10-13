@@ -35,6 +35,7 @@ from eth_abi import encode as abi_encode
 from eth_account import Account
 from web3 import Web3
 
+from antelligence.providers.redact import register_url, scrub
 from chain.config import (
     REPO_ROOT,
     ChainConfigError,
@@ -159,11 +160,16 @@ class LocalSigner:
     """Signs legacy transactions in-process. The key never appears in repr or logs."""
 
     def __init__(self, private_key: str):
-        self._account = Account.from_key(private_key)
-        self.address: str = self._account.address
+        account = Account.from_key(private_key)
+        self.address: str = account.address
+        # the raw key lives only in this closure, not in an attribute (vars(), copy and pickle cannot reach it)
+        self._sign = lambda tx: bytes(account.sign_transaction(tx).raw_transaction)
 
     def sign(self, tx: dict) -> bytes:
-        return bytes(self._account.sign_transaction(tx).raw_transaction)
+        return self._sign(tx)
+
+    def __reduce__(self):
+        raise TypeError("LocalSigner holds a private key and cannot be pickled or copied")
 
     def __repr__(self) -> str:  # pragma: no cover - trivial
         return f"LocalSigner({self.address})"
@@ -209,6 +215,9 @@ CREATE TABLE IF NOT EXISTS jobs (
 );
 CREATE INDEX IF NOT EXISTS jobs_status ON jobs(status, id);
 """
+
+
+LOCAL_CHAIN_IDS = frozenset({31337, 1337})     # hardhat / anvil: the only non-300 ids a test may opt into
 
 
 def default_queue_path() -> Path:
@@ -322,9 +331,13 @@ class ChainClientV41:
 
     def __init__(self, w3, signer, queue: TxQueue, contracts: Optional[Dict[str, str]] = None, *,
                  expected_deployer: Optional[str] = None, max_in_flight: int = 8, replace_after_s: float = 60.0,
-                 gas_bump_pct: int = 15, gas_limit_pad_pct: int = 20, clock: Callable[[], float] = time.time):
+                 gas_bump_pct: int = 15, gas_limit_pad_pct: int = 20, clock: Callable[[], float] = time.time,
+                 expected_chain_id: Optional[int] = None, code_hashes: Optional[Dict[str, str]] = None):
         if not 1 <= max_in_flight <= 8:
             raise ValueError("max_in_flight must be in 1..8")
+        if expected_chain_id is not None and expected_chain_id not in LOCAL_CHAIN_IDS:
+            raise ChainConfigError("expected_chain_id is a test hook for a local node (31337/1337); "
+                                   "real runs use the network selected in chain.config (300)")
         record = (load_deployment() or {}).get("v4_1") or {}
         self.w3 = w3
         self.signer = signer
@@ -333,6 +346,13 @@ class ChainClientV41:
             c["name"]: c["address"] for c in record.get("contracts", [])
         }
         self.expected_deployer = expected_deployer if expected_deployer is not None else record.get("deployer", "")
+        # keccak256 of the code each contract must have on chain (recorded at deploy time in the deployments file)
+        self.code_hashes = dict(code_hashes) if code_hashes is not None else (
+            {c["name"]: c["code_hash"] for c in record.get("contracts", []) if c.get("code_hash")}
+            if contracts is None else {})
+        self.expected_chain_id = expected_chain_id
+        self._pump_lock = threading.RLock()
+        self._code_verified = False
         self.max_in_flight = max_in_flight
         self.replace_after_s = replace_after_s
         self.gas_bump_pct = gas_bump_pct
@@ -344,7 +364,12 @@ class ChainClientV41:
 
     def preflight(self) -> int:
         """Refuse to sign unless: RPC serves the selected testnet, signer is the deployer, contracts have code."""
-        chain_id = assert_rpc_matches_network(self.w3)
+        if self.expected_chain_id is not None:
+            chain_id = int(self.w3.eth.chain_id)
+            if chain_id != self.expected_chain_id:
+                raise ChainConfigError(f"RPC serves chain {chain_id}, expected {self.expected_chain_id}; refusing to sign")
+        else:
+            chain_id = assert_rpc_matches_network(self.w3)
         if not self.expected_deployer:
             raise ChainConfigError("no deployer address recorded for v4_1; refusing to sign")
         if self.signer.address.lower() != str(self.expected_deployer).lower():
@@ -357,12 +382,36 @@ class ChainClientV41:
                 raise ChainConfigError(f"{name} has no address (v4_1 not deployed on this network); refusing to sign")
             if not self.w3.eth.get_code(Web3.to_checksum_address(addr)):
                 raise ChainConfigError(f"no contract code for {name} at {addr}; refusing to sign")
+        self._verify_code_hashes()
         for name in ("AnchorRegistry", "BoardLog"):      # deployer-only writers: a mismatch would only revert on chain
             on_chain = self._deployer_of(name)
             if on_chain.lower() != str(self.expected_deployer).lower():
                 raise ChainConfigError(f"{name} at {self.contracts[name]} is deployed by {on_chain}, not the "
                                        f"recorded deployer {self.expected_deployer}; refusing to sign")
         return chain_id
+
+    def _verify_code_hashes(self) -> None:
+        """The code served at each address must hash to the value recorded at deploy time (checked once per client)."""
+        if self._code_verified:
+            return
+        for name in ABIS:
+            want = self.code_hashes.get(name)
+            if not want:
+                raise ChainConfigError(f"no code-hash pin for {name}; refusing to sign (the deployments record needs code_hash)")
+            got = "0x" + bytes(Web3.keccak(bytes(self.w3.eth.get_code(self._addr(name))))).hex()
+            if got.lower() != want.lower():
+                raise ChainConfigError(f"code hash of {name} at {self.contracts[name]} is {got}, recorded {want}; refusing to sign")
+        self._code_verified = True
+
+    def receipt_info(self, tx_hash: str) -> dict:
+        """Archive facts for one mined tx: status, L2 block, and (ZKsync) the L1 batch number, ``None`` elsewhere."""
+        rc = self._receipt(tx_hash)
+        if rc is None:
+            return {}
+        batch = rc.get("l1BatchNumber") if hasattr(rc, "get") else None
+        if isinstance(batch, str):
+            batch = int(batch, 16) if batch.startswith("0x") else int(batch)
+        return {"status": int(rc["status"]), "block": int(rc["blockNumber"]), "l1_batch": batch}
 
     def _deployer_of(self, name: str) -> str:
         out = bytes(self.w3.eth.call({"to": self._addr(name), "data": _calldata(name, "deployer", [])}))
@@ -418,14 +467,15 @@ class ChainClientV41:
 
     def pump(self) -> PumpStats:
         """One pass: poll receipts, replace dropped txs at the same nonce, send pending jobs."""
-        stats = PumpStats()
-        self.preflight()
-        if self._next_nonce is None:
-            self._sync_nonce()
-        self._poll_sent(stats)
-        self._replace_dropped(stats)
-        self._send_pending(stats)
-        return stats
+        with self._pump_lock:       # BoardPostMode pumps from worker threads; one pass at a time
+            stats = PumpStats()
+            self.preflight()
+            if self._next_nonce is None:
+                self._sync_nonce()
+            self._poll_sent(stats)
+            self._replace_dropped(stats)
+            self._send_pending(stats)
+            return stats
 
     def drain(self, timeout_s: float = 600.0, poll_s: float = 2.0, sleep: Callable[[float], None] = time.sleep) -> dict:
         """Pump until nothing is pending or sent, or the timeout passes. For batch/finalisation only."""
@@ -504,7 +554,7 @@ class ChainClientV41:
                 return None
             if "nonce too low" in msg:
                 return "nonce_low"
-            return str(exc)
+            return scrub(exc)
 
     def _lookup(self, tx_hash: str) -> str:
         """'mined' (receipt), 'known' (node has the tx), 'absent' (node says not found), 'unresolved' (error)."""
@@ -569,10 +619,10 @@ class ChainClientV41:
                 if in_flight:
                     # Later jobs can depend on earlier in-flight ones (anchor prevRoot chain), and
                     # estimate_gas cannot see the mempool. Wait for the pipeline to settle, then retry.
-                    self.queue.update(job["id"], error=f"estimate deferred behind in-flight txs: {exc}")
+                    self.queue.update(job["id"], error=scrub(f"estimate deferred behind in-flight txs: {exc}"))
                     stats.deferred += 1
                     break
-                self.queue.update(job["id"], status=FAILED, error=f"would revert: {exc}")
+                self.queue.update(job["id"], status=FAILED, error=scrub(f"would revert: {exc}"))
                 stats.failed += 1
                 continue
             gas_limit = est * (100 + self.gas_limit_pad_pct) // 100
@@ -595,3 +645,28 @@ class ChainClientV41:
             if err:
                 self.queue.update(job["id"], error=err)
             stats.sent += 1
+
+
+# --------------------------------------------------------------------------------------------------
+# Production entry point
+# --------------------------------------------------------------------------------------------------
+
+
+def open_live_client(queue_path: Optional[Path] = None, *, rpc_url: Optional[str] = None, w3=None,
+                     signer_factory: Callable[[], "LocalSigner"] = signer_from_config,
+                     expected_chain_id: Optional[int] = None, **client_kw: Any) -> ChainClientV41:
+    """The one place a run opens the chain: the signer is loaded here (``chain.config.get_private_key``) and stays
+    inside the returned client. Pins (addresses, deployer, code hashes) come from the ``v4_1`` record of
+    ``blockchain/deployments/<network>.json``. :meth:`ChainClientV41.preflight` (chain id, deployer, code, code hash)
+    runs here, before the caller can enqueue or write anything."""
+    from chain.config import get_rpc_url
+
+    if w3 is None:
+        url = rpc_url or get_rpc_url()
+        register_url(url or "")
+        if not url:
+            raise ChainConfigError("no RPC configured (set ANTELLIGENCE_CHAIN and/or ZKSYNC_SEPOLIA_RPC_URL)")
+        w3 = Web3(Web3.HTTPProvider(url, request_kwargs={"timeout": 30}))
+    client = ChainClientV41(w3, signer_factory(), TxQueue(queue_path), expected_chain_id=expected_chain_id, **client_kw)
+    client.preflight()
+    return client

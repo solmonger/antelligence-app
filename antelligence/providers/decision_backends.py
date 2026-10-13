@@ -104,7 +104,8 @@ class _TypedHTTPBackend:
         return {"backend": self.name, "model": self.model, "base_url": self.base_url}
 
     def _scrub(self, text: str) -> str:
-        return text.replace(self._api_key, "***") if self._api_key else text
+        from antelligence.providers.redact import scrub
+        return scrub(text, (self._api_key,) if self._api_key else ())
 
     def _check_served(self, served: str) -> None:
         raise NotImplementedError

@@ -9,7 +9,11 @@ Floors: SW-B and SW-noBoard never below 80x2 cases/seeds, FW never below 30 case
 from __future__ import annotations
 
 import dataclasses
-from typing import Any, Dict, List, Mapping, Optional, Tuple
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+
+from antelligence.experiments import v4_budget
 
 BUDGETS = {"nous": 8.00, "runpod": 10.00}
 STOPS = {"nous": 7.50, "runpod": 9.50}
@@ -118,3 +122,47 @@ def project(per_run: Mapping[str, Mapping[str, float]], *, sandbox_per_round: Op
     return {"plan": current, "decisions": decisions, "projected_initial": initial, "projected_final": final,
             "stops": dict(stops), "over_after_cuts": [p for p in BUDGETS if final[p] > stops[p]],
             "unpriced_arms": sorted(a for a in current.cases if a not in per_run)}
+
+
+# --- runtime hard stops (S7) -------------------------------------------------------------------------------------
+
+USAGE_LEDGER = Path("ledger/v4.1-usage.jsonl")
+POD_COSTS = Path("ledger/v4.1-pod-costs.jsonl")
+
+
+class BudgetRefused(RuntimeError):
+    """A paid call was refused because spend reached the hard stop (Nous 7.50, RunPod 9.50)."""
+
+
+def usage_spend(rows: Sequence[Mapping[str, Any]]) -> float:
+    """Nous dollars from the usage ledger. Rows with ``cost_usd`` count as written; preflight probe rows (provider
+    ``nous``, token ``usage``, no cost field) are priced from the table so they are not free."""
+    from antelligence.providers.ledger import PRICES, cost_usd
+
+    total = 0.0
+    for row in rows:
+        if v4_budget.provider_of(row) != "nous" and row.get("provider") != "nous":
+            continue
+        if row.get("cost_usd"):
+            total += float(row["cost_usd"])
+        elif isinstance(row.get("usage"), Mapping) and row.get("model") in PRICES:
+            u = row["usage"]
+            total += cost_usd(int(u.get("prompt_tokens") or 0), int(u.get("completion_tokens") or 0), PRICES[row["model"]])
+    return total
+
+
+def spend_now(usage: Optional[Path] = USAGE_LEDGER, pods: Optional[Path] = POD_COSTS,
+              now: Optional[datetime] = None) -> Dict[str, float]:
+    return {"nous": usage_spend(v4_budget.read_jsonl(usage)),
+            "runpod": v4_budget.pod_spend(v4_budget.read_jsonl(pods), now)}
+
+
+def check_or_refuse(provider: str, *, usage: Optional[Path] = USAGE_LEDGER, pods: Optional[Path] = POD_COSTS,
+                    pending_usd: float = 0.0, now: Optional[datetime] = None) -> float:
+    """Raise :class:`BudgetRefused` when spend (plus a pending cost) is at or past the stop; else return the spend."""
+    if provider not in STOPS:
+        raise KeyError(f"unknown provider {provider!r}")
+    spent = spend_now(usage, pods, now)[provider]
+    if spent + pending_usd >= STOPS[provider]:
+        raise BudgetRefused(f"{provider} hard stop: ${spent:.4f} spent + ${pending_usd:.4f} pending >= ${STOPS[provider]:.2f}")
+    return spent
