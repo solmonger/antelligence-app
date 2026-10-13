@@ -61,8 +61,8 @@ def v41_bindings(image: str) -> Iterator[None]:
     def refuse(spent: float, rate: float, limit: float = HARD_STOP_USD) -> Optional[str]:
         return orig_refuse(spent, rate, limit)
 
-    def row(event: str, pod_id: str, rate: float, utc: Optional[str] = None) -> Dict[str, Any]:
-        return {**orig_row(event, pod_id, rate, utc), "image": image}
+    def row(event: str, pod_id: str, rate: float, utc: Optional[str] = None, **extra: Any) -> Dict[str, Any]:
+        return {**orig_row(event, pod_id, rate, utc, **extra), "image": image}
 
     v4_pod.VLLM_IMAGE, v4_pod.HARD_STOP_USD = image, HARD_STOP_USD
     v4_pod.refuse_over_budget, v4_pod.cost_row = refuse, row
@@ -105,9 +105,9 @@ def quote(api_key: str, transport: Optional[httpx.BaseTransport] = None) -> Dict
 
 def cmd_up(client: v4_pod.RunPod, paths: v4_pod.Paths, image: str, auto_down_min: Optional[float], echo: Echo,
            wait: bool = False, transport: Optional[httpx.BaseTransport] = None,
-           sleep: Callable[[float], None] = time.sleep) -> int:
+           sleep: Callable[[float], None] = time.sleep, scripts_commit: Optional[str] = None) -> int:
     with v41_bindings(validate_image(image)):
-        rc = v4_pod.cmd_up(MODEL, client, paths, echo, False, transport, sleep)
+        rc = v4_pod.cmd_up(MODEL, client, paths, echo, False, transport, sleep, scripts_commit)
     state = v4_pod.load_state(paths.state)
     if rc == 0 and state:
         state["image"] = image
@@ -153,20 +153,16 @@ def main(argv: Optional[List[str]] = None, *, paths: Optional[v4_pod.Paths] = No
     up = sub.add_parser("up")
     up.add_argument("model", choices=[MODEL])
     up.add_argument("--image", default=IMAGE, help=f"pinned image tag (default {IMAGE})")
+    up.add_argument("--scripts-commit", required=True, metavar="SHA",
+                    help="40-hex commit; the pod downloads its launcher from GitHub at this commit and verifies sha256")
     up.add_argument("--wait", action="store_true")
     up.add_argument("--auto-down-after-min", type=float, default=None, metavar="N")
-    push = sub.add_parser("push-scripts")
-    push.add_argument("--host", required=True)
-    push.add_argument("--port", type=int, required=True)
-    push.add_argument("--identity")
     for name in ("status", "wait", "down", "cost"):
         sub.add_parser(name)
     args = parser.parse_args(argv)
     paths = paths or v41_paths()
     if args.cmd == "cost":
         return cmd_cost(paths, echo)
-    if args.cmd == "push-scripts":
-        return v4_pod.cmd_push_scripts(args.host, args.port, args.identity, echo)
     if args.cmd == "wait":
         return v4_pod.cmd_wait(paths, echo, transport, sleep)
     key = api_key or v4_pod.runpod_key()
@@ -176,7 +172,8 @@ def main(argv: Optional[List[str]] = None, *, paths: Optional[v4_pod.Paths] = No
     client = v4_pod.RunPod(key, transport)
     if args.cmd == "up":
         try:
-            return cmd_up(client, paths, args.image, args.auto_down_after_min, echo, args.wait, transport, sleep)
+            return cmd_up(client, paths, args.image, args.auto_down_after_min, echo, args.wait, transport, sleep,
+                          args.scripts_commit)
         except ValueError as exc:
             echo(f"refused: {exc}")
             return 2
