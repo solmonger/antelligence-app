@@ -8,8 +8,12 @@
 from the environment variables the config names, nowhere else. The gate (``v41_gate``) runs before every episode; an
 evaluation case needs the committed preregistration, its confirmed anchor receipt and the G1 approval file.
 ``--calibration`` is Phase 0 step 7 (Qwen3.5-9B drives, d1 and Qwen3.5-4B answer counterfactually, development only).
-``--anchors mock`` anchors to in-process mock OTS/Rekor/chain (plumbing and tests); live anchors are wired by the lead at
-the plumbing run, because they need the chain signer.
+``--anchors mock`` anchors to in-process mock OTS/Rekor/chain (plumbing and tests). ``--anchors live`` is the real thing:
+OTS public calendars, Rekor (rekor.sigstore.dev), AnchorRegistry (chain 300), BoardLog for SW-D and ReputationRegistry for
+SW-Byz-chain, over the persistent queue in ledger/. It WRITES TO PUBLIC NETWORKS and needs the chain signer in the
+environment (chain.config.get_private_key). ``--backends live`` builds the pod, Nous and Bonsai backends (no --config):
+the pod URL and secret come from ledger/v4.1-pod-state.json, the Nous key is read in-process, every paid call is ledgered
+in ledger/v4.1-usage.jsonl and refused past Nous $7.50 / RunPod $9.50.
 
 Exit code 1 if any episode failed; failed runs are written to the cells file with an ``error`` field.
 """
@@ -26,10 +30,11 @@ from typing import Any, Callable, Optional, Sequence
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from antelligence.experiments import v41_live  # noqa: E402
+from antelligence.anchoring import live  # noqa: E402
+from antelligence.experiments import v41_live, v41_prod  # noqa: E402
 from antelligence.experiments.v41_conformal import ConformalThresholds  # noqa: E402
-from antelligence.experiments.v41_harness import (ARM_SPECS, GateConfig, KeyVault, V41Harness,  # noqa: E402
-                                                  append_cell, error_cell, make_gate)
+from antelligence.experiments.v41_harness import (ARM_SPECS, ROUTER_MODELS_BY_ARM, GateConfig, KeyVault,  # noqa: E402
+                                                  V41Harness, append_cell, error_cell, make_gate)
 from antelligence.experiments.v41_router import KNNRouter  # noqa: E402
 from antelligence.experiments.v41_split import load_split, which_split  # noqa: E402
 from antelligence.kernel.policies.v41_harness import load_harness  # noqa: E402
@@ -56,13 +61,21 @@ def _split_of(args: argparse.Namespace, case: str) -> str:
 def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run", action="append", required=True, metavar="ARM:CASE:SEED")
-    ap.add_argument("--config", required=True, help="live backends JSON (v41_live)")
+    ap.add_argument("--config", help="backends JSON (v41_live); not used with --backends live")
+    ap.add_argument("--backends", choices=("config", "live"), default="config",
+                    help="'config' builds backends from --config; 'live' from the pod state file, Nous auth and Bonsai URL")
+    ap.add_argument("--pod-state", default=str(v41_prod.POD_STATE))
+    ap.add_argument("--bonsai-url", default=v41_prod.DEFAULT_BONSAI_URL, help="llama.cpp server for the Bonsai arm")
+    ap.add_argument("--usage-ledger", default=str(v41_prod.USAGE_LEDGER))
+    ap.add_argument("--pod-costs", default=str(v41_prod.POD_COSTS))
+    ap.add_argument("--chain-queue", default=str(live.DEFAULT_QUEUE))
+    ap.add_argument("--anchor-archive", default=str(live.DEFAULT_ARCHIVE), help="aggregated anchors.json")
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--cells", help="append one cell per run to this JSONL file")
     ap.add_argument("--loader", default=v41_live.DEFAULT_LOADER, help="module:function, load_case(case_id) -> (Crop, regions)")
     ap.add_argument("--concurrency", type=int, default=4)
     ap.add_argument("--calibration", action="store_true")
-    ap.add_argument("--anchors", choices=("none", "mock"), default="none")
+    ap.add_argument("--anchors", choices=("none", "mock", "live"), default="none")
     ap.add_argument("--allow-unanchored", action="store_true",
                     help="let anchored arms (SW-B, FW, SW-D, SW-Byz-*) run without anchors; refused by default")
     ap.add_argument("--world-yaml", default=str(REPO / "config/v4_1/world.yaml"))
@@ -72,7 +85,7 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--bonsai-router")
     ap.add_argument("--bonsai-thresholds")
     ap.add_argument("--look-temperature", type=float, default=1.0)
-    ap.add_argument("--ledger-dir", help="a ledger/ directory for run keys (needed to replay later)")
+    ap.add_argument("--ledger-dir", help="a ledger/ directory for run keys (needed to replay later; default ledger/ with --anchors live)")
     ap.add_argument("--repo-root", default=str(REPO))
     ap.add_argument("--prereg", default=str(REPO / "docs/research/v4.1-20261013/PREREGISTRATION.md"))
     ap.add_argument("--anchor-receipt", default=str(REPO / "docs/research/v4.1-20261013/chain/prereg-receipt.json"))
@@ -81,7 +94,10 @@ def parser() -> argparse.ArgumentParser:
 
 
 def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[str]]) -> V41Harness:
-    cfg = v41_live.load_config(args.config)
+    live_backends = args.backends == "live"
+    if not live_backends and not args.config:
+        raise SystemExit("--config is required unless --backends live")
+    cfg = {} if live_backends else v41_live.load_config(args.config)
     runs = [r.split(":") for r in args.run]
     arms = {r[0] for r in runs}
     if not arms <= set(ARM_SPECS):
@@ -91,9 +107,21 @@ def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[st
         raise SystemExit(f"arms {unanchored} must be anchored: pass --anchors mock (or the live wiring), "
                          "or --allow-unanchored to run them without anchors on purpose")
     loader = v41_live.resolve_loader(args.loader)
-    workers = v41_live.build_workers(cfg, get_env)
     needs_queen = any(ARM_SPECS[a].uses_queen for a in arms)
-    anchorer_factory = None
+    if live_backends:
+        needed = {m for a in arms if ARM_SPECS[a].kind in ("workers", "fw") for m in ROUTER_MODELS_BY_ARM[a]}
+        workers = v41_prod.build_live_workers(pod_state=args.pod_state, bonsai_url=args.bonsai_url, needed=needed,
+                                              usage_ledger=args.usage_ledger, pod_costs=args.pod_costs)
+        queen = v41_prod.build_live_queen(usage_ledger=args.usage_ledger, pod_costs=args.pod_costs) if needs_queen else None
+    else:
+        workers = v41_live.build_workers(cfg, get_env)
+        queen = v41_live.build_queen_provider(cfg, get_env) if needs_queen else None
+    anchorer_factory = post_mode_factory = reputation_client = None
+    if args.anchors == "live":
+        args.live_anchoring = live.build_live_anchoring(queue_path=args.chain_queue, archive_path=args.anchor_archive)
+        anchorer_factory = args.live_anchoring.anchorer_factory
+        post_mode_factory = args.live_anchoring.post_mode_factory
+        reputation_client = args.live_anchoring.reputation_client
     if args.anchors == "mock":
         from antelligence.anchoring.tamper import Lab
         lab = Lab()
@@ -104,27 +132,35 @@ def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[st
     return V41Harness(
         load_case=loader, gate=make_gate(GateConfig(Path(args.repo_root), Path(args.prereg), Path(args.anchor_receipt),
                                                     Path(args.g1))),
-        workers=workers, queen_provider=v41_live.build_queen_provider(cfg, get_env) if needs_queen else None,
+        workers=workers, queen_provider=queen,
         world_config=WorldConfig.from_yaml(args.world_yaml), promoted_harness=harness_doc,
         router=KNNRouter.load(args.router) if args.router else None,
         bonsai_router=KNNRouter.load(args.bonsai_router) if args.bonsai_router else None,
         thresholds=ConformalThresholds.load(args.thresholds) if args.thresholds else None,
         bonsai_thresholds=ConformalThresholds.load(args.bonsai_thresholds) if args.bonsai_thresholds else None,
         look_temperature=args.look_temperature, anchorer_factory=anchorer_factory,
+        post_mode_factory=post_mode_factory, reputation_client=reputation_client,
         allow_unanchored=args.allow_unanchored, outbox=ProvenanceOutbox(str(out / "outbox.sqlite")),
-        keys=KeyVault(args.ledger_dir), out_dir=out, code_sha=_git_sha(), hardware=cfg.get("hardware"))
+        keys=KeyVault(args.ledger_dir), out_dir=out, code_sha=_git_sha(), hardware=cfg.get("hardware") or ({"d1": "L40S", "qwen3.5-9b": "L40S", "qwen3.5-4b": "L40S", "bonsai-8b": "Mac"} if live_backends else None))
 
 
 def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optional[str]] = os.environ.get,
          harness: Optional[V41Harness] = None) -> int:
     args = parser().parse_args(argv)
+    if args.anchors == "live" and not args.ledger_dir:
+        args.ledger_dir = str(REPO / "ledger")        # live runs must keep their keys: the tamper suite needs them
+    args.live_anchoring = None
     runs = []
     for spec in args.run:
         arm, case, seed = spec.rsplit(":", 2)
         runs.append((arm, case, int(seed)))
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
     h = harness or build_harness(args, get_env)
-    results = asyncio.run(h.run_many(runs, concurrency=args.concurrency, calibration=args.calibration))
+    try:
+        results = asyncio.run(h.run_many(runs, concurrency=args.concurrency, calibration=args.calibration))
+    finally:
+        if args.live_anchoring is not None:
+            print(f"chain queue at exit: {args.live_anchoring.close()}")
     failed = 0
     for (arm, case, seed), res in zip(runs, results):
         if isinstance(res, BaseException):
