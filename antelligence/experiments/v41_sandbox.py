@@ -228,6 +228,13 @@ class RoundRecord:
     win_rate: Optional[float]
     kept: bool
     edit_entry_id: str
+    proposal: Any = None                              # the raw proposal as the queen sent it (JSON-able), valid or not
+    diff: Tuple[Mapping[str, Any], ...] = ()          # per operation: op, path, before, after (valid proposals only)
+    candidate_sha256: Optional[str] = None
+    per_arm_points: Mapping[str, float] = field(default_factory=dict)   # dev-A paired change per arm, in points
+    wins: int = 0
+    losses: int = 0
+    ties: int = 0
 
 
 @dataclass(frozen=True)
@@ -238,6 +245,7 @@ class SandboxResult:
     promotion_candidates: Tuple[int, ...]      # kept rounds that do not lose on dev-B
     dev_b_scores: Mapping[int, float]          # round -> dev-B paired points
     evaluations: int                           # evaluate() calls actually made (cache misses)
+    dev_b_detail: Mapping[int, Mapping[str, Any]] = field(default_factory=dict)   # round -> points, per arm, wins/losses/ties
 
 
 class _Cache:
@@ -317,20 +325,41 @@ def run_sandbox(
             sha = hashlib.sha256(canonical_json(_jsonable(raw)).encode()).hexdigest()
         entry = board.append("edit", "harness", {"round": rnd, "patch_sha256": sha, "keys": keys, "prediction": pred,
                                                  "kept": 1 if kept else 0}, tick=rnd)
-        records.append(RoundRecord(round=rnd, keys=tuple(keys), prediction=pred, patch_sha256=sha, rejected=rejected,
-                                   score_points=None if score is None else score.score_points,
-                                   win_rate=None if score is None else score.win_rate, kept=kept, edit_entry_id=entry.id))
+        records.append(RoundRecord(
+            round=rnd, keys=tuple(keys), prediction=pred, patch_sha256=sha, rejected=rejected,
+            score_points=None if score is None else score.score_points,
+            win_rate=None if score is None else score.win_rate, kept=kept, edit_entry_id=entry.id,
+            proposal=_jsonable(raw), diff=_diff(current, candidate, proposal) if (proposal and candidate) else (),
+            candidate_sha256=harness_sha256(candidate) if candidate is not None else None,
+            per_arm_points=dict(score.per_arm_points) if score else {},
+            wins=score.wins if score else 0, losses=score.losses if score else 0, ties=score.ties if score else 0))
         history.append({"round": rnd, "keys": keys, "prediction": pred, "kept": kept, "rejected": rejected,
                         "score_points": None if score is None else round(score.score_points, 3)})
         if kept and candidate is not None:
             states[rnd] = (current, candidate)
             current = candidate
     dev_b_scores: Dict[int, float] = {}
+    dev_b_detail: Dict[int, Dict[str, Any]] = {}
     for rnd, (before, after) in states.items():
-        dev_b_scores[rnd] = paired_score(cache.coverage(before, dev_b), cache.coverage(after, dev_b)).score_points
+        sc = paired_score(cache.coverage(before, dev_b), cache.coverage(after, dev_b))
+        dev_b_scores[rnd] = sc.score_points
+        dev_b_detail[rnd] = {"score_points": sc.score_points, "per_arm_points": dict(sc.per_arm_points), "wins": sc.wins,
+                             "losses": sc.losses, "ties": sc.ties, "win_rate": sc.win_rate, "n_pairs": sc.n_pairs}
     candidates = tuple(r for r, s in sorted(dev_b_scores.items()) if s >= -EPS)
     return SandboxResult(base_harness=base, final_harness=current, rounds=tuple(records), promotion_candidates=candidates,
-                         dev_b_scores=dev_b_scores, evaluations=cache.misses)
+                         dev_b_scores=dev_b_scores, evaluations=cache.misses, dev_b_detail=dev_b_detail)
+
+
+def _pointer_get(doc: Any, path: str) -> Any:
+    node = doc
+    for seg in _segments(path):
+        node = node[int(seg)] if isinstance(node, list) else node[seg]
+    return node
+
+
+def _diff(before: Mapping[str, Any], after: Mapping[str, Any], proposal: Proposal) -> Tuple[Dict[str, Any], ...]:
+    return tuple({"op": op["op"], "path": op["path"], "before": copy.deepcopy(_pointer_get(before, op["path"])),
+                  "after": copy.deepcopy(_pointer_get(after, op["path"]))} for op in proposal.patch)
 
 
 def _jsonable(raw: Any) -> Any:
@@ -370,14 +399,16 @@ PROPOSER_SYSTEM = (
 )
 
 
-def llm_proposer(provider: Provider, model: str, *, thinking_params: Optional[Mapping[str, Any]] = None) -> Proposer:
-    """A proposer backed by a provider. One call per round, 800-token output cap."""
+def llm_proposer(provider: Provider, model: str, *, thinking_params: Optional[Mapping[str, Any]] = None,
+                 run: Callable[[Awaitable[Any]], Any] = asyncio.run) -> Proposer:
+    """A proposer backed by a provider. One call per round, 800-token output cap. ``run`` drives the coroutine (the
+    sandbox script passes one that uses the harness's own event loop, so shared async locks stay on one loop)."""
     def propose(ctx: Mapping[str, Any]) -> Optional[Mapping[str, Any]]:
         request = ChatRequest(model=model, messages=({"role": "system", "content": PROPOSER_SYSTEM},
                                                      {"role": "user", "content": canonical_json(dict(ctx))}),
                               max_tokens=800, temperature=0.0, seed=ctx["round"], response_format={"type": "json_object"},
                               extra_body=thinking_params)
-        response = asyncio.run(_complete(provider, request))
+        response = run(_complete(provider, request))
         text = response.content.strip()
         fenced = _FENCE.match(text)
         try:
