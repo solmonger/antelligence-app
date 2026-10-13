@@ -12,7 +12,6 @@ world:
   decay: 0.02
   entry_shell_mm: 4.0
   entry_min_dist_mm: 10.0
-  perceived_threshold: 0.3
   visit_radius_mm: 6.0
   explore_unc_quantile: 0.95
   path_weight: 1.5

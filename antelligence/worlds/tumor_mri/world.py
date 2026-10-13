@@ -4,6 +4,21 @@ Eight squads enter on the crop's outer shell, walk one voxel per tick along an A
 a target chosen every 5 ticks, and release drug as 3D Gaussian puffs that diffuse and decay. Score = how many
 ground-truth whole-tumour voxels reach the dose threshold.
 
+Rules worth knowing (all goal 4.2 unless marked):
+
+* Perceived region = L1's definition (6-connected components of p >= 0.3, >= 100 mm^3, split above 20 cm^3), computed
+  from the perception arrays or passed in as ``regions`` (INTERFACES knowledge payloads). Entry exclusion, Explore and
+  the candidate pool all use it. Candidates A..F are at most six regions chosen by the queen (``set_candidates``);
+  the fallback is :func:`select_candidates` (rank by p x volume).
+* Visited-radius rule: a region is *visited* once any squad stands within ``visit_radius_mm`` (6 mm) of its centroid;
+  visits are tracked for every perceived region, not just candidates.
+* Stay keeps the current target. Explore = nearest unvisited perceived region (all regions, not only candidates); if
+  none is left, the nearest highest-uncertainty cluster (unc >= the ``explore_unc_quantile`` brain quantile, 26-connected)
+  that is not yet *walked*: a cluster counts as walked once more than half of its voxels have been stood on by a squad.
+* Off-target share = (drug anywhere except tumour + drug that left the crop) / released. Tumour = truth WT inside the
+  brain. Drug in non-brain voxels inside the crop counts as off-target: conservative, since squads cannot enter
+  those voxels but diffusion reaches them.
+
 Information barrier: the observation builder reads only perception arrays (``_Percept``). Ground truth lives in
 :class:`Scorer`, reachable only through :meth:`TumorMRIWorld.scorer_truth` (scorer / oracle S' use). Nothing in an
 observation is a function of truth, except what the harness itself injects through ``look_fn``.
@@ -20,7 +35,8 @@ import numpy as np
 
 from antelligence.kernel.types import NOOP, Intent, LocalView, Observation, Outcome
 from antelligence.worlds.tumor_mri.config import WorldConfig
-from antelligence.worlds.tumor_mri.data import Candidate, Crop, candidates_from_perception, sample_entry_sites
+from antelligence.worlds.tumor_mri.data import (Candidate, Crop, Region, entry_sites_with_info, perceived_regions,
+                                                select_candidates)
 from antelligence.worlds.tumor_mri.physics import DrugField, Pathfinder, Vox
 from antelligence.worlds.tumor_mri.questions import CANDIDATE_LABELS, EXPLORE, STAY
 
@@ -78,7 +94,8 @@ class TumorMRIWorld:
     """Implements :class:`antelligence.kernel.types.World`. Deterministic in (crop, config, seed)."""
 
     def __init__(self, crop: Crop, config: Optional[WorldConfig] = None, seed: int = 0, *,
-                 look_fn: Optional[LookFn] = None, queen_hook: Optional[QueenHook] = None) -> None:
+                 look_fn: Optional[LookFn] = None, queen_hook: Optional[QueenHook] = None,
+                 regions: Optional[Sequence[Region]] = None) -> None:
         self.config = config or WorldConfig()
         self.seed = int(seed)
         self.voxel_mm = crop.voxel_mm
@@ -87,15 +104,17 @@ class TumorMRIWorld:
         self._percept = _Percept(crop.brain, crop.p_tumour, crop.unc, crop.flair, crop.t1c)
         self._scorer = Scorer(crop.truth, crop.outside_crop_truth_voxels, self.config.dose_threshold)
         self.look_fn = look_fn
+        self.regions: List[Region] = list(regions) if regions is not None else perceived_regions(
+            crop.p_tumour, crop.unc, crop.brain, crop.voxel_mm)
         self.queen_hook = queen_hook
         cfg = self.config
         self.field = DrugField(self.shape, release_sigma_vox=cfg.release_sigma_mm / crop.voxel_mm,
                                diffuse_sigma_vox=cfg.diffuse_sigma_vox, decay=cfg.decay)
         self._paths = Pathfinder(crop.brain, weight=cfg.path_weight, max_expand=cfg.path_max_expand)
-        self.entry_sites = sample_entry_sites(crop.brain, crop.p_tumour, self.seed, n=cfg.n_squads,
-                                              voxel_mm=crop.voxel_mm, shell_mm=cfg.entry_shell_mm,
-                                              min_dist_mm=cfg.entry_min_dist_mm,
-                                              perceived_threshold=cfg.perceived_threshold)
+        self.entry_sites, self.entry_shell_widened_mm = entry_sites_with_info(
+            crop.brain, crop.p_tumour, self.seed, n=cfg.n_squads, voxel_mm=crop.voxel_mm,
+            shell_mm=cfg.entry_shell_mm, min_dist_mm=cfg.entry_min_dist_mm)
+        self._on_target = crop.truth & crop.brain
         share = cfg.total_drug / cfg.n_squads
         self._squads = [_Squad(i, site, share) for i, site in enumerate(self.entry_sites)]
         self._visited = np.zeros(self.shape, dtype=bool)
@@ -130,7 +149,8 @@ class TumorMRIWorld:
             h.update(np.ascontiguousarray(arr).tobytes())
         return {"world": "tumor_mri", "case_id": self.case_id, "shape": list(self.shape), "voxel_mm": self.voxel_mm,
                 "seed": self.seed, "config": self.config.to_dict(), "perception_sha256": h.hexdigest(),
-                "entry_sites": [list(s) for s in self.entry_sites],
+                "entry_sites": [list(s) for s in self.entry_sites], "entry_shell_widened_mm": self.entry_shell_widened_mm,
+                "n_regions": len(self.regions),
                 "outside_crop_truth_voxels": self._scorer.outside_crop_truth_voxels}
 
     # --- perception inputs (queen / harness) -----------------------------------
@@ -236,7 +256,7 @@ class TumorMRIWorld:
                 sq.pos = sq.path.pop(0)
                 self._visited[sq.pos] = True
         self._mark_visits()
-        self.field.step(self._scorer.truth)
+        self.field.step(self._on_target)
         self._tick = tick + 1
         cov = self._scorer.coverage(self.field.dose)
         self._coverage_trace.append(cov)
@@ -259,6 +279,7 @@ class TumorMRIWorld:
             "released_total": f.released, "decayed": f.decayed, "lost_boundary": f.lost_boundary,
             "lost_boundary_share": f.lost_boundary / f.released if f.released > 0 else 0.0,
             "mass_residual": f.mass_balance_residual(), "ticks": self._tick,
+            "entry_shell_widened_mm": self.entry_shell_widened_mm,
         }
 
     def off_target_share(self) -> float:
@@ -270,7 +291,7 @@ class TumorMRIWorld:
         f = self.field
         if f.released <= 0.0:
             return 0.0
-        on_target = f.decayed_in_region + f.mass_in(self._scorer.truth)
+        on_target = f.decayed_in_region + f.mass_in(self._on_target)
         return min(1.0, max(0.0, 1.0 - on_target / f.released))
 
     # --- queen cadence ------------------------------------------------------------
@@ -303,13 +324,10 @@ class TumorMRIWorld:
 
     def _mark_visits(self) -> None:
         r2 = (self.config.visit_radius_mm / self.voxel_mm) ** 2
-        lists = [self._candidates] + list(self._squad_candidates.values())
-        for cands in lists:
-            for c in cands:
-                if c.region_id in self._visited_regions:
-                    continue
-                if any(sum((a - b) ** 2 for a, b in zip(sq.pos, c.centroid_vox)) <= r2 for sq in self._squads):
-                    self._visited_regions.add(c.region_id)
+        for r in self.regions:
+            if r.region_id not in self._visited_regions and any(
+                    sum((a - b) ** 2 for a, b in zip(sq.pos, r.centroid_vox)) <= r2 for sq in self._squads):
+                self._visited_regions.add(r.region_id)
 
     @staticmethod
     def _uncertainty_clusters(crop: Crop, quantile: float) -> List[np.ndarray]:
@@ -324,7 +342,7 @@ class TumorMRIWorld:
         """Explore = nearest perceived region no squad has visited; if none, nearest highest-uncertainty voxel
         cluster that has not been mostly walked over."""
         best, best_d = None, math.inf
-        for c in self.candidates_for(i):
+        for c in self.regions:  # all perceived regions, not only the candidates
             if c.region_id in self._visited_regions:
                 continue
             d = math.dist(sq.pos, c.centroid_vox)
@@ -347,19 +365,17 @@ class TumorMRIWorld:
 
 
 def run_episode(world: TumorMRIWorld, policy_for: Callable[[str], Any],
-                default_candidates: bool = True, candidate_threshold: float = 0.5) -> Dict[str, Any]:
+                default_candidates: bool = True) -> Dict[str, Any]:
     """Run one episode. ``policy_for(agent_id)`` returns an object with ``decide(LocalView) -> Intent``.
 
     The queen hook fires at tick 0 and every ``queen_every`` ticks. With no hook and ``default_candidates`` the
-    candidate list is the perception's connected regions (computed once at tick 0).
+    candidate pool is the top six perceived regions by p x volume.
     """
     cfg = world.config
     agents = world.agents()
     policies = {a: policy_for(a) for a in agents}
     if default_candidates and world.queen_hook is None:
-        pr = world._percept
-        world.set_candidates(candidates_from_perception(pr.p_tumour, pr.unc, pr.brain, voxel_mm=world.voxel_mm,
-                                                        threshold=candidate_threshold))
+        world.set_candidates(select_candidates(world.regions))
     tick = 0
     while not world.done(tick):
         if world.queen_hook is not None and tick % cfg.queen_every == 0:

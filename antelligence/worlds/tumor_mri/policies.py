@@ -3,6 +3,19 @@
 Both implement the kernel ``Policy`` protocol and emit ``decide`` intents with the same typed fields a model arm
 answers (target label, release 0/1, amount 1..5). S' additionally passes ``target_vox`` (its true goal), because a
 label can only name a perceived region; the label is the router-training target (see :func:`sprime_candidate_label`).
+
+
+Rules in brief
+* S targets *candidates* (the labelled A..F pool) that are unvisited; "visited" is world state (a squad within 6 mm of
+  the region centroid, ``visit_radius_mm``). S releases 50% of remaining payload whenever local p_tumour >= 0.5.
+* S' efficiency heuristic. For a puff of mass m at voxel v it estimates marginal coverage as
+  sum over uncovered truth voxels u in a 21^3 window of min(1, m * R(u - v) / (D_t - dose(u))), where R is the
+  cumulative dose of a unit puff over the ticks left (computed once per 10-tick bucket with the same physics, no
+  boundary effects). Efficiency = marginal coverage / m. Per point it picks the largest of the five amount levels whose
+  efficiency is within 10% of the best level (big puffs saturate). Squads are assigned to uncovered truth masses
+  largest first, discounted by 1 / (1 + squads already assigned). A squad releases where it stands when that is within
+  80% of the best point's efficiency; otherwise it walks to the best point (S' passes ``target_vox`` for that).
+* Explore and the walked-cluster rule live in the world (see ``world.py``); S' never explores.
 """
 
 from __future__ import annotations
