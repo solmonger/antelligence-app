@@ -48,7 +48,7 @@ def test_live_backends_and_anchors_are_wired_from_flags(tmp_path, monkeypatch):
     assert h.anchorer_factory is StubLive.anchorer_factory
 
 
-def test_fw_arm_asks_for_the_nous_worker_only(tmp_path, monkeypatch):
+def test_fw_arm_asks_for_the_nous_worker_and_d1_for_local_look(tmp_path, monkeypatch):
     run = script("v41_run")
     seen = {}
     monkeypatch.setattr(run.v41_prod, "build_live_workers", lambda **kw: seen.setdefault("workers", kw) and {})
@@ -56,7 +56,7 @@ def test_fw_arm_asks_for_the_nous_worker_only(tmp_path, monkeypatch):
     monkeypatch.setattr(run.v41_live, "resolve_loader", lambda spec: (lambda c: None))
     args = run.parser().parse_args(["--backends", "live", "--allow-unanchored", "--out-dir", str(tmp_path), "--run", "FW:BRATS_001:1"])
     run.build_harness(args, lambda k: None)
-    assert seen["workers"]["needed"] == {FW}
+    assert seen["workers"]["needed"] == {FW, D1}  # FW decisions on Nous; local look is d1 in every swarm arm (goal 4.5)
 
 
 def test_config_backends_still_need_config(tmp_path):
