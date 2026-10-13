@@ -12,7 +12,9 @@ eleven router ``features``.
   search over the deferring questions holds the ANY-of-them defer rate near 20%.
 * Logs: step-7 logs are driven by the 9B (Bonsai); step-9 logs (``log_counterfactuals == "all"``) are driven by the live
   router and deferral policy, with d1, 4B and 9B (Bonsai) all answering counterfactually, so any model may drive a row.
-* Router: label = the cheapest model whose three answers best match S' (ties to the cheaper), kNN k=15 on standardised
+* Router: label = the cheapest model whose three answers best match S' with the target resolved on both sides
+  (``v41_resolve``; ties to the cheaper). Exact logs need no bound; for legacy logs rebuilt by ``derive_resolutions`` the
+  default ``bound="lower"`` counts an undecidable ``S`` as a miss (``"upper"`` as a match); the report records it, kNN k=15 on standardised
   features, trained on both arms. Reported: pick shares, leave-one-case-out agreement with the labels, and the share of
   decisions where each model matches S'.
 * Power: paired SD of (SW-B - SW-noBoard) case coverage -> minimum detectable P1 difference via
@@ -31,12 +33,13 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 
-from antelligence.experiments import v41_analysis
+from antelligence.experiments import v41_analysis, v41_fallbacks
 from antelligence.experiments.v41_conformal import (DEFER_TARGET, QTYPES, ConformalDeferral, ConformalThresholds,
                                                     DevRecord, choose_deferral_models, freeze_thresholds)
-from antelligence.experiments.v41_resolve import derive_resolutions, load_routes, resolve_distribution
+from antelligence.experiments.v41_resolve import (STAY_LABEL, compare_keys, derive_resolutions, load_routes,
+                                                  resolve_distribution)
 from antelligence.experiments.v41_router import (BONSAI_ROUTER_MODELS, FEATURE_NAMES, K, ROUTER_MODELS, KNNRouter,
-                                                 TrainRow, best_model, match_count)
+                                                 TrainRow)
 from antelligence.experiments.v41_split import load_split, which_split
 
 D1, Q4, Q9, BONSAI = "d1", "qwen3.5-4b", "qwen3.5-9b", "bonsai-8b"
@@ -282,11 +285,55 @@ def _models(bonsai: bool) -> Tuple[str, ...]:
     return BONSAI_ROUTER_MODELS if bonsai else ROUTER_MODELS
 
 
-def router_rows(samples: Sequence[Sample], *, bonsai: bool = False) -> Tuple[List[Sample], List[TrainRow]]:
-    """Samples with features and S' labels, and their router labels (cheapest best-matching model, ties cheaper)."""
+ROUTER_BOUNDS = ("lower", "upper")
+DEFAULT_BOUND = "lower"
+
+
+def _check_bound(bound: str) -> str:
+    if bound not in ROUTER_BOUNDS:
+        raise FitError(f"router bound must be one of {ROUTER_BOUNDS}, got {bound!r}")
+    return bound
+
+
+def resolved_matches(s: Sample, model: str, bound: str = DEFAULT_BOUND) -> Dict[str, bool]:
+    """Per question: does ``model``'s answer equal S''s label once the target is resolved (decision rule a)?
+
+    Exact logs (``resolution == "exact"``) and rows without a resolution (raw labels) are exact comparisons. For logs
+    rebuilt by ``derive_resolutions`` an ``S`` answer on a row whose current target comes from an EARLIER route step may
+    be undecidable (``compare_keys`` is None): ``bound="lower"`` counts it as a miss, ``"upper"`` as a match."""
+    _check_bound(bound)
+    lab = _labels(s.decisions[model])
+    out = {q: lab[q] == s.sprime[q] for q in ("release", "amount")}
+    mine = s.target_map.get(lab["target"], lab["target"]) if s.target_map else lab["target"]
+    theirs = s.sprime_resolved.get("target", s.sprime["target"]) if s.sprime_resolved else s.sprime["target"]
+    same = compare_keys(mine, theirs) if (lab["target"] == STAY_LABEL and s.stale) else (mine == theirs)
+    out["target"] = (same is True) or (same is None and bound == "upper")
+    return out
+
+
+def resolved_match_count(s: Sample, model: str, bound: str = DEFAULT_BOUND) -> int:
+    return sum(resolved_matches(s, model, bound).values())
+
+
+def best_resolved_model(s: Sample, models: Sequence[str], bound: str = DEFAULT_BOUND) -> str:
+    """The cheapest model (``models`` is ordered cheapest first) with the highest S'-resolved match count."""
+    best, best_score = None, -1
+    for m in models:
+        score = resolved_match_count(s, m, bound)
+        if score > best_score:   # strict: an equal score keeps the cheaper model
+            best, best_score = m, score
+    assert best is not None
+    return best
+
+
+def router_rows(samples: Sequence[Sample], *, bonsai: bool = False, bound: str = DEFAULT_BOUND
+                ) -> Tuple[List[Sample], List[TrainRow]]:
+    """Samples with features and S' labels, and their router labels: the cheapest model whose answers best match S'
+    after both are resolved to regions (ties cheaper). ``bound`` only matters for derived (legacy) resolutions."""
     models = _models(bonsai)
+    _check_bound(bound)
     keep = [s for s in samples if s.features and s.sprime]
-    return keep, [TrainRow(list(s.features), best_model(s.decisions, s.sprime, models)) for s in keep]
+    return keep, [TrainRow(list(s.features), best_resolved_model(s, models, bound)) for s in keep]
 
 
 def predict_many(router: KNNRouter, features: np.ndarray) -> List[str]:
@@ -330,23 +377,28 @@ def _shares(items: Sequence[Optional[str]], models: Sequence[str]) -> Dict[str, 
     return {m: c.get(m, 0) / len(items) for m in models}
 
 
-def fit_router(samples: Sequence[Sample], *, bonsai: bool = False, k: int = K) -> Tuple[KNNRouter, Dict[str, Any]]:
-    keep, rows = router_rows(samples, bonsai=bonsai)
+def fit_router(samples: Sequence[Sample], *, bonsai: bool = False, k: int = K, bound: str = DEFAULT_BOUND
+               ) -> Tuple[KNNRouter, Dict[str, Any]]:
+    keep, rows = router_rows(samples, bonsai=bonsai, bound=bound)
     if not rows:
         raise FitError("no decision has both router features and S' labels; the logs were written before the harness "
                        "logged `features` (re-run the calibration with a harness that logs them)")
     models = _models(bonsai)
     router = KNNRouter.fit(rows, models, k)
     driver = TARGET_BACKEND[bonsai]
-    full = {m: float(np.mean([match_count(s.decisions[m], s.sprime) == 3 for s in keep])) for m in models}
-    per_q = {m: {q: float(np.mean([_labels(s.decisions[m])[q] == s.sprime[q] for s in keep])) for q in QTYPES}
-             for m in models}
+    full = {m: float(np.mean([resolved_match_count(s, m, bound) == 3 for s in keep])) for m in models}
+    per_q = {m: {q: float(np.mean([resolved_matches(s, m, bound)[q] for s in keep])) for q in QTYPES} for m in models}
+    per_q_raw = {m: {q: float(np.mean([_labels(s.decisions[m])[q] == s.sprime[q] for s in keep])) for q in QTYPES}
+                 for m in models}
     in_sample = _shares(predict_many(router, np.asarray([r.features for r in rows])), models)
     report = {"n_decisions": len(keep), "k": router.k, "models": list(models), "driver": driver,
               "label_shares": _shares([r.label for r in rows], models),
               "in_sample_pick_shares": in_sample,
               "cross_validated": cross_validate(keep, rows, bonsai=bonsai, k=k),
               "sprime_match_share_all_three": full, "sprime_match_share_per_question": per_q,
+              "sprime_match_share_per_question_raw": per_q_raw,
+              "label_basis": "sprime_resolved", "bound": bound,
+              "resolution": dict(Counter(s.resolution for s in keep)),
               "sha256": router.sha256}
     return router, report
 
@@ -398,15 +450,34 @@ def throughput_report(runs: Sequence[Run], concurrency: Optional[int] = None) ->
 def run_fit(inputs: Sequence[Path], *, tag: str, cells_path: Optional[Path] = None, bonsai: bool = False,
             out_conformal: Optional[Path] = None, out_router: Optional[Path] = None, report_path: Optional[Path] = None,
             split_file: Optional[Path] = None, concurrency: Optional[int] = None, n_eval: int = 80,
-            force: bool = False, k: int = K) -> Dict[str, Any]:
-    """Load, fit, freeze (when output paths are given) and report. Returns the aggregates-only report."""
+            force: bool = False, k: int = K, allow_provider_fallbacks: bool = False,
+            bound: str = DEFAULT_BOUND) -> Dict[str, Any]:
+    """Load, fit, freeze (when output paths are given) and report. Returns the aggregates-only report.
+
+    Runs whose queen fell back because the PROVIDER failed (mistake-2039) are invalid for the fit: they are excluded and
+    counted (``inputs.provider_fallback_runs``, ``skipped.provider_fallback_run`` decisions) unless
+    ``allow_provider_fallbacks``."""
     split_doc = load_split(split_file) if split_file else None
     dirs = discover(inputs)
     if not dirs:
         raise FitError("no run directories (decisions.jsonl) found under the inputs")
     runs = [load_run(d, split_doc) for d in dirs]
+    tainted = [r for r in runs if v41_fallbacks.run_dir_provider_fallbacks(r.path, r.cell) > 0]
+    dropped_decisions = 0
+    if tainted and not allow_provider_fallbacks:
+        gone = {id(r) for r in tainted}
+        dropped_decisions = sum(len(r.rows) for r in tainted)
+        runs = [r for r in runs if id(r) not in gone]
+        if not runs:
+            raise FitError(f"all {len(tainted)} run(s) have provider-caused queen fallbacks; pass --allow-provider-fallbacks to fit them anyway")
     cells = load_cells(cells_path, split_doc) if cells_path else [dict(r.cell) for r in runs]
+    if tainted and not allow_provider_fallbacks and cells_path:
+        bad = {(r.arm, r.case, r.seed) for r in tainted}
+        cells = [c for c in cells if (c.get("arm"), c.get("case"), c.get("seed")) not in bad
+                 and not int(c.get("queen_fallbacks_provider") or 0)]
     samples, skipped = samples_from(runs, bonsai=bonsai)
+    if dropped_decisions:
+        skipped["provider_fallback_run"] = dropped_decisions
     for out in (out_conformal, out_router):
         if out is not None and Path(out).exists() and not force:
             raise FitError(f"{out} already exists; frozen files are not overwritten without --force")
@@ -418,6 +489,7 @@ def run_fit(inputs: Sequence[Path], *, tag: str, cells_path: Optional[Path] = No
                    "usable_decisions": len(samples), "skipped": skipped,
                    "resolution": dict(Counter(x.resolution for x in samples)), "mixed_driver_logs": any(r.mixed for r in runs),
                    "cells_file_lines": len(cells) if cells_path else None,
+                   "provider_fallback_runs": len(tainted), "provider_fallback_runs_excluded": bool(tainted) and not allow_provider_fallbacks,
                    "dev_only": True},
         "conformal": conformal_report(th, samples)}
     if out_conformal is not None:
@@ -425,7 +497,7 @@ def run_fit(inputs: Sequence[Path], *, tag: str, cells_path: Optional[Path] = No
         th.save(out_conformal)
     status = "ok"
     try:
-        router, rr = fit_router(samples, bonsai=bonsai, k=k)
+        router, rr = fit_router(samples, bonsai=bonsai, k=k, bound=bound)
         report["router"] = rr
         if out_router is not None:
             rr["frozen_to"] = str(out_router)

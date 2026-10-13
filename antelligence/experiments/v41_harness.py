@@ -56,6 +56,7 @@ from antelligence.experiments.v41_conformal import (ConformalDeferral, Conformal
 from antelligence.experiments.v41_gate import assert_eval_allowed
 from antelligence.experiments.v41_local_look import (apply_temperature, load_frozen_temperature, look_request,
                                                      LOOK_QUESTION)
+from antelligence.experiments.v41_override import is_override, queen_region, resolve_target_region
 from antelligence.experiments.v41_resolve import resolution_record
 from antelligence.experiments.v41_router import KNNRouter, router_features, sprime_labels
 from antelligence.kernel import briefs as briefs_mod
@@ -64,10 +65,11 @@ from antelligence.kernel.board import (DEFAULT_AUTHORS, Board, Entry, RunKeys, a
 from antelligence.kernel.canonical import canonical_json, content_hash
 from antelligence.kernel.decision import DecisionAbort, DecisionBackend, DecisionError, DecisionRequest, DecisionResponse
 from antelligence.kernel.policies.v41_harness import harness_sha256, load_harness, validate_harness
-from antelligence.kernel.policies.v41_queen import SquadState, V41Queen, coverage_estimate_ppm
+from antelligence.kernel.policies.v41_queen import FALLBACK_CAUSES, SquadState, V41Queen, coverage_estimate_ppm
 from antelligence.kernel.scheduler import RunResult, derive_seed
 from antelligence.kernel.types import Intent, LocalView
 from antelligence.perception.store import local_patch
+from antelligence.providers.outage import OutagePolicy, QueenUnavailable
 from antelligence.provenance.bundle import build_bundle
 from antelligence.worlds.tumor_mri import (ACTION_DECIDE, Candidate, ScriptS, TumorMRIWorld, WorldConfig, build_request,
                                            decide_from_answers, oracle_for, run_episode, select_candidates)
@@ -86,10 +88,11 @@ DECISION_LOG_FIELDS = (
     "server_ms", "network_ms", "queue_ms", "tokens_in", "tokens_out", "cost_usd", "router_pick", "deferred",
     "escalated", "cited_ids", "brief_ids", "target", "release", "amount", "p_target_ppm", "p_release_ppm",
     "p_amount_ppm", "look_p_ppm", "prob_method", "identity", "calls", "counterfactual", "audit", "sprime",
-    "error", "error_reason", "attempts", "notes", "failures", "kind", "features", "resolution", "deferral")
+    "error", "error_reason", "attempts", "notes", "failures", "kind", "features", "resolution", "deferral",
+    "queen_region", "target_region", "override")
 RUN_LOG_FIELDS = (
     "run_id", "arm", "case", "seed", "split", "wall_s", "ticks", "ticks_to_50", "seconds_to_50", "queen_calls",
-    "board_size", "anchors", "anchor_latency_s", "visibility_latency_ms", "decisions", "rounds", "shared_store",
+    "queen_fallbacks", "queen_outage_retries", "board_size", "anchors", "anchor_latency_s", "visibility_latency_ms", "decisions", "rounds", "shared_store",
     "calibration", "log_counterfactuals", "variant", "alarms", "dropped_cites", "reputation", "d_timeouts", "decision_errors", "look_errors", "errors")
 # What a replay from cache must reproduce: every cell field except the wall-clock ones and the anchor count
 # (checked separately against ``anchor_sizes``).
@@ -116,6 +119,11 @@ class _DecisionFailed(Exception):
 
 class HarnessError(RuntimeError):
     """The episode cannot run as configured."""
+
+
+class EpisodeNotStarted(RuntimeError):
+    """``run_many`` did not start this episode because the queen provider stayed down (:class:`QueenUnavailable`) in
+    another one. It has no cell and no cache entry; rerun it later."""
 
 
 # --------------------------------------------------------------------------------------------------
@@ -431,6 +439,8 @@ class _Ctx:
     errors: List[str] = field(default_factory=list)
     decision_errors: int = 0
     look_errors: int = 0
+    override_count: int = 0       # worker override rate (decision 2026-10-13, rule e): overrides ...
+    override_decisions: int = 0   # ... out of the decisions that had a queen assignment and were not error fallbacks
     look_rows: List[Dict[str, Any]] = field(default_factory=list)
     attempt_log: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
     replay_attempts: Optional[Mapping[str, Any]] = None
@@ -452,8 +462,9 @@ class V41Harness:
                  out_dir: Optional[Union[str, Path]] = None, code_sha: str = "0" * 40,
                  hardware: Optional[Mapping[str, str]] = None, backends_kind: str = "config",
                  perception_stats: Optional[Callable[[str], Mapping[str, float]]] = None,
-                 clock: Callable[[], float] = time.perf_counter) -> None:
+                 clock: Callable[[], float] = time.perf_counter, queen_outage: Optional[OutagePolicy] = None) -> None:
         self.load_case, self.gate = load_case, gate
+        self.queen_outage = queen_outage if queen_outage is not None else OutagePolicy()
         self.workers = dict(workers or {})
         self.queen_provider, self.queen_model = queen_provider, queen_model
         self.world_config = world_config or WorldConfig()
@@ -542,14 +553,24 @@ class V41Harness:
     async def run_many(self, requests: Sequence[Tuple[str, str, int]], *, concurrency: int = 4,
                        calibration: bool = False, log_counterfactuals: str = "none") -> List[Union[EpisodeResult, BaseException]]:
         """Episodes concurrently (asyncio) in ``requests`` order; each owns its world, board, queen and anchorer. A
-        failed episode comes back as its exception so the others still finish."""
+        failed episode comes back as its exception so the others still finish.
+
+        The first :class:`QueenUnavailable` (the queen provider stayed down past the maximum wait) stops the batch
+        starting new episodes: those still waiting come back as :class:`EpisodeNotStarted`, those in flight finish or
+        error on their own. A rerun resumes from the caches."""
         sem = asyncio.Semaphore(max(1, concurrency))
+        stop = asyncio.Event()
 
         async def one(r: Tuple[str, str, int]) -> Union[EpisodeResult, BaseException]:
             async with sem:
+                if stop.is_set():
+                    return EpisodeNotStarted(f"{r[0]} {r[1]} seed {r[2]}: not started, the queen provider is unavailable")
                 try:
                     return await self.run(r[0], r[1], r[2], calibration=calibration,
                                           log_counterfactuals=log_counterfactuals)
+                except QueenUnavailable as exc:
+                    stop.set()
+                    return exc
                 except BaseException as exc:  # noqa: BLE001  (recorded per episode)
                     return exc
         return list(await asyncio.gather(*(one(r) for r in requests)))
@@ -562,7 +583,8 @@ class V41Harness:
                                  replay_attempts=bundle["extra"].get("attempts") or {},
                                  log_counterfactuals=spec.get("log_counterfactuals", "none"))
         recorded = bundle["extra"]["cell"]
-        mismatched = [f for f in METRIC_FIELDS if recorded.get(f) != again.cell.get(f)]
+        mismatched = [f for f in METRIC_FIELDS if recorded.get(f) != again.cell.get(f)
+                      and not (f in v41_cells.QUEEN_FALLBACK_FIELDS and f not in recorded)]   # bundles from before the field existed
         if again.trace_hash != bundle["trace_hash"]:
             mismatched.append("trace_hash")
         if bundle["extra"]["anchor_sizes"] != anchor_sizes(again.cell["board_size"]) and bundle["extra"]["anchor_sizes"]:
@@ -622,11 +644,12 @@ class V41Harness:
                 raise HarnessError(f"arm {spec.name} needs a queen_provider")
             tally = _TallyProvider(self.queen_provider)
             ctx_kw["queen_provider"] = tally
+            outage = dataclasses.replace(self.queen_outage)       # own retry counters per episode
             queen_board: Any = board
             if spec.board == "D":      # mode D: the queen reads only what the chain has included
                 queen_board = _DeferredView(board, lambda: ctx_holder[0].visible)
             ctx_kw["queen"] = V41Queen(tally, self.queen_model, queen_board, n_squads=self.world_config.n_squads,
-                                       harness=harness, board_on=spec.board_on)
+                                       harness=harness, board_on=spec.board_on, outage=outage)
         if spec.kind == "workers" and not calibration:
             ctx_kw["router"] = self.bonsai_router if spec.bonsai else self.router
             thresholds = self.bonsai_thresholds if spec.bonsai else self.thresholds
@@ -1195,6 +1218,12 @@ class V41Harness:
             raise HarnessError(f"world refused squad-{i}'s decision at tick {tick}: {world_outcome.reason}")
         calls = rec["calls"]
         look = rec["look"]
+        fields = rec["fields"]
+        assigned = queen_region(ctx.routes.get(i))
+        override = None if error else is_override(d["target"], fields.get("target"), fields.get("candidates", []), assigned)
+        if override is not None:
+            ctx.override_decisions += 1
+            ctx.override_count += int(override)
         ctx.log.append({
             "run_id": ctx.run_id, "arm": ctx.arm, "case": ctx.case, "seed": ctx.seed, "squad": i, "round": payload["round"],
             "tick": tick, "backend": rec["final_name"], "model": final.served_model, "revision": revision,
@@ -1209,6 +1238,9 @@ class V41Harness:
             "p_amount_ppm": payload["p_amount_ppm"], "look_p_ppm": None if look is None else _ppm(look),
             "prob_method": final.prob_method, "identity": ident, "calls": calls,
             "counterfactual": rec["counterfactual"], "audit": rec["audit"], "features": rec.get("features"),
+            "queen_region": assigned,
+            "target_region": resolve_target_region(d["target"], fields.get("target"), fields.get("candidates", [])),
+            "override": override,
             "sprime": rec["sprime"], "resolution": rec.get("resolution"), "deferral": rec.get("deferral"),
             "entry_id": entry_id, "kind": "decision", "error": bool(error), "error_reason": error,
             "attempts": sum(1 for t in rec["trail"] if t["error"]) + (0 if error else 1),
@@ -1264,6 +1296,7 @@ class V41Harness:
             "run_id": ctx.run_id, "arm": ctx.arm, "case": ctx.case, "seed": ctx.seed, "split": ctx.split,
             "wall_s": float(wall_s), "ticks_to_50": t50, "seconds_to_50": None if wall_t50 is None else float(wall_t50),
             "queen_calls": ctx.queen.calls if ctx.queen else 0,
+            **{f"queen_fallbacks_{c}": (ctx.queen.fallbacks[c] if ctx.queen else 0) for c in FALLBACK_CAUSES},
             "board_size": board.size() if shared else 0, "anchors": len(anchors), "visibility_latency_ms": vis,
             "coverage": float(metrics["coverage"]), "off_target": float(metrics["off_target_share"]),
             "defer_rate": (defers / n_dec) if n_dec else 0.0, "citations": cites_n,
@@ -1284,6 +1317,7 @@ class V41Harness:
             "decision_errors": ctx.decision_errors, "look_errors": ctx.look_errors,
             "decision_error_share": (ctx.decision_errors / n_dec) if n_dec else 0.0,
             "decision_error_alarm": int(bool(n_dec) and ctx.decision_errors / n_dec > DECISION_ERROR_ALARM),
+            "override_decisions": ctx.override_decisions, "override_count": ctx.override_count,
             "look_temperature": self.look_temperature, "look_temperature_source": self.look_temperature_source,
         }
         problems = v41_cells.validate_cell(cell)
@@ -1296,7 +1330,10 @@ class V41Harness:
         run_log = {
             "run_id": ctx.run_id, "arm": ctx.arm, "case": ctx.case, "seed": ctx.seed, "split": ctx.split,
             "wall_s": wall_s, "ticks": int(metrics["ticks"]), "ticks_to_50": t50, "seconds_to_50": cell["seconds_to_50"],
-            "queen_calls": cell["queen_calls"], "board_size": cell["board_size"], "anchors": len(anchors),
+            "queen_calls": cell["queen_calls"],
+            "queen_fallbacks": {c: cell[f"queen_fallbacks_{c}"] for c in FALLBACK_CAUSES},
+            "queen_outage_retries": ctx.queen.outage.retries if ctx.queen else 0,
+            "board_size": cell["board_size"], "anchors": len(anchors),
             "anchor_latency_s": ({m: list(v) for m, v in ctx.anchorer.latency_s.items()} if ctx.anchorer else {}),
             "visibility_latency_ms": vis, "decisions": n_dec, "rounds": self.world_config.rounds,
             "shared_store": shared, "calibration": ctx.calibration,

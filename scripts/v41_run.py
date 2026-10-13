@@ -18,7 +18,12 @@ environment (chain.config.get_private_key). ``--backends live`` builds the pod, 
 the pod URL and secret come from ledger/v4.1-pod-state.json, the Nous key is read in-process, every paid call is ledgered
 in ledger/v4.1-usage.jsonl and refused past Nous $7.50 / RunPod $24.00.
 
-Exit code 1 if any episode failed; failed runs are written to the cells file with an ``error`` field.
+Exit codes: 0 all episodes ran; 1 an episode failed (the run is written to the cells file with an ``error`` field);
+75 (EXIT_QUEEN_UNAVAILABLE, EX_TEMPFAIL) the queen provider stayed down past ``--queen-max-wait-s`` (default 600): no new
+episode was started after the first QueenUnavailable, in-flight ones finished or errored, unstarted ones have no cell.
+Rerun the same command later; the reply caches resume it. Queen provider outages (HTTP 401/429/5xx, transport errors) are
+waited out with backoff and never become S-rule fallbacks; every summary line and the batch end print the fallbacks by
+cause (provider / invalid_reply / cap).
 """
 from __future__ import annotations
 
@@ -37,12 +42,14 @@ from antelligence.anchoring import live  # noqa: E402
 from antelligence.providers.redact import scrub  # noqa: E402
 from antelligence.experiments import v41_fake, v41_live, v41_prod  # noqa: E402
 from antelligence.experiments.v41_conformal import ConformalThresholds  # noqa: E402
-from antelligence.experiments.v41_harness import (ARM_SPECS, D1, ROUTER_MODELS_BY_ARM, GateConfig, KeyVault,  # noqa: E402
-                                                  V41Harness, append_cell, error_cell, make_gate)
+from antelligence.experiments.v41_harness import (ARM_SPECS, D1, ROUTER_MODELS_BY_ARM, EpisodeNotStarted, GateConfig,  # noqa: E402
+                                                  KeyVault, V41Harness, append_cell, error_cell, make_gate)
 from antelligence.experiments.v41_router import KNNRouter  # noqa: E402
 from antelligence.experiments.v41_split import load_split, which_split  # noqa: E402
 from antelligence.kernel.policies.v41_harness import load_harness  # noqa: E402
 from antelligence.provenance.outbox import ProvenanceOutbox  # noqa: E402
+from antelligence.providers.outage import (DEFAULT_MAX_WAIT_S, EXIT_QUEEN_UNAVAILABLE, OutagePolicy,  # noqa: E402
+                                           QueenUnavailable)
 from antelligence.worlds.tumor_mri import WorldConfig  # noqa: E402
 
 
@@ -82,6 +89,9 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--loader", default=v41_live.DEFAULT_LOADER, help="module:function, load_case(case_id) -> (Crop, regions)")
     ap.add_argument("--cases-root", help="L1 store (default data/v4_1/cases); the missing_flair variant reads <root>_missing_flair")
     ap.add_argument("--concurrency", type=int, default=4)
+    ap.add_argument("--queen-max-wait-s", type=float, default=DEFAULT_MAX_WAIT_S,
+                    help="longest total wait for the queen provider to come back (HTTP 401/429/5xx, transport errors) before "
+                         f"the run errors with QueenUnavailable and the batch stops (default {DEFAULT_MAX_WAIT_S:.0f}; exit {EXIT_QUEEN_UNAVAILABLE})")
     ap.add_argument("--calibration", action="store_true")
     ap.add_argument("--log-counterfactuals", choices=("none", "all"), default="none",
                     help="'all': with the live router + deferral policy driving, every model of the arm answers every "
@@ -183,7 +193,8 @@ def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[st
         workers=workers, queen_provider=queen,
         world_config=WorldConfig.from_yaml(args.world_yaml), promoted_harness=harness_doc,
         router=router, bonsai_router=bonsai_router, thresholds=thresholds, bonsai_thresholds=bonsai_thresholds,
-        look_temperature=args.look_temperature, anchorer_factory=anchorer_factory,
+        look_temperature=args.look_temperature, queen_outage=OutagePolicy(max_wait_s=args.queen_max_wait_s),
+        anchorer_factory=anchorer_factory,
         post_mode_factory=post_mode_factory, reputation_client=reputation_client,
         allow_unanchored=args.allow_unanchored, outbox=ProvenanceOutbox(str(out / "outbox.sqlite")),
         backends_kind=args.backends if args.backends in ("live", "fake") else "config", keys=KeyVault(args.ledger_dir), out_dir=out, code_sha=_git_sha(), hardware=cfg.get("hardware") or ({"d1": "L40S", "qwen3.5-9b": "L40S", "qwen3.5-4b": "L40S", "bonsai-8b": "Mac"} if live_backends else None)
@@ -213,19 +224,39 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
     if args.mock_lab is not None:
         report = v41_fake.verify_mock_exports(args.mock_lab, args.out_dir, results)
         print(f"mock verifier: {report.get('verdict')} (ok={report.get('ok')}) -> {args.out_dir}/verify-mock-report.json")
-    failed = 0
+    failed = unavailable = not_started = 0
+    totals = {"provider": 0, "invalid_reply": 0, "cap": 0}
+    queen_calls = 0
     for (arm, case, seed), res in zip(runs, results):
+        if isinstance(res, EpisodeNotStarted):
+            not_started += 1
+            print(f"NOT STARTED {arm} {case} {seed}: the queen provider is unavailable (no cell written)", file=sys.stderr)
+            continue
         if isinstance(res, BaseException):
             failed += 1
+            unavailable += isinstance(res, QueenUnavailable)
             print(f"FAILED {arm} {case} {seed}: {scrub(f'{type(res).__name__}: {res}')}", file=sys.stderr)
             cell: Any = error_cell(arm, case, seed, _split_of(args, case), res,
                               backends_kind=h.backends_kind, router_kind=h.router_kind)
         else:
             cell = res.cell
+            fb = {c: cell[f"queen_fallbacks_{c}"] for c in totals}
+            for c in totals:
+                totals[c] += fb[c]
+            queen_calls += cell["queen_calls"]
             print(f"{arm} {case} seed {seed}: coverage {cell['coverage']:.3f} off-target {cell['off_target']:.3f} "
-                  f"board {cell['board_size']} anchors {cell['anchors']} -> {res.run_dir}")
+                  f"board {cell['board_size']} anchors {cell['anchors']} queen {cell['queen_calls']} calls, "
+                  f"fallbacks provider {fb['provider']} invalid_reply {fb['invalid_reply']} cap {fb['cap']} -> {res.run_dir}")
         if args.cells:
             append_cell(args.cells, cell)
+    print(f"batch: {len(runs) - failed - not_started} ok, {failed} failed, {not_started} not started; queen calls {queen_calls}, "
+          f"fallbacks provider {totals['provider']} invalid_reply {totals['invalid_reply']} cap {totals['cap']}")
+    if totals["provider"]:
+        print("WARNING: provider-caused queen fallbacks; those runs are invalid for fits and the sandbox", file=sys.stderr)
+    if unavailable or not_started:
+        print(f"queen provider unavailable past {args.queen_max_wait_s:.0f}s: batch stopped, exit {EXIT_QUEEN_UNAVAILABLE}; "
+              "rerun later to resume from the caches", file=sys.stderr)
+        return EXIT_QUEEN_UNAVAILABLE
     return 1 if failed else 0
 
 

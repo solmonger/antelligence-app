@@ -12,6 +12,17 @@ class ProviderError(RuntimeError):
     """The provider failed or returned something we refuse to trust."""
 
 
+class ProviderUnavailable(ProviderError):
+    """The provider could not be reached or refused for a reason that may pass: HTTP 401, 429, 5xx or a transport error.
+
+    ``status`` is the HTTP status, or ``None`` for a transport error. Callers that must not turn an outage into a
+    different answer (the queen, the sandbox proposer) retry the same request on this class and on no other."""
+
+    def __init__(self, message: str, *, status: Optional[int] = None) -> None:
+        super().__init__(message)
+        self.status = status
+
+
 class BudgetExceeded(ProviderError):
     """A call would exceed the run's call or token budget."""
 

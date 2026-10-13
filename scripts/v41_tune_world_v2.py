@@ -2,9 +2,9 @@
 """Tune drug_scale_k and D_t for drug_mode per_perceived_volume (total_drug = k x V_perceived) with S and S' on DEV only.
 
 Dev = dev_a + dev_b of config/v4_1/split.json (eval and reserve are refused before anything loads). Coverage per case is
-the mean over --seeds (default 1,2). Targets (goal 4.2): strict S' 0.70-0.80, S 0.30-0.50; widened S' 0.60-0.85, S 0.20-0.55;
-both with S' - S >= 0.15 on >= 80% of cases. If neither band is met, the point with the most cases showing the gap whose
-medians sit in the widened band is chosen (`fallback_gap_unmet`).
+the mean over --seeds (default 1,2). Targets (goal 4.2): strict S' 0.70-0.80, S 0.30-0.50; widened S' 0.60-0.85, S 0.20-0.55.
+If neither band is met the point nearest the band centres is reported (`no_feasible_point`). The share of cases with
+S' - S >= 0.15 is reported but is NOT a gate (operator, 2026-10-13: the "on >= 80% of cases" condition was dropped).
 
 Dose and the per-case budget are both linear in k, so behaviour depends only on D_t / k: the (k, D_t) plane is a one-
 dimensional family. Both are searched (several D_t share episodes through the ratio) and the result is reported at D_t = 5.
@@ -50,9 +50,7 @@ HEADER = """# v4.1 tumor_mri world constants (world_tuning_v2: drug scales with 
 """
 NOTES = {
     "ok": "Strict band met.",
-    "fallback_widened_band": "Strict band missed; the widened band (S' 0.60-0.85, S 0.20-0.55, gap >= 0.15 on >= 80%) is met.",
-    "fallback_gap_unmet": ("NEITHER BAND MET on the gap criterion; medians are in the widened band and this point maximises the "
-                           "share of cases with S' - S >= 0.15. Raise at G1."),
+    "fallback_widened_band": "Strict band missed; the widened band (S' 0.60-0.85, S 0.20-0.55) is met.",
     "no_feasible_point": "NO GRID POINT MEETS EVEN THE WIDENED MEDIANS. Best-effort point; raise at G1.",
 }
 

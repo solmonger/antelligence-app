@@ -27,7 +27,10 @@ FIELDS: Tuple[Field, ...] = (
     Field("wall_s", "float", False, "wall time of the run, seconds"),
     Field("ticks_to_50", "int", True, "first tick at which absolute coverage reaches 0.5 (goal 4.7); null = never reached"),
     Field("seconds_to_50", "float", True, "wall seconds until 50% of the final score; null = never reached"),
-    Field("queen_calls", "int", False, "queen model calls"),
+    Field("queen_calls", "int", False, "queen model calls (provider-outage retries of one call are not counted again)"),
+    Field("queen_fallbacks_provider", "int", False, "queen steps that fell back to the S-rule because the provider failed for a reason other than an outage (outages are waited out, never a fallback); a run with any is invalid for fits and the sandbox"),
+    Field("queen_fallbacks_invalid_reply", "int", False, "queen steps that fell back because the reply was invalid (parse, schema, length or over the output cap)"),
+    Field("queen_fallbacks_cap", "int", False, "queen steps that fell back because the per-run call cap or a budget was spent"),
     Field("board_size", "int", False, "entries on the board at run end"),
     Field("anchors", "int", False, "anchor points posted (INTERFACES 3)"),
     Field("visibility_latency_ms", "int", True, "mode D: write to visible latency; null outside mode D"),
@@ -55,6 +58,8 @@ FIELDS: Tuple[Field, ...] = (
     Field("look_errors", "int", False, "d1 local looks that still failed after 3 retries (look = None for that squad-round); counted apart from decision_errors"),
     Field("decision_error_share", "frac", False, "decision_errors / decisions in the run"),
     Field("decision_error_alarm", "int", False, "1 when decision_error_share > 0.05 (explained-null checklist), else 0"),
+    Field("override_decisions", "int", False, "decisions with a queen assignment, not error fallbacks: the denominator of the worker override rate"),
+    Field("override_count", "int", False, "of those, decisions where the worker's resolved target differs from the queen's assignment"),
     Field("backends_kind", "str", True, "live | config | fake: where the worker answers came from (null only on error cells)"),
     Field("router_kind", "str", True, "frozen | none | fake (null only on error cells)"),
     Field("router_sha256", "hex64", True, "sha256 of the frozen router; null unless router_kind is frozen"),
@@ -63,6 +68,7 @@ FIELDS: Tuple[Field, ...] = (
     Field("identities", "str", True, "comma-joined served-model identities seen in the run; 'fake' marks fake backends; null for scripted arms"),
 )
 FIELD_NAMES = tuple(f.name for f in FIELDS)
+QUEEN_FALLBACK_FIELDS = ("queen_fallbacks_provider", "queen_fallbacks_invalid_reply", "queen_fallbacks_cap")
 _OPTIONAL = {"error"}
 BACKENDS_KINDS = ("live", "config", "fake")
 ROUTER_KINDS = ("frozen", "none", "fake")
@@ -107,6 +113,9 @@ def validate_cell(cell: Mapping[str, Any]) -> List[str]:
         errs.append(f"backends_kind: {cell['backends_kind']!r} must be one of {BACKENDS_KINDS}")
     if cell.get("router_kind") is not None and cell["router_kind"] not in ROUTER_KINDS:
         errs.append(f"router_kind: {cell['router_kind']!r} must be one of {ROUTER_KINDS}")
+    od, oc = cell.get("override_decisions"), cell.get("override_count")
+    if isinstance(od, int) and isinstance(oc, int) and not isinstance(od, bool) and oc > od:
+        errs.append("override_count: cannot exceed override_decisions")
     if cell.get("router_kind") == "frozen" and not cell.get("router_sha256") and not cell.get("error"):
         errs.append("router_sha256: required when router_kind is frozen")
     if cell.get("router_kind") in ("none", "fake") and cell.get("router_sha256"):
