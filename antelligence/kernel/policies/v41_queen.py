@@ -15,6 +15,12 @@ re-plan (the next call carries a re-plan directive). Caps per run: 6 calls inclu
 at most 6k tokens (truncated deterministically), output at most 800 tokens. An invalid reply, a failed
 call or a spent call cap falls back to S-rule assignments (each squad stays on its previous route, else
 its nearest perceived region) and writes an ``alarm`` entry.
+
+A provider OUTAGE is not an invalid reply (decision 2026-10-13, mistake-2039): on HTTP 401/429/5xx or a transport error
+the same request is retried with backoff (``providers.outage``), as part of the same call, and past the maximum wait
+:class:`QueenUnavailable` ends the run as an error. Every fallback is counted by cause in ``fallbacks``: ``provider``
+(a non-outage provider failure), ``invalid_reply`` (parse, schema, length or over-cap output) and ``cap`` (call cap or
+budget spent).
 """
 
 from __future__ import annotations
@@ -30,7 +36,8 @@ from antelligence.kernel.briefs import Brief, build_brief, build_brief_board_off
 from antelligence.kernel.canonical import canonical_json
 from antelligence.kernel.decision import DecisionAbort
 from antelligence.kernel.policies.v41_harness import load_harness, validate_harness
-from antelligence.providers.base import ChatRequest, Provider
+from antelligence.providers.base import BudgetExceeded, ChatRequest, Provider
+from antelligence.providers.outage import OutagePolicy, complete_with_outage_retry
 
 MAX_CALLS = 6
 MAX_INPUT_TOKENS = 6000
@@ -41,6 +48,7 @@ ALWAYS_AVAILABLE = ("S", "X")
 STALL_EPS_PPM = 5000          # estimated coverage must rise by 0.5 points to count as progress
 STALL_LIMIT = 2
 FALLBACK_PRIORITY = 3
+FALLBACK_CAUSES = ("provider", "invalid_reply", "cap")
 MAX_EVIDENCE_PER_SQUAD = 2
 DEFAULT_THINKING_OFF: Mapping[str, Any] = {"reasoning": {"enabled": False}}  # live-probed 2026-10-13: 0 reasoning tokens on Nous
 _FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
@@ -119,6 +127,7 @@ class QueenStep:
     called: bool
     calls_used: int
     alarm: Optional[Entry] = None
+    fallback_cause: Optional[str] = None    # one of FALLBACK_CAUSES when fell_back
 
 
 def coverage_estimate_ppm(regions: Sequence[Mapping[str, Any]], dose_fraction: Mapping[int, float]) -> int:
@@ -158,6 +167,7 @@ class V41Queen:
         board_on: bool = True,
         thinking_params: Optional[Mapping[str, Any]] = DEFAULT_THINKING_OFF,
         max_calls: int = MAX_CALLS,
+        outage: Optional[OutagePolicy] = None,
     ) -> None:
         if n_squads < 1:
             raise ValueError("n_squads must be positive")
@@ -172,6 +182,8 @@ class V41Queen:
         self.thinking_params = dict(thinking_params) if thinking_params else None
         self.max_calls = min(int(max_calls), MAX_CALLS)   # the cap can be tightened, never raised
         self.calls = 0
+        self.outage = outage if outage is not None else OutagePolicy()
+        self.fallbacks: Dict[str, int] = {cause: 0 for cause in FALLBACK_CAUSES}
         self.task_ledger = TaskLedger()
         self.progress = ProgressLedger()
         self.previous_routes: Dict[int, Dict[str, Any]] = {}
@@ -318,22 +330,25 @@ class V41Queen:
         replan = self.progress.stalls >= STALL_LIMIT
         parsed: Optional[Dict[str, Any]] = None
         why = ""
+        cause: Optional[str] = None
         called = False
         if self.calls >= self.max_calls:
-            why = f"call cap {self.max_calls} spent"
+            why, cause = f"call cap {self.max_calls} spent", "cap"
         else:
             request = self.request(tick, regions, squads, coverage_ppm, replan)
             self.calls += 1
             called = True
             try:
-                response = await self.provider.complete(request)
+                # an outage waits and retries the same request; past the max wait QueenUnavailable (a DecisionAbort) ends the run
+                response = await complete_with_outage_retry(self.provider, request, self.outage)
                 if response.completion_tokens > MAX_OUTPUT_TOKENS or response.finish_reason == "length":
                     raise QueenReplyError("output over the 800-token cap")
                 parsed = self.parse(response.content, regions)
-            except DecisionAbort:      # a budget hard stop ends the run; it is never a queen fallback
+            except DecisionAbort:      # a budget hard stop or QueenUnavailable ends the run; never a queen fallback
                 raise
-            except Exception as exc:   # invalid reply, provider failure and per-run call/token trips land here
+            except Exception as exc:   # invalid reply, other provider failure and per-run call/token trips land here
                 why = f"{type(exc).__name__}: {str(exc)[:90]}"
+                cause = "invalid_reply" if isinstance(exc, QueenReplyError) else "cap" if isinstance(exc, BudgetExceeded) else "provider"
         if replan and called:
             self.progress.replans += 1
             self.progress.stalls = 0
@@ -353,6 +368,8 @@ class V41Queen:
                                   f"coverage estimate {coverage_ppm // 10000}%"]
         alarm = None
         if fell_back:
+            assert cause is not None
+            self.fallbacks[cause] += 1
             alarm = self.tools.write("alarm", {"kind": "other", "value_ppm": 1_000_000, "note": f"queen fallback: {why}"[:140]}, tick)
 
         cadence = self.harness["queen"]["cadence"]
@@ -377,7 +394,8 @@ class V41Queen:
                                        "payload_ppm": next(q.payload_ppm for q in squads if q.squad == s)}
         options = tuple(LABELS[: len(candidates)]) + ALWAYS_AVAILABLE
         return QueenStep(tick=tick, task=task, routes=tuple(route_entries), briefs=briefs, candidate_region_ids=tuple(candidates),
-                         options=options, fell_back=fell_back, replan=replan and called, called=called, calls_used=self.calls, alarm=alarm)
+                         options=options, fell_back=fell_back, replan=replan and called, called=called, calls_used=self.calls, alarm=alarm,
+                         fallback_cause=cause if fell_back else None)
 
     def step(self, tick: int, regions: Sequence[Mapping[str, Any]], squads: Sequence[SquadState], coverage_ppm: int) -> QueenStep:
         """Synchronous wrapper (the world's queen hook is synchronous)."""
