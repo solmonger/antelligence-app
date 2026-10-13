@@ -20,6 +20,8 @@ dependencies = [
   "pydantic",
   "matplotlib",
   "cryptography>=46.0.7",
+  "monai>=1.6.1",
+  "torch>=2.14.1",
 ]
 
 [project.optional-dependencies]
