@@ -1,0 +1,26 @@
+# v4.1 base harness = the static queen (SW-staticQueen). Sandbox edits (goal 4.6) may change ONLY the
+# keys listed in allowed_keys, as JSON-pointer paths. Never editable: scorer, physics, verifier, conformal
+# thresholds, budgets, keys, caps, and allowed_keys itself.
+harness:
+  router:
+    slm_conf_min: 0.55        # below this the router defers the SLM answer
+    fw_conf_min: 0.50
+    cost_penalty: 0.10        # weight on expected cost when picking a backend
+  briefs:
+    count: 8                  # entries per squad brief, 6-12
+    entry_types: [knowledge, evidence, decision, alarm]   # fill order after the task and the squad's route
+    objective_template: "Cover the tumour: {n_regions} perceived regions, {n_squads} squads, estimated coverage {coverage_pct}%."
+  queen:
+    cadence: 30               # ticks between queen steps, 30-40
+  playbook_notes:
+    - "Prefer regions with high p_tumour times volume that no squad has visited."
+    - "Spread squads across regions; avoid sending two squads to the same small region."
+allowed_keys:
+  - /router/slm_conf_min
+  - /router/fw_conf_min
+  - /router/cost_penalty
+  - /briefs/count
+  - /briefs/entry_types
+  - /briefs/objective_template
+  - /queen/cadence
+  - /playbook_notes
