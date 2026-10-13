@@ -42,6 +42,8 @@ def scrub(text: object, extra_secrets: Iterable[str] = ()) -> str:
         secrets = sorted(_registered | {s for s in extra_secrets if s}, key=len, reverse=True)
     for s in secrets:                      # exact values first, before URL stripping rewrites the context
         out = out.replace(s, "***")
+        if len(s) >= 8:                    # also a secret broken across lines or spaces
+            out = re.sub(r"\s*".join(re.escape(c) for c in s), "***", out)
     out = _URL.sub(lambda m: m.group(1) + m.group(2), out)
     out = _BEARER.sub("Bearer ***", out)
     out = _URLPATH.sub(lambda m: m.group(1) + "<path>", out)
