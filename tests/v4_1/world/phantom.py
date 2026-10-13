@@ -29,6 +29,6 @@ def make_phantom(n: int = 36, seed: int = 7, outside_truth: int = 40, flair: boo
 
 
 def phantom_config(**kw) -> WorldConfig:
-    base = dict(total_drug=400.0, dose_threshold=6.0, explore_radius_vox=8, entry_shell_mm=4.0)
+    base = dict(total_drug=400.0, dose_threshold=6.0, entry_shell_mm=4.0)
     base.update(kw)
     return WorldConfig(**base)

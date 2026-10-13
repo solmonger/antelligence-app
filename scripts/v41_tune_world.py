@@ -3,9 +3,9 @@
 
 Targets (goal section 4.2): median S' coverage 0.70-0.80, median S 0.30-0.50, S' - S >= 0.15 on >= 80% of cases;
 if no grid point meets them, a widened band is tried and the result is marked `fallback_widened_band`.
-The script refuses any case that is not in the dev split (default data/v4_1/split.json).
+The script refuses any case that is not in the dev split (default config/v4_1/split.json; dev = dev_a + dev_b; eval and reserve refused).
 
-  python scripts/v41_tune_world.py --cases-dir data/v4_1/perception --split data/v4_1/split.json
+  python scripts/v41_tune_world.py --cases-dir data/v4_1/perception --split config/v4_1/split.json
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ from antelligence.worlds.tumor_mri.tuning import SplitError, assert_dev_only, gr
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cases-dir", type=Path, default=ROOT / "data/v4_1/perception", help="dir of <case_id>.npz crops")
-    ap.add_argument("--split", type=Path, default=ROOT / "data/v4_1/split.json")
+    ap.add_argument("--split", type=Path, default=ROOT / "config/v4_1/split.json")
     ap.add_argument("--cases", default="", help="comma-separated case ids (default: every dev case with a crop)")
     ap.add_argument("--config", type=Path, default=ROOT / "config/v4_1/world.yaml")
     ap.add_argument("--out", type=Path, default=None, help="default: overwrite --config")

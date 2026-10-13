@@ -13,7 +13,8 @@ world:
   entry_shell_mm: 4.0
   entry_min_dist_mm: 10.0
   perceived_threshold: 0.3
-  explore_radius_vox: 15
+  visit_radius_mm: 6.0
+  explore_unc_quantile: 0.95
   path_weight: 1.5
   path_max_expand: 40000
   amount_fractions: [0.1, 0.25, 0.5, 0.75, 1.0]

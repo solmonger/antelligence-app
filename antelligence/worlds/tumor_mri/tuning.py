@@ -22,21 +22,21 @@ class SplitError(RuntimeError):
 
 
 def load_split(path: Union[str, Path]) -> Dict[str, set]:
-    """Accepts ``{"dev": [ids], "eval": [ids]}`` or ``{"cases": {id: "dev"|"eval"}}``."""
+    """Committed format (config/v4_1/split.json): keys ``dev_a``, ``dev_b``, ``eval``, ``reserve`` (lists of case ids).
+    Dev = dev_a + dev_b. Returns those four sets plus ``dev``."""
     data = json.loads(Path(path).read_text())
-    if "cases" in data and isinstance(data["cases"], Mapping):
-        out: Dict[str, set] = {"dev": set(), "eval": set()}
-        for cid, which in data["cases"].items():
-            out.setdefault(str(which), set()).add(str(cid))
-        return out
-    return {k: {str(c) for c in v} for k, v in data.items() if isinstance(v, list)}
+    out: Dict[str, set] = {k: {str(c) for c in data.get(k, [])} for k in ("dev_a", "dev_b", "eval", "reserve")}
+    out["dev"] = out["dev_a"] | out["dev_b"]
+    return out
 
 
 def assert_dev_only(case_ids: Iterable[str], split: Mapping[str, set]) -> None:
     dev = split.get("dev", set())
     bad = sorted(c for c in case_ids if c not in dev)
     if bad:
-        raise SplitError(f"refusing to tune on cases not in the dev split: {bad}")
+        held = sorted(c for c in bad if c in split.get("eval", set()) | split.get("reserve", set()))
+        raise SplitError(f"refusing to tune on cases not in dev (dev_a + dev_b): {bad}"
+                         + (f"; held-out (eval/reserve): {held}" if held else ""))
 
 
 def episode_coverages(crop: Crop, cfg: WorldConfig, seed: int = 0) -> Tuple[float, float]:

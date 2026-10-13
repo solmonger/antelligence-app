@@ -58,12 +58,6 @@ class Scorer:
         hit = int((dose.ravel()[self._idx] >= self.dose_threshold).sum())
         return hit / self.denominator
 
-    def off_target_share(self, dose: np.ndarray) -> float:
-        total = float(dose.sum())
-        if total <= 0.0:
-            return 0.0
-        return 1.0 - float(dose[self.truth].sum()) / total
-
     @property
     def truth_share_outside_crop(self) -> float:
         return self.outside_crop_truth_voxels / self.denominator if self.denominator else 0.0
@@ -107,6 +101,8 @@ class TumorMRIWorld:
         self._visited = np.zeros(self.shape, dtype=bool)
         for s in self._squads:
             self._visited[s.pos] = True
+        self._visited_regions: set = set()
+        self._clusters = self._uncertainty_clusters(crop, cfg.explore_unc_quantile)
         self._candidates: List[Candidate] = []
         self._squad_candidates: Dict[int, List[Candidate]] = {}
         self._revision = 0
@@ -188,6 +184,7 @@ class TumorMRIWorld:
         for c in self.candidates_for(i):
             d = c.to_dict()
             d["dist_mm"] = round(self.voxel_mm * math.dist(sq.pos, c.centroid_vox), 3)
+            d["visited"] = c.region_id in self._visited_regions
             cands.append(d)
         look = self.look_fn(i, sq.pos, tick) if self.look_fn else None
         data = {
@@ -225,10 +222,11 @@ class TumorMRIWorld:
             sq.payload -= deposited
             sq.last_release = {"tick": int(tick), "amount_level": amount,
                                "fraction": cfg.amount_fractions[amount - 1], "mass": deposited}
-        sq.target = target
         override = p.get("target_vox")  # scripted arms only (oracle S'); typed model arms never set it
-        sq.goal = self._resolve_goal(i, sq, target, override)
-        sq.path = self._paths.path(sq.pos, sq.goal) if sq.goal is not None and sq.goal != sq.pos else []
+        if override is not None or target != STAY:  # Stay keeps the current target (and its path)
+            sq.target = target
+            sq.goal = self._resolve_goal(i, sq, target, override)
+            sq.path = self._paths.path(sq.pos, sq.goal) if sq.goal is not None and sq.goal != sq.pos else []
         self._revision += 1
         return Outcome(True, None, {"released": deposited, "goal": list(sq.goal) if sq.goal else None})
 
@@ -237,7 +235,8 @@ class TumorMRIWorld:
             if sq.path:
                 sq.pos = sq.path.pop(0)
                 self._visited[sq.pos] = True
-        self.field.step()
+        self._mark_visits()
+        self.field.step(self._scorer.truth)
         self._tick = tick + 1
         cov = self._scorer.coverage(self.field.dose)
         self._coverage_trace.append(cov)
@@ -255,12 +254,24 @@ class TumorMRIWorld:
         return {
             "coverage": cov, "coverage_at_queen": {int(k): v for k, v in sorted(at_queen.items())},
             "time_to_50_coverage": self._time_to_half,
-            "off_target_share": sc.off_target_share(f.dose),
+            "off_target_share": self.off_target_share(),
             "truth_share_outside_crop": sc.truth_share_outside_crop,
             "released_total": f.released, "decayed": f.decayed, "lost_boundary": f.lost_boundary,
             "lost_boundary_share": f.lost_boundary / f.released if f.released > 0 else 0.0,
             "mass_residual": f.mass_balance_residual(), "ticks": self._tick,
         }
+
+    def off_target_share(self) -> float:
+        """(drug in non-tumour voxels + drug that left the crop) / all released drug, "tumour" = truth WT.
+
+        Every unit of released mass has one fate: left the crop, decayed (counted where it decayed) or is still
+        present (counted where it is). On target = decayed inside WT + still inside WT.
+        """
+        f = self.field
+        if f.released <= 0.0:
+            return 0.0
+        on_target = f.decayed_in_region + f.mass_in(self._scorer.truth)
+        return min(1.0, max(0.0, 1.0 - on_target / f.released))
 
     # --- queen cadence ------------------------------------------------------------
 
@@ -284,26 +295,52 @@ class TumorMRIWorld:
         if target == STAY:
             return None
         if target == EXPLORE:
-            return self._explore_goal(sq)
+            return self._explore_goal(i, sq)
         for c in self.candidates_for(i):
             if c.label == target:
                 return self._paths.nearest_brain_voxel(c.centroid_vox)
         return None
 
-    def _explore_goal(self, sq: _Squad) -> Optional[Vox]:
-        """Explore = go to the most uncertain, not-yet-visited brain voxel within `explore_radius_vox`, at least 3 away."""
-        r = self.config.explore_radius_vox
-        lo = [max(sq.pos[a] - r, 0) for a in range(3)]
-        hi = [min(sq.pos[a] + r + 1, self.shape[a]) for a in range(3)]
-        sl = tuple(slice(lo[a], hi[a]) for a in range(3))
-        grid = np.stack(np.meshgrid(*[np.arange(lo[a], hi[a]) for a in range(3)], indexing="ij"), axis=-1)
-        dist = np.sqrt(((grid - np.array(sq.pos)) ** 2).sum(axis=-1))
-        ok = self._percept.brain[sl] & ~self._visited[sl] & (dist >= 3.0) & (dist <= r)
-        if not ok.any():
-            return None
-        score = np.where(ok, self._percept.unc[sl] - 1e-6 * dist, -np.inf)
-        j = np.unravel_index(int(np.argmax(score)), score.shape)
-        return (lo[0] + int(j[0]), lo[1] + int(j[1]), lo[2] + int(j[2]))
+    def _mark_visits(self) -> None:
+        r2 = (self.config.visit_radius_mm / self.voxel_mm) ** 2
+        lists = [self._candidates] + list(self._squad_candidates.values())
+        for cands in lists:
+            for c in cands:
+                if c.region_id in self._visited_regions:
+                    continue
+                if any(sum((a - b) ** 2 for a, b in zip(sq.pos, c.centroid_vox)) <= r2 for sq in self._squads):
+                    self._visited_regions.add(c.region_id)
+
+    @staticmethod
+    def _uncertainty_clusters(crop: Crop, quantile: float) -> List[np.ndarray]:
+        from scipy import ndimage
+        if not crop.brain.any():
+            return []
+        thr = float(np.quantile(crop.unc[crop.brain], quantile))
+        lab, n = ndimage.label((crop.unc >= thr) & crop.brain, structure=np.ones((3, 3, 3), dtype=bool))
+        return [np.argwhere(lab == k) for k in range(1, n + 1)]
+
+    def _explore_goal(self, i: int, sq: _Squad) -> Optional[Vox]:
+        """Explore = nearest perceived region no squad has visited; if none, nearest highest-uncertainty voxel
+        cluster that has not been mostly walked over."""
+        best, best_d = None, math.inf
+        for c in self.candidates_for(i):
+            if c.region_id in self._visited_regions:
+                continue
+            d = math.dist(sq.pos, c.centroid_vox)
+            if d < best_d:
+                best, best_d = c, d
+        if best is not None:
+            return self._paths.nearest_brain_voxel(best.centroid_vox)
+        goal, best_d = None, math.inf
+        for pts in self._clusters:
+            if len(pts) and self._visited[tuple(pts.T)].mean() > 0.5:
+                continue
+            centre = pts.mean(axis=0)
+            d = math.dist(sq.pos, centre)
+            if d < best_d:
+                goal, best_d = centre, d
+        return None if goal is None else self._paths.nearest_brain_voxel(goal)
 
 
 # --- episode driver ----------------------------------------------------------------------

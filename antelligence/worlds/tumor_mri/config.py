@@ -25,7 +25,8 @@ class WorldConfig:
     entry_shell_mm: float = 4.0
     entry_min_dist_mm: float = 10.0
     perceived_threshold: float = 0.3
-    explore_radius_vox: int = 15
+    visit_radius_mm: float = 6.0  # a squad within this of a region centroid has visited the region
+    explore_unc_quantile: float = 0.95  # 'highest-uncertainty' voxels: unc >= this quantile of brain unc
     path_weight: float = 1.5  # weighted A*: path cost <= weight * optimal
     path_max_expand: int = 40000
     amount_fractions: Tuple[float, ...] = AMOUNT_FRACTIONS

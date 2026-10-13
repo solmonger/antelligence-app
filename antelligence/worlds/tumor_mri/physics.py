@@ -32,6 +32,7 @@ class DrugField:
         self.released = 0.0
         self.decayed = 0.0
         self.lost_boundary = 0.0
+        self.decayed_in_region = 0.0  # decayed mass inside the accounting region (scorer's tumour mask)
         r = max(1, int(math.ceil(3.0 * release_sigma_vox)))
         ax = np.arange(-r, r + 1, dtype=np.float64)
         g = np.exp(-0.5 * (ax / release_sigma_vox) ** 2)
@@ -56,16 +57,21 @@ class DrugField:
         self.released += mass
         self.lost_boundary += mass * (1.0 - float(part.sum()))
 
-    def step(self) -> None:
+    def step(self, region: Optional[np.ndarray] = None) -> None:
         before = float(self.conc.sum())
         if before > 0.0:
             self.conc = gaussian_filter(self.conc, self.diffuse_sigma_vox, mode="constant", cval=0.0, truncate=3.0)
             np.maximum(self.conc, 0.0, out=self.conc)
             after = float(self.conc.sum())
             self.lost_boundary += before - after
+            if region is not None:
+                self.decayed_in_region += float(self.conc[region].sum()) * self.decay
             self.conc *= 1.0 - self.decay
             self.decayed += after * self.decay
         self.dose += self.conc
+
+    def mass_in(self, region: np.ndarray) -> float:
+        return float(self.conc[region].sum())
 
     def mass_balance_residual(self) -> float:
         return self.released - (self.mass + self.decayed + self.lost_boundary)

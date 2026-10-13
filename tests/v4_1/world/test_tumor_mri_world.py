@@ -238,18 +238,75 @@ def test_decision_rule(crop):
     assert decide_from_answers(ans, req)["release"] == 0
 
 
-def test_stay_and_explore_semantics(crop):
+def test_stay_keeps_target_and_explore_goes_to_unvisited_region(crop):
+    cands = candidates_from_perception(crop.p_tumour, crop.unc, crop.brain)
+    assert len(cands) >= 2
     w = TumorMRIWorld(crop, phantom_config(), seed=0)
+    w.set_candidates(cands)
     start = w.squad_positions()[0]
     w.apply("squad-0", Intent("decide", {"target": "S", "release": 0, "amount": 1}), 0)
     for t in range(5):
         w.step_environment(t)
-    assert w.squad_positions()[0] == start
-    w.apply("squad-0", Intent("decide", {"target": "X", "release": 0, "amount": 1}), 5)
+    assert w.squad_positions()[0] == start  # no target yet: stays put
+    w.apply("squad-0", Intent("decide", {"target": "A", "release": 0, "amount": 1}), 5)
     for t in range(5, 10):
         w.step_environment(t)
-    moved = w.squad_positions()[0]
-    assert moved != start and max(abs(a - b) for a, b in zip(moved, start)) <= 5  # <= one voxel per tick
+    mid = w.squad_positions()[0]
+    assert mid != start and max(abs(a - b) for a, b in zip(mid, start)) <= 5  # <= one voxel per tick
+    w.apply("squad-0", Intent("decide", {"target": "S", "release": 0, "amount": 1}), 10)
+    assert w._squads[0].target == "A"  # Stay keeps the current target
+    for t in range(10, 15):
+        w.step_environment(t)
+    assert w.squad_positions()[0] != mid  # ... and keeps walking toward it
+    # Explore: nearest unvisited perceived region
+    w2 = TumorMRIWorld(crop, phantom_config(), seed=0)
+    w2.set_candidates(cands)
+    pos = w2.squad_positions()[0]
+    near = min(cands, key=lambda c: (np.linalg.norm(np.subtract(pos, c.centroid_vox)), c.label))
+    w2.apply("squad-0", Intent("decide", {"target": "X", "release": 0, "amount": 1}), 0)
+    assert w2._squads[0].goal == w2._paths.nearest_brain_voxel(near.centroid_vox)
+    w2._visited_regions.add(near.region_id)  # visited -> skipped
+    w2.apply("squad-0", Intent("decide", {"target": "X", "release": 0, "amount": 1}), 5)
+    other = [c for c in cands if c.region_id != near.region_id]
+    pos = w2.squad_positions()[0]
+    near2 = min(other, key=lambda c: (np.linalg.norm(np.subtract(pos, c.centroid_vox)), c.label))
+    assert w2._squads[0].goal == w2._paths.nearest_brain_voxel(near2.centroid_vox)
+    # no unvisited region -> highest-uncertainty cluster
+    w2._visited_regions.update(c.region_id for c in cands)
+    w2.apply("squad-0", Intent("decide", {"target": "X", "release": 0, "amount": 1}), 10)
+    assert w2._squads[0].goal is not None
+    allpts = np.concatenate(w2._clusters)
+    assert np.linalg.norm(allpts - np.array(w2._squads[0].goal), axis=1).min() <= 6.0  # at a high-uncertainty cluster
+
+
+def test_script_S_rule(crop):
+    obs = dict(local_p_tumour=0.6, payload=10.0, candidates=[
+        {"label": "A", "p_tumour": 0.9, "volume_mm3": 1000, "dist_mm": 50.0, "visited": False},
+        {"label": "B", "p_tumour": 0.6, "volume_mm3": 1000, "dist_mm": 10.0, "visited": False},
+        {"label": "C", "p_tumour": 0.9, "volume_mm3": 9000, "dist_mm": 5.0, "visited": True}])
+    from antelligence.kernel.types import LocalView
+    it = ScriptS().decide(LocalView("squad-0", 0, 0, 0, obs))
+    assert it.params == {"target": "B", "release": 1, "amount": 3}  # C visited; B beats A on p*vol/dist
+    obs["local_p_tumour"] = 0.49
+    assert ScriptS().decide(LocalView("squad-0", 0, 0, 0, obs)).params["release"] == 0
+
+
+def test_off_target_share_definition(crop):
+    w = TumorMRIWorld(crop, phantom_config(), seed=0)
+    assert w.metrics()["off_target_share"] == 0.0
+    # a puff in the middle of the tumour: most mass stays/decays in WT early on, so off-target is small
+    centre = tuple(int(c) for c in np.argwhere(crop.truth).mean(axis=0).round())
+    w.field.deposit(centre, 100.0)
+    w.step_environment(0)
+    early = w.metrics()["off_target_share"]
+    for t in range(1, 60):
+        w.step_environment(t)
+    m = w.metrics()
+    assert 0.0 < early < m["off_target_share"] <= 1.0
+    sc = w.scorer_truth()
+    on = w.field.decayed_in_region + w.field.mass_in(sc.truth)
+    assert m["off_target_share"] == pytest.approx(1.0 - on / 100.0)
+    assert "lost_boundary_share" in m
 
 
 def test_release_payload_accounting(crop):
@@ -287,7 +344,7 @@ def test_speed_100_cube():
     p = ndimage.gaussian_filter(truth.astype(np.float64), 1.5) * 1.8
     big = Crop.from_arrays(dict(brain=brain, p_tumour=np.clip(p, 0, 1), unc=np.clip(4 * p * (1 - p), 0, 1), truth=truth))
     t0 = time.perf_counter()
-    w = TumorMRIWorld(big, phantom_config(explore_radius_vox=15), seed=0)
+    w = TumorMRIWorld(big, phantom_config(), seed=0)
     run_episode(w, lambda a: ScriptS())
     assert time.perf_counter() - t0 < 4.0  # target < 2 s; margin for loaded CI machines
 
@@ -297,9 +354,12 @@ def test_speed_100_cube():
 
 def test_tune_refuses_eval_case(tmp_path, capsys):
     split_path = tmp_path / "split.json"
-    split_path.write_text(json.dumps({"dev": ["BRATS_001"], "eval": ["BRATS_002"]}))
+    split_path.write_text(json.dumps({"dev_a": ["BRATS_001"], "dev_b": ["BRATS_003"], "eval": ["BRATS_002"],
+                                      "reserve": ["BRATS_004"]}))
     split = load_split(split_path)
-    assert_dev_only(["BRATS_001"], split)
+    assert_dev_only(["BRATS_001", "BRATS_003"], split)  # dev = dev_a + dev_b
+    with pytest.raises(SplitError):
+        assert_dev_only(["BRATS_004"], split)  # reserve
     with pytest.raises(SplitError):
         assert_dev_only(["BRATS_001", "BRATS_002"], split)
     with pytest.raises(SplitError):
@@ -311,6 +371,9 @@ def test_tune_refuses_eval_case(tmp_path, capsys):
     rc = mod.main(["--split", str(split_path), "--cases", "BRATS_002", "--cases-dir", str(tmp_path),
                    "--config", str(tmp_path / "w.yaml")])
     assert rc == 3 and "REFUSED" in capsys.readouterr().err
+    rc = mod.main(["--split", str(split_path), "--cases", "BRATS_004", "--cases-dir", str(tmp_path),
+                   "--config", str(tmp_path / "w.yaml")])
+    assert rc == 3
     assert not (tmp_path / "w.yaml").exists()
 
 
