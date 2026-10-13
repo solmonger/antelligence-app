@@ -31,6 +31,7 @@ from antelligence.experiments.v41_conformal import ConformalThresholds  # noqa: 
 from antelligence.experiments.v41_harness import (ARM_SPECS, GateConfig, KeyVault, V41Harness,  # noqa: E402
                                                   append_cell, error_cell, make_gate)
 from antelligence.experiments.v41_router import KNNRouter  # noqa: E402
+from antelligence.experiments.v41_split import load_split, which_split  # noqa: E402
 from antelligence.kernel.policies.v41_harness import load_harness  # noqa: E402
 from antelligence.provenance.outbox import ProvenanceOutbox  # noqa: E402
 from antelligence.worlds.tumor_mri import WorldConfig  # noqa: E402
@@ -40,6 +41,16 @@ def _git_sha() -> str:
     out = subprocess.run(["git", "-C", str(REPO), "rev-parse", "HEAD"], capture_output=True, text=True)
     sha = out.stdout.strip()
     return sha if len(sha) == 40 else "0" * 40
+
+
+def _split_of(args: argparse.Namespace, case: str) -> str:
+    """The case's real split from the committed split file ('dev' or 'eval'; reserve and unknown ids count as 'eval',
+    the stricter side, since the gate refuses them anyway)."""
+    try:
+        split = which_split(load_split(Path(args.repo_root) / "config/v4_1/split.json"), case)
+        return "dev" if split == "dev" else "eval"
+    except (KeyError, OSError, ValueError):
+        return "eval"
 
 
 def parser() -> argparse.ArgumentParser:
@@ -52,6 +63,8 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--concurrency", type=int, default=4)
     ap.add_argument("--calibration", action="store_true")
     ap.add_argument("--anchors", choices=("none", "mock"), default="none")
+    ap.add_argument("--allow-unanchored", action="store_true",
+                    help="let anchored arms (SW-B, FW, SW-D, SW-Byz-*) run without anchors; refused by default")
     ap.add_argument("--world-yaml", default=str(REPO / "config/v4_1/world.yaml"))
     ap.add_argument("--promoted-harness", help="harness.yaml with the promoted edits (default: the base harness)")
     ap.add_argument("--router", help="frozen kNN router JSON")
@@ -73,6 +86,10 @@ def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[st
     arms = {r[0] for r in runs}
     if not arms <= set(ARM_SPECS):
         raise SystemExit(f"unknown arm(s): {sorted(arms - set(ARM_SPECS))}")
+    unanchored = sorted(a for a in arms if ARM_SPECS[a].anchored) if args.anchors == "none" else []
+    if unanchored and not args.allow_unanchored:
+        raise SystemExit(f"arms {unanchored} must be anchored: pass --anchors mock (or the live wiring), "
+                         "or --allow-unanchored to run them without anchors on purpose")
     loader = v41_live.resolve_loader(args.loader)
     workers = v41_live.build_workers(cfg, get_env)
     needs_queen = any(ARM_SPECS[a].uses_queen for a in arms)
@@ -94,7 +111,7 @@ def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[st
         thresholds=ConformalThresholds.load(args.thresholds) if args.thresholds else None,
         bonsai_thresholds=ConformalThresholds.load(args.bonsai_thresholds) if args.bonsai_thresholds else None,
         look_temperature=args.look_temperature, anchorer_factory=anchorer_factory,
-        allow_unanchored=args.anchors == "none", outbox=ProvenanceOutbox(str(out / "outbox.sqlite")),
+        allow_unanchored=args.allow_unanchored, outbox=ProvenanceOutbox(str(out / "outbox.sqlite")),
         keys=KeyVault(args.ledger_dir), out_dir=out, code_sha=_git_sha(), hardware=cfg.get("hardware"))
 
 
@@ -113,7 +130,7 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
         if isinstance(res, BaseException):
             failed += 1
             print(f"FAILED {arm} {case} {seed}: {type(res).__name__}: {res}", file=sys.stderr)
-            cell: Any = error_cell(arm, case, seed, "dev", res)
+            cell: Any = error_cell(arm, case, seed, _split_of(args, case), res)
         else:
             cell = res.cell
             print(f"{arm} {case} seed {seed}: coverage {cell['coverage']:.3f} off-target {cell['off_target']:.3f} "

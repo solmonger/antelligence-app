@@ -89,3 +89,28 @@ def test_live_builders_use_named_env_vars_only(tmp_path):
         build_workers(cfg, {}.get)
     with pytest.raises(LiveConfigError):
         resolve_loader("no.such.module:load_case")
+
+
+def test_run_script_refuses_unanchored_anchored_arms(tmp_path):
+    run = script("v41_run")
+    cfg = tmp_path / "c.json"
+    cfg.write_text("{}")
+    base = ["--config", str(cfg), "--out-dir", str(tmp_path)]
+    for arm in ("SW-B", "FW", "SW-D", "SW-Byz-local", "SW-Byz-chain"):
+        with pytest.raises(SystemExit, match="anchored"):
+            run.main(base + ["--run", f"{arm}:{CASE_DEV}:1"])
+    # an unanchored arm is fine to reach the loader (which fails here, after the anchor check)
+    with pytest.raises(Exception) as exc:
+        run.main(base + ["--run", f"SW-noBoard:{CASE_DEV}:1", "--loader", "no.such:thing"])
+    assert "anchored" not in str(exc.value)
+
+
+def test_error_cell_carries_the_real_split(tmp_path):
+    run = script("v41_run")
+    split = json.loads((ROOT / "config/v4_1/split.json").read_text())
+    rig = build_rig(tmp_path, gate=lambda c: (_ for _ in ()).throw(GateError("no")))
+    cells = tmp_path / "cells.jsonl"
+    for case in (split["dev_a"][0], split["eval"][0]):
+        run.main(["--config", "x", "--out-dir", str(tmp_path / "o"), "--cells", str(cells), "--run", f"S:{case}:1"],
+                 harness=rig.harness)
+    assert [json.loads(l)["split"] for l in cells.read_text().splitlines()] == ["dev", "eval"]

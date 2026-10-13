@@ -18,7 +18,7 @@ the same seeds, so a single-seed arm (FW, SW-D, ...) is paired with SW-B on the 
 | `seed` | int | no | run seed |
 | `split` | string | no | dev or eval |
 | `wall_s` | float >= 0 | no | wall time of the run, seconds |
-| `ticks_to_50` | int | yes | ticks until 50% of the final score; null = never reached |
+| `ticks_to_50` | int | yes | first tick at which absolute coverage reaches 0.5 (goal 4.7); null = never reached |
 | `seconds_to_50` | float >= 0 | yes | wall seconds until 50% of the final score; null = never reached |
 | `queen_calls` | int | no | queen model calls |
 | `board_size` | int | no | entries on the board at run end |

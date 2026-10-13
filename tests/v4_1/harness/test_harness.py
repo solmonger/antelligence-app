@@ -409,3 +409,48 @@ def test_key_vault_persists_under_a_ledger_dir(tmp_path):
 def test_error_cell_is_a_valid_excluded_cell():
     cell = error_cell("SW-B", CASE_DEV, 1, "dev", DecisionError("identity mismatch"))
     assert v41_cells.validate_cell(cell) == [] and "identity mismatch" in cell["error"]
+
+
+# --- review fixes -----------------------------------------------------------------------------------------------
+
+def test_router_model_set_is_checked_per_arm(tmp_path):
+    from antelligence.experiments.v41_harness import BONSAI, ROUTER_MODELS_BY_ARM
+    from antelligence.experiments.v41_router import BONSAI_ROUTER_MODELS, ROUTER_MODELS
+    assert BONSAI_ROUTER_MODELS == (D1, Q4, BONSAI) and ROUTER_MODELS_BY_ARM["SW-Bonsai"] == BONSAI_ROUTER_MODELS
+    assert all(ROUTER_MODELS_BY_ARM[a] == ROUTER_MODELS for a in ("SW-B", "SW-noBoard", "SW-D", "SW-Byz-local", "SW-B-missingFLAIR"))
+    rig = build_rig(tmp_path)
+    res = run(rig, "SW-Bonsai")
+    assert {r["router_pick"] for r in res.decision_log} <= set(BONSAI_ROUTER_MODELS)
+    assert Q9 not in {r["backend"] for r in res.decision_log}
+    wrong = build_rig(tmp_path / "w")
+    wrong.harness.router = wrong.harness.bonsai_router          # a Bonsai router on an SW-B run
+    with pytest.raises(HarnessError, match="routes"):
+        run(wrong, "SW-B")
+    assert wrong.loads == []
+
+
+def test_anchored_arm_set():
+    from antelligence.experiments.v41_harness import ANCHORED_ARMS
+    assert set(ANCHORED_ARMS) == {"SW-B", "FW", "SW-D", "SW-Byz-local", "SW-Byz-chain"}
+
+
+def test_mode_d_queen_and_citations_see_only_visible_entries(tmp_path):
+    class Hold:
+        """Nothing after the first batch is ever included."""
+        def __init__(self):
+            self.n = 0
+
+        def post_round(self, run_id, entries):
+            self.n += 1
+            vis = {e.seq for e in entries} if self.n == 1 else set()
+            self.seen = getattr(self, "seen", set()) | vis
+            return RoundResult(set(self.seen), set(), False, {})
+    rig = build_rig(tmp_path, post_mode_factory=Hold)
+    res = run(rig, "SW-D")
+    visible = {e.seq for e in res.board.entries()[: res.board.size()] if e.type == "knowledge"}
+    later = rig.harness.queen_provider.requests
+    assert later and all('"evidence":[]' in r.messages[1]["content"] for r in later)   # she never saw squad evidence
+    assert res.cell["unread_frac"] is not None
+    pos = {e.id: e.seq for e in res.board.entries()}
+    first_batch = max(pos[i] for d in res.board.by_type("decision") for i in d.payload["brief_ids"])
+    assert first_batch < 60 and visible

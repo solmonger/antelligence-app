@@ -130,16 +130,25 @@ ARM_SPECS: Dict[str, ArmSpec] = {s.name: s for s in (
     ArmSpec("SW-B", "workers", "promoted", "B", anchored=True),
     ArmSpec("SW-noBoard", "workers", "promoted", "off"),
     ArmSpec("FW", "fw", "promoted", "B", anchored=True),
-    ArmSpec("SW-D", "workers", "promoted", "D"),
+    ArmSpec("SW-D", "workers", "promoted", "D", anchored=True),
     ArmSpec("SW-noQueen", "workers", "static_rule", "B"),
     ArmSpec("SW-staticQueen", "workers", "base", "B"),
     ArmSpec("SW-Bonsai", "workers", "promoted", "B", bonsai=True),
-    ArmSpec("SW-Byz-local", "workers", "promoted", "B", byzantine=BYZANTINE_SQUADS, reputation="local"),
-    ArmSpec("SW-Byz-chain", "workers", "promoted", "B", byzantine=BYZANTINE_SQUADS, reputation="chain"),
+    ArmSpec("SW-Byz-local", "workers", "promoted", "B", byzantine=BYZANTINE_SQUADS, reputation="local", anchored=True),
+    ArmSpec("SW-Byz-chain", "workers", "promoted", "B", byzantine=BYZANTINE_SQUADS, reputation="chain", anchored=True),
     ArmSpec("SW-B-missingFLAIR", "workers", "promoted", "B", variant="missing_flair"),
 )}
 assert tuple(ARM_SPECS) == v41_cells.ARMS
 CALIBRATION_ARMS = ("SW-B", "SW-noBoard")
+ANCHORED_ARMS = tuple(n for n, s in ARM_SPECS.items() if s.anchored)
+_STD = (D1, Q4, Q9)
+# Router model set per arm (goal section 6), checked against the frozen router before an episode starts.
+ROUTER_MODELS_BY_ARM: Dict[str, Tuple[str, ...]] = {
+    **{a: _STD for a in ("SW-B", "SW-noBoard", "SW-D", "SW-noQueen", "SW-staticQueen", "SW-Byz-local", "SW-Byz-chain",
+                         "SW-B-missingFLAIR")},
+    "SW-Bonsai": (D1, Q4, BONSAI),
+    "FW": (FW,),
+}
 
 
 # --------------------------------------------------------------------------------------------------
@@ -249,6 +258,33 @@ class BriefView:
 
     def by_type(self, entry_type: str) -> List[Entry]:
         return [e for e in self.entries() if e.type == entry_type]
+
+    def get(self, key: Union[int, str]) -> Entry:
+        entry = self._board.get(key)
+        if entry not in self.entries():
+            raise KeyError(key)
+        return entry
+
+    def __contains__(self, entry_id: object) -> bool:
+        return any(e.id == entry_id for e in self.entries())
+
+    def __len__(self) -> int:
+        return len(self.entries())
+
+    def __getattr__(self, name: str) -> Any:   # append, header, run_id ... go to the real board
+        return getattr(self._board, name)
+
+
+class _DeferredView(BriefView):
+    """A BriefView whose visible set is looked up when read (the set is replaced every round)."""
+
+    def __init__(self, board: Board, visible: Callable[[], Optional[Set[int]]]) -> None:
+        super().__init__(board)
+        self._visible_fn = visible
+
+    def entries(self) -> List[Entry]:
+        visible = self._visible_fn()
+        return [e for e in self._board.entries() if visible is None or e.seq in visible]
 
 
 class _HookedBoard(Board):
@@ -513,7 +549,10 @@ class V41Harness:
                 raise HarnessError(f"arm {spec.name} needs a queen_provider")
             tally = _TallyProvider(self.queen_provider)
             ctx_kw["queen_provider"] = tally
-            ctx_kw["queen"] = V41Queen(tally, self.queen_model, board, n_squads=self.world_config.n_squads,
+            queen_board: Any = board
+            if spec.board == "D":      # mode D: the queen reads only what the chain has included
+                queen_board = _DeferredView(board, lambda: ctx_holder[0].visible)
+            ctx_kw["queen"] = V41Queen(tally, self.queen_model, queen_board, n_squads=self.world_config.n_squads,
                                        harness=harness, board_on=spec.board_on)
         if spec.kind == "workers" and not calibration:
             ctx_kw["router"] = self.bonsai_router if spec.bonsai else self.router
@@ -550,6 +589,9 @@ class V41Harness:
             thresholds = self.bonsai_thresholds if spec.bonsai else self.thresholds
             if router is None or thresholds is None:
                 raise HarnessError(f"arm {spec.name} needs a frozen router and conformal thresholds")
+            if tuple(router.models) != ROUTER_MODELS_BY_ARM[spec.name]:
+                raise HarnessError(f"arm {spec.name} routes {ROUTER_MODELS_BY_ARM[spec.name]}, "
+                                   f"but the router was trained on {tuple(router.models)}")
             need |= set(router.models) | {BONSAI if spec.bonsai else Q9}
         missing = sorted(need - set(self.workers))
         if missing:
@@ -904,7 +946,8 @@ class V41Harness:
         revision = ident.get("revision", "none") or "none"
         board_ids = set(brief.brief_ids)
         raw = list(final.cites) if ctx.spec.board_on else []
-        on_board = [c for c in raw if ctx.board is not None and c in ctx.board]
+        seen = self._view(ctx) if ctx.spec.board_on else None
+        on_board = [c for c in raw if seen is not None and c in seen]
         ctx.dropped_cites += len(raw) - len(on_board)
         ctx.all_cites += len(raw)
         ctx.valid_cites += sum(1 for c in raw if c in board_ids)
@@ -960,7 +1003,9 @@ class V41Harness:
         n_dec = len(ctx.log)
         defers = sum(r["deferred"] for r in ctx.log)
         shared = ctx.shared and board is not None
-        board_ro = board if shared else None
+        board_ro: Any = None
+        if shared:
+            board_ro = BriefView(board, ctx.visible) if ctx.visible is not None else board
         stats = (self.perception_stats(ctx.case) if self.perception_stats else {}) or {}
         t50 = metrics.get("time_to_50_coverage")
         wall_t50 = marks.get("t50_wall")
