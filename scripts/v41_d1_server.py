@@ -26,6 +26,7 @@ import json
 import os
 import threading
 import time
+import traceback
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Dict, List, Mapping, Optional
 
@@ -122,10 +123,22 @@ def make_handler(model: Any, identity: Mapping[str, str], lock: threading.Lock, 
                 self._send(200, reply)
             except (BadRequest, ValueError) as exc:
                 self._send(400, {"error": str(exc)[:200]})
-            except Exception as exc:  # the caller retries 5xx; never echo internals
+            except Exception as exc:  # the caller retries 5xx; never echo internals to the client
+                traceback.print_exc()  # server log only (stderr); the traceback carries no request text
                 self._send(500, {"error": type(exc).__name__})
 
     return Handler
+
+
+def snapshot_path(revision: str) -> str:
+    """Local snapshot dir of ``D1_MODEL`` at exactly ``revision`` (downloaded if absent; offline if HF_HUB_OFFLINE=1).
+
+    The model, its tokenizer and its processor are all loaded from this directory. Loading by repo name would
+    resolve the tokenizer/processor (and their remote code) against ``main``, not the pin, and fails offline
+    because ``snapshot_download`` of a bare sha writes no ``refs/main``."""
+    from huggingface_hub import snapshot_download
+
+    return snapshot_download(D1_MODEL, revision=revision)
 
 
 def load_model(revision: str = D1_REVISION):
@@ -134,10 +147,10 @@ def load_model(revision: str = D1_REVISION):
     import transformers
     from transformers import AutoModel
 
-    model = AutoModel.from_pretrained(D1_MODEL, revision=revision, trust_remote_code=True, dtype=torch.bfloat16)
-    loaded = getattr(model.config, "_commit_hash", None)
-    if loaded not in (None, revision):
-        raise SystemExit(f"loaded revision {loaded} != pinned {revision}")
+    path = snapshot_path(revision)
+    if os.path.basename(os.path.normpath(path)) != revision:
+        raise SystemExit(f"snapshot {path} is not revision {revision}")
+    model = AutoModel.from_pretrained(path, trust_remote_code=True, dtype=torch.bfloat16)
     device = "cuda" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu")
     model.to(device).eval()
     identity = {"served_model": D1_MODEL, "revision": revision, "runtime": "transformers",

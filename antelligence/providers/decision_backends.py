@@ -932,6 +932,8 @@ class LlamaCppBackend(_ChatLabelBackend):
     response ``prob_method`` is ``"onehot"``, which must never feed calibration or conformal fitting.
     Thinking: ``enable_thinking=False`` goes to the template; if the template has no switch set ``prefill_empty_think``
     to end the prompt with an empty think block (a trailing assistant message, which llama-server continues).
+    Verified on the real Bonsai 8B Q2_0_g64 template (2026-10-13, docs/v4.1/MAC-MODELS.md): it has no thinking switch
+    but its generation prompt already ends with an empty think block, so leave ``prefill_empty_think`` False.
     """
 
     name = "llamacpp"
