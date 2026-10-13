@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from antelligence.experiments import v4_budget
+from antelligence.kernel.decision import DecisionAbort
 
 BUDGETS = {"nous": 8.00, "runpod": 10.00}
 STOPS = {"nous": 7.50, "runpod": 9.50}
@@ -130,8 +131,10 @@ USAGE_LEDGER = Path("ledger/v4.1-usage.jsonl")
 POD_COSTS = Path("ledger/v4.1-pod-costs.jsonl")
 
 
-class BudgetRefused(RuntimeError):
-    """A paid call was refused because spend reached the hard stop (Nous 7.50, RunPod 9.50)."""
+class BudgetRefused(DecisionAbort):
+    """A paid call was refused because spend reached the hard stop (Nous 7.50, RunPod 9.50).
+
+    A :class:`DecisionAbort`: never retried, never turned into an error decision or a queen fallback."""
 
 
 def usage_spend(rows: Sequence[Mapping[str, Any]]) -> float:

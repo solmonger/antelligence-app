@@ -61,7 +61,7 @@ from antelligence.kernel import briefs as briefs_mod
 from antelligence.kernel.board import (DEFAULT_AUTHORS, Board, Entry, RunKeys, anchor_sizes,
                                        generate_run_keys, pubkey_hex, run_id_of)
 from antelligence.kernel.canonical import canonical_json, content_hash
-from antelligence.kernel.decision import DecisionBackend, DecisionRequest, DecisionResponse
+from antelligence.kernel.decision import DecisionAbort, DecisionBackend, DecisionError, DecisionRequest, DecisionResponse
 from antelligence.kernel.policies.v41_harness import harness_sha256, load_harness, validate_harness
 from antelligence.kernel.policies.v41_queen import SquadState, V41Queen, coverage_estimate_ppm
 from antelligence.kernel.scheduler import RunResult, derive_seed
@@ -84,18 +84,32 @@ DECISION_LOG_FIELDS = (
     "run_id", "arm", "case", "seed", "squad", "round", "tick", "backend", "model", "revision", "hardware",
     "server_ms", "network_ms", "queue_ms", "tokens_in", "tokens_out", "cost_usd", "router_pick", "deferred",
     "escalated", "cited_ids", "brief_ids", "target", "release", "amount", "p_target_ppm", "p_release_ppm",
-    "p_amount_ppm", "look_p_ppm", "prob_method", "identity", "calls", "counterfactual", "audit", "sprime")
+    "p_amount_ppm", "look_p_ppm", "prob_method", "identity", "calls", "counterfactual", "audit", "sprime",
+    "error", "error_reason", "attempts", "notes", "failures", "kind")
 RUN_LOG_FIELDS = (
     "run_id", "arm", "case", "seed", "split", "wall_s", "ticks", "ticks_to_50", "seconds_to_50", "queen_calls",
     "board_size", "anchors", "anchor_latency_s", "visibility_latency_ms", "decisions", "rounds", "shared_store",
-    "calibration", "variant", "alarms", "dropped_cites", "reputation", "d_timeouts", "errors")
+    "calibration", "variant", "alarms", "dropped_cites", "reputation", "d_timeouts", "decision_errors", "look_errors", "errors")
 # What a replay from cache must reproduce: every cell field except the wall-clock ones and the anchor count
 # (checked separately against ``anchor_sizes``).
 METRIC_FIELDS = tuple(f for f in v41_cells.FIELD_NAMES
                       if f not in ("wall_s", "seconds_to_50", "visibility_latency_ms", "anchors"))
 _TRACE_KEYS = ("squad", "round", "tick", "backend", "model", "revision", "router_pick", "deferred", "escalated",
                "cited_ids", "brief_ids", "target", "release", "amount", "p_target_ppm", "p_release_ppm",
-               "p_amount_ppm", "look_p_ppm", "tokens_in", "tokens_out", "cost_usd")
+               "p_amount_ppm", "look_p_ppm", "tokens_in", "tokens_out", "cost_usd", "error")
+DECISION_RETRIES = 3          # goal 8: retry provider errors up to 3 times with the same request, then mark an error
+DECISION_ERROR_ALARM = 0.05   # a run with more than this share of error decisions is flagged for the explained-null checklist
+FALLBACK_TARGET, FALLBACK_RELEASE, FALLBACK_AMOUNT = "S", 0, 1   # the neutral decision: stay, release nothing
+CORRECTIVE_NOTE = ("your previous reply was rejected ({reason}); give a full probability distribution for every "
+                   "question, including amount when you do not release")
+
+
+class _DecisionFailed(Exception):
+    """A backend call still failed after the retries; the decision (not the run) becomes an error."""
+
+    def __init__(self, worker: str, reason: str) -> None:
+        super().__init__(f"{worker}: {reason}")
+        self.worker, self.reason = worker, reason
 
 
 class HarnessError(RuntimeError):
@@ -413,6 +427,11 @@ class _Ctx:
     vis_latency: List[int] = field(default_factory=list)
     d_timeouts: int = 0
     errors: List[str] = field(default_factory=list)
+    decision_errors: int = 0
+    look_errors: int = 0
+    look_rows: List[Dict[str, Any]] = field(default_factory=list)
+    attempt_log: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
+    replay_attempts: Optional[Mapping[str, Any]] = None
     oracle: Any = None
 
 
@@ -483,7 +502,7 @@ class V41Harness:
     # ---- public --------------------------------------------------------------------------------
 
     async def run(self, arm: str, case: str, seed: int, *, calibration: bool = False,
-                  anchor: bool = True) -> EpisodeResult:
+                  anchor: bool = True, replay_attempts: Optional[Mapping[str, Any]] = None) -> EpisodeResult:
         """One episode. The gate is the first thing that happens; nothing is loaded or called before it passes."""
         if arm not in ARM_SPECS:
             raise HarnessError(f"unknown arm {arm!r}")
@@ -503,6 +522,7 @@ class V41Harness:
                 raise HarnessError(f"arm {spec.name} must be anchored: pass anchorer_factory (or allow_unanchored)")
         t0 = self.clock()
         ctx = self._build(spec, case, int(seed), split, calibration, anchor)
+        ctx.replay_attempts = replay_attempts
         if spec.kind in ("script", "oracle"):
             wall_marks = self._run_scripted(ctx, t0)
         else:
@@ -527,7 +547,8 @@ class V41Harness:
         """Re-run a bundle's episode (this harness must read the same caches offline and hold the same keys) and require
         the same trace hash, every metric field and the same anchor sizes."""
         spec = bundle["spec"]
-        again = await self.run(spec["arm"], spec["case"], spec["seed"], calibration=spec["calibration"], anchor=False)
+        again = await self.run(spec["arm"], spec["case"], spec["seed"], calibration=spec["calibration"], anchor=False,
+                                 replay_attempts=bundle["extra"].get("attempts") or {})
         recorded = bundle["extra"]["cell"]
         mismatched = [f for f in METRIC_FIELDS if recorded.get(f) != again.cell.get(f)]
         if again.trace_hash != bundle["trace_hash"]:
@@ -807,8 +828,21 @@ class V41Harness:
         patch = local_patch(ctx.case, pos, arrays={"flair": crop.flair, "t1c": crop.t1c})
         worker = self.workers[D1]
         req = look_request(worker.model, patch, seed=derive_seed(ctx.seed, f"squad-{i}", tick))
-        resp = await worker.backend.decide(req)
-        self._tally(ctx, resp)
+        trail: List[Dict[str, Any]] = []
+        try:
+            resp = await self._attempts(ctx, D1, req, trail, f"look|{i}|{tick}")
+        except _DecisionFailed as failed:
+            # the local look failed for good: no look (the squad decides without it), an error row and an alarm
+            reason = f"look_error: {failed.reason}"
+            ctx.look_errors += 1
+            ctx.look_rows.append({"kind": "look", "run_id": ctx.run_id, "arm": ctx.arm, "case": ctx.case,
+                                  "seed": ctx.seed, "squad": i, "round": tick // self.world_config.decision_every,
+                                  "tick": tick, "backend": D1, "error": True, "error_reason": reason,
+                                  "attempts": DECISION_RETRIES + 1, "notes": [t["note"] for t in trail if t["note"]],
+                                  "failures": [{"attempt": t["attempt"], "error": t["error"], "billed": t["billed"]}
+                                               for t in trail if t["error"]]})
+            ctx.board.append("alarm", "harness", {"kind": "other", "value_ppm": 0, "note": reason[:140]}, tick)
+            return None
         return float(apply_temperature(resp.answers[LOOK_QUESTION].p_yes, self.look_temperature))
 
     @staticmethod
@@ -904,15 +938,59 @@ class V41Harness:
 
     # -- decision --
 
+    async def _attempts(self, ctx: _Ctx, name: str, req: DecisionRequest, trail: Optional[List[Dict[str, Any]]],
+                        slot: str) -> DecisionResponse:
+        """One backend call under the decision failure policy (goal 8), identical for every backend, arm and question set.
+
+        A :class:`DecisionError` is retried up to ``DECISION_RETRIES`` times with the same request; on retries 2 and 3 a
+        verbalised backend also gets a one-line corrective note (not hashed, so a good reply is cached under the
+        original request hash). Usage the provider billed for a rejected reply is tallied. After the last failure
+        :class:`_DecisionFailed` carries the reason. A :class:`DecisionAbort` (spent budget) is never absorbed.
+
+        ``slot`` names this decision or look in the run. The failed attempts a run experienced are kept in
+        ``ctx.attempt_log[slot]`` (reason and billed usage) and go into the bundle; in a replay they are re-played from
+        there (``ctx.replay_attempts``) without calling the backend, and only then does the backend (the offline cache)
+        serve the stored reply. Nothing is read from a failures file shared with other runs."""
+        backend = self.workers[name].backend
+        verbalised = backend.describe().get("prob_method") == "verbalised"
+        replayed = None if ctx.replay_attempts is None else list(ctx.replay_attempts.get(slot, []))
+        reason = ""
+        for attempt in range(DECISION_RETRIES + 1):
+            note = CORRECTIVE_NOTE.format(reason=reason) if (attempt >= 2 and verbalised) else ""
+            billed = None
+            if replayed is not None and attempt < len(replayed):
+                reason, billed = str(replayed[attempt]["error"]), replayed[attempt].get("billed")
+            else:
+                sent = dataclasses.replace(req, note=note) if note else req
+                try:
+                    resp = await backend.decide(sent)
+                except DecisionAbort:
+                    raise
+                except DecisionError as exc:
+                    reason, billed = scrub(str(exc))[:160], exc.billed
+                else:
+                    if trail is not None and note:
+                        trail.append({"worker": name, "attempt": attempt, "error": None, "note": note})
+                    self._tally(ctx, resp)
+                    return resp
+                if replayed is None:
+                    ctx.attempt_log.setdefault(slot, []).append({"attempt": attempt, "error": reason, "billed": billed})
+            if billed:
+                ctx.tokens_in += int(billed.get("input_tokens", 0))
+                ctx.tokens_out += int(billed.get("output_tokens", 0))
+                ctx.cost += float(billed.get("cost_usd", 0.0))
+            if trail is not None:
+                trail.append({"worker": name, "attempt": attempt, "error": reason, "note": note, "billed": billed})
+        raise _DecisionFailed(name, reason)
+
     async def _call(self, ctx: _Ctx, name: str, fields: Mapping[str, Any], text: str, brief: briefs_mod.Brief,
-                    tick: int, squad: int) -> Tuple[DecisionRequest, DecisionResponse]:
+                    tick: int, squad: int, trail: Optional[List[Dict[str, Any]]] = None
+                    ) -> Tuple[DecisionRequest, DecisionResponse]:
         worker = self.workers[name]
         req = build_request(worker.model, fields, text, seed=derive_seed(ctx.seed, f"squad-{squad}", tick))
         if ctx.spec.board_on:
             req = dataclasses.replace(req, brief_ids=tuple(brief.brief_ids))
-        resp = await worker.backend.decide(req)
-        self._tally(ctx, resp)
-        return req, resp
+        return req, await self._attempts(ctx, name, req, trail, f"decision|{squad}|{tick}|{name}")
 
     def _call_info(self, name: str, resp: DecisionResponse) -> Dict[str, Any]:
         t = dict(resp.timing)
@@ -924,6 +1002,30 @@ class V41Harness:
 
     async def _decide(self, ctx: _Ctx, i: int, fields: Mapping[str, Any], look: Optional[float],
                       brief: briefs_mod.Brief, tick: int, rnd: int, sprime: Optional[Mapping[str, str]]) -> Dict[str, Any]:
+        """The squad's decision. If a backend call fails for good (see :meth:`_call`) the DECISION is an error, not the
+        run: the squad takes the neutral fallback (target S, release no) and the run goes on."""
+        trail: List[Dict[str, Any]] = []
+        try:
+            rec = await self._decide_models(ctx, i, fields, look, brief, tick, rnd, sprime, trail)
+        except _DecisionFailed as failed:
+            return self._error_record(failed, brief, fields, look, sprime, trail)
+        rec["trail"] = trail
+        return rec
+
+    def _error_record(self, failed: _DecisionFailed, brief: briefs_mod.Brief, fields: Mapping[str, Any],
+                      look: Optional[float], sprime: Optional[Mapping[str, str]], trail: List[Dict[str, Any]]
+                      ) -> Dict[str, Any]:
+        decision = {"target": FALLBACK_TARGET, "release": FALLBACK_RELEASE, "amount": FALLBACK_AMOUNT,
+                    "p_target": 0.0, "p_release": 0.0, "p_amount": 0.0}
+        final = DecisionResponse(answers={}, served_model="", request_hash="")
+        return {"decision": decision, "final": final, "final_name": failed.worker, "pick": failed.worker, "deferred": 0,
+                "escalated": 0, "calls": [], "counterfactual": None, "audit": None,
+                "sprime": dict(sprime) if sprime else None, "look": look, "brief": brief, "fields": fields,
+                "trail": trail, "error": f"decision_error: {failed.reason}"}
+
+    async def _decide_models(self, ctx: _Ctx, i: int, fields: Mapping[str, Any], look: Optional[float],
+                             brief: briefs_mod.Brief, tick: int, rnd: int, sprime: Optional[Mapping[str, str]],
+                             trail: List[Dict[str, Any]]) -> Dict[str, Any]:
         spec = ctx.spec
         text = self._compact(brief, with_ids=spec.board_on)
         used: List[Tuple[str, DecisionResponse]] = []
@@ -932,14 +1034,18 @@ class V41Harness:
         key = f"{ctx.arm}|{ctx.case}|{ctx.seed}|{i}|{rnd}"
 
         async def go(name: str) -> Tuple[DecisionRequest, DecisionResponse]:
-            return await self._call(ctx, name, fields, text, brief, tick, i)
+            return await self._call(ctx, name, fields, text, brief, tick, i, trail)
 
         if spec.kind == "fw":
             req, final = await go(FW)
             final_name = pick = FW
             used.append((FW, final))
         elif ctx.calibration:
-            (req, final), (r1, d1r), (r4, q4r) = await asyncio.gather(go(Q9), go(D1), go(Q4))
+            got = await asyncio.gather(go(Q9), go(D1), go(Q4), return_exceptions=True)
+            for g in got:  # every call runs to its end first; the first failure then decides
+                if isinstance(g, BaseException):
+                    raise g
+            (req, final), (r1, d1r), (r4, q4r) = got
             final_name = pick = Q9
             used.append((Q9, final))
             counterfactual = {D1: self._cf(r1, d1r), Q4: self._cf(r4, q4r)}
@@ -1009,6 +1115,10 @@ class V41Harness:
         if ctx.spec.board_on:
             author = {"agent": f"squad-{i}", "model": final.served_model or "none", "rev": revision}
             entry_id = ctx.board.append("decision", author, payload, tick, cites=on_board).id
+        error = rec.get("error")
+        if error:
+            ctx.decision_errors += 1
+            ctx.board.append("alarm", "harness", {"kind": "other", "value_ppm": 0, "note": error[:140]}, tick)
         if final.alarm:
             ctx.board.append("alarm", "harness", dict(final.alarm), tick)
         world_outcome = ctx.world.apply(f"squad-{i}", Intent(ACTION_DECIDE, {"target": d["target"], "release": d["release"],
@@ -1031,7 +1141,11 @@ class V41Harness:
             "p_amount_ppm": payload["p_amount_ppm"], "look_p_ppm": None if look is None else _ppm(look),
             "prob_method": final.prob_method, "identity": ident, "calls": calls,
             "counterfactual": rec["counterfactual"], "audit": rec["audit"], "sprime": rec["sprime"],
-            "entry_id": entry_id})
+            "entry_id": entry_id, "kind": "decision", "error": bool(error), "error_reason": error,
+            "attempts": sum(1 for t in rec["trail"] if t["error"]) + (0 if error else 1),
+            "notes": [t["note"] for t in rec["trail"] if t["note"]],
+            "failures": [{"attempt": t["attempt"], "error": t["error"], "billed": t["billed"]}
+                         for t in rec["trail"] if t["error"]]})
 
     # ---- finishing -------------------------------------------------------------------------------------
 
@@ -1043,7 +1157,7 @@ class V41Harness:
 
     @staticmethod
     def _identities(ctx: "_Ctx") -> Optional[str]:
-        ids = sorted({str((r.get("identity") or {}).get("served_model") or "none") for r in ctx.log})
+        ids = sorted({str((r.get("identity") or {}).get("served_model") or "none") for r in ctx.log if not r["error"]})
         return ",".join(ids) if ids else None
 
     def _finish(self, ctx: _Ctx, t0: float, marks: Mapping[str, Any]) -> EpisodeResult:
@@ -1098,6 +1212,9 @@ class V41Harness:
             "truth_outside_crop": float(metrics["truth_share_outside_crop"]),
             "backends_kind": self.backends_kind, "router_kind": self.router_kind,
             "router_sha256": self._router_sha(ctx.spec), "identities": self._identities(ctx),
+            "decision_errors": ctx.decision_errors, "look_errors": ctx.look_errors,
+            "decision_error_share": (ctx.decision_errors / n_dec) if n_dec else 0.0,
+            "decision_error_alarm": int(bool(n_dec) and ctx.decision_errors / n_dec > DECISION_ERROR_ALARM),
             "look_temperature": self.look_temperature, "look_temperature_source": self.look_temperature_source,
         }
         problems = v41_cells.validate_cell(cell)
@@ -1115,7 +1232,9 @@ class V41Harness:
             "visibility_latency_ms": vis, "decisions": n_dec, "rounds": self.world_config.rounds,
             "shared_store": shared, "calibration": ctx.calibration, "variant": spec.variant,
             "alarms": ctx.alarm_count, "dropped_cites": ctx.dropped_cites,
-            "identities": sorted({str((r.get("identity") or {}).get("served_model") or "none") for r in ctx.log}),
+            "identities": sorted({str((r.get("identity") or {}).get("served_model") or "none")
+                                  for r in ctx.log if not r["error"]}),
+            "decision_errors": ctx.decision_errors, "look_errors": ctx.look_errors,
             "backends_kind": self.backends_kind, "router_kind": self.router_kind,
             "look_temperature": self.look_temperature, "look_temperature_source": self.look_temperature_source,
             "reputation": dict(ctx.reputation.score) if ctx.reputation else {}, "d_timeouts": ctx.d_timeouts,
@@ -1144,7 +1263,8 @@ class V41Harness:
                  "anchors": [dict(a) for a in anchors], "board_head": board.get(board.size() - 1).id if board and board.size() else None,
                  "board_root": board.root().hex() if board and board.size() else None,
                  "decision_log_sha256": content_hash([{k: r[k] for k in _TRACE_KEYS} for r in ctx.log]),
-                 "shared_store": bool(board)}
+                 "shared_store": bool(board),
+                 "attempts": {k: [dict(a) for a in v] for k, v in sorted(ctx.attempt_log.items())}}
         return build_bundle(result, spec, extra=extra)
 
     def _write(self, ctx: _Ctx, cell: Mapping[str, Any], run_log: Mapping[str, Any], bundle: Mapping[str, Any],
@@ -1153,7 +1273,7 @@ class V41Harness:
         if board is not None:
             board.export_jsonl(run_dir / f"{ctx.run_id}.jsonl")
         (run_dir / "decisions.jsonl").write_text(
-            "".join(canonical_json(r) + "\n" for r in ctx.log), encoding="utf-8")
+            "".join(canonical_json(r) + "\n" for r in [*ctx.log, *ctx.look_rows]), encoding="utf-8")
         (run_dir / "run_log.json").write_text(json.dumps(run_log, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         (run_dir / "cell.json").write_text(json.dumps(cell, indent=1, sort_keys=True) + "\n", encoding="utf-8")
         (run_dir / "bundle.json").write_text(canonical_json(dict(bundle)) + "\n", encoding="utf-8")

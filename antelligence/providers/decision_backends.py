@@ -30,7 +30,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union
 import httpx
 
 from antelligence.kernel.canonical import canonical_json, content_hash
-from antelligence.kernel.decision import (Answer, DecisionBackend, DecisionError, DecisionRequest, DecisionResponse,
+from antelligence.kernel.decision import (Answer, DecisionAbort, DecisionBackend, DecisionError, DecisionRequest, DecisionResponse,
                                           Question, QUESTION_TYPES, check_answers)
 from antelligence.providers.base import BudgetExceeded, ChatRequest, Provider, ProviderError
 from antelligence.providers.ledger import LedgerWriter, cost_usd
@@ -44,11 +44,29 @@ logger = logging.getLogger(__name__)
 
 
 class _Transient(Exception):
-    """Worth retrying."""
+    """Worth retrying. ``billed`` is the usage a rejected reply was still charged."""
+
+    def __init__(self, message: str = "", billed: Optional[Mapping[str, Any]] = None) -> None:
+        super().__init__(message)
+        self.billed = billed
+
+
+def _add_billed(*parts: Optional[Mapping[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Sum of billed-usage dicts (None entries skipped); None when nothing was billed."""
+    got = [p for p in parts if p]
+    if not got:
+        return None
+    return {"input_tokens": sum(int(p.get("input_tokens", 0)) for p in got),
+            "output_tokens": sum(int(p.get("output_tokens", 0)) for p in got),
+            "cost_usd": round(sum(float(p.get("cost_usd", 0.0)) for p in got), 10)}
 
 
 class _Permanent(Exception):
-    """Retrying cannot help."""
+    """Retrying cannot help. ``billed`` is the usage a rejected reply was still charged."""
+
+    def __init__(self, message: str = "", billed: Optional[Mapping[str, Any]] = None) -> None:
+        super().__init__(message)
+        self.billed = billed
 
 
 # --- wire <-> Answer -------------------------------------------------------
@@ -114,16 +132,26 @@ class _TypedHTTPBackend:
         if request.model != self.model:
             raise DecisionError(f"request model {request.model!r} != backend model {self.model!r}")
         last = ""
+        spent: Optional[Dict[str, Any]] = None   # usage billed for the rejected replies of this call
         for attempt in range(self.retries + 1):
             try:
-                return await self._once(request)
+                response = await self._once(request)
             except _Permanent as exc:
-                raise DecisionError(self._scrub(f"{self.name}: {exc}")) from None
+                raise DecisionError(self._scrub(f"{self.name}: {exc}"),
+                                    billed=_add_billed(spent, exc.billed)) from None
             except _Transient as exc:
                 last = self._scrub(str(exc))
+                spent = _add_billed(spent, exc.billed)
                 if attempt < self.retries:
                     await asyncio.sleep(self.backoff_s * (attempt + 1))
-        raise DecisionError(f"{self.name}: failed after {self.retries + 1} attempts: {last}")
+                continue
+            if spent:  # an earlier rejected reply was billed too: the call's cost is the sum
+                response = dataclasses.replace(
+                    response, input_tokens=response.input_tokens + spent["input_tokens"],
+                    output_tokens=response.output_tokens + spent["output_tokens"],
+                    cost_usd=round(response.cost_usd + spent["cost_usd"], 10))
+            return response
+        raise DecisionError(f"{self.name}: failed after {self.retries + 1} attempts: {last}", billed=spent)
 
     async def _once(self, request: DecisionRequest) -> DecisionResponse:
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
@@ -224,9 +252,12 @@ def _slm_prompt(request: DecisionRequest) -> str:
         questions[qid] = body
         probs = ", ".join(f"{json.dumps(k)}: p" for k in keys)
         shape.append(f"{json.dumps(qid)}: " + ("0.83" if q.type == "noul" else "{" + probs + "}"))
-    return (json.dumps({"state": request.state, "questions": questions}, ensure_ascii=False, sort_keys=True)
-            + "\nReply exactly in this shape (noul: P(yes) as one number, e.g. 0.83; choice/score: p is each "
-            "option's probability, all options listed, sum 1):\n{" + ", ".join(shape) + "}")
+    prompt = (json.dumps({"state": request.state, "questions": questions}, ensure_ascii=False, sort_keys=True)
+              + "\nReply exactly in this shape (noul: P(yes) as one number, e.g. 0.83; choice/score: p is each "
+              "option's probability, all options listed, sum 1):\n{" + ", ".join(shape) + "}"
+              + "\nEvery question needs a full probability distribution, also when the release answer is no "
+              "(the amount question is answered in every case).")
+    return prompt + (f"\nNote: {request.note}" if request.note else "")
 
 
 def _unwrap(raw: Any) -> Any:
@@ -261,7 +292,11 @@ def _distribution(raw: Any, keys: Tuple[str, ...]) -> Dict[str, float]:
     total = sum(probs.values())
     if len(probs) < len(keys) and total < 0.98:
         raise ValueError(f"options {sorted(set(keys) - set(probs))} missing and listed ones sum to {total:.3f}")
-    if any(p < 0 for p in probs.values()) or not NORMALISE_RANGE[0] <= total <= NORMALISE_RANGE[1]:
+    if any(p < 0 for p in probs.values()):
+        raise ValueError("negative probability")
+    if total <= 0.0:
+        raise ValueError(f"probabilities sum to {total:.3f} (all-zero distribution)")
+    if not NORMALISE_RANGE[0] <= total <= NORMALISE_RANGE[1]:
         raise ValueError(f"probabilities sum to {total:.3f}")
     return {k: probs.get(k, 0.0) / total for k in keys}
 
@@ -318,7 +353,8 @@ class SLMBackend:
         self.retries, self.backoff_s, self.name = retries, backoff_s, name
 
     def describe(self) -> Dict[str, Any]:
-        return {"backend": self.name, "model": self.model, "provider": self.provider.describe()}
+        return {"backend": self.name, "model": self.model, "provider": self.provider.describe(),
+                "prob_method": "verbalised"}
 
     async def decide(self, request: DecisionRequest) -> DecisionResponse:
         if request.model != self.model:
@@ -332,7 +368,7 @@ class SLMBackend:
                 reply = await self.provider.complete(chat)
                 break
             except BudgetExceeded as exc:
-                raise DecisionError(f"{self.name}: {exc}") from None
+                raise DecisionAbort(f"{self.name}: {exc}") from None
             except ProviderError as exc:
                 last = str(exc)
                 if "(length)" in last:  # the provider's own length cut-off: deterministic, never retried
@@ -430,6 +466,11 @@ class CachedDecision:
 
     A hit returns the stored reply (``cached=True``) and calls nothing, so a
     wrapped :class:`LedgeredDecision` writes no row. ``offline=True`` raises on a miss.
+
+    Only valid replies are stored as ``<hash>.json``. Failed attempts (a :class:`DecisionError` with its billed usage)
+    are appended to ``<hash>.failures.jsonl`` as an AUDIT log only: it is shared by every run that used the directory and
+    is never read back. A run's own failed attempts are in its decision log / bundle (``extra.attempts``), and the
+    harness replays exactly those, so a stale entry from an earlier run cannot leak into a replay.
     """
 
     def __init__(self, inner: DecisionBackend, cache_dir: Union[str, Path], *, offline: bool = False) -> None:
@@ -442,15 +483,39 @@ class CachedDecision:
     def _path(self, key: str) -> Path:
         return self.cache_dir / f"{key}.json"
 
+    def _failures_path(self, key: str) -> Path:
+        return self.cache_dir / f"{key}.failures.jsonl"
+
+    @staticmethod
+    def _load(path: Path, request: DecisionRequest) -> Optional[DecisionResponse]:
+        """The stored reply, or None when the file is unreadable or no longer valid for this request (a miss)."""
+        try:
+            hit = response_from_dict(json.loads(path.read_text(encoding="utf-8")), cached=True)
+            check_answers(request, hit.answers)
+        except (ValueError, KeyError, TypeError, AttributeError, OSError, DecisionError):
+            return None
+        return hit
+
     async def decide(self, request: DecisionRequest) -> DecisionResponse:
         key = request.request_hash
         async with self._locks.setdefault(key, asyncio.Lock()):  # identical concurrent requests call once
             path = self._path(key)
             if path.exists():
-                return response_from_dict(json.loads(path.read_text(encoding="utf-8")), cached=True)
+                hit = self._load(path, request)
+                if hit is not None:
+                    return hit
             if self.offline:
                 raise DecisionError(f"cache miss in offline mode ({key[:12]})")
-            response = await self.inner.decide(request)
+            try:
+                response = await self.inner.decide(request)
+                check_answers(request, response.answers)  # an invalid reply is never stored as a valid one
+            except DecisionAbort:
+                raise
+            except DecisionError as exc:
+                self.cache_dir.mkdir(parents=True, exist_ok=True)
+                with self._failures_path(key).open("a", encoding="utf-8") as handle:
+                    handle.write(json.dumps({"error": str(exc), "billed": exc.billed}, sort_keys=True) + "\n")
+                raise
             self.cache_dir.mkdir(parents=True, exist_ok=True)
             tmp = path.with_suffix(".tmp")
             tmp.write_text(canonical_json(response_to_dict(response)), encoding="utf-8")
@@ -472,8 +537,11 @@ class LedgeredDecision:
         try:
             response = await self.inner.decide(request)
         except Exception as exc:
+            billed = getattr(exc, "billed", None) or {}  # a rejected reply the provider still charged for
             self.writer.write(role=self.role, backend=self.backend, model=request.model, served_model=None,
-                              request_hash=request.request_hash, error=f"{type(exc).__name__}: {exc}")
+                              request_hash=request.request_hash, error=f"{type(exc).__name__}: {exc}",
+                              input_tokens=billed.get("input_tokens", 0), output_tokens=billed.get("output_tokens", 0),
+                              cost_usd=billed.get("cost_usd", 0.0))
             raise
         self.writer.write(role=self.role, backend=self.backend, model=request.model,
                           served_model=response.served_model, request_hash=request.request_hash,
@@ -790,6 +858,18 @@ class _WorkerHTTPBackend(_TypedHTTPBackend):
     async def _fetch_runtime_version(self, client: httpx.AsyncClient) -> Optional[str]:
         return None  # the reply itself carries it (d1 shim, Nous)
 
+    def _billed(self, data: Any) -> Optional[Dict[str, Any]]:
+        """Usage the provider charged for this reply, read before parsing so a rejected reply is still counted
+        (OpenAI-style ``usage.prompt_tokens/completion_tokens`` and optional ``cost``); None when it reports none."""
+        try:
+            usage = data["usage"]
+            tin, tout = int(usage["prompt_tokens"]), int(usage["completion_tokens"])
+            reported = usage.get("cost")
+            return {"input_tokens": tin, "output_tokens": tout,
+                    "cost_usd": float(reported) if isinstance(reported, (int, float)) else cost_usd(tin, tout, self.price)}
+        except (KeyError, TypeError, ValueError, AttributeError):
+            return None
+
     def _parse(self, request: DecisionRequest, data: Mapping[str, Any]) -> Tuple[Dict[str, Answer], Dict[str, Any]]:
         """-> (answers, {"identity": {...}, "tokens_in", "tokens_out", "cites", "server_ms", "queue_ms", "cost"})."""
         raise NotImplementedError
@@ -814,20 +894,22 @@ class _WorkerHTTPBackend(_TypedHTTPBackend):
             raise _Permanent(f"HTTP {reply.status_code}: {reply.text[:200]}")
         if len(reply.content) > MAX_RESPONSE_BYTES:
             raise _Permanent("response exceeds size limit")
+        billed = None
         try:
             data = reply.json()
+            billed = self._billed(data)
             answers, meta = self._parse(request, data)
         except _Permanent:
             raise
         except DecisionError as exc:
-            raise _Permanent(str(exc)) from None
+            raise _Permanent(str(exc), billed=exc.billed or billed) from None
         except (ValueError, KeyError, TypeError, AttributeError, IndexError) as exc:
-            raise _Transient(f"malformed response: {type(exc).__name__}: {exc}") from None
+            raise _Transient(f"malformed response: {type(exc).__name__}: {exc}", billed=billed) from None
         identity = self.identity.check(meta["identity"])  # mismatch -> _Permanent -> DecisionError
         try:
             check_answers(request, answers)
         except DecisionError as exc:
-            raise _Transient(str(exc)) from None
+            raise _Transient(str(exc), billed=billed) from None
         tokens_in, tokens_out = int(meta["tokens_in"]), int(meta["tokens_out"])
         cost = meta.get("cost")
         return DecisionResponse(
@@ -1019,6 +1101,14 @@ class NousFWBackend(_WorkerHTTPBackend):
                 "response_format": {"type": "json_object"}}
 
     def _parse(self, request, data):
+        usage = data.get("usage") or {}
+        billed = self._billed(data)
+        try:
+            return self._parse_reply(request, data, usage)
+        except DecisionError as exc:
+            raise DecisionError(str(exc), billed=billed) from None
+
+    def _parse_reply(self, request, data, usage):
         choice = data["choices"][0]
         if choice.get("finish_reason") != "stop":
             raise DecisionError(f"{self.name}: generation did not finish normally ({choice.get('finish_reason')})")
@@ -1034,7 +1124,6 @@ class NousFWBackend(_WorkerHTTPBackend):
         listed = raw.pop("cites", [])
         cites = (tuple(sorted({short.get(c, c) for c in listed if isinstance(c, str)} & set(request.brief_ids)))
                  if isinstance(listed, list) else ())
-        usage = data.get("usage") or {}
         reasoning = int((usage.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)
         return parse_slm_object(request, raw), {
             "identity": {"served_model": str(data.get("model") or ""), "revision": "none", "runtime": "nous-portal",
