@@ -30,7 +30,7 @@ from typing import Any, Callable, Dict, List, Mapping, Optional, Tuple, Union
 import httpx
 
 from antelligence.kernel.canonical import canonical_json, content_hash
-from antelligence.kernel.decision import (Answer, DecisionBackend, DecisionError, DecisionRequest, DecisionResponse,
+from antelligence.kernel.decision import (Answer, DecisionAbort, DecisionBackend, DecisionError, DecisionRequest, DecisionResponse,
                                           Question, QUESTION_TYPES, check_answers)
 from antelligence.providers.base import BudgetExceeded, ChatRequest, Provider, ProviderError
 from antelligence.providers.ledger import LedgerWriter, cost_usd
@@ -224,9 +224,12 @@ def _slm_prompt(request: DecisionRequest) -> str:
         questions[qid] = body
         probs = ", ".join(f"{json.dumps(k)}: p" for k in keys)
         shape.append(f"{json.dumps(qid)}: " + ("0.83" if q.type == "noul" else "{" + probs + "}"))
-    return (json.dumps({"state": request.state, "questions": questions}, ensure_ascii=False, sort_keys=True)
-            + "\nReply exactly in this shape (noul: P(yes) as one number, e.g. 0.83; choice/score: p is each "
-            "option's probability, all options listed, sum 1):\n{" + ", ".join(shape) + "}")
+    prompt = (json.dumps({"state": request.state, "questions": questions}, ensure_ascii=False, sort_keys=True)
+              + "\nReply exactly in this shape (noul: P(yes) as one number, e.g. 0.83; choice/score: p is each "
+              "option's probability, all options listed, sum 1):\n{" + ", ".join(shape) + "}"
+              + "\nEvery question needs a full probability distribution, also when the release answer is no "
+              "(the amount question is answered in every case).")
+    return prompt + (f"\nNote: {request.note}" if request.note else "")
 
 
 def _unwrap(raw: Any) -> Any:
@@ -261,7 +264,11 @@ def _distribution(raw: Any, keys: Tuple[str, ...]) -> Dict[str, float]:
     total = sum(probs.values())
     if len(probs) < len(keys) and total < 0.98:
         raise ValueError(f"options {sorted(set(keys) - set(probs))} missing and listed ones sum to {total:.3f}")
-    if any(p < 0 for p in probs.values()) or not NORMALISE_RANGE[0] <= total <= NORMALISE_RANGE[1]:
+    if any(p < 0 for p in probs.values()):
+        raise ValueError("negative probability")
+    if total <= 0.0:
+        raise ValueError(f"probabilities sum to {total:.3f} (all-zero distribution)")
+    if not NORMALISE_RANGE[0] <= total <= NORMALISE_RANGE[1]:
         raise ValueError(f"probabilities sum to {total:.3f}")
     return {k: probs.get(k, 0.0) / total for k in keys}
 
@@ -318,7 +325,8 @@ class SLMBackend:
         self.retries, self.backoff_s, self.name = retries, backoff_s, name
 
     def describe(self) -> Dict[str, Any]:
-        return {"backend": self.name, "model": self.model, "provider": self.provider.describe()}
+        return {"backend": self.name, "model": self.model, "provider": self.provider.describe(),
+                "prob_method": "verbalised"}
 
     async def decide(self, request: DecisionRequest) -> DecisionResponse:
         if request.model != self.model:
@@ -332,7 +340,7 @@ class SLMBackend:
                 reply = await self.provider.complete(chat)
                 break
             except BudgetExceeded as exc:
-                raise DecisionError(f"{self.name}: {exc}") from None
+                raise DecisionAbort(f"{self.name}: {exc}") from None
             except ProviderError as exc:
                 last = str(exc)
                 if "(length)" in last:  # the provider's own length cut-off: deterministic, never retried
@@ -442,15 +450,28 @@ class CachedDecision:
     def _path(self, key: str) -> Path:
         return self.cache_dir / f"{key}.json"
 
+    @staticmethod
+    def _load(path: Path, request: DecisionRequest) -> Optional[DecisionResponse]:
+        """The stored reply, or None when the file is unreadable or no longer valid for this request (a miss)."""
+        try:
+            hit = response_from_dict(json.loads(path.read_text(encoding="utf-8")), cached=True)
+            check_answers(request, hit.answers)
+        except (ValueError, KeyError, TypeError, AttributeError, OSError, DecisionError):
+            return None
+        return hit
+
     async def decide(self, request: DecisionRequest) -> DecisionResponse:
         key = request.request_hash
         async with self._locks.setdefault(key, asyncio.Lock()):  # identical concurrent requests call once
             path = self._path(key)
             if path.exists():
-                return response_from_dict(json.loads(path.read_text(encoding="utf-8")), cached=True)
+                hit = self._load(path, request)
+                if hit is not None:
+                    return hit
             if self.offline:
                 raise DecisionError(f"cache miss in offline mode ({key[:12]})")
             response = await self.inner.decide(request)
+            check_answers(request, response.answers)  # an invalid reply is never stored as a valid one
             self.cache_dir.mkdir(parents=True, exist_ok=True)
             tmp = path.with_suffix(".tmp")
             tmp.write_text(canonical_json(response_to_dict(response)), encoding="utf-8")

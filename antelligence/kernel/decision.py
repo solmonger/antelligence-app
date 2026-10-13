@@ -36,6 +36,10 @@ class DecisionError(RuntimeError):
     """A backend failed or returned an answer that breaks the contract."""
 
 
+class DecisionAbort(DecisionError):
+    """A stop that no retry or fallback may absorb (a spent budget): it still aborts the run."""
+
+
 @dataclass(frozen=True)
 class Question:
     """One typed question.
@@ -98,6 +102,9 @@ class DecisionRequest:
     # are part of the request hash; ``brief_ids`` is the read receipt (entry ids in brief order) and is NOT hashed.
     images: Tuple[str, ...] = ()
     brief_ids: Tuple[str, ...] = ()
+    # ``note`` is a one-line corrective remark for verbalised backends on a retry (goal 8). Like ``brief_ids`` it is NOT
+    # hashed and not in ``payload()``, so a corrected reply is cached under the original request hash.
+    note: str = ""
 
     def __post_init__(self) -> None:
         if not self.model:

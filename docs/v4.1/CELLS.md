@@ -44,6 +44,9 @@ the same seeds, so a single-seed arm (FW, SW-D, ...) is paired with SW-B on the 
 | `perception_dice` | fraction [0,1] | yes | perception Dice against the truth mask; null if not measured |
 | `locallook_ece` | fraction [0,1] | yes | d1 local-look ECE; null if not measured |
 | `truth_outside_crop` | fraction [0,1] | yes | share of truth tumour voxels outside the perception crop |
+| `decision_errors` | int | no | decisions that still failed after 3 retries (goal 8); the squad took the neutral fallback (target `S`, release no, amount 1), an `alarm` entry of kind `other` ("decision_error: ...") was written and the run continued |
+| `decision_error_share` | fraction [0,1] | no | `decision_errors` / decisions in the run |
+| `decision_error_alarm` | int 0/1 | no | 1 when `decision_error_share` > 0.05; flags the run for the explained-null checklist, changes nothing else |
 | `backends_kind` | `live` / `config` / `fake` | yes | where worker answers came from; evaluation analysis accepts only `live` (null only on error cells) |
 | `router_kind` | `frozen` / `none` / `fake` | yes | evaluation analysis accepts only `frozen`; `none` is the Phase 0 bootstrap (development only) |
 | `router_sha256` | hex64 | yes | sha256 of the frozen router; null unless `router_kind` is `frozen` |
@@ -85,3 +88,15 @@ Computed on SW-B runs. Every test is strictly "above".
 
 The live-check defer band, 10% to 30% (goal 5.10), is a separate check (`live_check` in results.json) on the
 mean development defer rate. It is not part of the explained-null checklist.
+
+## Decision failure policy (goal 8: "retry provider errors up to 3 times with the same request, then mark them as errors")
+
+Identical for every backend and arm (`V41Harness._call`). A backend call that raises `DecisionError` (provider error, reply
+that fails validation: not JSON, wrong keys, an all-zero, NaN or negative distribution, ...) is retried up to 3 times with
+the same request. On retries 2 and 3 a verbalised backend (`prob_method == "verbalised"`: FW, SLMs) also gets a one-line
+corrective note naming the rejection reason; the note is not part of the request hash and is recorded in the decision log
+(`notes`, `attempts`). Replies that fail validation are never cached. If the call still fails, only that DECISION is an
+error: the decision log row has `error=true` and `error_reason`, `decision_errors` / `decision_error_share` go in the cell,
+and `decision_error_alarm` = 1 when the share is above 5%. A `DecisionAbort` (a spent budget) is never absorbed and still
+stops the run. The explained-null checklist reader should treat a flagged run as one whose decisions were partly neutral
+fallbacks.
