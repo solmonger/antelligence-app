@@ -87,6 +87,13 @@ async function main() {
   }
 
   const wallet = deployerWallet(provider, chainId);
+  // Goal 2.6: the signer must be the recorded study deployer before any signing session (testnet only).
+  if (chainId === 300) {
+    const recorded = existing && existing.deployer;
+    if (!recorded || wallet.address.toLowerCase() !== String(recorded).toLowerCase()) {
+      throw new Error(`Signer ${wallet.address} is not the recorded deployer ${recorded}. Not deploying.`);
+    }
+  }
   const deployer = new Deployer(hre, wallet);
   const balance = await provider.getBalance(wallet.address);
 
