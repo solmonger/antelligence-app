@@ -48,6 +48,8 @@ the same seeds, so a single-seed arm (FW, SW-D, ...) is paired with SW-B on the 
 | `look_errors` | int | no | d1 local looks that still failed after 3 retries; the squad decides with no look (`look = null`), an error row (`kind: "look"`) is written to `decisions.jsonl` and an `alarm` of kind `other` ("look_error: ..."). Not counted in `decision_errors` |
 | `decision_error_share` | fraction [0,1] | no | `decision_errors` / decisions in the run |
 | `decision_error_alarm` | int 0/1 | no | 1 when `decision_error_share` > 0.05; flags the run for the explained-null checklist, changes nothing else |
+| `override_decisions` | int | no | decisions with a queen assignment for the squad that were not error fallbacks: the denominator of the worker override rate |
+| `override_count` | int | no | of those, decisions whose resolved target region differs from the queen's assignment (`S` = the current target's region, `X` never matches); never above `override_decisions` |
 | `backends_kind` | `live` / `config` / `fake` | yes | where worker answers came from; evaluation analysis accepts only `live` (null only on error cells) |
 | `router_kind` | `frozen` / `none` / `fake` | yes | evaluation analysis accepts only `frozen`; `none` is the Phase 0 bootstrap (development only) |
 | `router_sha256` | hex64 | yes | sha256 of the frozen router; null unless `router_kind` is `frozen` |
@@ -70,6 +72,8 @@ These are summaries of the fields above and of two external files. They are repo
 | S7 | citation validity, uncited decisions, unread entries | `citation_validity`, `uncited_decisions`, `unread_frac` |
 | S8 | off-target share and time to 50% coverage, all arms | `off_target`, `seconds_to_50`, `ticks_to_50` |
 | S9 | (coverage - S)/(S' - S), ratio of means, only on cases with S' - S >= 0.15 | `coverage` |
+| P1 gap secondary | P1 restricted to evaluation cases with S' - S >= 0.15 (computed after the lock); `p1_gap_secondary` also carries the share of such cases, which is reported and not a gate | `coverage` |
+| worker override rate | per arm, `override_count` / `override_decisions` pooled over runs; if below 10% in both SW-B and FW, `p2.reading` is "workers followed the queen" instead of "small matches frontier" | `override_count`, `override_decisions` |
 | S10 | SW-B-missingFLAIR vs SW-B | `coverage` |
 | S11 | cost per arm: dollars, tokens, pod-minutes, gas | `cost_usd`, `tokens_in`, `tokens_out`, `pod_minutes`, `gas` |
 | S12 | the latency benchmark (goal 4.7) | `latency/results.json`, passed to `analyze(latency=...)` |

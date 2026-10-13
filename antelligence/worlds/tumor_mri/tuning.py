@@ -13,9 +13,11 @@ from antelligence.worlds.tumor_mri.config import WorldConfig
 from antelligence.worlds.tumor_mri.policies import ScriptS, oracle_for
 from antelligence.worlds.tumor_mri.world import TumorMRIWorld, run_episode
 
-STRICT = {"sprime": (0.70, 0.80), "s": (0.30, 0.50), "gap": 0.15, "gap_frac": 0.80}
-# Goal 4.2 widens only the two medians; the gap rule (S' - S >= 0.15 on >= 80% of cases) is unchanged.
-WIDENED = {"sprime": (0.60, 0.85), "s": (0.20, 0.55), "gap": 0.15, "gap_frac": 0.80}
+# The bands are the two medians only. ``gap`` (0.15) is the S' - S size whose share of cases is REPORTED (``gap_frac``)
+# and that restricts S9 and the gap secondary; it is not a gate. The old "S' - S >= 0.15 on >= 80% of cases" condition
+# was dropped by the operator on 2026-10-13 (decisions/2026-10-13-gap-condition-dropped.md): no re-tuning for it.
+STRICT = {"sprime": (0.70, 0.80), "s": (0.30, 0.50), "gap": 0.15}
+WIDENED = {"sprime": (0.60, 0.85), "s": (0.20, 0.55), "gap": 0.15}
 
 
 class SplitError(RuntimeError):
@@ -64,14 +66,12 @@ def summarise(cov_s: Sequence[float], cov_sp: Sequence[float]) -> Dict[str, floa
 
 def in_band(summary: Mapping[str, float], band: Mapping[str, Any]) -> bool:
     return (band["sprime"][0] <= summary["median_sprime"] <= band["sprime"][1]
-            and band["s"][0] <= summary["median_s"] <= band["s"][1]
-            and summary["gap_frac"] >= band["gap_frac"])
+            and band["s"][0] <= summary["median_s"] <= band["s"][1])
 
 
 def penalty(summary: Mapping[str, float]) -> float:
-    """Distance from the band centres plus a shortfall term for the gap criterion."""
-    return (abs(summary["median_sprime"] - 0.75) + abs(summary["median_s"] - 0.40)
-            + max(0.0, STRICT["gap_frac"] - summary["gap_frac"]))
+    """Distance of the two medians from the band centres. The gap share is reported, never penalised."""
+    return abs(summary["median_sprime"] - 0.75) + abs(summary["median_s"] - 0.40)
 
 
 def serial_map(fn: Callable, arg_tuples: Sequence[Tuple]) -> List[Any]:
@@ -122,16 +122,9 @@ def grid_search(crops: Mapping[str, Any], base: WorldConfig, drug_grid: Sequence
             status = "ok" if band_name == "strict" else "fallback_widened_band"
             break
     else:
-        # Neither band is met (the gap criterion is the usual casualty). Prefer a point whose medians sit in the widened
-        # bands and take the one with the most cases showing the gap; else the point nearest the band centres.
-        med = [p for p in points if WIDENED["sprime"][0] <= p["median_sprime"] <= WIDENED["sprime"][1]
-               and WIDENED["s"][0] <= p["median_s"] <= WIDENED["s"][1]]
-        if med:
-            best = min(med, key=lambda p: (-p["gap_frac"], penalty(p), p[drug_field], p["dose_threshold"]))
-            band_name, status = "widened_medians_only", "fallback_gap_unmet"
-        else:
-            best = min(points, key=lambda p: (penalty(p), p[drug_field], p["dose_threshold"]))
-            band_name, status = None, "no_feasible_point"
+        # Neither band is met: report the point nearest the band centres, and say so.
+        best = min(points, key=lambda p: (penalty(p), p[drug_field], p["dose_threshold"]))
+        band_name, status = None, "no_feasible_point"
     best_ratio = round(best["dose_threshold"] / best[drug_field], 9)
     return {"status": status, "band": band_name, "best": best, "n_points": len(points), "cases": ids, "seeds": list(seeds),
             "points": points, "per_case": cache[best_ratio]["per_case"]}
