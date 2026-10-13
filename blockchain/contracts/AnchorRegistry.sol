@@ -3,6 +3,9 @@ pragma solidity ^0.8.24;
 
 /// @title AnchorRegistry (Antelligence v4.1)
 /// @notice Append-only Merkle-root anchors for board runs (docs/v4.1/INTERFACES.md section 3).
+///         Writes are deployer-only (anchor and anchorOnce): a third party could otherwise anchor a
+///         runId first, fix itself as owner and lock the real run out. The run owner is therefore
+///         always the deployer; the getter is kept for the verifier.
 ///         The chain stores (runId, size, root) directly; anyone recomputes the anchor digest
 ///         sha256(runId || uint64_be(size) || root) that OpenTimestamps and Rekor also commit to.
 contract AnchorRegistry {
@@ -13,8 +16,8 @@ contract AnchorRegistry {
         uint64 count;
     }
 
-    /// @notice Deployer. Only it may call anchorOnce, so the well-known single-shot ids
-    ///         (keccak256("v4.1|prereg"), keccak256("v4.1|runplan")) cannot be squatted.
+    /// @notice Deployer. Only it may call anchor and anchorOnce, so neither a runId nor the well-known
+    ///         single-shot ids (keccak256("v4.1|prereg"), keccak256("v4.1|runplan")) can be squatted.
     address public immutable deployer;
 
     mapping(bytes32 => Run) private runs;
@@ -24,7 +27,6 @@ contract AnchorRegistry {
     event Anchored(bytes32 indexed runId, uint64 size, bytes32 root, bytes32 prevRoot, address indexed owner);
     event AnchoredOnce(bytes32 indexed id, bytes32 digest);
 
-    error NotRunOwner();
     error SizeNotIncreasing();
     error PrevRootMismatch();
     error EmptyRoot();
@@ -39,12 +41,9 @@ contract AnchorRegistry {
 
     /// @notice Anchor the Merkle root of the first `size` entries of a run.
     function anchor(bytes32 runId, uint64 size, bytes32 root, bytes32 prevRoot) external {
+        if (msg.sender != deployer) revert NotDeployer();
         Run storage r = runs[runId];
-        if (r.owner == address(0)) {
-            r.owner = msg.sender; // first anchor fixes the run owner
-        } else if (r.owner != msg.sender) {
-            revert NotRunOwner();
-        }
+        if (r.owner == address(0)) r.owner = msg.sender; // first anchor records the owner (always the deployer)
         if (root == bytes32(0)) revert EmptyRoot();
         if (size <= r.lastSize) revert SizeNotIncreasing();
         if (prevRoot != r.lastRoot) revert PrevRootMismatch();

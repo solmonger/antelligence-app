@@ -4,6 +4,7 @@
 //   npx hardhat run scripts/deploy-zksync-v41.js --network inMemoryNode                        # local rehearsal (chain 260)
 //   npx hardhat run scripts/deploy-zksync-v41.js --network zkSyncSepoliaTestnet                # testnet (chain 300)
 //
+// If a later deploy fails, the contracts already on chain are recorded under v4_1 with complete:false and a failure note.
 // Same safety checks as deploy-zksync.js: only chains 260 and 300; the deployer balance must cover the
 // estimated cost x1.5; the record carries commit, dirty-tree flag and compiler versions.
 // Dry-run mode (V41_DRY_RUN=1) estimates gas, prints the preflight and exits: no transaction, no file write.
@@ -124,48 +125,66 @@ async function main() {
   const commit = git("rev-parse HEAD");
   const dirty = git("status --porcelain -- contracts hardhat.config.js scripts") !== "";
   const records = [];
-  for (const c of CONTRACTS) {
-    const contract = await deployer.deploy(artifacts[c.name], c.args(wallet.address));
-    const receipt = await contract.deploymentTransaction().wait();
-    const address = await contract.getAddress();
-    records.push({
-      name: c.name,
-      address,
-      deploy_tx_hash: receipt.hash,
-      block_number: receipt.blockNumber,
+  const writeRecord = (complete, failure) => {
+    const v41 = {
+      schema: "antelligence.deployment.v4_1/v1",
+      complete,
+      ...(failure ? { failure } : {}),
       deployer: wallet.address,
-      is_mock: false,
-      constructor_args: c.args(wallet.address),
-      gas_used: receipt.gasUsed.toString(),
-      explorer_address_url: target.explorer ? `${target.explorer}/address/${address}` : null,
-      explorer_tx_url: target.explorer ? `${target.explorer}/tx/${receipt.hash}` : null,
-    });
-    console.log(`${c.name} -> ${address} (tx ${receipt.hash}, block ${receipt.blockNumber})`);
+      deployed_at_utc: new Date().toISOString(),
+      git_commit: commit,
+      git_tree_dirty_for_blockchain_dir: dirty,
+      compiler: compilerVersions(),
+      gas: {
+        balance_before_wei: balance.toString(),
+        estimated_deploy_fee_wei: estimate.toString(),
+      },
+      contracts: records,
+    };
+    // Re-read just before writing so a concurrent edit of the other keys is not clobbered.
+    const base = fs.existsSync(file)
+      ? JSON.parse(fs.readFileSync(file, "utf8"))
+      : { schema: "antelligence.deployment/v1", network: target.name, chain_id: chainId, vm: "EraVM" };
+    base.v4_1 = v41;
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(base, null, 2) + "\n");
+    return v41;
+  };
+  for (const c of CONTRACTS) {
+    try {
+      const contract = await deployer.deploy(artifacts[c.name], c.args(wallet.address));
+      const receipt = await contract.deploymentTransaction().wait();
+      const address = await contract.getAddress();
+      records.push({
+        name: c.name,
+        address,
+        deploy_tx_hash: receipt.hash,
+        block_number: receipt.blockNumber,
+        deployer: wallet.address,
+        is_mock: false,
+        constructor_args: c.args(wallet.address),
+        gas_used: receipt.gasUsed.toString(),
+        explorer_address_url: target.explorer ? `${target.explorer}/address/${address}` : null,
+        explorer_tx_url: target.explorer ? `${target.explorer}/tx/${receipt.hash}` : null,
+      });
+      console.log(`${c.name} -> ${address} (tx ${receipt.hash}, block ${receipt.blockNumber})`);
+    } catch (err) {
+      // Contracts already on chain must not be lost: record them, flagged incomplete, then fail loudly.
+      const failure = { contract: c.name, error: String(err.message || err) };
+      if (records.length > 0) {
+        writeRecord(false, failure);
+        console.error(`Partial deployment recorded in the v4_1 key (${records.length} of ${CONTRACTS.length}).`);
+      }
+      throw err;
+    }
   }
   const balanceAfter = await provider.getBalance(wallet.address);
-
-  const v41 = {
-    schema: "antelligence.deployment.v4_1/v1",
-    deployer: wallet.address,
-    deployed_at_utc: new Date().toISOString(),
-    git_commit: commit,
-    git_tree_dirty_for_blockchain_dir: dirty,
-    compiler: compilerVersions(),
-    gas: {
-      balance_before_wei: balance.toString(),
-      balance_after_wei: balanceAfter.toString(),
-      spent_wei: (balance - balanceAfter).toString(),
-      estimated_deploy_fee_wei: estimate.toString(),
-    },
-    contracts: records,
-  };
-  // Re-read just before writing so a concurrent edit of the other keys is not clobbered.
-  const base = fs.existsSync(file)
-    ? JSON.parse(fs.readFileSync(file, "utf8"))
-    : { schema: "antelligence.deployment/v1", network: target.name, chain_id: chainId, vm: "EraVM" };
-  base.v4_1 = v41;
-  fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(file, JSON.stringify(base, null, 2) + "\n");
+  const v41 = writeRecord(true);
+  v41.gas.balance_after_wei = balanceAfter.toString();
+  v41.gas.spent_wei = (balance - balanceAfter).toString();
+  const final = JSON.parse(fs.readFileSync(file, "utf8"));
+  final.v4_1 = v41;
+  fs.writeFileSync(file, JSON.stringify(final, null, 2) + "\n");
   console.log(`Wrote v4_1 key of ${path.relative(path.join(__dirname, ".."), file)}`);
 }
 

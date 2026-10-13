@@ -10,16 +10,11 @@ const sha = (b) => "0x" + crypto.createHash("sha256").update(b).digest("hex");
 const h = (label) => sha(Buffer.from(label));
 const coder = ethers.AbiCoder.defaultAbiCoder();
 
-// TODO(L3): tests/v4_1/vectors/interfaces.json is owned by L3 and did not exist when S1 was built.
-// Until it lands, the anchor digest vector is computed in-test with the INTERFACES section 3 rule
-// (sha256 over runId(32) || uint64_be(size) || root(32)). Once present it is also checked here, if it
-// carries `anchor_digest` cases of the form {run_id, size, root, digest} (hex, no 0x).
+// Anchor-digest vectors come from tests/v4_1/vectors/interfaces.json (owned by L3), key `anchor.digests`:
+// [{run_id, size, root, preimage_hex, digest}] (hex, no 0x). The file is required: no fallback.
 function interfaceAnchorCases() {
   const file = path.join(__dirname, "..", "..", "tests", "v4_1", "vectors", "interfaces.json");
-  if (!fs.existsSync(file)) return [];
-  const v = JSON.parse(fs.readFileSync(file, "utf8"));
-  const cases = v.anchor_digest || (v.anchor && v.anchor.digest_cases) || [];
-  return Array.isArray(cases) ? cases : [];
+  return JSON.parse(fs.readFileSync(file, "utf8")).anchor.digests;
 }
 
 function digestVector(runId, size, root) {
@@ -89,12 +84,14 @@ describe("AnchorRegistry", function () {
     expect(await reg.rootAt(run, 50)).to.equal(r50);
   });
 
-  it("run owner is fixed by the first anchor", async function () {
-    await reg.anchor(run, 50, h("r50"), ZERO);
-    await expect(reg.connect(other).anchor(run, 100, h("r100"), h("r50"))).to.be.revertedWithCustomError(reg, "NotRunOwner");
-    // A different run is independent.
-    await reg.connect(other).anchor(h("run-2"), 50, h("q"), ZERO);
-    expect(await reg.runOwner(h("run-2"))).to.equal(other.address);
+  it("anchor is deployer-only: a third party cannot squat a runId", async function () {
+    const squat = h("run-squat");
+    await expect(reg.connect(other).anchor(squat, 50, h("evil"), ZERO)).to.be.revertedWithCustomError(reg, "NotDeployer");
+    expect(await reg.runOwner(squat)).to.equal(ethers.ZeroAddress);
+    // The real anchor for that runId still works afterwards.
+    await reg.anchor(squat, 50, h("real"), ZERO);
+    expect(await reg.runOwner(squat)).to.equal(owner.address);
+    await expect(reg.connect(other).anchor(squat, 100, h("r100"), h("real"))).to.be.revertedWithCustomError(reg, "NotDeployer");
   });
 
   it("anchorOnce succeeds once and reverts the second time", async function () {
@@ -124,11 +121,16 @@ describe("AnchorRegistry", function () {
     await expect(reg.digestOf(run, 51)).to.be.revertedWithCustomError(reg, "NotAnchored");
   });
 
-  it("digestOf matches the L3 interfaces vectors when present", async function () {
-    for (const c of interfaceAnchorCases()) {
+  it("digestOf matches the L3 interfaces.json anchor.digests vectors", async function () {
+    const cases = interfaceAnchorCases();
+    expect(cases.length).to.be.greaterThan(0);
+    const last = {};
+    for (const c of cases) {
       const runId = "0x" + c.run_id, root = "0x" + c.root;
-      await reg.anchor(runId, c.size, root, ZERO);
+      await reg.anchor(runId, c.size, root, last[runId] || ZERO); // vectors are increasing sizes per run
+      last[runId] = root;
       expect(await reg.digestOf(runId, c.size)).to.equal("0x" + c.digest);
+      expect(digestVector(runId, c.size, root)).to.equal("0x" + c.digest);
     }
   });
 });
@@ -216,12 +218,15 @@ describe("ReputationRegistry", function () {
   let rep, owner, other;
   const run = h("run-1");
   const author = h("squad-3");
+  let claimN = 0;
+  const claim = () => h(`claim-${claimN++}`);
   const table = JSON.parse(
     fs.readFileSync(path.join(__dirname, "..", "..", "tests", "v4_1", "vectors", "reputation_parity.json"), "utf8"),
   );
   beforeEach(async function () {
     [owner, other] = await ethers.getSigners();
     rep = await (await ethers.getContractFactory("ReputationRegistry")).deploy();
+    claimN = 0;
   });
 
   it("parity table (shared with the Python rule): update(r, contradicted) == expect", async function () {
@@ -238,20 +243,20 @@ describe("ReputationRegistry", function () {
 
   it("starts at 1e6, halves on contradiction, recovers by 100k, caps at 1e6", async function () {
     expect(await rep.reputationOf(author)).to.equal(1_000_000);
-    await expect(rep.report(run, author, true)).to.emit(rep, "Reported").withArgs(run, author, true, 500_000);
-    await rep.report(run, author, true); // 250000 -> excluded
+    await expect(rep.report(run, author, claim(), true)).to.emit(rep, "Reported").withArgs(run, author, h("claim-0"), true, 500_000);
+    await rep.report(run, author, claim(), true); // 250000 -> excluded
     expect(await rep.reputationOf(author)).to.equal(250_000);
     expect(await rep.isExcluded(author)).to.equal(true);
-    await rep.report(run, author, false); // 350000
+    await rep.report(run, author, claim(), false); // 350000
     expect(await rep.isExcluded(author)).to.equal(false);
-    for (let i = 0; i < 10; i++) await rep.report(run, author, false);
+    for (let i = 0; i < 10; i++) await rep.report(run, author, claim(), false);
     expect(await rep.reputationOf(author)).to.equal(1_000_000);
   });
 
   it("emits Excluded exactly when the score crosses below the threshold", async function () {
-    await rep.report(run, author, true); // 500000
-    await expect(rep.report(run, author, true)).to.emit(rep, "Excluded").withArgs(author, 250_000);
-    await expect(rep.report(run, author, true)).to.not.emit(rep, "Excluded"); // already excluded
+    await rep.report(run, author, claim(), true); // 500000
+    await expect(rep.report(run, author, claim(), true)).to.emit(rep, "Excluded").withArgs(author, 250_000);
+    await expect(rep.report(run, author, claim(), true)).to.not.emit(rep, "Excluded"); // already excluded
   });
 
   it("walks a sequence the same as the table rule (running state)", async function () {
@@ -259,12 +264,26 @@ describe("ReputationRegistry", function () {
     let r = 1_000_000;
     for (const c of seq) {
       r = Number(await rep.update(r, c));
-      await rep.report(run, author, c);
+      await rep.report(run, author, claim(), c);
       expect(await rep.reputationOf(author)).to.equal(r);
     }
   });
 
+  it("report is idempotent: a duplicate (runId, author, claimId) reverts and changes nothing", async function () {
+    const c = h("claim-dup");
+    expect(await rep.reported(run, author, c)).to.equal(false);
+    await rep.report(run, author, c, true);
+    expect(await rep.reported(run, author, c)).to.equal(true);
+    expect(await rep.reputationOf(author)).to.equal(500_000);
+    await expect(rep.report(run, author, c, true)).to.be.revertedWithCustomError(rep, "DuplicateReport");
+    await expect(rep.report(run, author, c, false)).to.be.revertedWithCustomError(rep, "DuplicateReport");
+    expect(await rep.reputationOf(author)).to.equal(500_000);
+    // Same claim id under another run or author is a different claim.
+    await rep.report(h("run-2"), author, c, false);
+    await rep.report(run, h("squad-4"), c, false);
+  });
+
   it("only the reporter can report", async function () {
-    await expect(rep.connect(other).report(run, author, true)).to.be.revertedWithCustomError(rep, "NotReporter");
+    await expect(rep.connect(other).report(run, author, h("c"), true)).to.be.revertedWithCustomError(rep, "NotReporter");
   });
 });

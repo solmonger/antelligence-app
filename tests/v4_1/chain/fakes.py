@@ -19,7 +19,8 @@ SEL = {
     "anchor": _sel("anchor(bytes32,uint64,bytes32,bytes32)"),
     "anchorOnce": _sel("anchorOnce(bytes32,bytes32)"),
     "postBatch": _sel("postBatch(bytes32,uint64,bytes32,bytes[])"),
-    "report": _sel("report(bytes32,bytes32,bool)"),
+    "report": _sel("report(bytes32,bytes32,bytes32,bool)"),
+    "reported": _sel("reported(bytes32,bytes32,bytes32)"),
     "rootAt": _sel("rootAt(bytes32,uint64)"),
     "onceDigestOf": _sel("onceDigestOf(bytes32)"),
     "nextSeq": _sel("nextSeq(bytes32)"),
@@ -48,6 +49,10 @@ class FakeChain:
         self.once: dict[bytes, bytes] = {}
         self.next_seq: dict[bytes, int] = {}
         self.rep: dict[bytes, int] = {}
+        self.claims: set[tuple] = set()
+        self.txs: dict[str, dict] = {}         # every tx the node accepted (mempool or mined)
+        self.hide_receipts = False             # simulate a receipt index that lags behind blocks
+        self.get_tx_error: Exception | None = None
         self.eth = self
 
     # ---- web3.eth surface ---------------------------------------------------------------------
@@ -64,8 +69,15 @@ class FakeChain:
             n += 1
         return n
 
+    def get_transaction(self, h):
+        if self.get_tx_error:
+            raise self.get_tx_error
+        if h in self.txs:
+            return self.txs[h]
+        raise TransactionNotFound(h)
+
     def get_transaction_receipt(self, h):
-        if h in self.receipts:
+        if h in self.receipts and not self.hide_receipts:
             return self.receipts[h]
         raise TransactionNotFound(h)
 
@@ -87,6 +99,9 @@ class FakeChain:
         if s == SEL["nextSeq"]:
             (run,) = abi_decode(["bytes32"], args)
             return self.next_seq.get(run, 0).to_bytes(32, "big")
+        if s == SEL["reported"]:
+            run, a, cl = abi_decode(["bytes32", "bytes32", "bytes32"], args)
+            return (1 if (run, a, cl) in self.claims else 0).to_bytes(32, "big")
         if s == SEL["reputationOf"]:
             (a,) = abi_decode(["bytes32"], args)
             return self.rep.get(a, 1_000_000).to_bytes(32, "big")
@@ -115,6 +130,7 @@ class FakeChain:
             self.drop_next -= 1
             return h  # accepted by the RPC, then lost
         self.mempool[h] = rec
+        self.txs[h] = rec
         self.max_mempool = max(self.max_mempool, len(self.mempool))
         return h
 
@@ -129,6 +145,10 @@ class FakeChain:
             i, _ = abi_decode(["bytes32", "bytes32"], args)
             if i in self.once:
                 return False, "AlreadyAnchored"
+        if s == SEL["report"]:
+            run, a, cl, _ = abi_decode(["bytes32", "bytes32", "bytes32", "bool"], args)
+            if (run, a, cl) in self.claims:
+                return False, "DuplicateReport"
         return True, ""
 
     def _apply(self, data):
@@ -144,7 +164,8 @@ class FakeChain:
             run, first, _, entries = abi_decode(["bytes32", "uint64", "bytes32", "bytes[]"], args)
             self.next_seq[run] = first + len(entries)
         elif s == SEL["report"]:
-            run, a, contradicted = abi_decode(["bytes32", "bytes32", "bool"], args)
+            run, a, cl, contradicted = abi_decode(["bytes32", "bytes32", "bytes32", "bool"], args)
+            self.claims.add((run, a, cl))
             r = self.rep.get(a, 1_000_000)
             self.rep[a] = r // 2 if contradicted else min(1_000_000, r + 100_000)
 

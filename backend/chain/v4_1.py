@@ -6,7 +6,8 @@ the queue forward:
 
 * one nonce manager per signer, with pipelined nonces (at most ``max_in_flight`` = 8 unconfirmed);
 * a transaction that never shows up (dropped from the mempool) is **replaced at the same nonce** with a
-  higher gas price, never given a fresh nonce;
+  higher gas price, never given a fresh nonce. A SENT job is never requeued or resent under another
+  nonce: if the nonce was consumed and none of our hashes is known, the job becomes ``failed_review``;
 * receipts are polled; a job is **confirmed** only when the receipt has status 1 *and* the effect is
   readable through ``eth_call`` (``rootAt`` / ``onceDigestOf`` / ``nextSeq`` ...);
 * the queue survives a restart: sent jobs keep their nonce and tx hashes.
@@ -133,7 +134,8 @@ ABIS: Dict[str, list] = {
         _fn("lastId", [("runId", "bytes32")], ["bytes32"], "view"),
     ],
     "ReputationRegistry": [
-        _fn("report", [("runId", "bytes32"), ("author", "bytes32"), ("contradicted", "bool")], ["uint32"]),
+        _fn("report", [("runId", "bytes32"), ("author", "bytes32"), ("claimId", "bytes32"), ("contradicted", "bool")], ["uint32"]),
+        _fn("reported", [("runId", "bytes32"), ("author", "bytes32"), ("claimId", "bytes32")], ["bool"], "view"),
         _fn("reputationOf", [("author", "bytes32")], ["uint32"], "view"),
     ],
 }
@@ -178,6 +180,8 @@ def signer_from_config() -> LocalSigner:
 # --------------------------------------------------------------------------------------------------
 
 PENDING, SENT, CONFIRMED, FAILED = "pending", "sent", "confirmed", "failed"
+# The nonce was consumed on chain and none of our hashes is known: a human must look. Never auto-resent.
+FAILED_REVIEW = "failed_review"
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS jobs (
@@ -260,7 +264,7 @@ class TxQueue:
     def counts(self) -> Dict[str, int]:
         with self._lock:
             rows = self._db.execute("SELECT status, COUNT(*) n FROM jobs GROUP BY status").fetchall()
-        out = {PENDING: 0, SENT: 0, CONFIRMED: 0, FAILED: 0}
+        out = {PENDING: 0, SENT: 0, CONFIRMED: 0, FAILED: 0, FAILED_REVIEW: 0}
         out.update({r["status"]: int(r["n"]) for r in rows})
         return out
 
@@ -388,13 +392,15 @@ class ChainClientV41:
             check_expect=hex(int(first_seq) + len(entries)), check_cmp="ge",
         )
 
-    def enqueue_report(self, run_id: Any, author: Any, contradicted: bool, *, nonce_tag: str = "") -> int:
-        rid, au = _b32(run_id, "run_id"), _b32(author, "author")
+    def enqueue_report(self, run_id: Any, author: Any, claim_id: Any, contradicted: bool) -> int:
+        """Queue ReputationRegistry.report. ``claim_id`` is mandatory: it is the dedupe key
+        (runId:author:claimId) here and the on-chain idempotency key there."""
+        rid, au, cl = _b32(run_id, "run_id"), _b32(author, "author"), _b32(claim_id, "claim_id")
         return self.queue.enqueue(
             kind="report", to_addr=self._addr("ReputationRegistry"),
-            calldata=_calldata("ReputationRegistry", "report", [rid, au, bool(contradicted)]),
-            dedupe_key=f"report:{rid.hex()}:{au.hex()}:{int(bool(contradicted))}:{nonce_tag}" if nonce_tag else None,
-            check_data=_calldata("ReputationRegistry", "reputationOf", [au]), check_cmp="any",
+            calldata=_calldata("ReputationRegistry", "report", [rid, au, cl, bool(contradicted)]),
+            dedupe_key=f"report:{rid.hex()}:{au.hex()}:{cl.hex()}",
+            check_data=_calldata("ReputationRegistry", "reported", [rid, au, cl]), check_expect="0x1", check_cmp="ge",
         )
 
     # ---- pump ---------------------------------------------------------------------------------
@@ -489,19 +495,35 @@ class ChainClientV41:
                 return "nonce_low"
             return str(exc)
 
+    def _lookup(self, tx_hash: str) -> str:
+        """'mined' (receipt), 'known' (node has the tx), 'absent' (node says not found), 'unresolved' (error)."""
+        try:
+            if self._receipt(tx_hash) is not None:
+                return "mined"
+        except Exception:
+            return "unresolved"
+        try:
+            self.w3.eth.get_transaction(tx_hash)
+            return "known"
+        except Exception as exc:
+            return "absent" if _is_tx_not_found(exc) else "unresolved"
+
     def _replace_dropped(self, stats: PumpStats) -> None:
+        """Same-nonce gas-bump replacement only. A SENT job is never requeued under a fresh nonce."""
         now = self._clock()
         for job in self.queue.by_status(SENT):
             if job["sent_at"] is None or now - job["sent_at"] < self.replace_after_s:
                 continue
-            if any(self._receipt(h) for h in job["tx_hashes"]):
-                continue  # mined meanwhile; next poll confirms it
+            states = [self._lookup(h) for h in job["tx_hashes"]]
+            if "mined" in states or "unresolved" in states:
+                continue  # mined (next poll confirms, even if the receipt index lags) or unknown: keep SENT
             latest = int(self.w3.eth.get_transaction_count(self.signer.address, "latest"))
             if latest > job["nonce"]:
-                # The nonce was consumed by a transaction that is not ours: re-queue under a fresh nonce.
-                self.queue.update(job["id"], status=PENDING, nonce=None, tx_hashes=[], sent_at=None,
-                                  error=f"nonce {job['nonce']} consumed by a foreign tx; requeued")
-                self._next_nonce = None
+                if "known" in states:
+                    continue  # node still knows one of our txs: wait for its receipt
+                self.queue.update(job["id"], status=FAILED_REVIEW,
+                                  error=f"nonce {job['nonce']} consumed on chain, none of our hashes known; manual review")
+                stats.failed += 1
                 continue
             if job["attempts"] >= self.MAX_ATTEMPTS:
                 self.queue.update(job["id"], status=FAILED, error=f"dropped after {job['attempts']} attempts")

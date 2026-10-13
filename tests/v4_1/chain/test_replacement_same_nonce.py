@@ -54,19 +54,64 @@ def test_original_mined_before_replacement_is_recognised(make_client, fake, cloc
     assert s.replaced == 0 and c.queue.get(jid)["status"] == "confirmed"
 
 
-def test_nonce_consumed_by_foreign_tx_requeues_under_fresh_nonce(make_client, fake, clock, signer):
+def test_mined_but_not_yet_indexed_receipt_does_not_requeue(make_client, fake, clock):
+    c = make_client(replace_after_s=1)
+    jid = c.enqueue_anchor(b32(4), 50, b32(50), b32(0))
+    c.pump()
+    fake.hide_receipts = True  # block mined, receipt index lags: nonce is consumed, no receipt visible
+    fake.mine()
+    clock.advance(5)
+    s = c.pump()
+    job = c.queue.get(jid)
+    assert s.replaced == 0 and job["status"] == "sent" and job["nonce"] == 0 and len(job["tx_hashes"]) == 1
+    assert len(fake.sent_log) == 1  # nothing re-broadcast, nothing requeued
+    fake.hide_receipts = False
+    c.pump()
+    assert c.queue.get(jid)["status"] == "confirmed"
+
+
+def test_nonce_consumed_by_foreign_tx_goes_to_failed_review_and_is_never_resent(make_client, fake, clock, signer):
     c = make_client(replace_after_s=1)
     fake.drop_next = 1
     jid = c.enqueue_anchor(b32(4), 50, b32(50), b32(0))
     c.pump()
-    fake.mined_nonce[signer.address.lower()] = 1  # someone else used nonce 0
+    fake.mined_nonce[signer.address.lower()] = 1  # someone else used nonce 0; none of our hashes is known
+    clock.advance(5)
+    s = c.pump()
+    job = c.queue.get(jid)
+    assert job["status"] == "failed_review" and "manual review" in job["error"]
+    assert s.failed == 1 and s.replaced == 0
+    assert len(fake.sent_log) == 1  # never resent, under any nonce
+    for _ in range(3):
+        clock.advance(5)
+        c.pump()
+    assert len(fake.sent_log) == 1 and c.queue.get(jid)["status"] == "failed_review"
+
+
+def test_unresolved_lookup_keeps_job_sent(make_client, fake, clock, signer):
+    c = make_client(replace_after_s=1)
+    fake.drop_next = 1
+    jid = c.enqueue_anchor(b32(4), 50, b32(50), b32(0))
+    c.pump()
+    fake.mined_nonce[signer.address.lower()] = 1
+    fake.get_tx_error = RuntimeError("rpc timeout")  # cannot tell whether our tx exists
     clock.advance(5)
     c.pump()
-    job = c.queue.get(jid)
-    assert job["status"] == "sent" and job["nonce"] == 1
-    fake.mine()
+    assert c.queue.get(jid)["status"] == "sent" and len(fake.sent_log) == 1
+    fake.get_tx_error = None  # now the node answers "not found" -> review
     c.pump()
-    assert c.queue.get(jid)["status"] == "confirmed"
+    assert c.queue.get(jid)["status"] == "failed_review"
+
+
+def test_node_still_knows_our_tx_keeps_job_sent_even_if_nonce_consumed(make_client, fake, clock, signer):
+    c = make_client(replace_after_s=1)
+    jid = c.enqueue_anchor(b32(4), 50, b32(50), b32(0))
+    c.pump()
+    fake.mined_nonce[signer.address.lower()] = 1
+    fake.hide_receipts = True
+    clock.advance(5)
+    c.pump()
+    assert c.queue.get(jid)["status"] == "sent" and len(fake.sent_log) == 1
 
 
 def test_gives_up_after_max_attempts(make_client, fake, clock):

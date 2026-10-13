@@ -19,7 +19,7 @@ def test_pipeline_caps_at_eight_in_flight_with_contiguous_nonces(make_client, fa
     fake.mine()
     c.pump()
     counts = c.queue.counts()
-    assert counts == {"pending": 0, "sent": 0, "confirmed": 12, "failed": 0}
+    assert counts == {"pending": 0, "sent": 0, "confirmed": 12, "failed": 0, "failed_review": 0}
     assert fake.max_mempool <= 8
     used = sorted(j["nonce"] for j in c.queue.all())
     assert used == list(range(12))  # no gaps, no reuse
@@ -36,7 +36,7 @@ def test_dependent_anchors_wait_for_their_predecessor(make_client, fake):
         c.pump()
         fake.mine()
     c.pump()
-    assert c.queue.counts() == {"pending": 0, "sent": 0, "confirmed": 3, "failed": 0}
+    assert c.queue.counts() == {"pending": 0, "sent": 0, "confirmed": 3, "failed": 0, "failed_review": 0}
     assert fake.root_at[(run, 150)] == b32(150)
 
 
@@ -63,3 +63,19 @@ def test_job_that_would_revert_on_an_idle_pipeline_fails_without_burning_a_nonce
     c.pump()
     assert c.queue.get(jid)["status"] == "failed"  # estimate on an idle pipeline = real revert, nonce not burned
     assert c.queue.max_nonce() is None
+
+
+def test_duplicate_report_reverts_and_fails_the_job(make_client, fake):
+    """On chain a repeated (run, author, claim) reverts; the client sees it as failed, not confirmed."""
+    c = make_client()
+    first = c.enqueue_report(b32(1), b32(5), b32(6), True)
+    c.pump()
+    fake.mine()
+    c.pump()
+    assert c.queue.get(first)["status"] == "confirmed"
+    # Bypass the queue dedupe to emulate a replay from a second queue/process.
+    c2_job = c.queue.enqueue(kind="report", to_addr=c.queue.get(first)["to_addr"], calldata=c.queue.get(first)["calldata"],
+                             check_data=c.queue.get(first)["check_data"], check_expect="0x1", check_cmp="ge")
+    c.pump()
+    assert c.queue.get(c2_job)["status"] == "failed"
+    assert fake.rep[b32(5)] == 500_000  # applied once

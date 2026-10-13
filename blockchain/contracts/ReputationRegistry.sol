@@ -15,24 +15,31 @@ contract ReputationRegistry {
 
     mapping(bytes32 => uint32) private score;
     mapping(bytes32 => bool) private seen;
+    /// @dev keccak256(abi.encode(runId, author, claimId)) -> already applied. Makes report idempotent,
+    ///      so a client retry or a replayed queue job cannot double-count a claim.
+    mapping(bytes32 => bool) private reportedClaim;
 
-    event Reported(bytes32 indexed runId, bytes32 indexed author, bool contradicted, uint32 newPpm);
+    event Reported(bytes32 indexed runId, bytes32 indexed author, bytes32 claimId, bool contradicted, uint32 newPpm);
     event Excluded(bytes32 indexed author, uint32 ppm);
 
     error NotReporter();
+    error DuplicateReport();
 
     constructor() {
         reporter = msg.sender;
     }
 
-    function report(bytes32 runId, bytes32 author, bool contradicted) external returns (uint32 newPpm) {
+    function report(bytes32 runId, bytes32 author, bytes32 claimId, bool contradicted) external returns (uint32 newPpm) {
         if (msg.sender != reporter) revert NotReporter();
+        bytes32 key = keccak256(abi.encode(runId, author, claimId));
+        if (reportedClaim[key]) revert DuplicateReport();
+        reportedClaim[key] = true;
         uint32 r = seen[author] ? score[author] : START_PPM;
         bool wasExcluded = r < EXCLUDE_BELOW_PPM;
         r = update(r, contradicted);
         seen[author] = true;
         score[author] = r;
-        emit Reported(runId, author, contradicted, r);
+        emit Reported(runId, author, claimId, contradicted, r);
         if (!wasExcluded && r < EXCLUDE_BELOW_PPM) emit Excluded(author, r);
         return r;
     }
@@ -42,6 +49,10 @@ contract ReputationRegistry {
         if (contradicted) return r / 2;
         uint64 up = uint64(r) + STEP_UP_PPM;
         return up > START_PPM ? START_PPM : uint32(up);
+    }
+
+    function reported(bytes32 runId, bytes32 author, bytes32 claimId) external view returns (bool) {
+        return reportedClaim[keccak256(abi.encode(runId, author, claimId))];
     }
 
     function reputationOf(bytes32 author) public view returns (uint32) {
