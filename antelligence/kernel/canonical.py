@@ -52,3 +52,61 @@ def content_hash(value: Any) -> str:
 def plain(value: Any) -> Any:
     """Return a detached, JSON-plain deep copy (tuples become lists)."""
     return json.loads(canonical_json(value))
+
+
+# ---------------------------------------------------------------------------
+# Strict RFC 8785 (JCS) for the v4.1 board: integers only, UTF-16 key order.
+# ---------------------------------------------------------------------------
+
+MAX_SAFE_INT = (1 << 53) - 1
+
+
+def _jcs(value: Any, path: str, out: list) -> None:
+    if value is None:
+        out.append("null")
+    elif isinstance(value, bool):
+        out.append("true" if value else "false")
+    elif isinstance(value, int):
+        if not -MAX_SAFE_INT <= value <= MAX_SAFE_INT:
+            raise CanonicalError(f"{path}: integer outside +-(2^53-1)")
+        out.append(str(value))
+    elif isinstance(value, float):
+        raise CanonicalError(f"{path}: floats are not allowed in board entries")
+    elif isinstance(value, str):
+        try:
+            value.encode("utf-8")
+        except UnicodeEncodeError as exc:
+            raise CanonicalError(f"{path}: string is not valid unicode") from exc
+        out.append(json.dumps(value, ensure_ascii=False))
+    elif isinstance(value, (list, tuple)):
+        out.append("[")
+        for index, item in enumerate(value):
+            if index:
+                out.append(",")
+            _jcs(item, f"{path}[{index}]", out)
+        out.append("]")
+    elif isinstance(value, dict):
+        for key in value:
+            if not isinstance(key, str):
+                raise CanonicalError(f"{path}: object keys must be strings")
+        out.append("{")
+        for index, key in enumerate(sorted(value, key=lambda k: k.encode("utf-16-be", "surrogatepass"))):
+            if index:
+                out.append(",")
+            out.append(json.dumps(key, ensure_ascii=False))
+            out.append(":")
+            _jcs(value[key], f"{path}.{key}", out)
+        out.append("}")
+    else:
+        raise CanonicalError(f"{path}: unsupported type {type(value).__name__}")
+
+
+def jcs_json(value: Any) -> str:
+    """RFC 8785 canonical JSON restricted to integers (no floats), as v4.1 requires."""
+    out: list = []
+    _jcs(value, "$", out)
+    return "".join(out)
+
+
+def jcs_bytes(value: Any) -> bytes:
+    return jcs_json(value).encode("utf-8")
