@@ -19,6 +19,8 @@ dependencies = [
   "scikit-image",
   "pydantic",
   "matplotlib",
+  "monai>=1.6.1",
+  "torch>=2.14.1",
 ]
 
 [project.optional-dependencies]
