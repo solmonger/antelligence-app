@@ -174,6 +174,15 @@ class TumorMRIWorld:
         """Scorer-only accessor. Policies other than oracle S' must never be handed this."""
         return self._scorer
 
+    def squad_payloads(self) -> List[float]:
+        """Remaining payload per squad (scripted/oracle arms only; model arms see their own payload in the observation)."""
+        return [sq.payload for sq in self._squads]
+
+    @property
+    def pathfinder(self) -> Pathfinder:
+        """The world's A* (brain mask included); for the oracle's path-aware planning."""
+        return self._paths
+
     def squad_positions(self) -> List[Vox]:
         return [s.pos for s in self._squads]
 
