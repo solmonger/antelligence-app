@@ -19,6 +19,7 @@ dependencies = [
   "scikit-image",
   "pydantic",
   "matplotlib",
+  "cryptography>=46.0.7",
 ]
 
 [project.optional-dependencies]
