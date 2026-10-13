@@ -19,11 +19,13 @@ dependencies = [
   "scikit-image",
   "pydantic",
   "matplotlib",
+  "pyyaml>=6.0.3",
 ]
 
 [project.optional-dependencies]
 test = [
   "pytest>=9",
+  "tokenizers>=0.23.3",
 ]
 
 [project.scripts]
