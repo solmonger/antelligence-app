@@ -574,7 +574,10 @@ class V41Harness:
             ctx_kw["visible"] = set()
         if spec.anchored and anchor:
             if self.anchorer_factory is not None:
-                ctx_kw["anchorer"] = self.anchorer_factory(board, akey, self._run_dir(run_id, create=True))
+                run_dir = self._run_dir(run_id, create=True)
+                # the outside verifier needs the public Rekor key next to the export (<run_id>.anchor_pub.pem)
+                (run_dir / f"{run_id}.anchor_pub.pem").write_bytes(akey.pem)
+                ctx_kw["anchorer"] = self.anchorer_factory(board, akey, run_dir)
         ctx = _Ctx(**ctx_kw)
         ctx_holder.append(ctx)
         return ctx
@@ -1053,6 +1056,7 @@ class V41Harness:
             "visibility_latency_ms": vis, "decisions": n_dec, "rounds": self.world_config.rounds,
             "shared_store": shared, "calibration": ctx.calibration, "variant": spec.variant,
             "alarms": ctx.alarm_count, "dropped_cites": ctx.dropped_cites,
+            "identities": sorted({str((r.get("identity") or {}).get("served_model") or "none") for r in ctx.log}),
             "reputation": dict(ctx.reputation.score) if ctx.reputation else {}, "d_timeouts": ctx.d_timeouts,
             "errors": [scrub(e) for e in list(ctx.errors) + ([f"{e['mode']}: {e['error']}" for e in ctx.anchorer.errors] if ctx.anchorer else [])]}
         bundle = self._bundle(ctx, cell, metrics, trace_hash, board if shared else None, anchors)

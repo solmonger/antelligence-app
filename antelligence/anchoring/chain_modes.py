@@ -100,7 +100,13 @@ def payload_ints(entry: Entry) -> List[int]:
 
 
 def compact_entry(entry: Entry) -> bytes:
-    from chain.v4_1 import encode_entry_compact   # backend/ is on sys.path wherever a chain is used
+    try:
+        from chain.v4_1 import encode_entry_compact
+    except ImportError:                      # backend/ is not on sys.path (a mock-anchored dry run never put it there)
+        import sys
+        from pathlib import Path
+        sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "backend"))
+        from chain.v4_1 import encode_entry_compact
 
     return encode_entry_compact(entry.seq, entry.type, entry.id, entry.prev_hash, payload_ints(entry))
 
