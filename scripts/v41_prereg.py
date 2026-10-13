@@ -12,6 +12,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
 
+from antelligence.anchoring.pins import PinError, reject_raw_html
 from antelligence.experiments import v41_analysis as A
 
 TEMPLATE = Path(__file__).resolve().parent.parent / "docs" / "v4.1" / "PREREGISTRATION.template.md"
@@ -73,7 +74,12 @@ def render_prereg(*, code_sha: Optional[str], world_yaml: Optional[Path], harnes
                   model_revisions="\n".join(f"- {m}" for m in revisions),
                   contracts="\n".join(f"- {n}: `{v['address']}`, `{v['code_hash']}`" for n, v in sorted((contracts or {}).items())),
                   **_static_sections())
-    return string.Template(Path(template).read_text()).substitute(values)
+    text = string.Template(Path(template).read_text()).substitute(values)
+    try:
+        reject_raw_html(text)         # the verifier refuses such a document, so never render one
+    except PinError as exc:
+        raise PreregError(f"cannot render preregistration: {exc}") from exc
+    return text
 
 
 def main(argv: Optional[list] = None) -> int:
