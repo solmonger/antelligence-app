@@ -738,7 +738,7 @@ def extract_label_probs(request: DecisionRequest, content: str, logprob_content:
         residual[qid] = max(0.0, 1.0 - found)
         missing = [l for l in labels if l not in mass]
         if missing:
-            floor = min(residual[qid] / len(missing), min(mass.values()))
+            floor = min(residual[qid] / len(missing), min(mass.values()) * (1 - 1e-6))  # strictly below: a floored label never wins a tie
             mass.update({l: floor for l in missing})
             degraded.append(qid)
             logger.warning("logprobs: %s: %d label(s) %s absent from the top %d; floored at %.3g", qid, len(missing),
