@@ -98,7 +98,9 @@ def test_s2c_study_key_line_in_a_forgeable_spot_is_rejected(doc, why):
 
 
 def test_s2c_study_key_visible_line_is_accepted_beside_unrelated_blocks():
-    assert pinmod.study_key_in("```\ncode\n```\n<!-- note -->\n" + LINE + "tail\n") == KEY
+    assert pinmod.study_key_in("```\ncode\n```\n" + LINE + "tail\n") == KEY
+    with pytest.raises(PinError, match="raw HTML"):          # S2d: HTML comments are raw HTML, now refused outright
+        pinmod.study_key_in("<!-- note -->\n" + LINE + "tail\n")
     assert pinmod.study_key_in((LINE.replace("\n", "\r\n")).encode()) == KEY
     with pytest.raises(PinError):
         pinmod.study_key_in(LINE.replace(KEY, KEY.upper()))              # no case-insensitive match

@@ -178,6 +178,7 @@ class OutsideVerifier:
         pinned_deployer: Optional[str] = None,
         pinned_registry: Optional[str] = None,
         study_pem: Optional[bytes] = None,
+        require_final_anchor: bool = False,
     ) -> None:
         self.dir = Path(export_dir)
         self.plan = plan
@@ -200,6 +201,8 @@ class OutsideVerifier:
         self.prereg = Path(prereg) if prereg else None
         # What the caller asserts. These are NOT trust anchors: they are checked against ``pins`` and fail on mismatch.
         self.claimed_deployer, self.claimed_registry, self.study_pem = pinned_deployer, pinned_registry, study_pem
+        # Completed runs must end on an anchor (tail == 0); mid-run snapshots keep the lenient default (goal 4.4).
+        self.require_final_anchor = require_final_anchor
         self.metrics = Metrics()
         self._rekor_records: Dict[str, list] = {}
         self._rekor_bytes = 0
@@ -258,6 +261,10 @@ class OutsideVerifier:
                 label = claim.get("id") if isinstance(claim, dict) else repr(claim)
                 report["problems"].append(f"claim {label} names no verified run")
         report["plan_authenticated"] = self._authenticate_plan(report)
+        tails = {rid: r["unanchored_tail"] for rid, r in report["runs"].items()}
+        report["unanchored_tail_by_run"] = tails
+        report["unanchored_tail"] = max((t for t in tails.values() if t is not None), default=None)
+        report["require_final_anchor"] = self.require_final_anchor
         statuses = [r["status"] for r in report["runs"].values()]
         if report["problems"] or "fail" in statuses:
             verdict = "failed"
@@ -384,6 +391,11 @@ class OutsideVerifier:
         stats = {check_status(c) for c in checks.values()}
         status = "fail" if "fail" in stats else ("unverified" if "unverified" in stats else "pass")
         anchors = {k: checks[k].get("anchors_verified", 0) for k in ("chain", "rekor", "ots") if k in checks}
+        tail_n = tail.get("tail")
+        if self.require_final_anchor and "fail" not in stats and (tail_n is None or tail_n > 0):
+            what = "no anchor tail could be measured" if tail_n is None else f"{tail_n} entries after the last anchor"
+            checks["final_anchor"] = _check(False, problems=[f"completed run is not finally anchored: {what}"], tail=tail_n)
+            status = "fail"
         return {"ok": status == "pass", "status": status, "entries": len(run.entries),
                 "unanchored_tail": tail.get("tail"), "anchors_verified": anchors, "checks": checks}
 

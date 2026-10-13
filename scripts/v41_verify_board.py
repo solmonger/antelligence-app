@@ -11,6 +11,9 @@ fingerprint from the preregistration given as --prereg, whose digest is anchored
 and --study-pem are optional assertions; any that differ from the pins fail the verdict. Without --prereg and
 pins the run plan is unauthenticated and the verdict is at most "unverified".
 
+Pass --require-final-anchor for COMPLETED runs (harness / evaluation): any run with an unanchored tail > 0 then
+fails. The lenient default is for mid-run snapshots (the tamper suite).
+
 Exit code 0 only for verdict "verified"; 1 for "failed"; 3 for "unverified" (could not reach a verdict,
 including B-only, unauthenticated plan, no Bitcoin headers); 2 on a usage error.
 Per run, <export-dir> holds <run_id>.jsonl and (for R) <run_id>.anchor_pub.pem; the OTS proofs are
@@ -51,6 +54,8 @@ def main(argv=None) -> int:
     ap.add_argument("--prereg", help="preregistration document: fixes the study key, authenticates the run plan, checks the study-level anchors")
     ap.add_argument("--prereg-ots", help="public .ots proof of the preregistration")
     ap.add_argument("--study-pem", help="public PEM of the study Rekor key (must be the key fixed in the preregistration)")
+    ap.add_argument("--require-final-anchor", action="store_true",
+                    help="fail any run whose unanchored tail is > 0 (use for completed runs; default is lenient for mid-run snapshots)")
     ap.add_argument("--out")
     args = ap.parse_args(argv)
 
@@ -84,13 +89,16 @@ def main(argv=None) -> int:
 
         header_provider = BlockstreamHeaderProvider()
 
-    plan = json.loads(Path(args.plan).read_text())
-    claims = json.loads(Path(args.claims).read_text()) if args.claims else []
+    from antelligence.anchoring.pins import parse_strict_json
+
+    plan = parse_strict_json(Path(args.plan).read_text())
+    claims = parse_strict_json(Path(args.claims).read_text()) if args.claims else []
     study_pem = Path(args.study_pem).read_bytes() if args.study_pem else None
     verifier = OutsideVerifier(
         args.export_dir, plan, chain=chain, rekor=rekor, ots_dir=args.ots_dir, header_provider=header_provider,
         conditions=conditions, claims=claims, pins=pins, prereg=args.prereg,
         pinned_deployer=args.deployer, pinned_registry=args.registry, study_pem=study_pem,
+        require_final_anchor=args.require_final_anchor,
     )
     report = verifier.verify()
     if args.prereg:

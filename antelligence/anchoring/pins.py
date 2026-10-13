@@ -60,14 +60,31 @@ def _rendered(text: str) -> str:
     return _HIDDEN_RE.sub("", text)
 
 
+# A code span cannot cross a blank line (a paragraph break), so an unmatched backtick cannot shield later text.
+_CODE_SPAN_RE = re.compile(r"(`+)(?!`)(?:(?!\n[ \t]*\n).)+?(?<!`)\1(?!`)", re.DOTALL)
+_RAW_HTML_RE = re.compile(r"<[A-Za-z!/]")
+
+
+def reject_raw_html(text: str) -> None:
+    """The preregistration is plain Markdown: raw HTML (``<div hidden>``, ``<details>``, comments, closing tags) can
+    hide or restyle text from a reader while the verifier's regex still sees it. Inline code spans are exempt."""
+    stripped = _CODE_SPAN_RE.sub("", text)
+    m = _RAW_HTML_RE.search(stripped)
+    if m:
+        line = stripped.count("\n", 0, m.start()) + 1
+        raise PinError("the preregistration must contain no raw HTML (found "
+                       f"{stripped[m.start():m.start() + 12]!r} near line {line} outside inline code)")
+
+
 def study_key_in(prereg: Union[bytes, str]) -> str:
     """The study key fingerprint written into a preregistration document.
 
-    Exactly one matching line in the raw text AND exactly one in the rendered text (outside HTML comments and
+    The document must contain no raw HTML (``PinError``). Exactly one matching line in the raw text AND exactly one in the rendered text (outside HTML comments and
     code fences, where a reader would not see it): a line hidden in a comment or code block can neither be the
     key nor sit beside the real one.
     """
     text = prereg.decode("utf-8", "replace") if isinstance(prereg, (bytes, bytearray)) else prereg
+    reject_raw_html(text)
     raw, shown = STUDY_KEY_RE.findall(text), STUDY_KEY_RE.findall(_rendered(text))
     if len(raw) != 1 or len(shown) != 1 or raw != shown:
         raise PinError("the preregistration must state the study key fingerprint exactly once, in visible text "
@@ -124,11 +141,29 @@ def _show(repo: Union[str, Path], commit: str, path: str) -> bytes:
     return out.stdout
 
 
+def _no_duplicates(pairs: list) -> Dict[str, Any]:
+    out: Dict[str, Any] = {}
+    for key, value in pairs:
+        if key in out:
+            raise ValueError(f"duplicate key {key!r}")
+        out[key] = value
+    return out
+
+
+def _reject_constant(name: str) -> Any:
+    raise ValueError(f"non-finite number {name} is not allowed")
+
+
+def parse_strict_json(raw: Union[bytes, str]) -> Any:
+    """``json.loads`` that refuses duplicate object keys (last-one-wins hides a forged entry) and NaN/Infinity."""
+    return json.loads(raw, object_pairs_hook=_no_duplicates, parse_constant=_reject_constant)
+
+
 def deployments_at_commit(repo: Union[str, Path], commit: str, path: str = DEFAULT_DEPLOYMENTS) -> Dict[str, Any]:
     """Read the deployments file as it was at a full 40-hex git commit (read-only ``git show``)."""
     _require_commit(repo, commit)
     try:
-        parsed = json.loads(_show(repo, commit, path))
+        parsed = parse_strict_json(_show(repo, commit, path))
     except ValueError as exc:
         raise PinError(f"{path} at {commit} is not valid JSON: {exc}") from exc
     if not isinstance(parsed, dict):
