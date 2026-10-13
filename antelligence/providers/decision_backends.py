@@ -647,7 +647,7 @@ def answer_schema(request: DecisionRequest, cite_ids: Tuple[str, ...] = ()) -> D
     props: Dict[str, Any] = {qid: {"type": "string", "enum": list(_question_labels(q))}
                              for qid, q in request.questions.items()}
     if cite_ids:
-        props["cites"] = {"type": "array", "uniqueItems": True, "maxItems": min(12, len(cite_ids)),
+        props["cites"] = {"type": "array", "maxItems": min(12, len(cite_ids)),
                           "items": {"type": "string", "enum": list(_short_ids(cite_ids))}}
     return {"type": "object", "properties": props, "required": list(props), "additionalProperties": False}
 
