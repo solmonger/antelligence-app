@@ -454,3 +454,45 @@ def test_mode_d_queen_and_citations_see_only_visible_entries(tmp_path):
     pos = {e.id: e.seq for e in res.board.entries()}
     first_batch = max(pos[i] for d in res.board.by_type("decision") for i in d.payload["brief_ids"])
     assert first_batch < 60 and visible
+
+
+# --- per-case drug budget (per_perceived_volume) ------------------------------------------------------------------
+
+def test_harness_uses_per_case_budget_in_per_perceived_volume_mode(tmp_path):
+    import dataclasses
+    from antelligence.experiments.v41_harness import _ppm
+    from tests.v4_1.world.phantom import make_phantom
+    k = 0.4
+    cfg = small_cfg(drug_mode="per_perceived_volume", drug_scale_k=k)
+    assert "total_drug" not in cfg.to_dict()
+    seen = {}
+    for case, scale in (("BRATS_DEV_001", 1.0), ("BRATS_DEV_002", 0.5)):
+        rig = build_rig(tmp_path / case)
+        rig.harness.world_config = cfg
+        base = make_phantom(flair=True)
+
+        def load(case_id, variant="full", base=base, scale=scale):
+            return dataclasses.replace(base, p_tumour=base.p_tumour * scale), None
+        rig.harness.load_case = load
+        states, evidence = [], []
+        orig_states, orig_ev = rig.harness._squad_states, rig.harness._write_evidence
+        rig.harness._squad_states = lambda ctx, o=orig_states: (states.append((ctx.world.total_drug, o(ctx), sum(ctx.world.squad_payloads()))) or states[-1][1])
+
+        def spy(ctx, i, o, look, tick, orig=orig_ev):
+            eid = orig(ctx, i, o, look, tick)
+            e = [x for x in ctx.board.entries() if x.id == eid][0]
+            evidence.append((ctx.world.total_drug, o, e.payload, ctx.world.config.n_squads))
+            return eid
+        rig.harness._write_evidence = spy
+        res = run(rig, "SW-B", case=case)
+        v = float(base.p_tumour.sum()) * scale
+        total = states[0][0]
+        assert total == pytest.approx(k * v) and states[0][2] == pytest.approx(k * v)      # payloads sum to this case's budget
+        assert all(s.payload_ppm == 1_000_000 for s in states[0][1])
+        assert evidence
+        for tot, o, p, n in evidence:
+            assert tot == pytest.approx(k * v)
+            assert p["dose_ug"] == _ppm(o["local_dose"] / tot)
+            assert p["released_ug"] == _ppm((tot / n - o["payload"]) / tot)
+        seen[case] = total
+    assert seen["BRATS_DEV_001"] == pytest.approx(2 * seen["BRATS_DEV_002"])

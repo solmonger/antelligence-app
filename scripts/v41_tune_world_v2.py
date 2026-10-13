@@ -46,7 +46,7 @@ HEADER = """# v4.1 tumor_mri world constants (world_tuning_v2: drug scales with 
 #   median S' coverage {sprime:.3f}, median S coverage {s:.3f}, S' - S >= 0.15 on {gap:.0%} of cases.
 # {note}
 # Only D_t / drug_scale_k matters (dose and budget are both linear in k); D_t is pinned at 5 and k carries the tuning.
-# `total_drug` is used only in drug_mode fixed (kept for backward compatibility, ignored here).
+# No `total_drug` here: the loader rejects it in per_perceived_volume mode (the budget is per case).
 """
 NOTES = {
     "ok": "Strict band met.",

@@ -68,6 +68,8 @@ class WorldConfig:
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
         d["amount_fractions"] = list(self.amount_fractions)
+        if self.drug_mode == "per_perceived_volume":
+            del d["total_drug"]  # the budget is per case (k x V_perceived); a fixed total would mislead
         return d
 
     @classmethod
@@ -76,6 +78,8 @@ class WorldConfig:
         extra = set(d) - known
         if extra:
             raise ValueError(f"unknown world config keys: {sorted(extra)}")
+        if d.get("drug_mode") == "per_perceived_volume" and "total_drug" in d:
+            raise ValueError("total_drug must not be set when drug_mode is per_perceived_volume (the budget is k x V_perceived)")
         return cls(**{k: (tuple(v) if k == "amount_fractions" else v) for k, v in d.items()})
 
     @classmethod

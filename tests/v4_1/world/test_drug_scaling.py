@@ -50,7 +50,14 @@ def test_fixed_mode_unchanged_and_validation():
         WorldConfig(drug_mode="per_perceived_volume")  # k missing
     with pytest.raises(ValueError):
         WorldConfig(drug_mode="bogus")
-    assert WorldConfig.from_dict(_cfg().to_dict()) == _cfg()
+    assert WorldConfig.from_dict(_cfg().to_dict()).to_dict() == _cfg().to_dict()
+    assert "total_drug" not in _cfg().to_dict()
+    with pytest.raises(ValueError, match="total_drug"):
+        WorldConfig.from_dict({**_cfg().to_dict(), "total_drug": 3100.0})
+    import yaml
+    from pathlib import Path
+    shipped = yaml.safe_load((Path(__file__).parents[3] / "config/v4_1/world.yaml").read_text())["world"]
+    assert shipped["drug_mode"] == "per_perceived_volume" and "total_drug" not in shipped
 
 
 def test_widened_band_matches_goal():

@@ -6,13 +6,12 @@
 #   median S' coverage 0.674, median S coverage 0.539, S' - S >= 0.15 on 48% of cases.
 # NEITHER BAND MET on the gap criterion; medians are in the widened band and this point maximises the share of cases with S' - S >= 0.15. Raise at G1.
 # Only D_t / drug_scale_k matters (dose and budget are both linear in k); D_t is pinned at 5 and k carries the tuning.
-# `total_drug` is used only in drug_mode fixed (kept for backward compatibility, ignored here).
+# No `total_drug` here: the loader rejects it in per_perceived_volume mode (the budget is per case).
 world:
   n_squads: 8
   ticks: 120
   decision_every: 5
   queen_every: 30
-  total_drug: 3100.4039936808626
   drug_mode: per_perceived_volume
   drug_scale_k: 0.3559008534420454
   dose_threshold: 5.0
