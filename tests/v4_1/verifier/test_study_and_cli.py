@@ -25,15 +25,17 @@ def test_preregistration_swap_is_caught_by_every_outside_log(tmp_path):
     good.write_bytes(PREREG_DOC)
     forged.write_bytes(FORGED_DOC)
 
+    lab.confirm_ots(tmp_path / "public")
+
     def study(doc, conds):
         v = OutsideVerifier(tmp_path, plan, chain=lab.reader(), rekor=lab.rekor, header_provider=lab.header_provider(),
-                            conditions=conds, pinned_deployer=lab.deployer)
+                            conditions=conds, pinned_deployer=lab.deployer, pinned_registry=lab.registry_address)
         return v.verify_study(doc, plan_digest, prereg_ots=tmp_path / "public" / "prereg.ots", study_pem=lab.study_key.pem)
 
     for cond in ({"OTS"}, {"R"}, {"C"}):
         assert study(good, cond)["ok"], cond
-        assert not study(forged, cond)["ok"], cond
-    assert study(forged, set())["ok"]                       # B has nothing to compare against
+        assert study(forged, cond)["failed"], cond
+    assert not study(forged, set())["ok"] and not study(forged, set())["failed"]   # B alone: nothing compared, never ok
     assert lab.reader().once_digest(single_shot_id("runplan")) == plan_digest
 
 
@@ -46,7 +48,7 @@ def test_cli_verify_and_tamper_smoke(honest):
     assert bad.returncode == 2 and "--registry" in bad.stderr
     ok = subprocess.run([py, str(REPO / "scripts/v41_verify_board.py"), "--export-dir", str(h["dir"]), "--plan",
                          str(h["tmp"] / "plan.json"), "--conditions", "B"], capture_output=True, text=True)
-    assert ok.returncode == 0 and json.loads(ok.stdout)["ok"]
+    assert ok.returncode == 3 and json.loads(ok.stdout)["verdict"] == "unverified"    # B alone is never "verified"
     out = h["tmp"] / "tamper.json"
     t = subprocess.run([py, str(REPO / "scripts/v41_tamper.py"), "--runs", "1", "--out", str(out)], capture_output=True, text=True)
     assert t.returncode == 0, t.stderr

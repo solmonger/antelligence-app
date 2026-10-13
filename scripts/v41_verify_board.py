@@ -5,7 +5,8 @@
       --rpc https://sepolia.era.zksync.dev --registry 0x... --deployer 0x... \\
       --rekor-url https://rekor.sigstore.dev --ots-dir runs/ --conditions OTS,R,C --out report.json
 
-Exit code 0 when every check passes, 1 otherwise, 2 on a usage error.
+Exit code 0 only for verdict "verified"; 1 for "failed"; 3 for "unverified" (could not reach a verdict,
+including B-only, unauthenticated plan, no Bitcoin headers); 2 on a usage error.
 Per run, <export-dir> holds <run_id>.jsonl and (for R) <run_id>.anchor_pub.pem; the OTS proofs are
 <run_id>.<size>.ots in --ots-dir. Optional --claims is a JSON list of
 {"id", "run_id", "covers_size", "made_at"} (unix seconds): each claim must postdate the earliest anchor covering it.
@@ -33,7 +34,9 @@ def main(argv=None) -> int:
     ap.add_argument("--deployer", help="pinned deployer address (condition C)")
     ap.add_argument("--rekor-url", default="https://rekor.sigstore.dev")
     ap.add_argument("--ots-dir")
-    ap.add_argument("--check-bitcoin", action="store_true", help="check OTS Bitcoin attestations against public block headers")
+    ap.add_argument("--no-check-bitcoin", action="store_true",
+                    help="do NOT fetch Bitcoin headers; OTS proofs then stay unverified (fail closed)")
+    ap.add_argument("--rekor-log-key-sha256", help="override the pinned Rekor log key (sha256 of SPKI DER) for a private Rekor")
     ap.add_argument("--claims")
     ap.add_argument("--prereg", help="preregistration document (checks the study-level anchors)")
     ap.add_argument("--prereg-ots", help="public .ots proof of the preregistration")
@@ -54,8 +57,10 @@ def main(argv=None) -> int:
     if "R" in conditions:
         from antelligence.anchoring.rekor import HttpRekorTransport, RekorClient
 
-        rekor = RekorClient(HttpRekorTransport(args.rekor_url))
-    if args.check_bitcoin:
+        from antelligence.anchoring.rekor import REKOR_LOG_KEY_SHA256
+
+        rekor = RekorClient(HttpRekorTransport(args.rekor_url), args.rekor_log_key_sha256 or REKOR_LOG_KEY_SHA256)
+    if "OTS" in conditions and not args.no_check_bitcoin:
         from antelligence.anchoring.ots import BlockstreamHeaderProvider
 
         header_provider = BlockstreamHeaderProvider()
@@ -64,7 +69,8 @@ def main(argv=None) -> int:
     claims = json.loads(Path(args.claims).read_text()) if args.claims else []
     verifier = OutsideVerifier(
         args.export_dir, plan, chain=chain, rekor=rekor, ots_dir=args.ots_dir, header_provider=header_provider,
-        conditions=conditions, claims=claims, pinned_deployer=args.deployer,
+        conditions=conditions, claims=claims, pinned_deployer=args.deployer, pinned_registry=args.registry,
+        study_pem=Path(args.study_pem).read_bytes() if args.study_pem else None,
     )
     report = verifier.verify()
     if args.prereg:
@@ -76,13 +82,17 @@ def main(argv=None) -> int:
         report["study"] = verifier.verify_study(
             args.prereg, hashlib.sha256(jcs_bytes(plan)).digest(), prereg_ots=args.prereg_ots, study_pem=study_pem,
         )
-        report["ok"] = report["ok"] and report["study"]["ok"]
+        if report["study"]["failed"]:
+            report["verdict"] = "failed"
+        elif report["study"]["unverified"] and report["verdict"] == "verified":
+            report["verdict"] = "unverified"
+        report["ok"] = report["verdict"] == "verified"
     text = json.dumps(report, indent=1, sort_keys=True)
     if args.out:
         Path(args.out).write_text(text + "\n")
     else:
         print(text)
-    return 0 if report["ok"] else 1
+    return {"verified": 0, "failed": 1}.get(report["verdict"], 3)
 
 
 if __name__ == "__main__":

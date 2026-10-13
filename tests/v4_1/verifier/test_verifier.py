@@ -1,6 +1,7 @@
 """The outside verifier: public inputs only, and it catches what each outside log can catch."""
 
 import ast
+import hashlib
 import json
 import re
 from pathlib import Path
@@ -11,6 +12,7 @@ from antelligence.anchoring.tamper import (
     N_ENTRIES,
     Lab,
     _anchor_all,
+    _plan,
     _export,
     expected_detects,
     rebuild,
@@ -19,6 +21,7 @@ from antelligence.anchoring.tamper import (
     table_mismatches,
 )
 from antelligence.anchoring.verify import OutsideVerifier
+from antelligence.kernel.canonical import jcs_bytes
 from antelligence.kernel.board import anchor_sizes
 
 ALL = {"OTS", "R", "C"}
@@ -28,24 +31,22 @@ def verifier(h, conditions=ALL, directory=None, **kw):
     lab = h["lab"]
     return OutsideVerifier(
         directory or h["dir"], h["plan"], chain=lab.reader(), rekor=lab.rekor, ots_dir=directory or h["dir"],
-        header_provider=lab.header_provider(), conditions=conditions, pinned_deployer=lab.deployer, **kw,
+        header_provider=lab.header_provider(), conditions=conditions, pinned_deployer=lab.deployer,
+        pinned_registry=lab.registry_address, study_pem=lab.study_key.pem, **kw,
     )
 
 
 def test_verifier_accepts_honest_run(honest):
     h = honest
-    h["lab"].ots_transport.mine_block()               # Bitcoin confirms the calendars' commitments
-    client = h["lab"].ots_client()
-    for path in sorted(h["dir"].glob("*.ots")):
-        assert client.upgrade(path).complete          # "upgrade the .ots proofs at the end"
     report = verifier(h).verify()
-    assert report["ok"], json.dumps(report, indent=1)
+    assert report["ok"] and report["verdict"] == "verified" and report["plan_authenticated"], json.dumps(report, indent=1)
     run = report["runs"][h["board"].run_id]
     assert run["entries"] == N_ENTRIES and run["unanchored_tail"] == 0
     assert set(run["checks"]) == {"header", "integrity", "signatures", "chain", "rekor", "ots", "anchor_times"}
     assert run["checks"]["rekor"]["rekor_entries"] == len(anchor_sizes(N_ENTRIES))
-    assert run["checks"]["ots"]["bitcoin"] == len(anchor_sizes(N_ENTRIES)) and run["checks"]["ots"]["pending"] == 0
-    assert "OTS" in run["checks"]["anchor_times"]["systems"]
+    assert run["anchors_verified"] == {"chain": 5, "rekor": 4, "ots": 5}
+    assert run["checks"]["anchor_times"]["untrusted_time_systems"] == []
+    assert "OTS" in run["checks"]["anchor_times"]["systems"] and "R" in run["checks"]["anchor_times"]["systems"]
     m = report["metrics"]
     assert m["network_calls"] > 0 and m["bytes"] > 0 and m["wall_s"] >= 0
 
@@ -69,7 +70,7 @@ def test_verifier_detects_sig_tamper(honest):
     path.write_text("\n".join(lines) + "\n")
     report = verifier(h, conditions=set()).verify()          # condition B alone
     run = report["runs"][h["board"].run_id]
-    assert not report["ok"] and not run["checks"]["signatures"]["ok"]
+    assert not report["ok"] and report["verdict"] == "failed" and not run["checks"]["signatures"]["ok"]
     assert "entry 9: bad or missing signature" in run["checks"]["signatures"]["problems"]
     assert run["checks"]["integrity"]["ok"]                  # the chain itself is still intact
 
@@ -92,10 +93,11 @@ def test_verifier_detects_root_mismatch_vs_chain(honest, tmp_path):
     _export(forged, h["akey"], bad)
     assert forged.run_id == h["board"].run_id
     b_only = verifier(h, conditions=set(), directory=bad).verify()
-    assert b_only["ok"]                                       # valid chain, valid signatures: B cannot tell
+    # valid chain, valid signatures: B cannot tell, so the best it may say is "unverified"
+    assert b_only["runs"][forged.run_id]["ok"] and b_only["verdict"] == "unverified" and not b_only["ok"]
     on_chain = verifier(h, conditions={"C"}, directory=bad).verify()
     chk = on_chain["runs"][forged.run_id]["checks"]["chain"]
-    assert not on_chain["ok"] and any(f"size {N_ENTRIES}: root on chain differs" in p for p in chk["problems"])
+    assert on_chain["verdict"] == "failed" and any(f"size {N_ENTRIES}: root on chain differs" in p for p in chk["problems"])
     assert on_chain["metrics"]["network_calls"] > 0
 
 
@@ -119,7 +121,10 @@ def test_verifier_reports_unanchored_tail_without_failing(tmp_path):
     _export(board, akey, out)
     _anchor_all(lab, board, akey, out, [50, 100])
     plan = {"study": "v4.1", "runs": [{"run_id": board.run_id, "pubkeys": board.header["pubkeys"], "anchor_pubkey": akey.fingerprint}]}
-    report = OutsideVerifier(out, plan, chain=lab.reader(), rekor=lab.rekor, ots_dir=out, conditions=ALL).verify()
+    lab.single_shot(tmp_path / "s").anchor("runplan", hashlib.sha256(jcs_bytes(plan)).digest())
+    lab.confirm_ots(out)
+    report = OutsideVerifier(out, plan, chain=lab.reader(), rekor=lab.rekor, ots_dir=out, header_provider=lab.header_provider(),
+                             conditions=ALL, pinned_deployer=lab.deployer, pinned_registry=lab.registry_address).verify()
     assert report["ok"] and report["runs"][board.run_id]["unanchored_tail"] == 20
 
 
@@ -141,9 +146,9 @@ def test_claims_must_postdate_their_anchor(honest):
     earliest = min(h["lab"].reader().anchor_time(bytes.fromhex(rid), s) for s in anchor_sizes(N_ENTRIES))
     late = [{"id": "ok", "run_id": rid, "covers_size": 50, "made_at": earliest + 10_000}]
     early = [{"id": "backdated", "run_id": rid, "covers_size": 50, "made_at": earliest - 10_000}]
-    assert verifier(h, conditions={"C"}, claims=late).verify()["ok"]
+    assert verifier(h, conditions={"C"}, claims=late).verify()["ok"]      # chain times are block timestamps
     bad = verifier(h, conditions={"C"}, claims=early).verify()
-    assert not bad["ok"] and "backdated" in bad["runs"][rid]["checks"]["anchor_times"]["problems"][0]
+    assert bad["verdict"] == "failed" and "backdated" in bad["runs"][rid]["checks"]["anchor_times"]["problems"][0]
 
 
 def test_verify_script_has_no_private_key_surface():
@@ -157,6 +162,132 @@ def test_verify_script_has_no_private_key_surface():
         )
         assert not forbidden.search(code), rel
         assert "--key" not in src and "--private" not in src
+
+
+def test_b_only_is_unverified_never_ok(honest):
+    report = verifier(honest, conditions=set()).verify()
+    assert report["verdict"] == "unverified" and not report["ok"]
+    assert any("condition B alone" in u for u in report["unverified"])
+
+
+def test_empty_plan_fails(honest):
+    for plan in ({"study": "v4.1", "runs": []}, {"study": "v4.1"}):
+        report = OutsideVerifier(honest["dir"], plan, conditions={"B"}).verify()
+        assert report["verdict"] == "failed" and not report["ok"]
+        assert any("lists no runs" in p for p in report["problems"])
+    empty = honest["tmp"] / "empty"
+    empty.mkdir()
+    assert not OutsideVerifier(empty, honest["plan"], conditions={"B"}).verify()["ok"]
+
+
+def test_condition_c_requires_pinned_deployer_and_registry(honest):
+    lab = honest["lab"]
+    with pytest.raises(ValueError):
+        OutsideVerifier(honest["dir"], honest["plan"], chain=lab.reader(), conditions={"C"}, pinned_deployer=None,
+                        pinned_registry=lab.registry_address)
+    with pytest.raises(ValueError):
+        OutsideVerifier(honest["dir"], honest["plan"], chain=lab.reader(), conditions={"C"}, pinned_deployer=lab.deployer)
+    wrong = OutsideVerifier(honest["dir"], honest["plan"], chain=lab.reader(), conditions={"C"}, pinned_deployer=lab.deployer,
+                            pinned_registry="0x" + "ee" * 20).verify()
+    assert wrong["verdict"] == "failed"
+
+
+def test_pending_ots_makes_the_run_unverified(tmp_path):
+    from antelligence.anchoring import mocks
+
+    lab = Lab()
+    board, _, akey = mocks.synthetic_run(60, seed=5)
+    out = tmp_path / "x"
+    _export(board, akey, out)
+    _anchor_all(lab, board, akey, out, [50, 60])              # stamped, never confirmed or upgraded
+    plan = _plan(board, akey)
+    v = lambda **kw: OutsideVerifier(out, plan, ots_dir=out, conditions={"OTS"}, **kw).verify()   # noqa: E731
+    pending = v(header_provider=lab.header_provider())
+    assert pending["verdict"] == "unverified" and pending["runs"][board.run_id]["checks"]["ots"]["unverified"]
+    no_headers = v()                                          # OTS requested, no header source
+    assert no_headers["verdict"] == "unverified" and "block-header" in no_headers["runs"][board.run_id]["checks"]["ots"]["error"]
+    lab.confirm_ots(out)
+    assert v(header_provider=lab.header_provider())["runs"][board.run_id]["checks"]["ots"]["ok"]
+
+
+def test_zero_evidence_fails_each_outside_condition(tmp_path):
+    from antelligence.anchoring import mocks
+
+    lab = Lab()
+    board, _, akey = mocks.synthetic_run(30, seed=6)         # nothing anchored anywhere
+    out = tmp_path / "x"
+    _export(board, akey, out)
+    plan = _plan(board, akey)
+    for cond in ("C", "R", "OTS"):
+        report = _only(lab, out, plan, cond)
+        assert report["verdict"] == "failed", cond
+    # n < 50: the run-end anchor is required, and then it counts
+    _anchor_all(lab, board, akey, out, [30])
+    lab.confirm_ots(out)
+    for cond in ("C", "R", "OTS"):
+        run = _only(lab, out, plan, cond)["runs"][board.run_id]
+        assert run["status"] == "pass" and run["anchors_verified"][{"C": "chain", "R": "rekor", "OTS": "ots"}[cond]] == 1, cond
+
+
+def _only(lab, out, plan, cond):
+    return OutsideVerifier(
+        out, plan, chain=lab.reader() if cond == "C" else None, rekor=lab.rekor if cond == "R" else None, ots_dir=out,
+        header_provider=lab.header_provider(), conditions={cond}, pinned_deployer=lab.deployer,
+        pinned_registry=lab.registry_address,
+    ).verify()
+
+
+def test_rekor_missing_proof_fails_the_run(honest):
+    h = honest
+    h["lab"].mock_rekor.omit_proofs = True
+    report = verifier(h, conditions={"R"}).verify()
+    chk = report["runs"][h["board"].run_id]["checks"]["rekor"]
+    assert report["verdict"] == "failed" and any("no inclusion proof" in p for p in chk["problems"])
+
+
+def test_rekor_key_mismatch_fails(honest):
+    from antelligence.anchoring.rekor import AnchorKey
+
+    h = honest
+    (h["dir"] / f"{h['board'].run_id}.anchor_pub.pem").write_bytes(AnchorKey().pem)    # a different key than the plan's
+    chk = verifier(h, conditions={"R"}).verify()["runs"][h["board"].run_id]["checks"]["rekor"]
+    assert not chk["ok"] and "does not match" in chk["problems"][0]
+
+
+def test_rekor_unpinned_log_key_is_unverified_not_ok(honest):
+    h = honest
+    h["lab"].rekor.pinned_log_key_sha256 = "00" * 32
+    h["lab"].rekor._log_key = None
+    report = verifier(h, conditions={"R"}).verify()
+    chk = report["runs"][h["board"].run_id]["checks"]["rekor"]
+    assert report["verdict"] == "unverified" and chk["unverified"] and "pinned" in chk["error"]
+
+
+def test_unauthenticated_plan_caps_verdict_at_unverified(honest):
+    h = honest
+    r_only = OutsideVerifier(h["dir"], h["plan"], rekor=h["lab"].rekor, conditions={"R"}).verify()    # no study key
+    assert r_only["runs"][h["board"].run_id]["status"] == "pass" and not r_only["plan_authenticated"]
+    assert r_only["verdict"] == "unverified"
+    altered = {**h["plan"], "study": "v4.1-altered"}
+    chain = verifier(h, conditions={"C"})
+    chain.plan = altered
+    res = chain.verify()
+    assert res["verdict"] == "failed" and not res["plan_authenticated"]
+    assert any("run-plan digest on chain" in p for p in res["problems"])
+
+
+def test_network_error_is_unverified_with_the_error_string(honest):
+    h = honest
+    v = verifier(h, conditions={"C"})
+    def boom(*a):
+        raise ConnectionError("rpc down")
+    v.chain.root_at = boom
+    report = v.verify()
+    chk = report["runs"][h["board"].run_id]["checks"]["chain"]
+    assert report["verdict"] == "unverified" and chk["unverified"] and "rpc down" in chk["error"]
+    h["lab"].mock_rekor.get_entry = boom
+    r = verifier(h, conditions={"R"}).verify()
+    assert r["verdict"] == "unverified" and "rpc down" in r["runs"][h["board"].run_id]["checks"]["rekor"]["error"]
 
 
 @pytest.mark.parametrize("attack,position,k,tail", [

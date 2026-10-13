@@ -136,8 +136,8 @@ class Lab:
         self._tick = itertools.count(1_700_000_000)
         clock = lambda: next(self._tick)  # noqa: E731  (strictly increasing, deterministic)
         self.ots_transport = mocks.MockOtsTransport(clock=clock)
-        self.rekor = RekorClient(mocks.MockRekor(clock=clock))
-        self.mock_rekor: mocks.MockRekor = self.rekor.transport  # type: ignore[assignment]
+        self.mock_rekor = mocks.MockRekor(clock=clock)
+        self.rekor = RekorClient(self.mock_rekor, pinned_log_key_sha256=self.mock_rekor.log_key_sha256)
         if registry_factory is None:
             self.deployer = Web3.to_checksum_address("0x" + "d1" * 20)
             self.registry = mocks.MockRegistry(self.deployer, clock=clock)
@@ -169,6 +169,13 @@ class Lab:
 
     def header_provider(self):
         return self.ots_transport.header
+
+    def confirm_ots(self, directory: Path) -> None:
+        """Bitcoin confirms the calendars' commitments, then every proof in ``directory`` is upgraded."""
+        self.ots_transport.mine_block()
+        client = self.ots_client()
+        for path in sorted(Path(directory).glob("*.ots")):
+            client.upgrade(path)
 
 
 # --------------------------------------------------------------------------------------------------
@@ -234,18 +241,22 @@ def _anchor_all(lab: Lab, board: Board, akey: AnchorKey, out: Path, sizes: Seque
     return anchorer
 
 
-def _verify(lab: Lab, directory: Path, plan: Dict[str, Any], condition: str) -> Dict[str, Any]:
-    v = OutsideVerifier(
+def _verifier(lab: Lab, directory: Path, plan: Dict[str, Any], condition: str) -> OutsideVerifier:
+    return OutsideVerifier(
         directory, plan,
         chain=lab.reader() if condition == "C" else None,
         rekor=lab.rekor if condition == "R" else None,
         ots_dir=directory, header_provider=lab.header_provider() if condition == "OTS" else None,
-        conditions={condition}, pinned_deployer=lab.deployer,
+        conditions={condition}, pinned_deployer=lab.deployer, pinned_registry=lab.registry_address,
+        study_pem=lab.study_key.pem,
     )
-    before = lab.rekor.calls
-    report = v.verify()
-    report["_rekor_calls_extra"] = lab.rekor.calls - before
-    return report
+
+
+def _verify(lab: Lab, directory: Path, plan: Dict[str, Any], condition: str) -> Dict[str, Any]:
+    """A real verifier run. Detection = verdict ``failed`` (``unverified`` is not a detection)."""
+    if condition == "OTS":
+        lab.confirm_ots(directory)
+    return _verifier(lab, directory, plan, condition).verify()
 
 
 def _plan(board: Board, akey: AnchorKey) -> Dict[str, Any]:
@@ -272,6 +283,9 @@ def run_scenario(
             for mode, values in honest_anchorer.latency_s.items():
                 latency_sink.setdefault(mode, []).extend(values)
         plan = _plan(board, akey)
+        study = lab.single_shot(root / "study")        # the operator anchors prereg and run plan once, before the runs
+        study.anchor("prereg", hashlib.sha256(PREREG_DOC).digest())
+        study.anchor("runplan", hashlib.sha256(jcs_bytes(plan)).digest())
         pos_label = (f"tail_truncate_{k}" if attack == "T2" else "tail") if tail else position
 
         if attack == "T4":
@@ -322,12 +336,12 @@ def _collect(lab: Lab, directory: Path, plan, attack: str, position: str, write_
     out: List[Outcome] = []
     for cond in CONDITIONS:
         report = _verify(lab, directory, plan, cond)
-        detected = not report["ok"]
+        detected = report["verdict"] == "failed"
         wall, nbytes, calls = report["metrics"]["wall_s"], report["metrics"]["bytes"], report["metrics"]["network_calls"]
         tail = next(iter(report["runs"].values()), {}).get("unanchored_tail") if report["runs"] else None
         if other_dir is not None:      # T3: the second verifier sees the other history
             r2 = _verify(lab, other_dir, plan, cond)
-            detected = detected or not r2["ok"]
+            detected = detected or r2["verdict"] == "failed"
             wall += r2["metrics"]["wall_s"]
             nbytes += r2["metrics"]["bytes"]
             calls += r2["metrics"]["network_calls"]
@@ -346,7 +360,8 @@ def _t4(lab: Lab, root: Path, position: str) -> List[Outcome]:
     honest = lab.single_shot(public_dir)
     honest.anchor("prereg", hashlib.sha256(PREREG_DOC).digest())
     honest.anchor("runplan", plan_digest)
-    original_ots = public_dir / "prereg.ots"          # pushed to the public PR when the prereg was locked
+    lab.confirm_ots(public_dir)
+    original_ots = public_dir / "prereg.ots"          # pushed to the public PR when the prereg was locked, after upgrade
     # The operator swaps the document and anchors the new one wherever the systems allow.
     forged_path = root / "prereg-forged.md"
     forged_path.write_bytes(FORGED_DOC)
@@ -355,12 +370,9 @@ def _t4(lab: Lab, root: Path, position: str) -> List[Outcome]:
     write_rejected = any(e["mode"] == "C" for e in attacker.errors)
     out: List[Outcome] = []
     for cond in CONDITIONS:
-        v = OutsideVerifier(
-            root, plan, chain=lab.reader() if cond == "C" else None, rekor=lab.rekor if cond == "R" else None,
-            header_provider=lab.header_provider() if cond == "OTS" else None, conditions={cond}, pinned_deployer=lab.deployer,
-        )
+        v = _verifier(lab, root, plan, cond)
         res = v.verify_study(forged_path, plan_digest, prereg_ots=original_ots, study_pem=lab.study_key.pem)
-        detected = not res["ok"]
+        detected = res["failed"]
         rejected = write_rejected and cond == "C"
         when = "write" if rejected else ("audit" if detected else "none")
         calls = (v.chain.calls if v.chain else 0) + (v.rekor.calls if v.rekor else 0)

@@ -115,10 +115,11 @@ class UpgradeResult:
 
 @dataclass
 class OtsVerification:
-    """``ok``: the proof commits to the expected digest and is structurally sound.
+    """``ok`` is True ONLY for status ``bitcoin``: a Bitcoin attestation whose merkle path ends in a
+    block header that the header provider returned and that matches.
 
-    ``status``: ``bitcoin`` (a Bitcoin attestation was checked against a block header), ``bitcoin_unchecked``
-    (attestation present but no header source given), ``pending`` (calendar promise only) or ``invalid``.
+    Everything else fails closed: ``unverified`` (calendar promise only, no header source, unknown
+    attestation types) or ``invalid`` (wrong digest, unreadable, header mismatch).
     """
 
     ok: bool
@@ -235,28 +236,26 @@ def verify_ots(
         return OtsVerification(False, "invalid", False, error="proof is for a different digest")
     records: List[dict] = []
     best: Optional[int] = None
-    status = "pending"
     for msg, att in detached.timestamp.all_attestations():
         if isinstance(att, BitcoinBlockHeaderAttestation):
-            rec = {"kind": "bitcoin", "height": att.height}
-            if header_provider is None:
-                rec["checked"] = False
-                status = "bitcoin_unchecked" if status != "bitcoin" else status
-            else:
+            rec = {"kind": "bitcoin", "height": att.height, "checked": False}
+            if header_provider is not None:
                 try:
                     t = att.verify_against_blockheader(msg, header_provider(att.height))
                 except VerificationError as exc:
                     return OtsVerification(False, "invalid", True, records, error=f"bitcoin attestation fails: {exc}")
                 except Exception as exc:
-                    return OtsVerification(False, "invalid", True, records, error=f"header lookup failed: {exc}")
+                    return OtsVerification(False, "unverified", True, records, error=f"header lookup failed: {exc}")
                 rec.update(checked=True, time=int(t))
                 best = int(t) if best is None else min(best, int(t))
-                status = "bitcoin"
             records.append(rec)
         elif isinstance(att, PendingAttestation):
             records.append({"kind": "pending", "uri": att.uri})
         else:
             records.append({"kind": "unknown"})
-    if not records:
-        return OtsVerification(False, "invalid", True, error="proof has no attestation")
-    return OtsVerification(True, status, True, records, time=best)
+    if best is not None:
+        return OtsVerification(True, "bitcoin", True, records, time=best)
+    reason = ("no Bitcoin attestation (calendar promise only; upgrade the proof)"
+              if not any(r["kind"] == "bitcoin" for r in records)
+              else "no block header source: Bitcoin attestation not checked")
+    return OtsVerification(False, "unverified", True, records, error=reason)

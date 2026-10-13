@@ -70,11 +70,22 @@ pinned deployer, `.ots` proofs, Rekor URL.
 The report records wall time, bytes read and network calls. The size of the **unanchored tail** (entries
 after the last anchor) is reported, not failed: that is exactly the window an operator can still rewrite.
 
+## Fail-closed rules
+
+Verdict is `verified`, `unverified` or `failed`; only `verified` is ok. OTS counts only with a Bitcoin
+attestation checked against a block header (calendar promises, unknown attestations and a missing header
+source are `unverified`). An enabled outside condition with zero verified anchors fails the run (for n < 50
+the run-end anchor is required). B alone is at most `unverified`. Rekor needs a mandatory inclusion proof, an
+entry key equal to the searched key, and a checkpoint signed by the log key pinned by sha256
+(`REKOR_LOG_KEY_SHA256`, fetched once from `/api/v1/log/publicKey`); `integratedTime` is used only when the
+signed entry timestamp verifies. Condition C requires a pinned deployer and registry. The plan must hash to
+the anchored run-plan digest (`plan_authenticated`) or the verdict is capped at `unverified`. Network and RPC
+errors give `unverified` with the error string.
+
 ## Limits, stated plainly
 
 - Entries after the last anchor are not protected. Anchor often, and always at run end.
-- The verifier trusts TLS to the Rekor host and does not verify Rekor's signed checkpoint (needs the log's
-  public key from TUF). Inclusion proofs are checked up to the root the log states.
+- Rekor's key is pinned by hash in code; a key rotation needs a code change (`--rekor-log-key-sha256` for private logs).
 - OTS gives time, not uniqueness; its detection value is limited to the single published preregistration.
 - The verifier trusts the RPC it is pointed at; pinning the deployer detects a wrong registry, not a lying node.
 - A refusal to anchor (operator withholds) is visible only as a missing anchor.

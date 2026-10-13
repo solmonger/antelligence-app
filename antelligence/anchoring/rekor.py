@@ -28,6 +28,9 @@ from antelligence.kernel.board import BoardError, verify_inclusion
 
 DEFAULT_REKOR_URL = "https://rekor.sigstore.dev"
 API_VERSION = "0.0.1"
+# sha256 of the SubjectPublicKeyInfo DER of the public Rekor log key (ECDSA P-256), fetched once on
+# 2026-10-13 from GET https://rekor.sigstore.dev/api/v1/log/publicKey. Also the production logID.
+REKOR_LOG_KEY_SHA256 = "c0d23d6ad406973f9559f3ba2d1ca01f84147d8ffc5b8445c224f98b9591801d"
 
 
 class RekorError(RuntimeError):
@@ -51,6 +54,9 @@ class RekorTransport(Protocol):
 
     def get_entry(self, uuid: str) -> Dict[str, Any]:
         """GET /api/v1/log/entries/{uuid} -> ``{uuid: entry}``."""
+
+    def log_public_key(self) -> bytes:
+        """GET /api/v1/log/publicKey -> PEM of the log's signing key."""
 
 
 class HttpRekorTransport:
@@ -83,6 +89,14 @@ class HttpRekorTransport:
         import httpx
 
         return self._check(httpx.get(f"{self.base_url}/api/v1/log/entries/{uuid}", timeout=self.timeout_s))
+
+    def log_public_key(self) -> bytes:
+        import httpx
+
+        resp = httpx.get(f"{self.base_url}/api/v1/log/publicKey", timeout=self.timeout_s)
+        if resp.status_code >= 400:
+            raise RekorError(f"HTTP {resp.status_code}: {resp.text[:200]}")
+        return resp.content
 
 
 # ---------------------------------------------------------------------------
@@ -179,6 +193,10 @@ class RekorRecord:
     signature: bytes
     inclusion_proof: Optional[Dict[str, Any]] = None
     raw_bytes: int = 0               # size of the response, for the verifier's byte accounting
+    log_id: str = ""
+    body_b64: str = ""
+    set_b64: str = ""                # signedEntryTimestamp
+    time_trusted: bool = False       # integrated_time is covered by a verified SET
 
 
 def parse_entry(uuid: str, entry: Dict[str, Any], raw_bytes: int = 0) -> RekorRecord:
@@ -198,21 +216,85 @@ def parse_entry(uuid: str, entry: Dict[str, Any], raw_bytes: int = 0) -> RekorRe
             signature=base64.b64decode(spec["signature"]["content"]),
             inclusion_proof=verification.get("inclusionProof"),
             raw_bytes=raw_bytes,
+            log_id=str(entry.get("logID", "")),
+            body_b64=str(entry["body"]),
+            set_b64=str(verification.get("signedEntryTimestamp", "")),
         )
     except (KeyError, ValueError, TypeError) as exc:
         raise RekorError(f"malformed rekor entry {uuid}: {exc}") from exc
 
 
-def check_record(record: RekorRecord) -> List[str]:
-    """Problems with one record; empty list means the signature and (if present) the inclusion proof hold."""
+def pinned_log_key(pem: bytes, pinned_sha256: str) -> ec.EllipticCurvePublicKey:
+    """The log's public key, accepted only if its SPKI DER hashes to the pinned value."""
+    key = load_public_pem(pem)
+    if fingerprint_of(key) != pinned_sha256.lower():
+        raise RekorError("Rekor log public key does not match the pinned sha256")
+    return key
+
+
+def _checkpoint_problems(proof: Dict[str, Any], log_key: ec.EllipticCurvePublicKey) -> List[str]:
+    """Verify the signed checkpoint (a C2SP signed note) and that it states the proof's size and root."""
+    cp = proof.get("checkpoint")
+    if not cp:
+        return ["no signed checkpoint"]
+    text, sep, sigs = cp.partition("\n\n")
+    if not sep:
+        return ["malformed checkpoint"]
+    note = text + "\n"
+    lines = note.split("\n")
+    try:
+        size_ok = int(lines[1]) == int(proof["treeSize"])
+        root_ok = base64.b64decode(lines[2]).hex() == proof["rootHash"].lower()
+    except (IndexError, ValueError, KeyError):
+        return ["malformed checkpoint"]
+    out = [] if size_ok and root_ok else ["checkpoint size/root differ from the inclusion proof"]
+    verified = False
+    for line in sigs.splitlines():
+        if not line.startswith("\u2014 "):
+            continue
+        try:
+            raw = base64.b64decode(line.split(" ", 2)[2])
+            log_key.verify(raw[4:], note.encode(), ec.ECDSA(hashes.SHA256()))
+            verified = True
+        except (InvalidSignature, ValueError, IndexError):
+            continue
+    if not verified:
+        out.append("checkpoint signature does not verify under the pinned Rekor log key")
+    return out
+
+
+def set_payload(record: "RekorRecord") -> bytes:
+    """Canonical JSON the log signs for the signed entry timestamp (SET)."""
+    return json.dumps(
+        {"body": record.body_b64, "integratedTime": record.integrated_time, "logID": record.log_id, "logIndex": record.log_index},
+        sort_keys=True, separators=(",", ":"),
+    ).encode()
+
+
+def check_record(
+    record: RekorRecord, searched_pem: bytes, log_key: Optional[ec.EllipticCurvePublicKey]
+) -> List[str]:
+    """Problems with one record; empty means: right key, valid signature, inclusion proof reaching a
+    checkpoint signed by the pinned log key. Sets ``record.time_trusted`` iff the SET verifies.
+
+    Fail closed: no log key, no proof, or no checkpoint is a problem, never a pass.
+    """
     problems: List[str] = []
+    record.time_trusted = False
     try:
         pub = load_public_pem(record.pubkey_pem)
+        if spki_der(pub) != spki_der(load_public_pem(searched_pem)):
+            problems.append("entry public key is not the searched anchor key")
         pub.verify(record.signature, bytes.fromhex(record.digest), ec.ECDSA(utils.Prehashed(hashes.SHA256())))
     except (InvalidSignature, RekorError, ValueError) as exc:
         problems.append(f"signature: {exc or 'invalid'}")
+    if log_key is None:
+        problems.append("no pinned Rekor log key: inclusion cannot be authenticated")
+        return problems
     proof = record.inclusion_proof
-    if proof:
+    if not proof:
+        problems.append("no inclusion proof")
+    else:
         try:
             ok = verify_inclusion(
                 record.body, int(proof["logIndex"]), int(proof["treeSize"]),
@@ -222,13 +304,28 @@ def check_record(record: RekorRecord) -> List[str]:
             ok = False
         if not ok:
             problems.append("inclusion proof does not reach the stated root")
+        problems += _checkpoint_problems(proof, log_key)
+    try:
+        log_key.verify(base64.b64decode(record.set_b64), set_payload(record), ec.ECDSA(hashes.SHA256()))
+        record.time_trusted = True
+    except (InvalidSignature, ValueError):
+        record.time_trusted = False       # integratedTime is reported but unverified
     return problems
 
 
 class RekorClient:
-    def __init__(self, transport: Optional[RekorTransport] = None) -> None:
+    def __init__(self, transport: Optional[RekorTransport] = None, pinned_log_key_sha256: str = REKOR_LOG_KEY_SHA256) -> None:
         self.transport: RekorTransport = transport or HttpRekorTransport()
+        self.pinned_log_key_sha256 = pinned_log_key_sha256
         self.calls = 0
+        self._log_key: Optional[ec.EllipticCurvePublicKey] = None
+
+    def log_key(self) -> ec.EllipticCurvePublicKey:
+        """The log's public key, fetched once and accepted only if it matches the pinned sha256."""
+        if self._log_key is None:
+            self.calls += 1
+            self._log_key = pinned_log_key(self.transport.log_public_key(), self.pinned_log_key_sha256)
+        return self._log_key
 
     def log_digest(self, digest: bytes, key: AnchorKey) -> RekorRecord:
         """Create the entry (idempotent: an existing identical entry is fetched instead)."""

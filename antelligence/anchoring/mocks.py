@@ -108,6 +108,8 @@ class MockRekor:
         self.meta: List[Dict[str, Any]] = []
         self.requests = 0
         self.bytes_out = 0
+        self._log_key = ec.generate_private_key(ec.SECP256R1())     # the mock log's own signing key
+        self.omit_proofs = False                                    # test switch: serve entries without proofs
 
     @staticmethod
     def _uuid(body: bytes) -> str:
@@ -135,22 +137,47 @@ class MockRekor:
         self.meta.append({"time": int(self.clock()), "pem": pem})
         return {uuid: self._entry(len(self.bodies) - 1)}
 
+    @property
+    def log_public_pem(self) -> bytes:
+        from antelligence.anchoring.rekor import spki_pem
+
+        return spki_pem(self._log_key.public_key())
+
+    @property
+    def log_key_sha256(self) -> str:
+        from antelligence.anchoring.rekor import fingerprint_of
+
+        return fingerprint_of(self._log_key.public_key())
+
+    def log_public_key(self) -> bytes:
+        self.requests += 1
+        return self.log_public_pem
+
+    def _sign(self, data: bytes) -> bytes:
+        return self._log_key.sign(data, ec.ECDSA(hashes.SHA256()))
+
     def _entry(self, index: int) -> Dict[str, Any]:
         leaves = self.bodies[: len(self.bodies)]
         # Rekor leaf = the canonical body; merkle code hashes with the 0x00 prefix itself
         path = inclusion_path(index, leaves)
         root = merkle_root(leaves)
+        body_b64 = base64.b64encode(self.bodies[index]).decode()
+        log_id = self.log_key_sha256
+        set_payload = json.dumps(
+            {"body": body_b64, "integratedTime": self.meta[index]["time"], "logID": log_id, "logIndex": index},
+            sort_keys=True, separators=(",", ":"),
+        ).encode()
+        note = f"mock-rekor - 1\n{len(leaves)}\n{base64.b64encode(root).decode()}\n"
+        sig = base64.b64encode(b"\x00\x00\x00\x00" + self._sign(note.encode())).decode()
+        verification: Dict[str, Any] = {"signedEntryTimestamp": base64.b64encode(self._sign(set_payload)).decode()}
+        if not self.omit_proofs:
+            verification["inclusionProof"] = {
+                "logIndex": index, "treeSize": len(leaves), "rootHash": root.hex(),
+                "hashes": [h.hex() for h in path], "checkpoint": f"{note}\n\u2014 mock-rekor {sig}\n",
+            }
         return {
-            "body": base64.b64encode(self.bodies[index]).decode(),
-            "integratedTime": self.meta[index]["time"],
-            "logID": "mock",
-            "logIndex": index,
-            "verification": {
-                "inclusionProof": {
-                    "logIndex": index, "treeSize": len(leaves), "rootHash": root.hex(),
-                    "hashes": [h.hex() for h in path],
-                },
-            },
+            "body": body_b64, "integratedTime": self.meta[index]["time"], "logID": log_id, "logIndex": index,
+            "verification": verification,
         }
 
     def search_by_pubkey(self, pem: bytes) -> List[str]:
