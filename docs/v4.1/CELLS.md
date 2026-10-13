@@ -1,0 +1,83 @@
+# v4.1 cell schema
+
+One JSON object per run (arm, case, seed). Validator: `antelligence/experiments/v41_cells.py`
+(`validate_cell`, `validate_cells`). Every key below is required; "nullable" fields may be `null`.
+Unknown keys are rejected, except an optional `error` string for failed runs (excluded by the analysis).
+Arms are the twelve in goal section 6 (`S`, `S-prime`, `SW-B`, `SW-noBoard`, `FW`, `SW-D`, `SW-noQueen`,
+`SW-staticQueen`, `SW-Bonsai`, `SW-Byz-local`, `SW-Byz-chain`, `SW-B-missingFLAIR`).
+
+The primary outcome is `coverage` (goal section 7), a fraction in [0,1]; one "coverage point" is 0.01.
+The unit of analysis is the case: the mean of `coverage` over the case's seeds. Arms that share cases use
+the same seeds, so a single-seed arm (FW, SW-D, ...) is paired with SW-B on the seeds it has.
+
+| Field | Type | Nullable | Meaning |
+|---|---|---|---|
+| `run_id` | hex64 | no | sha256(JCS(run header)), INTERFACES 6 |
+| `arm` | string | no | one of ARMS |
+| `case` | string | no | MSD case id (never goes on-chain) |
+| `seed` | int | no | run seed |
+| `split` | string | no | dev or eval |
+| `wall_s` | float >= 0 | no | wall time of the run, seconds |
+| `ticks_to_50` | int | yes | ticks until 50% of the final score; null = never reached |
+| `seconds_to_50` | float >= 0 | yes | wall seconds until 50% of the final score; null = never reached |
+| `queen_calls` | int | no | queen model calls |
+| `board_size` | int | no | entries on the board at run end |
+| `anchors` | int | no | anchor points posted (INTERFACES 3) |
+| `visibility_latency_ms` | int | yes | mode D: write to visible latency; null outside mode D |
+| `coverage` | fraction [0,1] | no | primary outcome: fraction of tumour region covered, in [0,1]; 1 point = 0.01 |
+| `off_target` | fraction [0,1] | no | fraction of drug released off target |
+| `defer_rate` | fraction [0,1] | no | fraction of decisions deferred to the slow path |
+| `citations` | int | no | cited board entries |
+| `unread_frac` | fraction [0,1] | yes | fraction of briefed entries not read; null for arms without a board |
+| `brief_age_median` | float >= 0 | yes | median age in ticks of briefed entries; null without a board |
+| `router_top_share` | fraction [0,1] | yes | share of routed calls going to the most used model; null without router |
+| `perception_ece` | fraction [0,1] | yes | perception expected calibration error; null if not measured |
+| `cost_usd` | float >= 0 | no | paid API spend of the run, dollars |
+| `tokens_in` | int | no | model tokens in, all paid and pod calls of the run |
+| `tokens_out` | int | no | model tokens out |
+| `pod_minutes` | float >= 0 | no | pod minutes attributed to the run |
+| `gas` | int | yes | gas used on chain 300 by the run; null when nothing was posted on-chain |
+| `alarms` | int | no | alarm entries written (defer-rate, timeout, identity, other) |
+| `audit_conformal_coverage` | fraction [0,1] | yes | conformal coverage achieved on the 10% audit sample; null if no audit sample |
+| `citation_validity` | fraction [0,1] | yes | fraction of cited entry ids that exist on the board and precede the decision |
+| `uncited_decisions` | int | no | decisions that cite no entry |
+| `perception_dice` | fraction [0,1] | yes | perception Dice against the truth mask; null if not measured |
+| `locallook_ece` | fraction [0,1] | yes | d1 local-look ECE; null if not measured |
+| `truth_outside_crop` | fraction [0,1] | yes | share of truth tumour voxels outside the perception crop |
+
+## Secondary outcomes S1 to S12 (goal section 7)
+
+These are summaries of the fields above and of two external files. They are reported, never used to declare a win.
+
+| ID | Definition | Source |
+|---|---|---|
+| S1 | SW-noQueen vs SW-B, coverage difference | `coverage` |
+| S2 | SW-staticQueen vs SW-B | `coverage` |
+| S3 | SW-Bonsai vs SW-B | `coverage` |
+| S4 | SW-Byz-local vs SW-Byz-chain, and both vs SW-B | `coverage` |
+| S5 | perception Dice, voxel ECE, d1 local-look ECE, truth share outside the crop | `perception_dice`, `perception_ece`, `locallook_ece`, `truth_outside_crop` |
+| S6 | defer rate per arm, alarms, conformal coverage on the audit sample | `defer_rate`, `alarms`, `audit_conformal_coverage` |
+| S7 | citation validity, uncited decisions, unread entries | `citation_validity`, `uncited_decisions`, `unread_frac` |
+| S8 | off-target share and time to 50% coverage, all arms | `off_target`, `seconds_to_50`, `ticks_to_50` |
+| S9 | (coverage - S)/(S' - S), ratio of means, only on cases with S' - S >= 0.15 | `coverage` |
+| S10 | SW-B-missingFLAIR vs SW-B | `coverage` |
+| S11 | cost per arm: dollars, tokens, pod-minutes, gas | `cost_usd`, `tokens_in`, `tokens_out`, `pod_minutes`, `gas` |
+| S12 | the latency benchmark (goal 4.7) | `latency/results.json`, passed to `analyze(latency=...)` |
+
+Comparison outcomes (S1 to S4, S10) report the mean paired case difference with a 95% BCa interval and no test.
+Field outcomes (S5 to S8, S11) report the mean over runs per arm; nulls are excluded from the mean and counted in `n`.
+
+## Explained-null checklist: exactly how each item is computed
+
+Computed on SW-B runs. Every test is strictly "above".
+
+| Item (goal 7 wording) | Value | Threshold | Basis |
+|---|---|---|---|
+| unread entries above 50% | `unread_frac` | 0.50 | mean of the per-run value over evaluation runs |
+| median brief entry age above 30 ticks | `brief_age_median` | 30 | median over evaluation runs of the per-run median |
+| deferral out of band in more than 25% of runs | share of runs | 0.25 | a run is out of band when `defer_rate` < 0.05 or > 0.40 (goal 4.5 alarm band) |
+| router sent more than 80% of decisions to one model | `router_top_share` | 0.80 | mean of the per-run top-model share over evaluation runs |
+| perception development ECE above 0.10 after the refit | `perception_ece` | 0.10 | mean over development-split runs (post-refit) |
+
+The live-check defer band, 10% to 30% (goal 5.10), is a separate check (`live_check` in results.json) on the
+mean development defer rate. It is not part of the explained-null checklist.
