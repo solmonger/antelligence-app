@@ -24,6 +24,7 @@ INTERFACES (docs/v4.1/INTERFACES.md) helpers: :func:`anchor_digest`, :func:`enco
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import threading
 import time
@@ -175,9 +176,26 @@ class LocalSigner:
         return f"LocalSigner({self.address})"
 
 
+MAIN_ENV_FILE = Path.home() / "Desktop" / "research" / "antelligence-app" / ".env"
+PUBLIC_RPC_300 = "https://sepolia.era.zksync.dev"
+
+
+def env_file_value(name: str) -> str:
+    """One value from the W1 env file (``ANTELLIGENCE_ENV_FILE``, else the main checkout's ``.env``), read in-process.
+
+    The value is returned to the caller only: never put into ``os.environ``, logged or printed. Worktrees (including
+    the SSD ones) therefore need no copy of the secrets file and no env-var prefix on the command line."""
+    from dotenv import dotenv_values
+
+    path = Path(os.environ.get("ANTELLIGENCE_ENV_FILE") or MAIN_ENV_FILE)
+    if not path.is_file():
+        return ""
+    return (dotenv_values(path).get(name) or "").strip()
+
+
 def signer_from_config() -> LocalSigner:
-    """The production signer: the key comes from :func:`chain.config.get_private_key` (W1 mechanism)."""
-    key = get_private_key()
+    """The production signer: :func:`chain.config.get_private_key` (W1 mechanism), else the W1 env file in-process."""
+    key = get_private_key() or env_file_value("PRIVATE_KEY") or env_file_value("ANTELLIGENCE_DEPLOYER_PRIVATE_KEY")
     if not key:
         raise ChainConfigError("no signing key configured (PRIVATE_KEY / ANTELLIGENCE_DEPLOYER_PRIVATE_KEY)")
     return LocalSigner(key)
@@ -662,7 +680,7 @@ def open_live_client(queue_path: Optional[Path] = None, *, rpc_url: Optional[str
     from chain.config import get_rpc_url
 
     if w3 is None:
-        url = rpc_url or get_rpc_url()
+        url = rpc_url or get_rpc_url() or env_file_value("ZKSYNC_SEPOLIA_RPC_URL") or PUBLIC_RPC_300
         register_url(url or "")
         if not url:
             raise ChainConfigError("no RPC configured (set ANTELLIGENCE_CHAIN and/or ZKSYNC_SEPOLIA_RPC_URL)")
