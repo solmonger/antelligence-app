@@ -1,0 +1,32 @@
+{
+ "study": "v4.1",
+ "temperature": 0.44102,
+ "method": "single temperature T minimising NLL of sigmoid(logit(p)/T) (bounded search over log T in [ln 0.05, ln 20]); validated fit-on-dev_a / test-on-dev_b, then refit on all dev patches",
+ "applies_to": "d1-3B local-look P(tumour): sigmoid(logit(p)/T)",
+ "ece_bins": 15,
+ "measured": {
+  "raw": {
+   "n": 2000,
+   "ece": 0.11539,
+   "brier": 0.20968,
+   "auroc": 0.76628
+  },
+  "after": {
+   "n": 2000,
+   "ece": 0.05221,
+   "brier": 0.19622,
+   "auroc": 0.76628
+  }
+ },
+ "n_patches": 2000,
+ "seed": 41,
+ "model": {
+  "revision": "051bcc464b01b9f92942b364d9586b0ef5912432",
+  "runtime": "transformers",
+  "runtime_version": "5.14.1",
+  "served_model": "LiquidAI/d1-3B"
+ },
+ "split_sha256": "76ec40c52f85db4060e58c4aca14fd62e355445d073f4ca539cf8614d725dd53",
+ "sha256": "9b6a1a498697fb1fd4b5b54150c8261955d60013531742f104f230e0906cba8a",
+ "sha256_of": "case|xyz|label|p_raw over the calibration patches, in sample order"
+}
