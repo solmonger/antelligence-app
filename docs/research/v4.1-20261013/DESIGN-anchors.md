@@ -112,6 +112,13 @@ about 2^32 x 1e12 hashes). Residual: without a Bitcoin node it cannot check that
 chain, or recompute difficulty retargets; point `--no-check-bitcoin` off only against a server you trust, or
 cross-check the height with a second source.
 
+**Residual risk of `MIN_DIFFICULTY` (S2c).** The floor is a constant, not a measurement. Header PoW is checked against the
+header's own `nBits`, not against the true retargeted difficulty at that height, so a lying server can still serve a header
+that clears the floor (1e12, about 2^72 hashes: out of reach for most, not for a state or a large miner) with a merkle root
+it chose. The floor will also go stale: it must be raised if real difficulty rises far above it, or the margin shrinks.
+The header is not shown to be on the best chain. Closing this needs a Bitcoin node or a second independent header source
+checked against the same height; v4.1 has neither. A zero or overflowing `nBits` is rejected (`HeaderError`).
+
 ## What the verifier checks (`scripts/v41_verify_board.py`)
 
 No private key, no `.env`, no signer import. Inputs: exported JSONL (with `<run_id>.anchors.json`), run plan,

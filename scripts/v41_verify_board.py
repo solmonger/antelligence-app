@@ -39,6 +39,7 @@ def main(argv=None) -> int:
     ap.add_argument("--repo", default=str(REPO), help="git repository holding the deployments file")
     ap.add_argument("--deployments-commit", help="full 40-hex commit whose deployments file pins the registry (condition C)")
     ap.add_argument("--deployments-file", default=None, help="path inside the repo (default blockchain/deployments/zksync-era-sepolia.json)")
+    ap.add_argument("--prereg-commit", help="full 40-hex commit holding --prereg (a path inside --repo); the deployments commit must be its ancestor")
     ap.add_argument("--registry", help="assert the AnchorRegistry address (must equal the pin)")
     ap.add_argument("--deployer", help="assert the deployer address (must equal the pin)")
     ap.add_argument("--rekor-url", default="https://rekor.sigstore.dev")
@@ -64,7 +65,8 @@ def main(argv=None) -> int:
             ap.error("--deployments-commit and --prereg go together: the pins need both")
         try:
             pins = pinmod.pins_from_repo(args.repo, args.deployments_commit, args.prereg,
-                                         args.deployments_file or pinmod.DEFAULT_DEPLOYMENTS)
+                                         args.deployments_file or pinmod.DEFAULT_DEPLOYMENTS,
+                                         prereg_commit=args.prereg_commit)
         except (pinmod.PinError, OSError, ValueError) as exc:
             ap.error(f"cannot build the pins: {exc}")
     if args.rpc and pins is not None:

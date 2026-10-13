@@ -5,3 +5,11 @@
 12da95f1d19755e3f50564ab0f709e863f83d175:release-manifest.json:generic-api-key:148
 # 2026-10-13: sha256 of the PUBLIC Rekor log key (REKOR_LOG_KEY_SHA256, fetched from GET rekor.sigstore.dev/api/v1/log/publicKey), a public pin constant, not a secret (S2b, v4.1).
 18e29f3660b263c48d8f7fc5eb1b4bc7be097382:antelligence/anchoring/rekor.py:generic-api-key:33
+# 2026-10-13: reviewed false positives from the main..HEAD scan: release-manifest.json:41/43 are sha256 file hashes (both
+# commits carry the same file); config.py:17 and handoff.md:41 are the PUBLIC FoodToken contract address, not keys.
+f060f4d666b02f666251d72c3d926041e89d3740:release-manifest.json:generic-api-key:41
+f060f4d666b02f666251d72c3d926041e89d3740:release-manifest.json:generic-api-key:43
+04072e0baabb55244e0c0245906b1c3e23583a59:release-manifest.json:generic-api-key:41
+04072e0baabb55244e0c0245906b1c3e23583a59:release-manifest.json:generic-api-key:43
+f3f78d62fa897288bb92eae4b5d1a0e562034c00:backend/chain/config.py:generic-api-key:17
+d399a22258f7d0a2d9338674636f397528553c11:docs/plans/handoff.md:generic-api-key:41

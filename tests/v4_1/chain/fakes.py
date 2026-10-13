@@ -54,7 +54,8 @@ class FakeChain:
         self.txs: dict[str, dict] = {}         # every tx the node accepted (mempool or mined)
         self.hide_receipts = False             # simulate a receipt index that lags behind blocks
         self.get_tx_error: Exception | None = None
-        self.contract_deployer: str | None = None   # what ``deployer()`` returns; None = whoever sent the first tx
+        self.contract_deployer: str | None = None   # what ``deployer()`` returns for every contract (None = zero address)
+        self.deployer_by_contract: dict[str, str] = {}   # lowercase address -> deployer(), overriding ``contract_deployer``
         self.eth = self
 
     # ---- web3.eth surface ---------------------------------------------------------------------
@@ -93,7 +94,8 @@ class FakeChain:
         data = bytes.fromhex(tx["data"][2:])
         s, args = data[:4], data[4:]
         if s == SEL["deployer"]:
-            return bytes(12) + bytes.fromhex((self.contract_deployer or "0x" + "00" * 20)[2:])
+            who = self.deployer_by_contract.get(str(tx["to"]).lower(), self.contract_deployer) or "0x" + "00" * 20
+            return bytes(12) + bytes.fromhex(who[2:])
         if s == SEL["rootAt"]:
             run, size = abi_decode(["bytes32", "uint64"], args)
             return self.root_at.get((run, size), b"\x00" * 32)

@@ -1,5 +1,28 @@
 """Outside verifier: public inputs only, no private key anywhere.
 
+ADVERSARIAL CHECKLIST: every input and what authenticates it. An input with no row here is not trusted.
+
+* deployments file   -> ``git show <40-hex commit>:path`` only (never the working tree, never a ref, replace refs off);
+                        with ``--prereg-commit`` the commit must be an ancestor of it. Registry, deployer, code hash.
+* preregistration    -> sha256 equals the ``anchorOnce`` digest on the PINNED registry; its single visible study-key
+                        line (not in a comment or code block) must equal the pin. Without the chain it authenticates nothing.
+* run plan           -> sha256(JCS) equals the ``anchorOnce`` runplan digest on chain AND/OR is logged under the pinned
+                        study key on Rekor; any other digest under that key, a duplicate run_id or a malformed run fails.
+* caller registry / deployer / study PEM -> assertions only: compared to the pins, a mismatch fails.
+* chain reader       -> address, ``deployer()`` and keccak(code) all equal the pins before any anchor is read.
+* run header         -> run_id == sha256(JCS(header)); pubkeys and anchor_pubkey must be PRESENT in the plan and equal it.
+* entries            -> ids recomputed, hash chain, cites, every signature against the header keys (none skipped).
+* Merkle roots       -> recomputed from the export; compared to chain roots, Rekor digests, OTS digests. Never read from a file.
+* ``<run>.anchor_pub.pem`` -> sha256(SPKI DER) equals the plan's anchor_pubkey.
+* Rekor entries      -> inclusion proof + SET against the PINNED log key + signature by the anchor key (``check_record``).
+* ``<run>.anchors.json`` -> NOT trusted: each record's size/root/digest must equal the recomputed values, its rekor_uuid
+                        must be a verified entry for that digest, and EVERY record with a rekor_uuid must carry a log-signed
+                        ``rekor_checkpoint`` (missing -> unverified). Checkpoints are then consistency-checked against the live log.
+* ``.ots`` proofs    -> digest recomputed per size; Bitcoin header hash, proof of work and difficulty floor checked locally.
+* claims             -> must name a verified run and postdate the earliest covering anchor; an unknown run id fails.
+* verdict            -> worst-of over every check, run and condition; ``failed`` > ``unverified`` > ``verified``;
+                        no absent field, exception or option makes a check pass.
+
 Inputs: the exported ``<run_id>.jsonl`` files, the anchored run plan (run ids, run public keys, anchor
 public-key fingerprints), an ``AnchorRegistry`` reader pinned to a registry and deployer, ``.ots`` proofs,
 a Rekor client, and the public PEM of each run's anchor key. See DESIGN-anchors.md.
@@ -220,7 +243,7 @@ class OutsideVerifier:
         self._rekor_records, self._rekor_bytes, self._rekor_proof_cps = {}, 0, {}
         report: Dict[str, Any] = {"conditions": sorted(self.conditions), "runs": {}, "problems": [], "unverified": []}
         report["problems"] += self._caller_pin_problems()
-        planned = {r["run_id"]: r for r in self.plan.get("runs", [])}
+        planned = self._planned(report)
         if not planned:
             report["problems"].append("the run plan lists no runs: nothing to verify")
         present = {p.stem for p in self.dir.glob("*.jsonl")}
@@ -230,6 +253,10 @@ class OutsideVerifier:
             report["problems"].append(f"export {rid} is not in the anchored run plan")
         for rid in sorted(set(planned) & present):
             report["runs"][rid] = self._verify_run(rid, planned[rid])
+        for claim in self.claims:
+            if not isinstance(claim, dict) or claim.get("run_id") not in report["runs"]:
+                label = claim.get("id") if isinstance(claim, dict) else repr(claim)
+                report["problems"].append(f"claim {label} names no verified run")
         report["plan_authenticated"] = self._authenticate_plan(report)
         statuses = [r["status"] for r in report["runs"].values()]
         if report["problems"] or "fail" in statuses:
@@ -250,6 +277,25 @@ class OutsideVerifier:
             "network_calls": self._net_calls(),
         }
         return report
+
+    def _planned(self, report: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
+        """run_id -> plan entry. Malformed or duplicate entries are problems, never silently dropped or overwritten."""
+        planned: Dict[str, Dict[str, Any]] = {}
+        runs = self.plan.get("runs") if isinstance(self.plan, dict) else None
+        if not isinstance(runs, list):
+            report["problems"].append("the run plan has no runs list")
+            return planned
+        for i, r in enumerate(runs):
+            rid = r.get("run_id") if isinstance(r, dict) else None
+            if not (isinstance(rid, str) and rid):
+                report["problems"].append(f"run plan entry {i} has no run_id")
+            elif rid in planned:
+                report["problems"].append(f"run plan lists run {rid[:12]} more than once")
+            elif not (isinstance(r.get("pubkeys"), dict) and isinstance(r.get("anchor_pubkey"), str) and r["anchor_pubkey"]):
+                report["problems"].append(f"run plan entry for {rid[:12]} lacks pubkeys or anchor_pubkey")
+            else:
+                planned[rid] = r
+        return planned
 
     def _authenticate_plan(self, report: Dict[str, Any]) -> bool:
         """True only if the plan in hand is the one an outside log holds AND the log it is read from is pinned.
@@ -276,6 +322,7 @@ class OutsideVerifier:
         plan_digest = hashlib.sha256(jcs_bytes(self.plan)).digest()
         prereg_anchored = False
         plan_confirmed: List[bool] = []
+        could_not_check = False
         if self.chain is not None:
             try:
                 pin_problems = self._chain_pin_problems()
@@ -290,6 +337,7 @@ class OutsideVerifier:
                     if onchain_plan != plan_digest:
                         report["problems"].append("run plan does not match the run-plan digest on chain")
             except Exception as exc:
+                could_not_check = True
                 report["unverified"].append(f"plan check on chain: {type(exc).__name__}: {exc}")
         else:
             report["unverified"].append("preregistration digest not checked on chain: no chain reader")
@@ -308,8 +356,9 @@ class OutsideVerifier:
                 if extra:
                     report["problems"].append(f"{len(extra)} other digest(s) logged under the study key (second run plan or preregistration)")
             except Exception as exc:
+                could_not_check = True
                 report["unverified"].append(f"plan check on Rekor: {type(exc).__name__}: {exc}")
-        return prereg_anchored and bool(plan_confirmed) and all(plan_confirmed)
+        return prereg_anchored and bool(plan_confirmed) and all(plan_confirmed) and not could_not_check
 
     def _net_calls(self) -> int:
         return (self.chain.calls if self.chain else 0) + (self.rekor.calls if self.rekor else 0)
@@ -343,9 +392,9 @@ class OutsideVerifier:
         if run.header:
             if run.run_id != rid:
                 problems.append("run_id is not sha256(JCS(header))")
-            if run.header.get("pubkeys") != planned.get("pubkeys"):
+            if "pubkeys" not in planned or run.header.get("pubkeys") != planned["pubkeys"]:
                 problems.append("run public keys differ from the anchored run plan")
-            if run.header.get("anchor_pubkey") != planned.get("anchor_pubkey"):
+            if "anchor_pubkey" not in planned or run.header.get("anchor_pubkey") != planned["anchor_pubkey"]:
                 problems.append("anchor public key differs from the anchored run plan")
         return _check(not problems, problems=problems)
 
@@ -462,8 +511,9 @@ class OutsideVerifier:
         Appends proven inconsistencies to ``problems``; returns the reasons the check could not be completed.
         """
         archived: List[Any] = []
+        unverified: List[str] = []
         path = self.dir / f"{run.run_id}.anchors.json"
-        records: list = []
+        records: Any = []
         if path.exists():
             raw = path.read_bytes()
             self.metrics.file_bytes += len(raw)
@@ -471,30 +521,65 @@ class OutsideVerifier:
                 records = json.loads(raw)
             except ValueError as exc:
                 problems.append(f"anchors.json unreadable: {exc}")
+        if not isinstance(records, list):
+            problems.append("anchors.json is not a list of anchor records")
+            records = []
         by_uuid = {r.uuid: r for r in good}
-        for rec in records if isinstance(records, list) else []:
-            text = rec.get("rekor_checkpoint") if isinstance(rec, dict) else None
+        n = len(run.entries)
+        seen_uuid: set = set()
+        for rec in records:
+            if not isinstance(rec, dict):
+                problems.append("anchors.json holds a record that is not an object")
+                continue
+            size = rec.get("size")
+            # anchors.json is operator-written: authenticate every record against the recomputed history
+            if not (isinstance(size, int) and not isinstance(size, bool) and 0 < size <= n):
+                problems.append(f"anchors.json record has an invalid size {size!r}")
+                continue
+            if rec.get("root") != run.root(size).hex() or rec.get("digest") != run.digest(size).hex():
+                problems.append(f"size {size}: anchors.json root/digest differ from the root recomputed from the export")
+                continue
+            uuid = rec.get("rekor_uuid")
+            if uuid is None:
+                continue
+            entry = by_uuid.get(uuid)
+            if not isinstance(uuid, str) or uuid in seen_uuid:
+                problems.append(f"size {size}: anchors.json names a missing or repeated rekor_uuid")
+                continue
+            seen_uuid.add(uuid)
+            if entry is None:
+                problems.append(f"size {size}: anchors.json rekor_uuid is not a verified entry under the run's anchor key")
+                continue
+            if entry.digest != run.digest(size).hex():
+                problems.append(f"size {size}: the Rekor entry named in anchors.json logs a different digest")
+                continue
+            text = rec.get("rekor_checkpoint")
             if not text:
+                unverified.append(f"size {size}: anchors.json record has a rekor_uuid but no rekor_checkpoint archived at anchor time")
                 continue
             try:
                 cp = verify_checkpoint(text, log_key)
             except RekorError as exc:
-                problems.append(f"size {rec.get('size')}: archived checkpoint: {exc}")
+                problems.append(f"size {size}: archived checkpoint: {exc}")
                 continue
             archived.append(cp)
-            entry = by_uuid.get(rec.get("rekor_uuid"))
-            if entry is not None and cp.size <= entry.log_index:
-                problems.append(f"size {rec.get('size')}: the archived checkpoint (size {cp.size}) predates its own entry (index {entry.log_index})")
+            if cp.size <= entry.log_index:
+                problems.append(f"size {size}: the archived checkpoint (size {cp.size}) predates its own entry (index {entry.log_index})")
+        # every verified entry the run depends on needs its own archived view
+        needed = {run.digest(s).hex() for s in required_sizes(n)}
+        for r in good:
+            if r.digest in needed and r.uuid not in seen_uuid:
+                unverified.append(f"Rekor entry {r.uuid[:12]} has no authenticated anchors.json record with an archived checkpoint")
         if not archived:
-            return ["no checkpoint archived at anchor time (anchors.json): a Rekor split view cannot be excluded"]
+            return ["no checkpoint archived at anchor time (anchors.json): a Rekor split view cannot be excluded"] + unverified
         seen = []
         for r in good:
             cp_text = (r.inclusion_proof or {}).get("checkpoint")
             if cp_text:
                 seen.append(parse_checkpoint(cp_text))
-        found, unverified = split_view_check(self.rekor, archived, seen)
+        found, not_checked = split_view_check(self.rekor, archived, seen)
         problems += found
-        return unverified
+        return unverified + not_checked
 
     # -- OTS -----------------------------------------------------------------------------------
     def _ots(self, run: LoadedRun) -> Dict[str, Any]:
@@ -559,7 +644,7 @@ class OutsideVerifier:
             if ordered != sorted(ordered):
                 problems.append(f"{system}: anchor times are not monotone in size")
         for claim in self.claims:
-            if claim.get("run_id", run.run_id) != run.run_id:
+            if claim.get("run_id") != run.run_id:
                 continue
             covers, made = int(claim["covers_size"]), int(claim["made_at"])
             earliest = [min(t for s, t in by.items() if s >= covers) for by in times.values()
