@@ -94,6 +94,10 @@ class DecisionRequest:
     state: str
     questions: Mapping[str, Question]
     seed: int = 0
+    # v4.1 (INTERFACES section 5), additive: ``images`` are base64 PNG strings (the local-look patches; d1 only) and
+    # are part of the request hash; ``brief_ids`` is the read receipt (entry ids in brief order) and is NOT hashed.
+    images: Tuple[str, ...] = ()
+    brief_ids: Tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not self.model:
@@ -106,6 +110,11 @@ class DecisionRequest:
         if not all(isinstance(q, Question) for q in questions.values()):
             raise ValueError("questions must be Question objects")
         object.__setattr__(self, "questions", questions)
+        images, brief_ids = tuple(self.images), tuple(self.brief_ids)
+        if not all(isinstance(i, str) and i for i in images) or not all(isinstance(i, str) and i for i in brief_ids):
+            raise ValueError("images and brief_ids must be non-empty strings")
+        object.__setattr__(self, "images", images)
+        object.__setattr__(self, "brief_ids", brief_ids)
 
     @classmethod
     def build(cls, model: str, state: str, questions: Mapping[str, Question], seed: int) -> "DecisionRequest":
@@ -115,8 +124,11 @@ class DecisionRequest:
 
     def payload(self) -> Dict[str, Any]:
         """Exactly what goes on the wire (Jev / laya-serve)."""
-        return {"model": self.model, "state": self.state,
-                "questions": {qid: q.wire() for qid, q in self.questions.items()}}
+        body: Dict[str, Any] = {"model": self.model, "state": self.state,
+                                "questions": {qid: q.wire() for qid, q in self.questions.items()}}
+        if self.images:  # absent when empty, so every pre-v4.1 request hash is unchanged
+            body["images"] = list(self.images)
+        return body
 
     @property
     def request_hash(self) -> str:
@@ -190,12 +202,33 @@ class DecisionResponse:
     elapsed_s: float = 0.0
     cached: bool = False
     escalated: Tuple[str, ...] = ()  # question ids answered by an escalation backend
+    # v4.1 (INTERFACES section 5), additive. identity = {served_model, revision, runtime, runtime_version};
+    # timing = {server_ms, network_ms, queue_ms}; cites = entry ids the worker says it used; prob_method is
+    # "logprobs" | "system_one" | "verbalised" ("" for fakes and pre-v4.1 backends).
+    identity: Mapping[str, str] = field(default_factory=dict)
+    timing: Mapping[str, int] = field(default_factory=dict)
+    cites: Tuple[str, ...] = ()
+    prob_method: str = ""
+    # degraded: some label was missing from the top logprobs and got a floor (see extract_label_probs).
+    # reasoning_tokens: hidden reasoning tokens the provider reported; alarm: an INTERFACES section 4 alarm payload
+    # ({} when none) that the harness writes to the board.
+    degraded: bool = False
+    reasoning_tokens: int = 0
+    alarm: Mapping[str, Any] = field(default_factory=dict)
+
+    @property
+    def usage(self) -> Dict[str, Any]:
+        return {"tokens_in": self.input_tokens, "tokens_out": self.output_tokens, "cost_usd": self.cost_usd}
 
     def accounting(self) -> Dict[str, Any]:
         """Provenance for the hashed event log (no wall-clock, no cache flag, so replays hash equal)."""
-        return {"model": self.served_model, "request_hash": self.request_hash,
-                "input_tokens": self.input_tokens, "output_tokens": self.output_tokens,
-                "escalated": list(self.escalated)}
+        out: Dict[str, Any] = {"model": self.served_model, "request_hash": self.request_hash,
+                               "input_tokens": self.input_tokens, "output_tokens": self.output_tokens,
+                               "escalated": list(self.escalated)}
+        if self.identity:  # deterministic, so a cache replay hashes equal
+            out.update(identity=dict(self.identity), prob_method=self.prob_method, cites=list(self.cites),
+                       degraded=self.degraded, reasoning_tokens=self.reasoning_tokens)
+        return out
 
 
 @runtime_checkable
