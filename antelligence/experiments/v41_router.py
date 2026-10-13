@@ -11,7 +11,7 @@
   Ties go to the cheaper model (the order of ``models``, cheapest first).
 * **kNN**: k = 15 (fewer if the training set is smaller), Euclidean distance on standardised features, neighbours
   ordered by (distance, index), plurality vote, vote ties to the cheaper model.
-* The Bonsai arm gets its own router (``BONSAI_ROUTER_MODELS``), trained on its 10 development cases.
+* The Bonsai arm gets its own router (``BONSAI_ROUTER_MODELS``: d1, Qwen3.5-4B, Bonsai 8B), trained on its 10 development cases.
 
 A frozen router is saved as JSON ``{"body", "sha256"}``; loading checks the hash.
 """
@@ -34,7 +34,7 @@ from antelligence.worlds.tumor_mri.questions import EXPLORE, STAY
 
 K = 15
 ROUTER_MODELS = ("d1", "qwen3.5-4b", "qwen3.5-9b")  # cheapest first
-BONSAI_ROUTER_MODELS = ("d1", "bonsai-8b")
+BONSAI_ROUTER_MODELS = ("d1", "qwen3.5-4b", "bonsai-8b")  # cheapest first; goal section 6
 FEATURE_NAMES = ("target_top", "target_entropy", "release_top", "release_entropy", "amount_top", "amount_entropy",
                  "region_unc", "payload", "dist_target_mm", "round", "is_stay_or_explore")
 QUESTIONS = ("target", "release", "amount")

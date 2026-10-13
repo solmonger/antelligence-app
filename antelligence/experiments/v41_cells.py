@@ -25,7 +25,7 @@ FIELDS: Tuple[Field, ...] = (
     Field("seed", "int", False, "run seed"),
     Field("split", "str", False, "dev or eval"),
     Field("wall_s", "float", False, "wall time of the run, seconds"),
-    Field("ticks_to_50", "int", True, "ticks until 50% of the final score; null = never reached"),
+    Field("ticks_to_50", "int", True, "first tick at which absolute coverage reaches 0.5 (goal 4.7); null = never reached"),
     Field("seconds_to_50", "float", True, "wall seconds until 50% of the final score; null = never reached"),
     Field("queen_calls", "int", False, "queen model calls"),
     Field("board_size", "int", False, "entries on the board at run end"),
