@@ -113,6 +113,6 @@ blockchain/anvil-zksync.log
 blockchain/deployments/zksync-local-inmemory.json
 
 # v4.1: MRI data, crops, probability maps, run keys and ledgers never enter git
-data/v4_1/
+data/v4_1
 ledger/
 *.ots.tmp
