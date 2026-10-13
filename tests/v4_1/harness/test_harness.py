@@ -219,6 +219,7 @@ def test_calibration_mode_counterfactual_logged_not_used(tmp_path):
         cf = r["counterfactual"]
         assert set(cf) == {D1, Q4} and cf[D1]["probs"]["target"] and cf[Q4]["probs"]["amount"]
         assert r["sprime"] and set(r["sprime"]) == {"target", "release", "amount"}
+        assert len(r["features"]) == 11 and all(isinstance(x, float) for x in r["features"])   # scripts/v41_fit.py trains on these
     assert [r["counterfactual"][D1]["release"] for r in one.decision_log] != \
            [r["counterfactual"][D1]["release"] for r in two.decision_log]      # logged, and they differ ...
     assert "calibration" in one.bundle["spec"] and one.bundle["spec"]["calibration"] is True

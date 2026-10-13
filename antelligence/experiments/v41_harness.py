@@ -85,7 +85,7 @@ DECISION_LOG_FIELDS = (
     "server_ms", "network_ms", "queue_ms", "tokens_in", "tokens_out", "cost_usd", "router_pick", "deferred",
     "escalated", "cited_ids", "brief_ids", "target", "release", "amount", "p_target_ppm", "p_release_ppm",
     "p_amount_ppm", "look_p_ppm", "prob_method", "identity", "calls", "counterfactual", "audit", "sprime",
-    "error", "error_reason", "attempts", "notes", "failures", "kind")
+    "error", "error_reason", "attempts", "notes", "failures", "kind", "features")
 RUN_LOG_FIELDS = (
     "run_id", "arm", "case", "seed", "split", "wall_s", "ticks", "ticks_to_50", "seconds_to_50", "queen_calls",
     "board_size", "anchors", "anchor_latency_s", "visibility_latency_ms", "decisions", "rounds", "shared_store",
@@ -1019,7 +1019,7 @@ class V41Harness:
                     "p_target": 0.0, "p_release": 0.0, "p_amount": 0.0}
         final = DecisionResponse(answers={}, served_model="", request_hash="")
         return {"decision": decision, "final": final, "final_name": failed.worker, "pick": failed.worker, "deferred": 0,
-                "escalated": 0, "calls": [], "counterfactual": None, "audit": None,
+                "escalated": 0, "calls": [], "counterfactual": None, "audit": None, "features": None,
                 "sprime": dict(sprime) if sprime else None, "look": look, "brief": brief, "fields": fields,
                 "trail": trail, "error": f"decision_error: {failed.reason}"}
 
@@ -1029,7 +1029,7 @@ class V41Harness:
         spec = ctx.spec
         text = self._compact(brief, with_ids=spec.board_on)
         used: List[Tuple[str, DecisionResponse]] = []
-        counterfactual = audit = None
+        counterfactual = audit = features = None
         deferred = escalated = 0
         key = f"{ctx.arm}|{ctx.case}|{ctx.seed}|{i}|{rnd}"
 
@@ -1051,10 +1051,12 @@ class V41Harness:
             counterfactual = {D1: self._cf(r1, d1r), Q4: self._cf(r4, q4r)}
             counterfactual[D1]["call"] = self._call_info(D1, d1r)
             counterfactual[Q4]["call"] = self._call_info(Q4, q4r)
+            features = router_features(fields, d1r.answers)  # logged so scripts/v41_fit.py can train the router
         else:
             req1, d1r = await go(D1)
             used.append((D1, d1r))
-            pick = ctx.router.predict(router_features(fields, d1r.answers))
+            features = router_features(fields, d1r.answers)
+            pick = ctx.router.predict(features)
             ctx.picks[pick] += 1
             if pick not in self.workers:
                 raise HarnessError(f"router picked {pick!r}, which is not a worker")
@@ -1086,8 +1088,8 @@ class V41Harness:
         decision = decide_from_answers(final.answers, req)
         return {"decision": decision, "final": final, "final_name": final_name, "pick": pick, "deferred": deferred,
                 "escalated": escalated, "calls": [self._call_info(n, r) for n, r in used],
-                "counterfactual": counterfactual, "audit": audit, "sprime": dict(sprime) if sprime else None,
-                "look": look, "brief": brief, "fields": fields}
+                "counterfactual": counterfactual, "audit": audit, "features": features,
+                "sprime": dict(sprime) if sprime else None, "look": look, "brief": brief, "fields": fields}
 
     @staticmethod
     def _cf(req: DecisionRequest, resp: DecisionResponse) -> Dict[str, Any]:
@@ -1140,8 +1142,8 @@ class V41Harness:
             "p_target_ppm": payload["p_target_ppm"], "p_release_ppm": payload["p_release_ppm"],
             "p_amount_ppm": payload["p_amount_ppm"], "look_p_ppm": None if look is None else _ppm(look),
             "prob_method": final.prob_method, "identity": ident, "calls": calls,
-            "counterfactual": rec["counterfactual"], "audit": rec["audit"], "sprime": rec["sprime"],
-            "entry_id": entry_id, "kind": "decision", "error": bool(error), "error_reason": error,
+            "counterfactual": rec["counterfactual"], "audit": rec["audit"], "features": rec.get("features"),
+            "sprime": rec["sprime"], "entry_id": entry_id, "kind": "decision", "error": bool(error), "error_reason": error,
             "attempts": sum(1 for t in rec["trail"] if t["error"]) + (0 if error else 1),
             "notes": [t["note"] for t in rec["trail"] if t["note"]],
             "failures": [{"attempt": t["attempt"], "error": t["error"], "billed": t["billed"]}
