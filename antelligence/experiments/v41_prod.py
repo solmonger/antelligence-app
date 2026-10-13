@@ -77,7 +77,7 @@ def read_nous_key(auth_path: Union[str, Path] = HERMES_AUTH) -> str:
 
 
 class BudgetGuard:
-    """Refuses a paid call when spend reached the stop: Nous >= $7.50, RunPod >= $9.50 (``v41_budget.STOPS``)."""
+    """Refuses a paid call when spend reached the stop: Nous >= $7.50, RunPod >= $24.00 (``v41_budget.STOPS``)."""
 
     def __init__(self, provider: str, usage: Union[str, Path] = USAGE_LEDGER, pods: Union[str, Path] = POD_COSTS) -> None:
         if provider not in v41_budget.STOPS:

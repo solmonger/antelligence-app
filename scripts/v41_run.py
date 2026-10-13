@@ -13,7 +13,7 @@ OTS public calendars, Rekor (rekor.sigstore.dev), AnchorRegistry (chain 300), Bo
 SW-Byz-chain, over the persistent queue in ledger/. It WRITES TO PUBLIC NETWORKS and needs the chain signer in the
 environment (chain.config.get_private_key). ``--backends live`` builds the pod, Nous and Bonsai backends (no --config):
 the pod URL and secret come from ledger/v4.1-pod-state.json, the Nous key is read in-process, every paid call is ledgered
-in ledger/v4.1-usage.jsonl and refused past Nous $7.50 / RunPod $9.50.
+in ledger/v4.1-usage.jsonl and refused past Nous $7.50 / RunPod $24.00.
 
 Exit code 1 if any episode failed; failed runs are written to the cells file with an ``error`` field.
 """
