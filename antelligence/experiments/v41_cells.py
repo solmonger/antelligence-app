@@ -54,6 +54,8 @@ FIELDS: Tuple[Field, ...] = (
     Field("backends_kind", "str", True, "live | config | fake: where the worker answers came from (null only on error cells)"),
     Field("router_kind", "str", True, "frozen | none | fake (null only on error cells)"),
     Field("router_sha256", "hex64", True, "sha256 of the frozen router; null unless router_kind is frozen"),
+    Field("look_temperature", "float", True, "temperature applied to d1's local-look probability (null only on error cells)"),
+    Field("look_temperature_source", "str", True, "frozen | override: where look_temperature came from (null only on error cells)"),
     Field("identities", "str", True, "comma-joined served-model identities seen in the run; 'fake' marks fake backends; null for scripted arms"),
 )
 FIELD_NAMES = tuple(f.name for f in FIELDS)

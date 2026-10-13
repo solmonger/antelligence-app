@@ -88,7 +88,9 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--thresholds", help="frozen conformal thresholds JSON")
     ap.add_argument("--bonsai-router")
     ap.add_argument("--bonsai-thresholds")
-    ap.add_argument("--look-temperature", type=float, default=1.0)
+    ap.add_argument("--look-temperature", type=float, default=None,
+                    help="explicit override of d1's look temperature; default = frozen config/v4_1/look_temperature.json "
+                         "(sha256-verified). Refused on eval cases unless equal to the frozen value")
     ap.add_argument("--ledger-dir", help="a ledger/ directory for run keys (needed to replay later; default ledger/ with --anchors live)")
     ap.add_argument("--repo-root", default=str(REPO))
     ap.add_argument("--prereg", default=str(REPO / "docs/research/v4.1-20261013/PREREGISTRATION.md"))
@@ -189,6 +191,7 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
         runs.append((arm, case, int(seed)))
     Path(args.out_dir).mkdir(parents=True, exist_ok=True)
     h = harness or build_harness(args, get_env)
+    print(f"look temperature {h.look_temperature} ({h.look_temperature_source})")
     try:
         results = asyncio.run(h.run_many(runs, concurrency=args.concurrency, calibration=args.calibration))
     finally:
