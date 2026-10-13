@@ -32,6 +32,9 @@ CUDAGRAPH_SIZE="${V41_MAX_CUDAGRAPH_CAPTURE_SIZE:-}"
 D1_VENV="${V41_D1_VENV:-/opt/d1-venv}"
 D1_SCRIPT="${V41_D1_SCRIPT:-/opt/v41/v41_d1_server.py}"
 READY_TIMEOUT_S="${V41_READY_TIMEOUT_S:-900}"
+# Idle watchdog (scripts/v41_pod_watchdog.py, fetched and sha256-verified beside this file). V41_IDLE_SHUTDOWN_S is the
+# idle limit in seconds (default 900 = 15 min); V41_WATCHDOG_POLL_S the scrape interval (default 60).
+WATCHDOG="${V41_WATCHDOG:-/opt/v41/v41_pod_watchdog.py}"
 
 pids=()
 cleanup() { for p in "${pids[@]:-}"; do kill "$p" 2>/dev/null || true; done; }
@@ -99,6 +102,10 @@ echo "ready: d1-3B on :8102"
 nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader || true
 echo "final: gpu_util_9b=$GPU_UTIL_9B gpu_util_4b=$GPU_UTIL_4B max_model_len=$MAX_MODEL_LEN max_num_seqs=$MAX_NUM_SEQS cudagraph=${CUDAGRAPH_SIZE:-default}"
 
+# Every server is ready: from here the pod terminates itself after V41_IDLE_SHUTDOWN_S without requests.
+python3 "$WATCHDOG" &
+pids+=("$!")
+
 wait -n "${pids[@]}"
-echo "FATAL: a server exited" >&2
+echo "FATAL: a server (or the idle watchdog) exited" >&2
 exit 1

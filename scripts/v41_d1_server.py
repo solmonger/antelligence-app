@@ -83,6 +83,16 @@ def handle_request(model: Any, identity: Mapping[str, str], payload: Any) -> Dic
             "usage": result["usage"], "timing": {"server_ms": server_ms, "queue_ms": 0}}
 
 
+# Activity counters for the pod idle watchdog (scripts/v41_pod_watchdog.py); counts only, no request content.
+ACTIVITY = {"requests": 0, "in_flight": 0}
+_ACTIVITY_LOCK = threading.Lock()
+
+
+def metrics_text() -> str:
+    with _ACTIVITY_LOCK:
+        return (f"v41_d1_requests_total {ACTIVITY['requests']}\nv41_d1_in_flight {ACTIVITY['in_flight']}\n")
+
+
 def make_handler(model: Any, identity: Mapping[str, str], lock: threading.Lock, token: Optional[str]):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_: Any) -> None:  # no request text in logs
@@ -102,6 +112,13 @@ def make_handler(model: Any, identity: Mapping[str, str], lock: threading.Lock, 
         def do_GET(self) -> None:
             if self.path == "/health":
                 self._send(200, {"ok": True, "identity": dict(identity)})
+            elif self.path == "/metrics":
+                raw = metrics_text().encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain; version=0.0.4")
+                self.send_header("Content-Length", str(len(raw)))
+                self.end_headers()
+                self.wfile.write(raw)
             else:
                 self._send(404, {"error": "not found"})
 
@@ -110,6 +127,9 @@ def make_handler(model: Any, identity: Mapping[str, str], lock: threading.Lock, 
                 return self._send(404, {"error": "not found"})
             if not self._authorised():
                 return self._send(401, {"error": "unauthorised"})
+            with _ACTIVITY_LOCK:
+                ACTIVITY["requests"] += 1
+                ACTIVITY["in_flight"] += 1
             try:
                 length = int(self.headers.get("Content-Length", "0"))
                 if not 0 < length <= MAX_BODY_BYTES:
@@ -126,6 +146,9 @@ def make_handler(model: Any, identity: Mapping[str, str], lock: threading.Lock, 
             except Exception as exc:  # the caller retries 5xx; never echo internals to the client
                 traceback.print_exc()  # server log only (stderr); the traceback carries no request text
                 self._send(500, {"error": type(exc).__name__})
+            finally:
+                with _ACTIVITY_LOCK:
+                    ACTIVITY["in_flight"] -= 1
 
     return Handler
 

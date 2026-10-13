@@ -102,9 +102,11 @@ def fixture(tmp_path, tamper=False):
     commit = "a" * 40
     srv = tmp_path / "srv" / commit / "scripts"
     srv.mkdir(parents=True)
-    files = {"v41_pod_serve.sh": b"#!/bin/bash\necho serve\n", "v41_d1_server.py": b"print('d1')\n"}
+    files = {"v41_pod_serve.sh": b"#!/bin/bash\necho serve\n", "v41_d1_server.py": b"print('d1')\n",
+             "v41_pod_watchdog.py": b"print('watchdog')\n"}
     hashes = {"serve.sh": hashlib.sha256(files["v41_pod_serve.sh"]).hexdigest(),
-              "v41_d1_server.py": hashlib.sha256(files["v41_d1_server.py"]).hexdigest()}
+              "v41_d1_server.py": hashlib.sha256(files["v41_d1_server.py"]).hexdigest(),
+              "v41_pod_watchdog.py": hashlib.sha256(files["v41_pod_watchdog.py"]).hexdigest()}
     if tamper:
         files["v41_d1_server.py"] = b"print('evil')\n"
     for n, data in files.items():
@@ -125,7 +127,7 @@ def test_fragment_downloads_and_verifies(tmp_path):
     r = run_frag(frag)
     assert r.returncode == 0 and "REACHED_SERVE" in r.stdout, r.stderr
     assert (dest / "serve.sh").read_bytes().startswith(b"#!/bin/bash") and not list(dest.glob("*.part"))
-    assert log.read_text().count("verified ") == 2
+    assert log.read_text().count("verified ") == 3
 
 
 def test_fragment_refuses_tampered_file(tmp_path):
