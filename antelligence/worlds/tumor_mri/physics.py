@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import heapq
 import math
+from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple
 
 import numpy as np
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, gaussian_filter1d
 
 Vox = Tuple[int, int, int]
 
@@ -183,3 +184,95 @@ class Pathfinder:
             if all(lo[i] == 0 and hi[i] == self.shape[i] for i in range(3)):
                 raise ValueError("empty brain mask")
             r += 2
+
+
+# --- unit-puff response, boundary-exact ------------------------------------------------------------------
+
+
+class PuffResponse:
+    """Cumulative dose in a ``(2W+1)^3`` window around a unit puff, in a crop with absorbing faces.
+
+    The world's physics is separable: the release kernel is a product of 1D Gaussians, diffusion is a Gaussian filter
+    applied per axis with zero outside the crop, and decay is a scalar. So one tick of a puff is
+    ``(1-decay)^t * A_t(x) * B_t(y) * C_t(z)`` where each factor is a 1D process with an absorbing end, and the window dose
+    is the sum of the first ``n`` ticks. That is the same arithmetic as :class:`DrugField` (tests compare them), not an
+    approximation: mass that leaves the crop, at release or by diffusion, never comes back, so a puff near a face (or
+    corner) delivers less than the free-space kernel says. ``retained`` is the share of the puff that survives release.
+
+    A face farther than ``edge_r`` voxels from the puff is treated as absent (room ``kern_r`` on that side, the same
+    box the free-space kernel uses); nearer faces are exact. Window cells outside the crop are 0 (the part that was lost).
+    """
+
+    def __init__(self, *, release_sigma_vox: float, diffuse_sigma_vox: float, decay: float, ticks: int,
+                 win_r: int = 16, kern_r: int = 24, edge_r: int = 14, cache: int = 512) -> None:
+        self.win_r, self.kern_r, self.edge_r = int(win_r), int(kern_r), int(edge_r)
+        self.sigma, self.decay, self.ticks = float(diffuse_sigma_vox), float(decay), int(ticks)
+        r = max(1, int(math.ceil(3.0 * release_sigma_vox)))
+        ax = np.arange(-r, r + 1, dtype=np.float64)
+        g = np.exp(-0.5 * (ax / release_sigma_vox) ** 2)
+        self._g, self._r = g / g.sum(), r  # 3D kernel / its sum == product of per-axis normalised 1D kernels
+        self._weights = (1.0 - self.decay) ** np.arange(1, self.ticks + 1, dtype=np.float64)
+        self._axes: dict = {}
+        self._cache: "OrderedDict[tuple, np.ndarray]" = OrderedDict()
+        self._cache_max = int(cache)
+
+    def _axis_key(self, length: int, p: int) -> Tuple[int, int]:
+        left, right = int(p), int(length) - 1 - int(p)
+        return (left if left < self.edge_r else self.kern_r, right if right < self.edge_r else self.kern_r)
+
+    def _axis(self, key: Tuple[int, int]):
+        """(profiles (ticks+1, 2W+1), retained fraction) for a 1D puff with ``key`` voxels of room left and right."""
+        hit = self._axes.get(key)
+        if hit is not None:
+            return hit
+        lk, rk = key
+        m = lk + rk + 1
+        a = np.zeros(m, dtype=np.float64)
+        for off in range(-self._r, self._r + 1):
+            if 0 <= lk + off < m:
+                a[lk + off] = self._g[off + self._r]
+        retained = float(a.sum())
+        w = self.win_r
+        prof = np.zeros((self.ticks + 1, 2 * w + 1), dtype=np.float64)
+        lo, hi = max(lk - w, 0), min(lk + w + 1, m)  # window cells that exist
+        cur = a
+        for t in range(self.ticks + 1):
+            if t:
+                cur = np.maximum(gaussian_filter1d(cur, self.sigma, mode="constant", cval=0.0, truncate=3.0), 0.0)
+            prof[t, lo - (lk - w):hi - (lk - w)] = cur[lo:hi]
+        self._axes[key] = (prof, retained)
+        return self._axes[key]
+
+    def retained(self, shape: Sequence[int], v: Vox) -> float:
+        """Share of a unit puff released at ``v`` that stays inside the crop (the rest is lost at once)."""
+        out = 1.0
+        for ax in range(3):
+            out *= self._axis(self._axis_key(shape[ax], v[ax]))[1]
+        return out
+
+    def window(self, shape: Sequence[int], v: Vox, n: int) -> np.ndarray:
+        """Dose in the window around ``v`` from a unit puff released ``n`` ticks before the end (float32)."""
+        n = int(min(max(n, 0), self.ticks))
+        w = 2 * self.win_r + 1
+        if n < 1:
+            return np.zeros((w, w, w), dtype=np.float32)
+        keys = tuple(self._axis_key(shape[ax], v[ax]) for ax in range(3))
+        ck = (keys, n)
+        hit = self._cache.get(ck)
+        if hit is not None:
+            self._cache.move_to_end(ck)
+            return hit
+        a, b, c = (self._axis(k)[0][1:n + 1] for k in keys)
+        bc = (b[:, :, None] * c[:, None, :]).reshape(n, w * w)
+        out = ((a * self._weights[:n, None]).T @ bc).reshape(w, w, w).astype(np.float32)
+        for ax in range(3):  # window cells beyond a face are outside the crop: lost, not delivered
+            lo, hi = max(self.win_r - int(v[ax]), 0), min(w, self.win_r + int(shape[ax]) - int(v[ax]))
+            idx = [slice(None)] * 3
+            idx[ax] = slice(0, lo)
+            out[tuple(idx)] = 0.0
+            idx[ax] = slice(hi, w)
+            out[tuple(idx)] = 0.0
+        self._cache[ck] = out
+        if len(self._cache) > self._cache_max:
+            self._cache.popitem(last=False)
+        return out

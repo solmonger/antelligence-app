@@ -254,6 +254,8 @@ def test_no_hit_outside_share_uses_stored_fallback_crop(tmp_path):
     assert m["crop_found"] is False
     expected = 1.0 - truth[0][5:15, 5:15, 5:15].sum() / truth[0].sum()
     assert m["truth_wt_share_outside_crop"] == pytest.approx(expected) and 0.0 < expected < 1.0
+    assert m["truth_wt_outside_crop_voxels"] == int(truth[0].sum() - truth[0][5:15, 5:15, 5:15].sum()) > 0
     m2 = pipeline.finalize_case("C2" if False else "C", tmp_path / "raw", tmp_path / "out2", calibrate.Calibrator("none"),
                                 "eval", truth_metrics=False)
     assert "dice_2mm" not in m2 and "ece_wt_cal" not in m2
+    assert "truth_wt_outside_crop_voxels" not in m2  # truth-derived: withheld for eval before the lock

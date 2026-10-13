@@ -38,7 +38,7 @@ from scipy import ndimage
 from antelligence.kernel.types import Intent, LocalView
 from antelligence.worlds.tumor_mri.config import WorldConfig
 from antelligence.worlds.tumor_mri.data import Candidate
-from antelligence.worlds.tumor_mri.physics import DrugField, Vox
+from antelligence.worlds.tumor_mri.physics import DrugField, PuffResponse, Vox
 from antelligence.worlds.tumor_mri.questions import EXPLORE, STAY
 from antelligence.worlds.tumor_mri.world import ACTION_DECIDE, Scorer
 
@@ -157,13 +157,18 @@ class OracleSPrime:
 
     CLAIM_PENALTY = 0.89
     GOAL_BONUS = 1.05  # hysteresis for the previous goal
+    MAX_ASTAR = 12  # A* path lengths computed per squad per plan (they are checked best-first)
 
     def __init__(self, scorer: Scorer, positions, dose_field: DrugField, config: WorldConfig, *, voxel_mm: float = 2.0,
                  payloads=None, pathfinder=None, n_points: int = 5, map_radius_mm: float = MAP_RADIUS_MM) -> None:
         self._scorer, self._positions, self._dose, self.cfg = scorer, positions, dose_field, config
         self._payloads, self._paths = payloads, pathfinder
         self.voxel_mm, self.n_points, self.map_radius_mm = voxel_mm, n_points, map_radius_mm
-        self._kern = _response_kernels(config, voxel_mm)
+        self._kern = _response_kernels(config, voxel_mm)  # free-space; sizes the target set
+        self._puff = PuffResponse(release_sigma_vox=config.release_sigma_mm / voxel_mm,
+                                  diffuse_sigma_vox=config.diffuse_sigma_vox, decay=config.decay, ticks=config.ticks,
+                                  win_r=_WIN_R, kern_r=_KERN_R)
+        self._shape = tuple(scorer.truth.shape)
         self._brain = pathfinder.brain if pathfinder is not None else np.ones(scorer.truth.shape, dtype=bool)
         idx = np.argwhere(scorer.truth)
         self._tbox = (idx.min(axis=0), idx.max(axis=0) + 1) if len(idx) else None
@@ -221,9 +226,17 @@ class OracleSPrime:
     # --- scoring ----------------------------------------------------------------------------------------------
 
     def _kernel(self, n: int) -> Optional[np.ndarray]:
+        """Free-space unit-puff response (nearest available horizon); only for sizing the target set."""
         if n < 1 or not self._kern:
             return None
         return self._kern[min(self._kern, key=lambda k: (abs(k - n), k))]
+
+    def _puff_kernel(self, v: Vox, n: int) -> Optional[np.ndarray]:
+        """Unit-puff response at ``v`` for ``n`` ticks left, exact at the crop faces: the part that crosses a face (at
+        release or by diffusion) is lost, so a puff near an edge delivers less than the free-space kernel says."""
+        if n < 1:
+            return None
+        return self._puff.window(self._shape, v, n)
 
     @staticmethod
     def _window(shape, v):
@@ -258,7 +271,7 @@ class OracleSPrime:
         every = cfg.decision_every
         release_tick = tick + int(math.ceil(steps / every)) * every
         n = cfg.ticks - release_tick
-        kern = self._kernel(n)
+        kern = self._puff_kernel(v, n)
         if kern is None:
             return None
         masses = payload * np.asarray(cfg.amount_fractions, dtype=np.float64)
@@ -344,22 +357,24 @@ class OracleSPrime:
         return o.eff * (self.CLAIM_PENALTY if o.point in self._claimed else 1.0)
 
     def _best_walk(self, proj, pos: Vox, tick: int, payload: float, prev: Optional[Vox]) -> Optional[_Option]:
+        """Best place to walk to and release. Ranked by A* path length: the straight-line count is only an optimistic
+        bound (a step is never shorter than the Chebyshev distance), used to order the search and stop it early, so the
+        pick is the best by walked path even when a nearby point sits behind a wall of non-brain voxels."""
         pts = [p for p in self._candidate_points(proj) if p != pos]
         if prev is not None and prev != pos and prev not in pts:
             pts.append(prev)
-        scored = []
+        pool: Dict[Vox, _Option] = {}
         for p in pts:
             o = self._option(proj, p, self._steps(pos, p, False), tick, payload)
             if o is not None and o.eff > 0.0:
-                scored.append(o)
-        if not scored:
+                pool[p] = o
+        if not pool:
             return None
 
         def val(o: _Option) -> float:
             return self._value(o) * (self.GOAL_BONUS if o.point == prev else 1.0)
 
-        scored.sort(key=lambda o: (-val(o), o.steps, o.point))
-        best = scored[0]
+        best = min(pool.values(), key=lambda o: (-val(o), o.steps, o.point))
         for _ in range(2):  # hill-climb: release points may sit off the mass
             improved = False
             for a in range(3):
@@ -370,20 +385,21 @@ class OracleSPrime:
                         continue
                     qv: Vox = (q[0], q[1], q[2])
                     o = self._option(proj, qv, self._steps(pos, qv, False), tick, payload)
+                    if o is not None and o.eff > 0.0:
+                        pool.setdefault(qv, o)
                     if o is not None and val(o) > val(best) * (1.0 + 1e-9):
                         best, improved = o, True
             if not improved:
                 break
-        finalists = [best] + [o for o in scored if o.point != best.point][:2]
-        refined = []
-        for o in finalists:  # A* path lengths for the leaders
+        order = sorted(pool.values(), key=lambda o: (-val(o), o.steps, o.point))
+        winner: Optional[_Option] = None
+        for n_exact, o in enumerate(order):
+            if winner is not None and (val(o) <= val(winner) or n_exact >= self.MAX_ASTAR):
+                break  # the optimistic value of everything left cannot beat the exact winner
             r = self._option(proj, o.point, self._steps(pos, o.point, True), tick, payload)
-            if r is not None and r.eff > 0.0:
-                refined.append(r)
-        if not refined:
-            return None
-        refined.sort(key=lambda o: (-val(o), o.steps, o.point))
-        return refined[0]
+            if r is not None and r.eff > 0.0 and (winner is None or (val(r), -r.steps) > (val(winner), -winner.steps)):
+                winner = r
+        return winner
 
     def _plan_squad(self, i: int, pos: Vox, payload: float, tick: int, proj: np.ndarray) -> _Action:
         act = _Action()
@@ -394,12 +410,12 @@ class OracleSPrime:
         walk = self._best_walk(proj, pos, tick, payload, prev)
         if here is not None and here.eff > 0.0 and (walk is None or here.eff >= self._value(walk)):
             act.release_level = here.level
-            self._commit(proj, pos, self._kernel(self.cfg.ticks - tick), here.mass)  # type: ignore[arg-type]
+            self._commit(proj, pos, self._puff_kernel(pos, self.cfg.ticks - tick), here.mass)  # type: ignore[arg-type]
             payload -= here.mass
             walk = self._best_walk(proj, pos, tick, payload, prev) if payload > 1e-12 else None
         if walk is not None:
             act.goal, act.goal_level = walk.point, walk.level
-            self._commit(proj, walk.point, self._kernel(self.cfg.ticks - walk.release_tick), walk.mass)  # type: ignore[arg-type]
+            self._commit(proj, walk.point, self._puff_kernel(walk.point, self.cfg.ticks - walk.release_tick), walk.mass)  # type: ignore[arg-type]
             self._claimed.append(walk.point)
         elif act.release_level:
             self._claimed.append(pos)
@@ -435,10 +451,12 @@ class OracleSPrime:
         if act.goal is not None:
             label = sprime_candidate_label(act.goal, o["candidates"], self.voxel_mm, self.map_radius_mm)
             return Intent(ACTION_DECIDE, {"target": label, "release": release, "amount": amount,
-                                          "target_vox": list(act.goal)}, meta={"oracle_goal": list(act.goal)})
+                                          "target_vox": list(act.goal)},
+                          meta={"oracle_goal": list(act.goal), "scripted": True})
         label = sprime_candidate_label(pos, o["candidates"], self.voxel_mm, self.map_radius_mm)
         return Intent(ACTION_DECIDE, {"target": STAY if label == EXPLORE else label, "release": release,
-                                      "amount": max(amount, 1), "target_vox": list(pos)})  # stay put: no stale path
+                                      "amount": max(amount, 1), "target_vox": list(pos)},
+                      meta={"scripted": True})  # stay put: no stale path
 
     def describe(self) -> Dict[str, Any]:
         return {"policy": "oracle_Sprime", "n_points": self.n_points, "map_radius_mm": self.map_radius_mm}

@@ -251,7 +251,9 @@ class TumorMRIWorld:
             sq.payload -= deposited
             sq.last_release = {"tick": int(tick), "amount_level": amount,
                                "fraction": cfg.amount_fractions[amount - 1], "mass": deposited}
-        override = p.get("target_vox")  # scripted arms only (oracle S'); typed model arms never set it
+        # target_vox is honoured only for intents a scripted arm tagged meta["scripted"] = True (oracle S'); a model arm
+        # (or anything else) that sends it gets it ignored, so a label is the only way to steer a squad.
+        override = p.get("target_vox") if intent.meta.get("scripted") is True else None
         if override is not None or target != STAY:  # Stay keeps the current target (and its path)
             sq.target = target
             sq.goal = self._resolve_goal(i, sq, target, override)
