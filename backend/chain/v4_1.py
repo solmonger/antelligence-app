@@ -127,11 +127,13 @@ ABIS: Dict[str, list] = {
         _fn("onceDigestOf", [("id", "bytes32")], ["bytes32"], "view"),
         _fn("digestOf", [("runId", "bytes32"), ("size", "uint64")], ["bytes32"], "view"),
         _fn("anchorCount", [("runId", "bytes32")], ["uint64"], "view"),
+        _fn("deployer", [], ["address"], "view"),
     ],
     "BoardLog": [
         _fn("postBatch", [("runId", "bytes32"), ("firstSeq", "uint64"), ("prevHash", "bytes32"), ("entries", "bytes[]")]),
         _fn("nextSeq", [("runId", "bytes32")], ["uint64"], "view"),
         _fn("lastId", [("runId", "bytes32")], ["bytes32"], "view"),
+        _fn("deployer", [], ["address"], "view"),     # postBatch is deployer-only (INTERFACES section 8)
     ],
     "ReputationRegistry": [
         _fn("report", [("runId", "bytes32"), ("author", "bytes32"), ("claimId", "bytes32"), ("contradicted", "bool")], ["uint32"]),
@@ -355,7 +357,16 @@ class ChainClientV41:
                 raise ChainConfigError(f"{name} has no address (v4_1 not deployed on this network); refusing to sign")
             if not self.w3.eth.get_code(Web3.to_checksum_address(addr)):
                 raise ChainConfigError(f"no contract code for {name} at {addr}; refusing to sign")
+        for name in ("AnchorRegistry", "BoardLog"):      # deployer-only writers: a mismatch would only revert on chain
+            on_chain = self._deployer_of(name)
+            if on_chain.lower() != str(self.expected_deployer).lower():
+                raise ChainConfigError(f"{name} at {self.contracts[name]} is deployed by {on_chain}, not the "
+                                       f"recorded deployer {self.expected_deployer}; refusing to sign")
         return chain_id
+
+    def _deployer_of(self, name: str) -> str:
+        out = bytes(self.w3.eth.call({"to": self._addr(name), "data": _calldata(name, "deployer", [])}))
+        return Web3.to_checksum_address(out[-20:])
 
     # ---- enqueue (never touches the network) --------------------------------------------------
 

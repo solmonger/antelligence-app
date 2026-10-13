@@ -7,6 +7,9 @@ pragma solidity ^0.8.24;
 ///         The contract checks that seq is contiguous and that every entry's prevHash is the id of
 ///         the entry before it. It cannot recompute ids (they are sha256 over JCS JSON), so the id
 ///         is a commitment that a verifier checks off-chain against the exported log.
+///         Posting is deployer-only (INTERFACES section 8), like AnchorRegistry: a third party could
+///         otherwise post to a runId first, fix itself as owner and lock the real run out. The run owner
+///         is therefore always the deployer; the getter is kept for the verifier.
 contract BoardLog {
     uint8 public constant MAX_TYPE_CODE = 6; // task 0 ... alarm 6
 
@@ -16,24 +19,28 @@ contract BoardLog {
         bytes32 lastId;
     }
 
+    /// @notice Deployer. Only it may call postBatch.
+    address public immutable deployer;
+
     mapping(bytes32 => Run) private runs;
 
     event Entry(bytes32 indexed runId, uint64 seq, bytes32 id, uint8 typeCode, bytes data);
 
-    error NotRunOwner();
+    error NotDeployer();
     error EmptyBatch();
     error SeqMismatch(uint64 expected, uint64 got);
     error PrevHashMismatch(uint64 seq);
     error BadTypeCode(uint64 seq);
     error EmptyId(uint64 seq);
 
+    constructor() {
+        deployer = msg.sender;
+    }
+
     function postBatch(bytes32 runId, uint64 firstSeq, bytes32 prevHash, bytes[] calldata entries) external {
+        if (msg.sender != deployer) revert NotDeployer();
         Run storage r = runs[runId];
-        if (r.owner == address(0)) {
-            r.owner = msg.sender; // first post fixes the run owner
-        } else if (r.owner != msg.sender) {
-            revert NotRunOwner();
-        }
+        if (r.owner == address(0)) r.owner = msg.sender; // first post records the owner (always the deployer)
         if (entries.length == 0) revert EmptyBatch();
         if (firstSeq != r.nextSeq) revert SeqMismatch(r.nextSeq, firstSeq);
         if (prevHash != r.lastId) revert PrevHashMismatch(firstSeq);

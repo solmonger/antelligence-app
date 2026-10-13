@@ -27,6 +27,9 @@ EVENT_ANCHORED_ONCE = bytes(Web3.keccak(text="AnchoredOnce(bytes32,bytes32)"))
 class ChainReader(Protocol):
     """What the verifier needs from the chain. ``None`` from a time method means "not available"."""
 
+    @property
+    def address(self) -> str: ...
+    def code_hash(self) -> str: ...
     def deployer(self) -> str: ...
     def run_owner(self, run_id: bytes) -> str: ...
     def last_size(self, run_id: bytes) -> int: ...
@@ -74,6 +77,15 @@ class Web3ChainReader:
         out = bytes(self.w3.eth.call({"to": self.address, "data": "0x" + encode_view(name, *args).hex()}))
         self._bytes += len(out)
         return decode_view(name, out)
+
+    def code_hash(self) -> str:
+        """keccak256 of the code the node serves at the registry address ("0x" + hex); empty code is an error."""
+        self._calls += 1
+        code = bytes(self.w3.eth.get_code(self.address))
+        self._bytes += len(code)
+        if not code:
+            raise ValueError(f"no contract code at {self.address}")
+        return "0x" + bytes(Web3.keccak(code)).hex()
 
     def deployer(self) -> str:
         return Web3.to_checksum_address(self._view("deployer"))

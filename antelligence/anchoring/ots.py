@@ -26,7 +26,6 @@ from opentimestamps.core.op import OpAppend, OpSHA256
 from opentimestamps.core.serialize import (
     BytesDeserializationContext,
     BytesSerializationContext,
-    DeserializationError,
 )
 from opentimestamps.core.timestamp import DetachedTimestampFile, Timestamp
 
@@ -80,19 +79,67 @@ class HttpOtsTransport:
 HeaderProvider = Callable[[int], CBlockHeader]
 
 
-class BlockstreamHeaderProvider:
-    """Read-only GETs to a public Esplora instance for Bitcoin block headers."""
+MAINNET_POW_LIMIT = 0xFFFF << (8 * (0x1D - 3))       # target of nBits 0x1d00ffff: difficulty 1
+# Bitcoin mainnet difficulty has been far above this since 2020. A header cheaper than this is not a real block,
+# so a lying header source would have to burn ~2^32 * MIN_DIFFICULTY hashes per forged header.
+MIN_DIFFICULTY = 1e12
 
-    def __init__(self, base_url: str = "https://blockstream.info/api", timeout_s: float = 20.0) -> None:
+
+class HeaderError(RuntimeError):
+    """A block header failed a local sanity check (hash, proof of work, difficulty floor)."""
+
+
+def nbits_target(nbits: int) -> int:
+    """Decode Bitcoin's compact difficulty target; raises :class:`HeaderError` for negative or zero targets."""
+    exponent, mantissa = nbits >> 24, nbits & 0x007FFFFF
+    if nbits & 0x00800000 or mantissa == 0:
+        raise HeaderError(f"invalid compact target 0x{nbits:08x}")
+    return mantissa << (8 * (exponent - 3)) if exponent > 3 else mantissa >> (8 * (3 - exponent))
+
+
+def check_header_pow(header: CBlockHeader, *, pow_limit: int = MAINNET_POW_LIMIT, min_difficulty: float = MIN_DIFFICULTY) -> None:
+    """The header's double-SHA256 must be below its own target, the target must be a real Bitcoin one
+    (at or below ``pow_limit`` and at least ``min_difficulty`` times harder than difficulty 1)."""
+    target = nbits_target(int(header.nBits))
+    if target > pow_limit:
+        raise HeaderError("header target is easier than the proof-of-work limit")
+    if MAINNET_POW_LIMIT / target < min_difficulty:
+        raise HeaderError(f"header difficulty {MAINNET_POW_LIMIT / target:.3g} is below the floor {min_difficulty:.3g}")
+    if int.from_bytes(header.GetHash(), "little") > target:
+        raise HeaderError("header hash does not meet its own target (no proof of work)")
+
+
+class BlockstreamHeaderProvider:
+    """Read-only GETs to a public Esplora instance for Bitcoin block headers.
+
+    The server is NOT trusted for the header's content: the header must hash to the block hash the server named,
+    and must carry proof of work at a real Bitcoin difficulty (:func:`check_header_pow`), so a lying server needs
+    to out-mine the network rather than just return a header whose merkle root it chose. What this cannot
+    check without a node is that the header sits on the best chain (documented in DESIGN-anchors.md).
+    """
+
+    def __init__(self, base_url: str = "https://blockstream.info/api", timeout_s: float = 20.0, *,
+                 fetch: Optional[Callable[[str], str]] = None, pow_limit: int = MAINNET_POW_LIMIT,
+                 min_difficulty: float = MIN_DIFFICULTY) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout_s = timeout_s
+        self.pow_limit, self.min_difficulty = pow_limit, min_difficulty
+        self._fetch = fetch or self._http_get
 
-    def __call__(self, height: int) -> CBlockHeader:
+    def _http_get(self, path: str) -> str:
         import httpx
 
-        block_hash = httpx.get(f"{self.base_url}/block-height/{height}", timeout=self.timeout_s).text.strip()
-        raw = httpx.get(f"{self.base_url}/block/{block_hash}/header", timeout=self.timeout_s).text.strip()
-        return CBlockHeader.deserialize(bytes.fromhex(raw))
+        resp = httpx.get(f"{self.base_url}/{path}", timeout=self.timeout_s)
+        resp.raise_for_status()
+        return resp.text.strip()
+
+    def __call__(self, height: int) -> CBlockHeader:
+        block_hash = self._fetch(f"block-height/{height}")
+        header = CBlockHeader.deserialize(bytes.fromhex(self._fetch(f"block/{block_hash}/header")))
+        if header.GetHash()[::-1].hex() != block_hash.lower():
+            raise HeaderError("header does not hash to the block hash the server named")
+        check_header_pow(header, pow_limit=self.pow_limit, min_difficulty=self.min_difficulty)
+        return header
 
 
 @dataclass
@@ -229,32 +276,40 @@ def verify_ots(
     """Check a ``.ots`` proof commits to ``expected_digest`` and, given headers, that its Bitcoin attestations hold."""
     try:
         detached = load_ots(source)
-    except (DeserializationError, ValueError, OSError) as exc:
-        return OtsVerification(False, "invalid", False, error=f"unreadable proof: {exc}")
+    except Exception as exc:        # a garbage proof raises anything (struct, recursion, type errors): it is invalid, never "unverifiable"
+        return OtsVerification(False, "invalid", False, error=f"unreadable proof: {type(exc).__name__}: {exc}")
     matches = detached.file_digest == expected_digest and detached.file_hash_op.__class__ is OpSHA256
     if not matches:
         return OtsVerification(False, "invalid", False, error="proof is for a different digest")
     records: List[dict] = []
     best: Optional[int] = None
+    invalid: List[str] = []
+    lookup_failed: List[str] = []
     for msg, att in detached.timestamp.all_attestations():
         if isinstance(att, BitcoinBlockHeaderAttestation):
             rec = {"kind": "bitcoin", "height": att.height, "checked": False}
             if header_provider is not None:
                 try:
                     t = att.verify_against_blockheader(msg, header_provider(att.height))
+                    rec.update(checked=True, time=int(t))
+                    best = int(t) if best is None else min(best, int(t))
                 except VerificationError as exc:
-                    return OtsVerification(False, "invalid", True, records, error=f"bitcoin attestation fails: {exc}")
+                    invalid.append(f"bitcoin attestation at height {att.height} fails: {exc}")
                 except Exception as exc:
-                    return OtsVerification(False, "unverified", True, records, error=f"header lookup failed: {exc}")
-                rec.update(checked=True, time=int(t))
-                best = int(t) if best is None else min(best, int(t))
+                    lookup_failed.append(f"header lookup failed at height {att.height}: {exc}")
             records.append(rec)
         elif isinstance(att, PendingAttestation):
             records.append({"kind": "pending", "uri": att.uri})
         else:
             records.append({"kind": "unknown"})
+    # The verdict is the WORST over all attestations: one proven-bad attestation makes the proof invalid no matter
+    # what order they are visited in or whether another header lookup happened to fail first.
+    if invalid:
+        return OtsVerification(False, "invalid", True, records, error=invalid[0])
     if best is not None:
         return OtsVerification(True, "bitcoin", True, records, time=best)
+    if lookup_failed:
+        return OtsVerification(False, "unverified", True, records, error=lookup_failed[0])
     reason = ("no Bitcoin attestation (calendar promise only; upgrade the proof)"
               if not any(r["kind"] == "bitcoin" for r in records)
               else "no block header source: Bitcoin attestation not checked")

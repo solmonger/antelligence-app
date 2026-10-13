@@ -22,6 +22,13 @@ $model_revisions
 
 $contracts
 
+### Study key
+
+The outside verifier takes its Rekor study key from this line, never from the operator. This document's
+digest is anchored once on chain (`AnchorRegistry.anchorOnce`), so the key cannot be swapped afterwards.
+
+Study key fingerprint (sha256 of SPKI DER): `$study_key_sha256`
+
 ## Primary hypotheses
 
 The unit is the case: the mean over its seeds. They are tested in a fixed sequence: P2 is tested only if P1 is significant. Both use alpha = 0.05.

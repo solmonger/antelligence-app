@@ -11,7 +11,14 @@ Every check returns ``{"ok": bool, ...detail}``. The verifier FAILS CLOSED:
 * an enabled outside condition (OTS, R, C) that verified zero anchors for a run fails that run;
 * condition ``B`` (signatures, ids, hash chain) cannot detect an operator who holds the keys, so a B-only
   report is never better than ``unverified``;
-* the plan must be authenticated against the anchored run-plan digest, else the verdict is at most ``unverified``.
+* the plan must be authenticated against the anchored run-plan digest, else the verdict is at most ``unverified``;
+* **trust anchors are pinned** (:class:`~antelligence.anchoring.pins.TrustPins`): the registry address, deployer and
+  code hash come from the deployments file at a commit, the study key from the preregistration whose digest is
+  anchored on chain. A registry, deployer or study key supplied by the caller is only compared against those pins;
+  a mismatch fails. The plan is authenticated only through a preregistration (``prereg=``) that is itself anchored
+  on the pinned registry;
+* the verdict is the **worst** over all checks and files: ``failed`` dominates ``unverified`` dominates ``verified``,
+  and no option (missing header source, missing optional input) turns a ``failed`` into anything weaker.
 
 Report ``verdict``: ``verified`` | ``unverified`` | ``failed``; ``ok`` is True only for ``verified``.
 """
@@ -26,6 +33,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Union
 
 from antelligence.anchoring.ots import HeaderProvider, verify_ots
+from antelligence.anchoring.pins import PinError, TrustPins, study_key_in
 from antelligence.anchoring.readers import ZERO32, ChainReader
 from antelligence.anchoring.rekor import (
     RekorClient,
@@ -33,6 +41,9 @@ from antelligence.anchoring.rekor import (
     check_record,
     fingerprint_of,
     load_public_pem,
+    parse_checkpoint,
+    split_view_check,
+    verify_checkpoint,
 )
 from antelligence.kernel.board import (
     ANCHOR_EVERY,
@@ -139,6 +150,8 @@ class OutsideVerifier:
         header_provider: Optional[HeaderProvider] = None,
         conditions: Iterable[str] = ("B",),
         claims: Sequence[Dict[str, Any]] = (),
+        pins: Optional[TrustPins] = None,
+        prereg: Optional[Union[str, Path]] = None,
         pinned_deployer: Optional[str] = None,
         pinned_registry: Optional[str] = None,
         study_pem: Optional[bytes] = None,
@@ -154,23 +167,59 @@ class OutsideVerifier:
             raise ValueError(f"unknown verifier conditions {sorted(unknown)}")
         if "C" in self.conditions and chain is None:
             raise ValueError("condition C needs a chain reader")
-        if "C" in self.conditions and not (pinned_deployer and pinned_registry):
-            raise ValueError("condition C needs pinned_deployer and pinned_registry (no unpinned chain reads)")
+        if "C" in self.conditions and pins is None:
+            raise ValueError("condition C needs pins (registry, deployer, code hash from the deployments file at a commit): "
+                             "no unpinned chain reads")
         if "R" in self.conditions and rekor is None:
             raise ValueError("condition R needs a rekor client")
         self.claims = list(claims)
-        self.pinned_deployer = pinned_deployer
-        self.pinned_registry = pinned_registry
-        self.study_pem = study_pem
+        self.pins = pins
+        self.prereg = Path(prereg) if prereg else None
+        # What the caller asserts. These are NOT trust anchors: they are checked against ``pins`` and fail on mismatch.
+        self.claimed_deployer, self.claimed_registry, self.study_pem = pinned_deployer, pinned_registry, study_pem
         self.metrics = Metrics()
         self._rekor_records: Dict[str, list] = {}
         self._rekor_bytes = 0
+        self._rekor_proof_cps: Dict[str, list] = {}
+
+    # -- pins ----------------------------------------------------------------------------------
+    def _caller_pin_problems(self) -> List[str]:
+        """Caller-supplied registry / deployer / study key that are not the pinned ones."""
+        if self.pins is None:
+            return []
+        out: List[str] = []
+        if self.claimed_registry and self.claimed_registry.lower() != self.pins.registry.lower():
+            out.append("caller-supplied registry is not the pinned registry")
+        if self.claimed_deployer and self.claimed_deployer.lower() != self.pins.deployer.lower():
+            out.append("caller-supplied deployer is not the pinned deployer")
+        if self.study_pem is not None:
+            reason = self.pins.check_study_pem(self.study_pem)
+            if reason:
+                out.append(reason)
+        return out
+
+    def _chain_pin_problems(self) -> List[str]:
+        """The chain reader must read the pinned registry, whose code and deployer are the pinned ones.
+
+        Network errors raise (callers turn them into ``unverified``); a proven mismatch is a returned problem.
+        """
+        if self.pins is None or self.chain is None:
+            return ["no pins: the chain reader cannot be trusted"]
+        out: List[str] = []
+        if str(getattr(self.chain, "address", "")).lower() != self.pins.registry.lower():
+            out.append("chain reader is not pointed at the pinned registry address")
+        if self.chain.deployer().lower() != self.pins.deployer.lower():
+            out.append("registry deployer is not the pinned deployer")
+        if self.chain.code_hash().lower() != self.pins.code_hash.lower():
+            out.append("code at the registry address is not the pinned code hash")
+        return out
 
     # -- entry point ---------------------------------------------------------------------------
     def verify(self) -> Dict[str, Any]:
         self.metrics = Metrics()
-        self._rekor_records, self._rekor_bytes = {}, 0
+        self._rekor_records, self._rekor_bytes, self._rekor_proof_cps = {}, 0, {}
         report: Dict[str, Any] = {"conditions": sorted(self.conditions), "runs": {}, "problems": [], "unverified": []}
+        report["problems"] += self._caller_pin_problems()
         planned = {r["run_id"]: r for r in self.plan.get("runs", [])}
         if not planned:
             report["problems"].append("the run plan lists no runs: nothing to verify")
@@ -203,33 +252,64 @@ class OutsideVerifier:
         return report
 
     def _authenticate_plan(self, report: Dict[str, Any]) -> bool:
-        """True only if the plan in hand hashes to a run-plan digest that an outside log holds."""
+        """True only if the plan in hand is the one an outside log holds AND the log it is read from is pinned.
+
+        The chain of trust: pins (deployments file at a commit) -> registry -> ``anchorOnce`` digest of the
+        preregistration document (``prereg=``) -> the study key fingerprint written in that document -> the
+        Rekor entries signed by that key. A study key or registry the caller merely supplies authenticates nothing.
+        """
         from antelligence.anchoring.anchorer import single_shot_id
 
-        digest = hashlib.sha256(jcs_bytes(self.plan)).digest()
-        results: List[bool] = []
-        if "C" in self.conditions:
+        if self.pins is None or self.prereg is None:
+            report["unverified"].append("run plan cannot be authenticated without --prereg and pins (deployments file at a commit)")
+            return False
+        try:
+            doc = self.prereg.read_bytes()
+            self.metrics.file_bytes += len(doc)
+            doc_digest = hashlib.sha256(doc).digest()
+            if study_key_in(doc) != self.pins.study_key_sha256:
+                report["problems"].append("the preregistration states a different study key than the pins")
+                return False
+        except (OSError, PinError) as exc:
+            report["problems"].append(f"preregistration unusable: {exc}")
+            return False
+        plan_digest = hashlib.sha256(jcs_bytes(self.plan)).digest()
+        prereg_anchored = False
+        plan_confirmed: List[bool] = []
+        if self.chain is not None:
             try:
-                onchain = self.chain.once_digest(single_shot_id("runplan"))
-                results.append(onchain == digest)
-                if onchain != digest:
-                    report["problems"].append("run plan does not match the run-plan digest on chain")
+                pin_problems = self._chain_pin_problems()
+                report["problems"] += [p for p in pin_problems if p not in report["problems"]]
+                if not pin_problems:
+                    onchain_prereg = self.chain.once_digest(single_shot_id("prereg"))
+                    prereg_anchored = onchain_prereg == doc_digest
+                    if not prereg_anchored:
+                        report["problems"].append("preregistration document does not match the digest anchored on chain")
+                    onchain_plan = self.chain.once_digest(single_shot_id("runplan"))
+                    plan_confirmed.append(onchain_plan == plan_digest)
+                    if onchain_plan != plan_digest:
+                        report["problems"].append("run plan does not match the run-plan digest on chain")
             except Exception as exc:
                 report["unverified"].append(f"plan check on chain: {type(exc).__name__}: {exc}")
-                results.append(False)
-        if "R" in self.conditions and self.study_pem is not None:
+        else:
+            report["unverified"].append("preregistration digest not checked on chain: no chain reader")
+        if self.rekor is not None and self.study_pem is not None and self.study_pem and not self.pins.check_study_pem(self.study_pem):
             try:
                 key = self.rekor.log_key()
                 records = self.rekor.entries_for_key(self.study_pem)
-                good = {r.digest for r in records if not check_record(r, self.study_pem, key)}
                 self._rekor_bytes += sum(r.raw_bytes for r in records)
-                results.append(digest.hex() in good)
-                if digest.hex() not in good:
+                good = {r.digest for r in records if not check_record(r, self.study_pem, key)}
+                plan_confirmed.append(plan_digest.hex() in good)
+                if plan_digest.hex() not in good:
                     report["problems"].append("run plan digest is not logged under the study Rekor key")
+                # The study key is operator-held, so Rekor cannot stop a SECOND plan from being logged under it;
+                # the verifier must see that exactly the preregistration and this plan are there.
+                extra = {r.digest for r in records} - {doc_digest.hex(), plan_digest.hex()}
+                if extra:
+                    report["problems"].append(f"{len(extra)} other digest(s) logged under the study key (second run plan or preregistration)")
             except Exception as exc:
                 report["unverified"].append(f"plan check on Rekor: {type(exc).__name__}: {exc}")
-                results.append(False)
-        return bool(results) and all(results)
+        return prereg_anchored and bool(plan_confirmed) and all(plan_confirmed)
 
     def _net_calls(self) -> int:
         return (self.chain.calls if self.chain else 0) + (self.rekor.calls if self.rekor else 0)
@@ -301,11 +381,10 @@ class OutsideVerifier:
     def _chain(self, run: LoadedRun, tail: Dict[str, Any]) -> Dict[str, Any]:
         rid, n = bytes.fromhex(run.run_id), len(run.entries)
         problems: List[str] = []
-        deployer = self.chain.deployer()
-        if deployer.lower() != self.pinned_deployer.lower():
-            problems.append(f"registry deployer {deployer} is not the pinned deployer")
-        if str(getattr(self.chain, "address", "")).lower() != self.pinned_registry.lower():
-            problems.append("chain reader is not pointed at the pinned registry address")
+        deployer = self.pins.deployer
+        problems += self._chain_pin_problems()
+        if problems:                           # reading anchors from an unpinned registry would prove nothing
+            return _check(False, problems=problems, anchors_verified=0)
         last = self.chain.last_size(rid)
         if last == 0:
             return _check(False, problems=["run has no anchor on chain"], anchors_verified=0)
@@ -368,15 +447,59 @@ class OutsideVerifier:
         verified = sum(1 for d in required if d in logged)
         if verified == 0:
             problems.append("0 anchors verified on Rekor")
+        unverified = self._split_view(run, good, log_key, problems)
         last_logged = max([s for d, s in required.items() if d in logged] or [0])
         tail["tail"] = n - last_logged if run.digest(n).hex() not in logged else 0
-        return _check(not problems, problems=problems[:20], rekor_entries=len(records), anchors_verified=verified,
-                      required_anchors=len(required), unmatched_entries=len(extra), tail=tail["tail"])
+        out = _check(not problems and not unverified, problems=problems[:20], rekor_entries=len(records),
+                     anchors_verified=verified, required_anchors=len(required), unmatched_entries=len(extra), tail=tail["tail"])
+        if unverified and not problems:      # a proven problem always wins over "could not check"
+            out.update(unverified=True, error=unverified[0])
+        return out
+
+    def _split_view(self, run: LoadedRun, good: List[Any], log_key, problems: List[str]) -> List[str]:
+        """Checkpoint consistency: what the log showed at anchor time (``anchors.json``) vs what it shows now.
+
+        Appends proven inconsistencies to ``problems``; returns the reasons the check could not be completed.
+        """
+        archived: List[Any] = []
+        path = self.dir / f"{run.run_id}.anchors.json"
+        records: list = []
+        if path.exists():
+            raw = path.read_bytes()
+            self.metrics.file_bytes += len(raw)
+            try:
+                records = json.loads(raw)
+            except ValueError as exc:
+                problems.append(f"anchors.json unreadable: {exc}")
+        by_uuid = {r.uuid: r for r in good}
+        for rec in records if isinstance(records, list) else []:
+            text = rec.get("rekor_checkpoint") if isinstance(rec, dict) else None
+            if not text:
+                continue
+            try:
+                cp = verify_checkpoint(text, log_key)
+            except RekorError as exc:
+                problems.append(f"size {rec.get('size')}: archived checkpoint: {exc}")
+                continue
+            archived.append(cp)
+            entry = by_uuid.get(rec.get("rekor_uuid"))
+            if entry is not None and cp.size <= entry.log_index:
+                problems.append(f"size {rec.get('size')}: the archived checkpoint (size {cp.size}) predates its own entry (index {entry.log_index})")
+        if not archived:
+            return ["no checkpoint archived at anchor time (anchors.json): a Rekor split view cannot be excluded"]
+        seen = []
+        for r in good:
+            cp_text = (r.inclusion_proof or {}).get("checkpoint")
+            if cp_text:
+                seen.append(parse_checkpoint(cp_text))
+        found, unverified = split_view_check(self.rekor, archived, seen)
+        problems += found
+        return unverified
 
     # -- OTS -----------------------------------------------------------------------------------
     def _ots(self, run: LoadedRun) -> Dict[str, Any]:
-        if self.header_provider is None:
-            return _unverified("no Bitcoin block-header source: OTS proofs cannot be checked")
+        # Without a header source nothing can be CONFIRMED, but a missing proof or a proof for another digest is
+        # still provable, so those checks run regardless: a "failed" must never degrade to "unverified" here.
         n = len(run.entries)
         problems: List[str] = []
         unverified: List[str] = []
@@ -477,16 +600,24 @@ class OutsideVerifier:
             checks["chain"] = _guard(self._study_chain)(ids, prereg_digest, runplan_digest)
         if "R" in self.conditions:
             checks["rekor"] = _guard(self._study_rekor)(study_pem, prereg_digest, runplan_digest)
+        if checks and self.pins is not None:
+            checks["document"] = self._study_document(doc)
         statuses = {check_status(c) for c in checks.values()}
         failed = "fail" in statuses
         unverified = "unverified" in statuses or not checks
         return {"ok": not failed and not unverified, "failed": failed, "unverified": unverified, "checks": checks}
 
+    def _study_document(self, doc: bytes) -> Dict[str, Any]:
+        """The document in hand must fix the pinned study key (a swapped preregistration cannot keep it)."""
+        try:
+            ok = study_key_in(doc) == self.pins.study_key_sha256
+            return _check(ok, problems=[] if ok else ["the preregistration states a different study key than the pins"])
+        except PinError as exc:
+            return _check(False, problems=[str(exc)])
+
     def _study_ots(self, prereg_ots, prereg_digest: bytes) -> Dict[str, Any]:
         if prereg_ots is None:
             return _check(False, problems=["no preregistration .ots proof supplied"], anchors_verified=0)
-        if self.header_provider is None:
-            return _unverified("no Bitcoin block-header source: OTS proofs cannot be checked")
         self.metrics.file_bytes += Path(prereg_ots).stat().st_size
         res = verify_ots(prereg_ots, prereg_digest, self.header_provider)
         out = _check(res.ok, problems=[res.error] if res.error else [], status=res.status, anchors_verified=int(res.ok))
@@ -495,7 +626,9 @@ class OutsideVerifier:
         return out
 
     def _study_chain(self, ids, prereg_digest: bytes, runplan_digest: bytes) -> Dict[str, Any]:
-        problems = []
+        problems = self._chain_pin_problems()
+        if problems:
+            return _check(False, problems=problems, anchors_verified=0)
         if self.chain.once_digest(ids["prereg"]) != prereg_digest:
             problems.append("preregistration digest on chain differs from this document")
         if self.chain.once_digest(ids["runplan"]) != runplan_digest:
@@ -505,6 +638,11 @@ class OutsideVerifier:
     def _study_rekor(self, study_pem, prereg_digest: bytes, runplan_digest: bytes) -> Dict[str, Any]:
         if study_pem is None:
             return _check(False, problems=["no study public key supplied"], anchors_verified=0)
+        if self.pins is None:
+            return _check(False, problems=["no pins: the study key is not fixed by the preregistration"], anchors_verified=0)
+        reason = self.pins.check_study_pem(study_pem)
+        if reason:
+            return _check(False, problems=[reason], anchors_verified=0)
         log_key = self.rekor.log_key()
         records = self.rekor.entries_for_key(study_pem)
         self._rekor_bytes += sum(r.raw_bytes for r in records)

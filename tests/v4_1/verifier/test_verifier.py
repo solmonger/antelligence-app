@@ -20,6 +20,9 @@ from antelligence.anchoring.tamper import (
     run_scenario,
     table_mismatches,
 )
+from web3 import Web3
+
+from antelligence.anchoring.pins import TrustPins
 from antelligence.anchoring.verify import OutsideVerifier
 from antelligence.kernel.canonical import jcs_bytes
 from antelligence.kernel.board import anchor_sizes
@@ -31,8 +34,8 @@ def verifier(h, conditions=ALL, directory=None, **kw):
     lab = h["lab"]
     return OutsideVerifier(
         directory or h["dir"], h["plan"], chain=lab.reader(), rekor=lab.rekor, ots_dir=directory or h["dir"],
-        header_provider=lab.header_provider(), conditions=conditions, pinned_deployer=lab.deployer,
-        pinned_registry=lab.registry_address, study_pem=lab.study_key.pem, **kw,
+        header_provider=lab.header_provider(), conditions=conditions, pins=lab.pins(), prereg=lab.prereg_path(),
+        study_pem=lab.study_key.pem, **kw,
     )
 
 
@@ -121,17 +124,20 @@ def test_verifier_reports_unanchored_tail_without_failing(tmp_path):
     _export(board, akey, out)
     _anchor_all(lab, board, akey, out, [50, 100])
     plan = {"study": "v4.1", "runs": [{"run_id": board.run_id, "pubkeys": board.header["pubkeys"], "anchor_pubkey": akey.fingerprint}]}
-    lab.single_shot(tmp_path / "s").anchor("runplan", hashlib.sha256(jcs_bytes(plan)).digest())
+    study = lab.single_shot(tmp_path / "s")
+    study.anchor("prereg", hashlib.sha256(lab.prereg_doc()).digest())
+    study.anchor("runplan", hashlib.sha256(jcs_bytes(plan)).digest())
     lab.confirm_ots(out)
     report = OutsideVerifier(out, plan, chain=lab.reader(), rekor=lab.rekor, ots_dir=out, header_provider=lab.header_provider(),
-                             conditions=ALL, pinned_deployer=lab.deployer, pinned_registry=lab.registry_address).verify()
+                             conditions=ALL, pins=lab.pins(), prereg=lab.prereg_path(), study_pem=lab.study_key.pem).verify()
     assert report["ok"] and report["runs"][board.run_id]["unanchored_tail"] == 20
 
 
 def test_verifier_wrong_deployer_and_wrong_plan_key(honest):
     h = honest
+    pins = h["lab"].pins()
     v = verifier(h, conditions={"C"})
-    v.pinned_deployer = "0x" + "11" * 20
+    v.pins = TrustPins(pins.registry, "0x" + "11" * 20, pins.code_hash, pins.study_key_sha256)
     chk = v.verify()["runs"][h["board"].run_id]["checks"]["chain"]
     assert not chk["ok"] and "not the pinned deployer" in chk["problems"][0]
     plan = json.loads(json.dumps(h["plan"]))
@@ -180,16 +186,17 @@ def test_empty_plan_fails(honest):
     assert not OutsideVerifier(empty, honest["plan"], conditions={"B"}).verify()["ok"]
 
 
-def test_condition_c_requires_pinned_deployer_and_registry(honest):
+def test_condition_c_requires_pins(honest):
     lab = honest["lab"]
-    with pytest.raises(ValueError):
-        OutsideVerifier(honest["dir"], honest["plan"], chain=lab.reader(), conditions={"C"}, pinned_deployer=None,
-                        pinned_registry=lab.registry_address)
-    with pytest.raises(ValueError):
-        OutsideVerifier(honest["dir"], honest["plan"], chain=lab.reader(), conditions={"C"}, pinned_deployer=lab.deployer)
-    wrong = OutsideVerifier(honest["dir"], honest["plan"], chain=lab.reader(), conditions={"C"}, pinned_deployer=lab.deployer,
-                            pinned_registry="0x" + "ee" * 20).verify()
-    assert wrong["verdict"] == "failed"
+    with pytest.raises(ValueError, match="pins"):
+        OutsideVerifier(honest["dir"], honest["plan"], chain=lab.reader(), conditions={"C"})
+    good = lab.pins()
+    for field, value, needle in (("registry", "0x" + "ee" * 20, "pinned registry address"),
+                                 ("code_hash", "0x" + "00" * 32, "pinned code hash")):
+        pins = TrustPins(**{**good.__dict__, field: Web3.to_checksum_address(value) if field == "registry" else value})
+        wrong = OutsideVerifier(honest["dir"], honest["plan"], chain=lab.reader(), conditions={"C"}, pins=pins).verify()
+        assert wrong["verdict"] == "failed", field
+        assert any(needle in p for p in wrong["runs"][honest["board"].run_id]["checks"]["chain"]["problems"]), field
 
 
 def test_pending_ots_makes_the_run_unverified(tmp_path):
@@ -205,8 +212,11 @@ def test_pending_ots_makes_the_run_unverified(tmp_path):
     pending = v(header_provider=lab.header_provider())
     assert pending["verdict"] == "unverified" and pending["runs"][board.run_id]["checks"]["ots"]["unverified"]
     no_headers = v()                                          # OTS requested, no header source
-    assert no_headers["verdict"] == "unverified" and "block-header" in no_headers["runs"][board.run_id]["checks"]["ots"]["error"]
+    assert no_headers["verdict"] == "unverified" and no_headers["runs"][board.run_id]["checks"]["ots"]["unverified"]
     lab.confirm_ots(out)
+    confirmed_no_headers = v()                                # upgraded proofs, still no header source
+    assert confirmed_no_headers["verdict"] == "unverified"
+    assert "block header source" in confirmed_no_headers["runs"][board.run_id]["checks"]["ots"]["error"]
     assert v(header_provider=lab.header_provider())["runs"][board.run_id]["checks"]["ots"]["ok"]
 
 
@@ -232,8 +242,7 @@ def test_zero_evidence_fails_each_outside_condition(tmp_path):
 def _only(lab, out, plan, cond):
     return OutsideVerifier(
         out, plan, chain=lab.reader() if cond == "C" else None, rekor=lab.rekor if cond == "R" else None, ots_dir=out,
-        header_provider=lab.header_provider(), conditions={cond}, pinned_deployer=lab.deployer,
-        pinned_registry=lab.registry_address,
+        header_provider=lab.header_provider(), conditions={cond}, pins=lab.pins(),
     ).verify()
 
 

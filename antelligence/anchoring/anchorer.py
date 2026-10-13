@@ -127,6 +127,16 @@ class Anchorer:
         entry = self.rekor.log_digest(digest, self.anchor_key)
         rec["rekor_uuid"] = entry.uuid
         rec["rekor_log_index"] = entry.log_index
+        rec["rekor_checkpoint"] = self._checkpoint_of(entry)
+
+    def _checkpoint_of(self, entry) -> str:
+        """The signed checkpoint the log showed us when it took the entry. The outside verifier later proves
+        (consistency proof) that what it sees now extends this one: that is the split-view check."""
+        proof = entry.inclusion_proof or self.rekor.get(entry.uuid).inclusion_proof
+        cp = (proof or {}).get("checkpoint")
+        if not cp:
+            raise RuntimeError("Rekor served no signed checkpoint for the new entry: cannot archive the anchor-time view")
+        return cp
 
     def _chain(self, rec: Dict[str, Any], size: int, root: bytes) -> None:
         self._jobs[size] = self.chain.submit(self.run_id, size, root)

@@ -3,3 +3,5 @@
 3cc6ba854d08c6e654fb39eb6abe896b91a6b3a9:release-manifest.json:generic-api-key:148
 # Same finding after the commit was re-applied onto upstream main for the upstream PR (2026-10-10).
 12da95f1d19755e3f50564ab0f709e863f83d175:release-manifest.json:generic-api-key:148
+# 2026-10-13: sha256 of the PUBLIC Rekor log key (REKOR_LOG_KEY_SHA256, fetched from GET rekor.sigstore.dev/api/v1/log/publicKey), a public pin constant, not a secret (S2b, v4.1).
+18e29f3660b263c48d8f7fc5eb1b4bc7be097382:antelligence/anchoring/rekor.py:generic-api-key:33

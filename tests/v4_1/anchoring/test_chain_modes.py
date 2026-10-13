@@ -23,6 +23,7 @@ def _env(monkeypatch, tmp_path):
 def rig(tmp_path):
     signer = LocalSigner(Account.create().key.hex())          # throw-away key made in the test
     clock, fake = Clock(), FakeChain(300, ADDRS.values())
+    fake.contract_deployer = signer.address
     queue = TxQueue(tmp_path / "q.sqlite", clock=clock)
     client = ChainClientV41(fake, signer, queue, ADDRS, expected_deployer=signer.address, clock=clock)
     return client, fake, clock
