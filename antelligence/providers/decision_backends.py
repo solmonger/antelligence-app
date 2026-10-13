@@ -708,8 +708,17 @@ def extract_label_probs(request: DecisionRequest, content: str, logprob_content:
             raise DecisionError("logprobs: malformed token entry")
         spans.append((pos, pos + len(tok)))
         pos += len(tok)
-    if pos != len(content) or "".join(e["token"] for e in logprob_content) != content:
+    joined = "".join(e["token"] for e in logprob_content)
+    # vLLM's reasoning parser removes an (empty) think block and surrounding whitespace from ``content`` while its
+    # tokens stay in the logprob list. The reply must still appear verbatim in the token stream, starting and
+    # ending on token boundaries; spans are then shifted so offsets are relative to ``content``.
+    offset = joined.rfind(content) if content else -1
+    if offset < 0 or not any(a == offset for a, _ in spans) or not any(b == offset + len(content) for _, b in spans):
         raise DecisionError("logprobs: tokens do not reassemble to the reply text")
+    prefix = joined[:offset]
+    if prefix.strip() and prefix.strip() not in ("<think></think>", "<think>\n</think>", "<think>\n\n</think>"):
+        raise DecisionError("logprobs: unexpected text before the reply in the token stream")
+    spans = [(a - offset, b - offset) for a, b in spans]
     out: Dict[str, Dict[str, float]] = {}
     residual: Dict[str, float] = {}
     degraded: List[str] = []

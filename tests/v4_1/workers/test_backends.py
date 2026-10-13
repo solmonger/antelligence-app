@@ -388,3 +388,29 @@ def test_nous_fw_verbalised_parse():
         run(_nous(req, finish="length").decide(req))
     with pytest.raises(ValueError):
         NousFWBackend(api_key="")
+
+
+def test_logprob_extraction_tolerates_stripped_empty_think_block():
+    """vLLM's qwen3 reasoning parser strips the empty think block from content but not from the logprob tokens."""
+    import json as _json
+
+    from antelligence.kernel.decision import DecisionRequest, Question
+    from antelligence.providers.decision_backends import DecisionError, extract_label_probs
+
+    q = {"release": Question("noul", "release?")}
+    req = DecisionRequest("m", "state", q)
+    content = _json.dumps({"release": "yes"}, separators=(",", ":"))
+    pre = ["<think>", "\n\n", "</think>", "\n\n"]
+    body = ['{"', "release", '":"', "yes", '"}']
+    assert "".join(body) == content
+    toks = [{"token": t, "logprob": -0.1, "top_logprobs": []} for t in pre + body]
+    toks[len(pre) + 3]["top_logprobs"] = [{"token": "yes", "logprob": -0.2}, {"token": "no", "logprob": -1.8}]
+    probs, meta = extract_label_probs(req, content, toks)
+    assert probs["release"]["yes"] > probs["release"]["no"]
+    bad = [{"token": "junk", "logprob": -0.1, "top_logprobs": []}] + toks[len(pre):]
+    try:
+        extract_label_probs(req, content, bad)
+    except DecisionError:
+        pass
+    else:
+        raise AssertionError("unexpected prefix text must be refused")
