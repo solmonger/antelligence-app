@@ -393,6 +393,7 @@ class _Ctx:
     liars: List[int]
     pubkeys: Dict[str, str]
     routes: Dict[int, Dict[str, Any]] = field(default_factory=dict)
+    route_entries: Dict[int, Entry] = field(default_factory=dict)
     visible: Optional[Set[int]] = None
     posted_upto: int = 0
     looks: Dict[Tuple[int, int], Optional[float]] = field(default_factory=dict)
@@ -699,6 +700,8 @@ class V41Harness:
                                    + [i for i in offered if i in ctx.region_by_id]))[:6]
         cands = [Candidate.from_region("ABCDEF"[k], ctx.region_by_id[rid]) for k, rid in enumerate(order)]
         ctx.world.set_candidates(cands, squad=squad)
+        if route_ids and route_ids[0] in ctx.region_by_id:   # the queen's first region is the squad's assignment
+            ctx.world.assign_route(squad, route_ids[0])
 
     async def _queen_step(self, ctx: _Ctx, tick: int) -> None:
         assert ctx.queen is not None and ctx.board is not None
@@ -711,6 +714,7 @@ class V41Harness:
             s = entry.payload["squad"]
             ctx.routes[s] = {"squad": s, "region_ids": list(entry.payload["region_ids"]),
                              "priority": entry.payload["priority"]}
+            ctx.route_entries[s] = entry
             self._set_candidates(ctx, s, entry.payload["region_ids"], step.candidate_region_ids)
 
     def _static_assignments(self, ctx: _Ctx, tick: int) -> None:
@@ -727,7 +731,7 @@ class V41Harness:
                             / max(world.voxel_mm * float(np.linalg.norm(np.subtract(pos, r.centroid_vox))), 1.0), r.region_id))
             ids = [r.region_id for r in ranked[:2]]
             ctx.routes[s] = {"squad": s, "region_ids": ids, "priority": 3}
-            ctx.board.append("route", "harness", {**ctx.routes[s], "brief_ids": []}, tick)
+            ctx.route_entries[s] = ctx.board.append("route", "harness", {**ctx.routes[s], "brief_ids": []}, tick)
             self._set_candidates(ctx, s, ids, offered)
 
     # -- one decision round --
@@ -809,10 +813,13 @@ class V41Harness:
         assert ctx.board is not None
         h = ctx.harness["briefs"]
         draft = {**ctx.routes.get(squad, {"squad": squad, "region_ids": [], "priority": 3}), "brief_ids": []}
+        own = ctx.route_entries.get(squad)
+        if own is not None and ctx.visible is not None and own.seq not in ctx.visible:
+            own = None   # mode D: a route the chain has not included is not yet readable
         if ctx.spec.board_on:
             return briefs_mod.build_brief(self._view(ctx), squad, draft, cap=(6, h["count"]),
-                                          entry_types=tuple(h["entry_types"]))
-        return briefs_mod.build_brief_board_off(ctx.board, squad, draft, cap=(6, h["count"]))
+                                          entry_types=tuple(h["entry_types"]), own_route=own)
+        return briefs_mod.build_brief_board_off(ctx.board, squad, draft, cap=(6, h["count"]), own_route=own)
 
     @staticmethod
     def _compact(brief: briefs_mod.Brief, with_ids: bool) -> str:

@@ -59,6 +59,8 @@ def _where(fields: Mapping[str, Any]) -> str:
     d = fields["goal_dist_mm"]
     now = ("Current target: none, standing still." if d is None else
            "Current target: reached." if d <= 0 else f"Current target: moving, {int(round(d))} mm to go.")
+    if d is not None and fields.get("target_source") == "queen":
+        now = now[:-1] + " (assigned by the queen)."
     return f"{at} {now}".strip()
 
 

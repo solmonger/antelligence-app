@@ -43,7 +43,7 @@ from antelligence.worlds.tumor_mri.questions import CANDIDATE_LABELS, EXPLORE, S
 ACTION_DECIDE = "decide"
 QUEEN_HOOK_AGENT = "queen"
 OBS_KEYS = ("squad", "tick", "round", "rounds", "position_vox", "payload", "payload_fraction", "last_release",
-            "local_p_tumour", "local_unc", "local_look", "local_dose", "local_dose_rel", "target", "candidates", "goal_dist_mm")
+            "local_p_tumour", "local_unc", "local_look", "local_dose", "local_dose_rel", "target", "candidates", "goal_dist_mm", "target_source")
 
 LookFn = Callable[[int, Vox, int], Optional[float]]
 QueenHook = Callable[[int, "TumorMRIWorld"], None]
@@ -85,6 +85,7 @@ class _Squad:
     pos: Vox
     payload: float
     target: str = STAY
+    target_source: Optional[str] = None   # 'queen' while the target is the queen's assignment, 'worker' once it chose
     goal: Optional[Vox] = None
     path: Optional[List[Vox]] = None
     last_release: Optional[Dict[str, Any]] = None
@@ -168,6 +169,21 @@ class TumorMRIWorld:
             self._squad_candidates[int(squad)] = cands
         self._revision += 1
 
+    def assign_route(self, squad: int, region_id: int) -> bool:
+        """The queen's route gives ``squad`` a first region. A squad with no current target adopts it; a squad that
+        already has one keeps it (the queen advises, never gates). Perception regions only, never the truth."""
+        sq = self._squads[int(squad)]
+        if sq.target != STAY or sq.goal is not None:
+            return False
+        for c in self.candidates_for(int(squad)):
+            if c.region_id == region_id:
+                sq.target, sq.target_source = c.label, "queen"
+                sq.goal = self._paths.nearest_brain_voxel(c.centroid_vox)
+                sq.path = self._paths.path(sq.pos, sq.goal) if sq.goal != sq.pos else []
+                self._revision += 1
+                return True
+        return False
+
     def candidates_for(self, squad: int) -> List[Candidate]:
         return list(self._squad_candidates.get(squad, self._candidates))
 
@@ -225,6 +241,7 @@ class TumorMRIWorld:
             "local_look": None if look is None else float(look),
             "local_dose": dose, "local_dose_rel": dose / cfg.dose_threshold,
             "target": sq.target, "candidates": cands,
+            "target_source": sq.target_source,
             "goal_dist_mm": None if sq.goal is None else round(self.voxel_mm * math.dist(sq.pos, sq.goal), 3),
         }
         return Observation(data=data)
@@ -258,6 +275,7 @@ class TumorMRIWorld:
         override = p.get("target_vox") if intent.meta.get("scripted") is True else None
         if override is not None or target != STAY:  # Stay keeps the current target (and its path)
             sq.target = target
+            sq.target_source = "worker"
             sq.goal = self._resolve_goal(i, sq, target, override)
             sq.path = self._paths.path(sq.pos, sq.goal) if sq.goal is not None and sq.goal != sq.pos else []
         self._revision += 1
