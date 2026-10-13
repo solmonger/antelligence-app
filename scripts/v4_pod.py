@@ -11,10 +11,13 @@ Pure helpers (payload, command line, cost rows, refusal, state) are separate fro
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
+import re
 import secrets
 import shlex
+import subprocess
 import sys
 import time
 from dataclasses import dataclass
@@ -56,7 +59,23 @@ MODELS: Dict[str, Dict[str, Optional[str]]] = {
 WORKERS_KEY = "v41-workers"
 WORKERS_HF, WORKERS_REVISION = "RedHatAI/Qwen3.5-9B-FP8-dynamic", "790f0576d2d77dd5322aa0603a470bd9e3a3d1f6"
 WORKERS_PORTS = ["8100/http", "8101/http", "8102/http", "8001/http"]  # 9B, 4B, d1 shim, read-only log
-WORKERS_FILES = {"serve.sh": ROOT / "scripts" / "v41_pod_serve.sh", "v41_d1_server.py": ROOT / "scripts" / "v41_d1_server.py"}
+# Launcher files the pod downloads at start-up: pod-side name -> repo path. Fetched from GitHub at a pinned commit and
+# sha256-verified (the pod exposes only HTTP ports and the vLLM image has no sshd, so nothing can be pushed to it).
+WORKERS_FETCH = {"serve.sh": "scripts/v41_pod_serve.sh", "v41_d1_server.py": "scripts/v41_d1_server.py"}
+RAW_BASE = "https://raw.githubusercontent.com/solmonger/antelligence-app"
+WORKERS_DEST = "/opt/v41"
+COMMIT_RE = re.compile(r"[0-9a-f]{40}")
+
+
+class ScriptsCommitError(ValueError):
+    """The --scripts-commit value is malformed, unknown locally, or lacks a launcher file."""
+
+
+@dataclass(frozen=True)
+class ScriptsPin:
+    """A git commit and the sha256 of each launcher file at that commit (name -> hex digest)."""
+    commit: str
+    hashes: Mapping[str, str]
 
 
 @dataclass
@@ -96,59 +115,76 @@ def start_script(model: str, log_token: str) -> str:
             f"echo \"vllm exited\" >> {log}; sleep infinity")
 
 
-def workers_start_script(log_token: str) -> str:
-    """Tiny container command for the v4.1 worker pod. It does NOT carry the launcher: it waits until the files have
-    been pushed (``push-scripts``) and the ``/opt/v41/.pushed`` marker exists, then runs ``serve.sh``. Log (key
-    redacted) is served read-only on :8001 under a secret path, as for ``up``."""
+def scripts_pin(commit: str, root: Path = ROOT) -> ScriptsPin:
+    """Validate ``commit`` (40 lowercase hex), require it to exist locally, and hash each launcher file as stored in
+    that commit (``git show <sha>:<path>``), so the pod is pinned to exactly what the lead has reviewed."""
+    if not COMMIT_RE.fullmatch(commit or ""):
+        raise ScriptsCommitError(f"--scripts-commit must be a full 40-char lowercase hex SHA, got {commit!r}")
+    probe = subprocess.run(["git", "cat-file", "-e", f"{commit}^{{commit}}"], cwd=root, capture_output=True)
+    if probe.returncode != 0:
+        raise ScriptsCommitError(f"commit {commit} not found in the local repo (git fetch it first)")
+    hashes: Dict[str, str] = {}
+    for name, path in WORKERS_FETCH.items():
+        shown = subprocess.run(["git", "show", f"{commit}:{path}"], cwd=root, capture_output=True)
+        if shown.returncode != 0:
+            raise ScriptsCommitError(f"{path} does not exist at commit {commit}")
+        hashes[name] = hashlib.sha256(shown.stdout).hexdigest()
+    return ScriptsPin(commit, hashes)
+
+
+_FETCH_FUNCS = r"""fetch_one() { if command -v curl >/dev/null 2>&1; then curl -fsSL -o "$2" "$1"; else python3 -c 'import sys,urllib.request;open(sys.argv[2],"wb").write(urllib.request.urlopen(sys.argv[1],timeout=60).read())' "$1" "$2"; fi; }
+sha_of() { python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$1"; }
+fetch_verified() { n=$1; u=$2; want=$3; d="$DEST/$n"; ok=; i=0
+  while [ $i -lt 5 ]; do i=$((i+1)); if fetch_one "$u" "$d.part" 2>>"$LOG"; then ok=1; break; fi; echo "fetch $n attempt $i failed" >> "$LOG"; sleep 3; done
+  if [ -z "$ok" ]; then echo "FETCH FAILED: $n from $u; refusing to run" >> "$LOG"; exit 1; fi
+  got=$(sha_of "$d.part")
+  if [ "$got" != "$want" ]; then rm -f "$d.part"; echo "HASH MISMATCH: $n expected $want got $got; refusing to run" >> "$LOG"; exit 1; fi
+  mv "$d.part" "$d"; echo "verified $n sha256=$got" >> "$LOG"; }
+"""
+
+
+def fetch_fragment(pin: ScriptsPin, dest: str = WORKERS_DEST, log: str = "/dev/null", base: str = RAW_BASE) -> str:
+    """Shell fragment: download each launcher file from ``<base>/<commit>/<path>`` (curl, else python3 urllib), check its
+    sha256 against the value embedded here, and ``exit 1`` with a log line on any failure. Pure; ``base`` is
+    overridable so tests can point it at a file:// fixture."""
+    if not COMMIT_RE.fullmatch(pin.commit) or any(not re.fullmatch(r"[0-9a-f]{64}", h) for h in pin.hashes.values()):
+        raise ScriptsCommitError("malformed commit or hash")
+    lines = [f"DEST={shlex.quote(dest)}; LOG={shlex.quote(log)}; mkdir -p \"$DEST\"",
+             f"echo \"fetching launcher at commit {pin.commit}\" >> \"$LOG\"", _FETCH_FUNCS.rstrip("\n")]
+    for name, path in WORKERS_FETCH.items():
+        url = f"{base}/{pin.commit}/{path}"
+        lines.append(f"fetch_verified {shlex.quote(name)} {shlex.quote(url)} {pin.hashes[name]}")
+    return "\n".join(lines)
+
+
+def workers_start_script(log_token: str, pin: ScriptsPin) -> str:
+    """Container command for the v4.1 worker pod. It serves the log read-only on :8001 first (so fetch progress is
+    visible), downloads the launcher from GitHub at the pinned commit and verifies its sha256 (see
+    ``fetch_fragment``; a mismatch exits non-zero before anything runs), then runs ``serve.sh``. Log (key redacted)
+    is under a secret path, as for ``up``."""
     log = f"/srv/{log_token}/workers.log"
-    return (f"mkdir -p /srv/{log_token} /opt/v41 && : > /srv/index.html && "
+    return (f"mkdir -p /srv/{log_token} && : > /srv/index.html && "
             f"(python3 -m http.server 8001 --directory /srv >/dev/null 2>&1 &) && "
-            f"until [ -f /opt/v41/.pushed ]; do sleep 2; done; "
-            f"{{ bash /opt/v41/serve.sh 2>&1 | sed -u \"s/$VLLM_API_KEY/[redacted]/g\" > {log}; }}; "
+            f"{fetch_fragment(pin, WORKERS_DEST, log)}\n"
+            f"{{ bash {WORKERS_DEST}/serve.sh 2>&1 | sed -u \"s/$VLLM_API_KEY/[redacted]/g\" >> {log}; }}; "
             f"echo \"workers exited\" >> {log}; sleep infinity")
 
 
-def push_commands(host: str, port: int, identity: Optional[str] = None, user: str = "root",
-                  files: Optional[Mapping[str, Path]] = None) -> List[List[str]]:
-    """scp each launcher file to ``/opt/v41/<name>.part``, then one ssh that moves them into place and writes the
-    ``.pushed`` marker (so the pod never runs a half-copied script). Pure: paths and host only, no key material;
-    ``identity`` is the path of the caller's private key and is passed to ssh, never read or printed here."""
-    files = files or WORKERS_FILES
-    opts = ["-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=accept-new"]
-    if identity:
-        opts += ["-i", identity]
-    cmds = [["scp", *opts, "-P", str(port), str(path), f"{user}@{host}:/opt/v41/{name}.part"]
-            for name, path in files.items()]
-    move = " && ".join(f"mv /opt/v41/{n}.part /opt/v41/{n}" for n in files) + " && touch /opt/v41/.pushed"
-    return cmds + [["ssh", *opts, "-p", str(port), f"{user}@{host}", move]]
-
-
-def cmd_push_scripts(host: str, port: int, identity: Optional[str], echo: "Echo" = print,
-                     run: Callable[..., Any] = None) -> int:
-    import subprocess
-
-    run = run or subprocess.run
-    for cmd in push_commands(host, port, identity):
-        echo("run: " + " ".join(shlex.quote(c) for c in cmd[:1] + [c for c in cmd[1:] if c != identity]))
-        if run(cmd).returncode != 0:
-            echo("push failed")
-            return 1
-    echo("pushed: the pod will start serve.sh now")
-    return 0
-
-
-def deploy_payload_workers(api_secret: str, gpu: str, log_token: str) -> Dict[str, Any]:
+def deploy_payload_workers(api_secret: str, gpu: str, log_token: str, pin: Optional[ScriptsPin]) -> Dict[str, Any]:
     """REST body for the v4.1 worker pod. Pure: builds, never sends."""
+    if pin is None:
+        raise ScriptsCommitError("the worker pod needs a scripts pin (--scripts-commit)")
     return {"name": "v41-workers", "imageName": VLLM_IMAGE, "gpuTypeIds": [gpu], "gpuCount": 1,
             "containerDiskInGb": CONTAINER_DISK_GB, "volumeInGb": 0, "ports": WORKERS_PORTS,
             "env": {"VLLM_API_KEY": api_secret}, "dockerEntrypoint": ["bash", "-c"],
-            "dockerStartCmd": [workers_start_script(log_token)]}
+            "dockerStartCmd": [workers_start_script(log_token, pin)]}
 
 
-def deploy_payload(model: str, api_secret: str, gpu: str, log_token: str) -> Dict[str, Any]:
+def deploy_payload(model: str, api_secret: str, gpu: str, log_token: str,
+                   pin: Optional[ScriptsPin] = None) -> Dict[str, Any]:
     """REST body for one on-demand pod. Pure: builds, never sends."""
     if model == WORKERS_KEY:
-        return deploy_payload_workers(api_secret, gpu, log_token)
+        return deploy_payload_workers(api_secret, gpu, log_token, pin)
     return {"name": f"v4-pilot-{model}", "imageName": VLLM_IMAGE, "gpuTypeIds": [gpu], "gpuCount": 1,
             "containerDiskInGb": CONTAINER_DISK_GB, "volumeInGb": 0, "ports": ["8000/http", "8001/http"],
             "env": {"VLLM_API_KEY": api_secret}, "dockerEntrypoint": ["bash", "-c"],
@@ -159,11 +195,11 @@ def utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def cost_row(event: str, pod_id: str, rate_per_hr: float, utc: Optional[str] = None) -> Dict[str, Any]:
+def cost_row(event: str, pod_id: str, rate_per_hr: float, utc: Optional[str] = None, **extra: Any) -> Dict[str, Any]:
     """One cost record in the schema ``v4_budget.pod_spend`` reads."""
     if event not in ("start", "stop"):
         raise ValueError(f"event must be start or stop, not {event!r}")
-    return {"event": event, "pod_id": pod_id, "utc": utc or utc_now(), "rate_per_hr": float(rate_per_hr)}
+    return {"event": event, "pod_id": pod_id, "utc": utc or utc_now(), "rate_per_hr": float(rate_per_hr), **extra}
 
 
 def append_cost(path: Path, row: Mapping[str, Any]) -> None:
@@ -283,10 +319,18 @@ def wait_ready(state: Mapping[str, Any], timeout_s: float, transport: Optional[h
 
 
 def cmd_up(model: str, client: RunPod, paths: Paths, echo: Echo = print, wait: bool = False,
-           transport: Optional[httpx.BaseTransport] = None, sleep: Callable[[float], None] = time.sleep) -> int:
+           transport: Optional[httpx.BaseTransport] = None, sleep: Callable[[float], None] = time.sleep,
+           scripts_commit: Optional[str] = None) -> int:
     if model not in MODELS and model != WORKERS_KEY:
         echo(f"unknown model {model!r}; choose from {sorted([*MODELS, WORKERS_KEY])}")
         return 2
+    pin: Optional[ScriptsPin] = None
+    if model == WORKERS_KEY:  # validated before any API call or state change
+        try:
+            pin = scripts_pin(scripts_commit or "")
+        except ScriptsCommitError as exc:
+            echo(f"refused: {exc}")
+            return 2
     state = load_state(paths.state)
     if state:
         status = pod_status(client, state["pod_id"])
@@ -306,7 +350,7 @@ def cmd_up(model: str, client: RunPod, paths: Paths, echo: Echo = print, wait: b
         if reason:
             echo(f"refused: {reason}")
             return 1
-        r = client.create_pod(deploy_payload(model, api_secret, gpu, log_token))
+        r = client.create_pod(deploy_payload(model, api_secret, gpu, log_token, pin))
         body = r.json() if r.status_code in (200, 201) else None
         if body and body.get("id"):
             pod = body
@@ -316,13 +360,15 @@ def cmd_up(model: str, client: RunPod, paths: Paths, echo: Echo = print, wait: b
         echo("no GPU available")
         return 1
     rate = float(pod.get("costPerHr") or ASSUMED_RATE_PER_HR)
-    append_cost(paths.costs, cost_row("start", pod["id"], rate))
+    pin_fields: Dict[str, Any] = {"scripts_commit": pin.commit, "scripts_sha256": dict(pin.hashes)} if pin else {}
+    append_cost(paths.costs, cost_row("start", pod["id"], rate, **pin_fields))
     state = {"pod_id": pod["id"], "api_secret": api_secret, "model": model, "served": served_name(model),
              "hf": WORKERS_HF if model == WORKERS_KEY else MODELS[model]["hf"],
              "revision": WORKERS_REVISION if model == WORKERS_KEY else MODELS[model]["revision"],
              "image": VLLM_IMAGE, "gpu": gpu, "cost_per_hr": rate, "created_utc": utc_now(),
              "base_url": f"https://{pod['id']}-{8100 if model == WORKERS_KEY else 8000}.proxy.runpod.net/v1",
-             "log_url": f"https://{pod['id']}-8001.proxy.runpod.net/{log_token}/vllm.log"}
+             "log_url": f"https://{pod['id']}-8001.proxy.runpod.net/{log_token}/"
+                        f"{'workers' if model == WORKERS_KEY else 'vllm'}.log", **pin_fields}
     save_state(paths.state, state)
     echo(f"pod {pod['id']} on {gpu} at ${rate:.3f}/hr; base_url {state['base_url']}")
     if wait:
@@ -383,23 +429,19 @@ def main(argv: Optional[List[str]] = None, *, paths: Optional[Paths] = None,
     up = sub.add_parser("up")
     up.add_argument("model", choices=sorted([*MODELS, WORKERS_KEY]))
     up.add_argument("--wait", action="store_true", help="after creating, block until vLLM serves the model")
-    push = sub.add_parser("push-scripts", help="copy the v4.1 launcher to the worker pod over ssh/scp")
-    push.add_argument("--host", required=True)
-    push.add_argument("--port", type=int, required=True)
-    push.add_argument("--identity", help="path to the ssh private key file (path only; never read here)")
+    up.add_argument("--scripts-commit", metavar="SHA", help="v41-workers only: 40-hex commit the pod downloads and "
+                    "sha256-verifies its launcher from (must exist locally and be pushed to origin)")
     for name in ("status", "wait", "down", "cost"):
         sub.add_parser(name)
     args = parser.parse_args(argv)
     paths = paths or Paths()
     if args.cmd == "cost":
         return cmd_cost(paths, echo)
-    if args.cmd == "push-scripts":
-        return cmd_push_scripts(args.host, args.port, args.identity, echo)
     if args.cmd == "wait":  # talks to the pod with its own secret, not the RunPod key
         return cmd_wait(paths, echo, transport, sleep)
     client = RunPod(api_key or runpod_key(), transport)
     if args.cmd == "up":
-        return cmd_up(args.model, client, paths, echo, args.wait, transport, sleep)
+        return cmd_up(args.model, client, paths, echo, args.wait, transport, sleep, args.scripts_commit)
     return {"status": cmd_status, "down": cmd_down}[args.cmd](client, paths, echo)
 
 
