@@ -46,8 +46,10 @@ def clock():
 
 
 @pytest.fixture
-def fake():
-    return FakeChain(300, ADDRS.values())
+def fake(signer):
+    chain = FakeChain(300, ADDRS.values())
+    chain.contract_deployer = signer.address      # AnchorRegistry / BoardLog were deployed by the signer
+    return chain
 
 
 @pytest.fixture

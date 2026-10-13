@@ -25,6 +25,7 @@ SEL = {
     "onceDigestOf": _sel("onceDigestOf(bytes32)"),
     "nextSeq": _sel("nextSeq(bytes32)"),
     "reputationOf": _sel("reputationOf(bytes32)"),
+    "deployer": _sel("deployer()"),
 }
 assert set(ABIS) == {"AnchorRegistry", "BoardLog", "ReputationRegistry"}
 
@@ -53,6 +54,7 @@ class FakeChain:
         self.txs: dict[str, dict] = {}         # every tx the node accepted (mempool or mined)
         self.hide_receipts = False             # simulate a receipt index that lags behind blocks
         self.get_tx_error: Exception | None = None
+        self.contract_deployer: str | None = None   # what ``deployer()`` returns; None = whoever sent the first tx
         self.eth = self
 
     # ---- web3.eth surface ---------------------------------------------------------------------
@@ -90,6 +92,8 @@ class FakeChain:
     def call(self, tx):
         data = bytes.fromhex(tx["data"][2:])
         s, args = data[:4], data[4:]
+        if s == SEL["deployer"]:
+            return bytes(12) + bytes.fromhex((self.contract_deployer or "0x" + "00" * 20)[2:])
         if s == SEL["rootAt"]:
             run, size = abi_decode(["bytes32", "uint64"], args)
             return self.root_at.get((run, size), b"\x00" * 32)

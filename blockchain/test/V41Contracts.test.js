@@ -209,11 +209,20 @@ describe("BoardLog", function () {
     await expect(log.postBatch(run, 0, ZERO, [])).to.be.revertedWithCustomError(log, "EmptyBatch");
   });
 
-  it("run owner is fixed by the first post", async function () {
+  it("postBatch is deployer-only: a third party can neither squat a runId nor extend one", async function () {
+    expect(await log.deployer()).to.equal(owner.address);
     const a = chainEntries(1);
+    // squat attempt: first post by a stranger reverts and leaves the run unowned
+    await expect(log.connect(other).postBatch(run, 0, ZERO, a.entries)).to.be.revertedWithCustomError(log, "NotDeployer");
+    expect(await log.runOwner(run)).to.equal(ethers.ZeroAddress);
+    expect(await log.nextSeq(run)).to.equal(0);
+    // the deployer is not locked out, and the owner is always the deployer
     await log.postBatch(run, 0, ZERO, a.entries);
+    expect(await log.runOwner(run)).to.equal(owner.address);
+    // a stranger cannot extend the run either
     const b = chainEntries(1, 1, a.last);
-    await expect(log.connect(other).postBatch(run, 1, a.last, b.entries)).to.be.revertedWithCustomError(log, "NotRunOwner");
+    await expect(log.connect(other).postBatch(run, 1, a.last, b.entries)).to.be.revertedWithCustomError(log, "NotDeployer");
+    expect(await log.nextSeq(run)).to.equal(1);
   });
 
   it("covers every type code", async function () {

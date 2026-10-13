@@ -126,7 +126,8 @@ release when P(yes) ≥ 0.5; `amount` is the argmax level.
 
 `<run_id>.jsonl`: line 1 is the header, then one entry per line in `seq` order, each line in JCS.
 `<run_id>.anchors.json`: a list of `{size, root, digest, ots_path?, rekor_uuid?, rekor_log_index?,
-chain_tx?, l2_block?, l1_batch?}`.
+rekor_checkpoint?, chain_tx?, l2_block?, l1_batch?}`. `rekor_checkpoint` is the signed Rekor checkpoint (C2SP note)
+the log returned with the new entry; the outside verifier uses it for the split-view consistency check (S2b).
 
 ## 8. Clarifications (lead, 2026-10-12)
 
@@ -134,6 +135,6 @@ chain_tx?, l2_block?, l1_batch?}`.
 - **Score answers.** The kernel's `score` `Answer` keys its probabilities by option index `"0"…"4"`. The amount level is `index + 1`.
 - **Brief/route order.** The queen builds the brief draft first (`build_brief` accepts a route payload draft), then writes the route entry carrying those `brief_ids`. The 6-entry minimum is enforced by `build_brief`, not by the entry validator, because a short board can legitimately have fewer.
 - **`payloadCompact`** encodes each integer field as `uint256` (two's complement as `int256` for signed fields), in table order.
-- **Access control.** `AnchorRegistry.anchor`, `AnchorRegistry.anchorOnce`, `BoardLog.postBatch` (first post fixes the owner) and `ReputationRegistry.report` are callable only by the v4.1 deployer, so no third party can squat a run id or a single-shot id.
+- **Access control.** `AnchorRegistry.anchor`, `AnchorRegistry.anchorOnce`, `BoardLog.postBatch` (the run owner is therefore always the deployer; S2b removed the earlier first-poster-owns behaviour) and `ReputationRegistry.report` are callable only by the v4.1 deployer, so no third party can squat a run id or a single-shot id.
 - **`report` is idempotent:** `report(bytes32 runId, bytes32 author, bytes32 claimId, bool contradicted)`, where a repeated `(runId, author, claimId)` reverts. Here `author` = sha256 of the author's run public key, and `claimId` = the id of the contradicted `evidence` entry.
 - **Brief selection order** (L3): task, the squad's route, knowledge on its regions, other knowledge, then evidence, decisions and alarms newest first.

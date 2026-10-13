@@ -34,7 +34,7 @@ from antelligence.anchoring.readers import (
     decode_view,
 )
 from antelligence.anchoring.rekor import RekorConflict, load_public_pem
-from antelligence.kernel.board import inclusion_path, merkle_root
+from antelligence.kernel.board import consistency_path, inclusion_path, merkle_root
 
 # --------------------------------------------------------------------------------------------------
 # OpenTimestamps
@@ -156,6 +156,36 @@ class MockRekor:
     def _sign(self, data: bytes) -> bytes:
         return self._log_key.sign(data, ec.ECDSA(hashes.SHA256()))
 
+    ORIGIN = "mock-rekor - 1"
+
+    def _signed_note(self, size: int) -> str:
+        root = merkle_root(self.bodies[:size])
+        note = f"{self.ORIGIN}\n{size}\n{base64.b64encode(root).decode()}\n"
+        sig = base64.b64encode(b"\x00\x00\x00\x00" + self._sign(note.encode())).decode()
+        return f"{note}\n\u2014 mock-rekor {sig}\n"
+
+    def log_info(self) -> Dict[str, Any]:
+        self.requests += 1
+        n = len(self.bodies)
+        return {"signedTreeHead": self._signed_note(n), "treeID": "1", "treeSize": n,
+                "rootHash": merkle_root(self.bodies[:n]).hex(), "inactiveShards": []}
+
+    def consistency_proof(self, first_size: int, last_size: int, tree_id: str = "") -> List[str]:
+        self.requests += 1
+        return [h.hex() for h in consistency_path(first_size, self.bodies[:last_size])]
+
+    def fork(self, replace_index: int) -> "MockRekor":
+        """An equivocating log: same signing key and history up to ``replace_index``, then a different entry there.
+
+        Models the operator-colluding or compromised log that shows a second tree to another verifier.
+        """
+        other = MockRekor(self.clock)
+        other._log_key = self._log_key
+        other.bodies = list(self.bodies)
+        other.meta = list(self.meta)
+        other.bodies[replace_index] = other.bodies[replace_index] + b" "          # any different leaf
+        return other
+
     def _entry(self, index: int) -> Dict[str, Any]:
         leaves = self.bodies[: len(self.bodies)]
         # Rekor leaf = the canonical body; merkle code hashes with the 0x00 prefix itself
@@ -167,13 +197,11 @@ class MockRekor:
             {"body": body_b64, "integratedTime": self.meta[index]["time"], "logID": log_id, "logIndex": index},
             sort_keys=True, separators=(",", ":"),
         ).encode()
-        note = f"mock-rekor - 1\n{len(leaves)}\n{base64.b64encode(root).decode()}\n"
-        sig = base64.b64encode(b"\x00\x00\x00\x00" + self._sign(note.encode())).decode()
         verification: Dict[str, Any] = {"signedEntryTimestamp": base64.b64encode(self._sign(set_payload)).decode()}
         if not self.omit_proofs:
             verification["inclusionProof"] = {
                 "logIndex": index, "treeSize": len(leaves), "rootHash": root.hex(),
-                "hashes": [h.hex() for h in path], "checkpoint": f"{note}\n\u2014 mock-rekor {sig}\n",
+                "hashes": [h.hex() for h in path], "checkpoint": self._signed_note(len(leaves)),
             }
         return {
             "body": body_b64, "integratedTime": self.meta[index]["time"], "logID": log_id, "logIndex": index,
@@ -258,6 +286,12 @@ class MockW3:
         self.registry = registry
         self.eth = self
         self.requests = 0
+
+    CODE = b"mock-anchor-registry-bytecode"
+
+    def get_code(self, address: str) -> bytes:
+        self.requests += 1
+        return self.CODE if str(address).lower() == self.ADDRESS.lower() else b""
 
     def call(self, tx: Dict[str, Any]) -> bytes:
         self.requests += 1

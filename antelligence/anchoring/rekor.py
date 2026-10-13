@@ -18,13 +18,13 @@ import os
 import stat
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Protocol, Sequence, Union
+from typing import Any, Dict, List, Optional, Protocol, Sequence, Tuple, Union
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
-from antelligence.kernel.board import BoardError, verify_inclusion
+from antelligence.kernel.board import BoardError, verify_consistency, verify_inclusion
 
 DEFAULT_REKOR_URL = "https://rekor.sigstore.dev"
 API_VERSION = "0.0.1"
@@ -57,6 +57,12 @@ class RekorTransport(Protocol):
 
     def log_public_key(self) -> bytes:
         """GET /api/v1/log/publicKey -> PEM of the log's signing key."""
+
+    def log_info(self) -> Dict[str, Any]:
+        """GET /api/v1/log -> ``{signedTreeHead, treeID, treeSize, rootHash, inactiveShards: [...]}``."""
+
+    def consistency_proof(self, first_size: int, last_size: int, tree_id: str) -> List[str]:
+        """GET /api/v1/log/proof -> the RFC 6962 consistency proof hashes (hex) between two tree sizes."""
 
 
 class HttpRekorTransport:
@@ -97,6 +103,20 @@ class HttpRekorTransport:
         if resp.status_code >= 400:
             raise RekorError(f"HTTP {resp.status_code}: {resp.text[:200]}")
         return resp.content
+
+    def log_info(self) -> Dict[str, Any]:
+        import httpx
+
+        return self._check(httpx.get(f"{self.base_url}/api/v1/log", timeout=self.timeout_s))
+
+    def consistency_proof(self, first_size: int, last_size: int, tree_id: str) -> List[str]:
+        import httpx
+
+        params = {"firstSize": int(first_size), "lastSize": int(last_size)}
+        if tree_id:
+            params["treeID"] = tree_id
+        out = self._check(httpx.get(f"{self.base_url}/api/v1/log/proof", params=params, timeout=self.timeout_s))
+        return [str(h) for h in out.get("hashes") or []]
 
 
 # ---------------------------------------------------------------------------
@@ -232,34 +252,64 @@ def pinned_log_key(pem: bytes, pinned_sha256: str) -> ec.EllipticCurvePublicKey:
     return key
 
 
-def _checkpoint_problems(proof: Dict[str, Any], log_key: ec.EllipticCurvePublicKey) -> List[str]:
-    """Verify the signed checkpoint (a C2SP signed note) and that it states the proof's size and root."""
-    cp = proof.get("checkpoint")
-    if not cp:
-        return ["no signed checkpoint"]
-    text, sep, sigs = cp.partition("\n\n")
+@dataclass(frozen=True)
+class Checkpoint:
+    """A C2SP signed tree head: the log (``origin``, which names the tree) states ``size`` and ``root``."""
+
+    origin: str
+    size: int
+    root: bytes
+    text: str                    # the complete signed note, exactly as the log served it
+
+    @property
+    def tree_id(self) -> str:
+        return self.origin.rsplit(" - ", 1)[-1] if " - " in self.origin else ""
+
+
+def parse_checkpoint(text: str) -> Checkpoint:
+    """Parse the note body (origin, size, root). Does NOT check any signature."""
+    body, sep, _sigs = text.partition("\n\n")
     if not sep:
-        return ["malformed checkpoint"]
-    note = text + "\n"
-    lines = note.split("\n")
+        raise RekorError("malformed checkpoint")
+    lines = (body + "\n").split("\n")
     try:
-        size_ok = int(lines[1]) == int(proof["treeSize"])
-        root_ok = base64.b64decode(lines[2]).hex() == proof["rootHash"].lower()
-    except (IndexError, ValueError, KeyError):
-        return ["malformed checkpoint"]
-    out = [] if size_ok and root_ok else ["checkpoint size/root differ from the inclusion proof"]
-    verified = False
-    for line in sigs.splitlines():
+        return Checkpoint(origin=lines[0], size=int(lines[1]), root=base64.b64decode(lines[2], validate=True), text=text)
+    except (IndexError, ValueError) as exc:
+        raise RekorError("malformed checkpoint") from exc
+
+
+def verify_checkpoint(text: str, log_key: ec.EllipticCurvePublicKey) -> Checkpoint:
+    """Parse a checkpoint and require a signature by the pinned log key; raises :class:`RekorError` otherwise."""
+    cp = parse_checkpoint(text)
+    note = text.partition("\n\n")[0] + "\n"
+    for line in text.partition("\n\n")[2].splitlines():
         if not line.startswith("\u2014 "):
             continue
         try:
             raw = base64.b64decode(line.split(" ", 2)[2])
             log_key.verify(raw[4:], note.encode(), ec.ECDSA(hashes.SHA256()))
-            verified = True
+            return cp
         except (InvalidSignature, ValueError, IndexError):
             continue
-    if not verified:
-        out.append("checkpoint signature does not verify under the pinned Rekor log key")
+    raise RekorError("checkpoint signature does not verify under the pinned Rekor log key")
+
+
+def _checkpoint_problems(proof: Dict[str, Any], log_key: ec.EllipticCurvePublicKey) -> List[str]:
+    """Verify the signed checkpoint and that it states the proof's size and root."""
+    cp_text = proof.get("checkpoint")
+    if not cp_text:
+        return ["no signed checkpoint"]
+    try:
+        cp = parse_checkpoint(cp_text)
+        size_ok = cp.size == int(proof["treeSize"])
+        root_ok = cp.root.hex() == proof["rootHash"].lower()
+    except (RekorError, ValueError, KeyError):
+        return ["malformed checkpoint"]
+    out = [] if size_ok and root_ok else ["checkpoint size/root differ from the inclusion proof"]
+    try:
+        verify_checkpoint(cp_text, log_key)
+    except RekorError as exc:
+        out.append(str(exc))
     return out
 
 
@@ -344,9 +394,78 @@ class RekorClient:
         (key, entry), = resp.items()
         return parse_entry(key, entry, raw_bytes=len(json.dumps(resp)))
 
+    def latest_checkpoints(self) -> List[Checkpoint]:
+        """The newest signed checkpoint of every tree the log serves (active tree and frozen shards), each
+        verified under the pinned log key. Raises :class:`RekorError` on a bad signature or malformed answer."""
+        key = self.log_key()
+        self.calls += 1
+        info = self.transport.log_info()
+        heads = [info.get("signedTreeHead")] + [s.get("signedTreeHead") for s in info.get("inactiveShards") or []]
+        out = [verify_checkpoint(h, key) for h in heads if h]
+        if not out:
+            raise RekorError("the log served no signed tree head")
+        return out
+
+    def is_consistent(self, old: Checkpoint, new: Checkpoint) -> bool:
+        """RFC 6962 consistency of two checkpoints of the SAME tree (the log serves the proof, we check it)."""
+        if old.origin != new.origin:
+            raise RekorError("checkpoints belong to different trees")
+        if old.size > new.size:
+            old, new = new, old
+        if old.size == new.size:
+            return old.root == new.root
+        if old.size == 0:
+            return True
+        self.calls += 1
+        proof = [bytes.fromhex(h) for h in self.transport.consistency_proof(old.size, new.size, new.tree_id)]
+        return verify_consistency(old.size, new.size, old.root, new.root, proof)
+
     def entries_for_key(self, pem: bytes) -> List[RekorRecord]:
         """Every entry logged under this public key, ordered by log index."""
         self.calls += 1
         uuids = self.transport.search_by_pubkey(pem)
         records = [self.get(u) for u in uuids]
         return sorted(records, key=lambda r: r.log_index)
+
+
+def split_view_check(
+    client: RekorClient, archived: Sequence[Checkpoint], seen: Sequence[Checkpoint]
+) -> Tuple[List[str], List[str]]:
+    """Cross-check the checkpoints archived at anchor time against everything this verifier sees now.
+
+    Rekor can serve different trees to different verifiers (a split view) unless checkpoints are compared.
+    Per tree (checkpoint origin): two roots for one size is a fork; otherwise the checkpoints, ordered by size and
+    including the log's current head, must chain by valid consistency proofs. Returns ``(problems, unverified)``:
+    ``problems`` are proven inconsistencies, ``unverified`` are things that could not be checked (network, no
+    current head). It does not detect a log that shows the same lie to everyone (no witness gossip).
+    """
+    problems: List[str] = []
+    unverified: List[str] = []
+    by_tree: Dict[str, Dict[int, Checkpoint]] = {}
+    for cp in [*archived, *seen]:
+        known = by_tree.setdefault(cp.origin, {}).get(cp.size)
+        if known is not None and known.root != cp.root:
+            problems.append(f"split view: two different roots for tree {cp.origin!r} at size {cp.size}")
+        by_tree[cp.origin].setdefault(cp.size, cp)
+    try:
+        heads = {h.origin: h for h in client.latest_checkpoints()}
+    except Exception as exc:                          # network or malformed answer: cannot cross-check
+        heads = {}
+        unverified.append(f"current Rekor checkpoint unavailable: {type(exc).__name__}: {exc}")
+    for origin, by_size in by_tree.items():
+        head = heads.get(origin)
+        if head is not None:
+            known = by_size.get(head.size)
+            if known is not None and known.root != head.root:
+                problems.append(f"split view: the log's current head for tree {origin!r} contradicts a checkpoint of size {head.size}")
+            by_size.setdefault(head.size, head)
+        elif heads:
+            unverified.append(f"the log serves no current head for tree {origin!r}")
+        ordered = [by_size[k] for k in sorted(by_size)]
+        for old, new in zip(ordered, ordered[1:]):
+            try:
+                if not client.is_consistent(old, new):
+                    problems.append(f"split view: checkpoint of size {old.size} is not a prefix of size {new.size} (tree {origin!r})")
+            except Exception as exc:
+                unverified.append(f"consistency proof {old.size}->{new.size}: {type(exc).__name__}: {exc}")
+    return problems, unverified

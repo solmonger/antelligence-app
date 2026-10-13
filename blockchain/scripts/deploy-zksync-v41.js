@@ -19,6 +19,7 @@
 const fs = require("fs");
 const path = require("path");
 const { execSync } = require("child_process");
+const { keccak256 } = require("ethers");
 const hre = require("hardhat");
 const { Wallet, Provider } = require("zksync-ethers");
 const { Deployer } = require("@matterlabs/hardhat-zksync-deploy");
@@ -155,9 +156,14 @@ async function main() {
       const contract = await deployer.deploy(artifacts[c.name], c.args(wallet.address));
       const receipt = await contract.deploymentTransaction().wait();
       const address = await contract.getAddress();
+      // keccak256 of the code the chain serves at the address: the outside verifier pins it (with the address and
+      // the deployer) from this file at a commit, so a swapped or upgraded contract is detected.
+      const code = await provider.getCode(address);
+      if (!code || code === "0x") throw new Error(`${c.name}: no code at ${address} after deploy`);
       records.push({
         name: c.name,
         address,
+        code_hash: keccak256(code),
         deploy_tx_hash: receipt.hash,
         block_number: receipt.blockNumber,
         deployer: wallet.address,

@@ -5,7 +5,7 @@ import pytest
 from antelligence.anchoring import mocks
 import hashlib
 
-from antelligence.anchoring.tamper import N_ENTRIES, PREREG_DOC, Lab, _anchor_all, _export, _plan
+from antelligence.anchoring.tamper import N_ENTRIES, Lab, _anchor_all, _export, _plan
 from antelligence.kernel.canonical import jcs_bytes
 from antelligence.kernel.board import anchor_sizes
 
@@ -20,7 +20,7 @@ def honest(tmp_path):
     _anchor_all(lab, board, akey, out, anchor_sizes(N_ENTRIES))
     plan = _plan(board, akey)
     study = lab.single_shot(tmp_path / "study")
-    study.anchor("prereg", hashlib.sha256(PREREG_DOC).digest())
+    study.anchor("prereg", hashlib.sha256(lab.prereg_doc()).digest())
     study.anchor("runplan", hashlib.sha256(jcs_bytes(plan)).digest())
     lab.confirm_ots(out)                                    # Bitcoin confirms; proofs upgraded
     (tmp_path / "plan.json").write_text(json.dumps(plan))

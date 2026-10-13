@@ -19,7 +19,8 @@ def inputs(tmp_path):
     return dict(code_sha="a" * 40, world_yaml=tmp_path / "world.yaml", harness_yaml=tmp_path / "harness.yaml",
                 conformal_json=tmp_path / "conformal.json", split_json=tmp_path / "split.json",
                 router_model_file=tmp_path / "router.pkl", model_revisions_json=tmp_path / "revs.json",
-                contracts={"AnchorRegistry": {"address": "0x" + "1" * 40, "code_hash": "0x" + "2" * 64}})
+                contracts={"AnchorRegistry": {"address": "0x" + "1" * 40, "code_hash": "0x" + "2" * 64}},
+                study_key_sha256="c" * 64)
 
 
 def test_prereg_refuses_missing_inputs(inputs, tmp_path):
@@ -38,7 +39,11 @@ def test_prereg_refuses_missing_inputs(inputs, tmp_path):
     assert hashlib.sha256(b"content of world.yaml").hexdigest() in text
     assert hashlib.sha256(b"content of router.pkl").hexdigest() in text
     assert hashlib.sha256((tmp_path / "revs.json").read_bytes()).hexdigest() in text
-    for key in ("code_sha", "router_model_file", "model_revisions_json", "contracts", "world_yaml", "split_json"):
+    from antelligence.anchoring.pins import study_key_in
+
+    assert study_key_in(text) == "c" * 64                  # the verifier reads the pin back out of the rendered document
+    for key in ("code_sha", "router_model_file", "model_revisions_json", "contracts", "world_yaml", "split_json",
+                "study_key_sha256"):
         bad = {**inputs, key: None}
         with pytest.raises(pre.PreregError, match=key):
             pre.render_prereg(**bad)

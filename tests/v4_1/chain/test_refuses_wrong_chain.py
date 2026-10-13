@@ -81,3 +81,13 @@ def test_deployer_and_addresses_come_from_the_v4_1_deployments_key(fake, signer,
     c = ChainClientV41(fake, signer, TxQueue(tmp_path / "q.sqlite", clock=clock), clock=clock)
     assert c.expected_deployer == signer.address and c.contracts == ADDRS
     assert c.preflight() == 300
+
+
+def test_refuses_board_log_deployed_by_someone_else(make_client, fake):
+    """BoardLog.postBatch is deployer-only; a BoardLog from another deployer would only revert, so never sign."""
+    fake.contract_deployer = "0x" + "de" * 20
+    c = make_client()
+    c.enqueue_board_batch(b32(1), 0, b32(0), [b"\x01"])
+    with pytest.raises(ChainConfigError, match="deployed by"):
+        c.pump()
+    assert fake.sent_log == []

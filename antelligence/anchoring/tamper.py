@@ -32,6 +32,7 @@ from web3 import Web3
 
 from antelligence.anchoring import mocks
 from antelligence.anchoring.anchorer import Anchorer, SingleShotAnchorer, single_shot_id
+from antelligence.anchoring.pins import TrustPins
 from antelligence.anchoring.ots import OtsClient
 from antelligence.anchoring.readers import ZERO32, Web3ChainReader
 from antelligence.anchoring.rekor import AnchorKey, RekorClient
@@ -149,6 +150,28 @@ class Lab:
             self._w3 = self.registry.w3
             self.registry_address = self.registry.address
         self.study_key = AnchorKey()
+        self._prereg_file: Optional[Path] = None
+
+    def prereg_doc(self, base: bytes = PREREG_DOC) -> bytes:
+        """The preregistration as locked: ``base`` plus the line that fixes this lab's study key."""
+        return base + f"Study key fingerprint (sha256 of SPKI DER): `{self.study_key.fingerprint}`\n".encode()
+
+    def prereg_path(self) -> Path:
+        """The locked preregistration as a file (what ``--prereg`` points at), kept outside any exported run."""
+        if self._prereg_file is None:
+            self._tmp = tempfile.TemporaryDirectory(prefix="v41-prereg-")
+            self._prereg_file = Path(self._tmp.name) / "PREREGISTRATION.md"
+            self._prereg_file.write_bytes(self.prereg_doc())
+        return self._prereg_file
+
+    def forged_prereg_doc(self) -> bytes:
+        """What a swapping operator would produce: different text; it may keep or drop the study key line."""
+        return self.prereg_doc(FORGED_DOC)
+
+    def pins(self) -> TrustPins:
+        """The pins a verifier would build from the deployments file at a commit and the locked preregistration."""
+        return TrustPins(registry=Web3.to_checksum_address(self.registry_address), deployer=self.deployer,
+                         code_hash=self.reader().code_hash(), study_key_sha256=self.study_key.fingerprint)
 
     def ots_client(self) -> OtsClient:
         return OtsClient(self.ots_transport, calendars=("https://cal-a.mock", "https://cal-b.mock"))
@@ -247,8 +270,7 @@ def _verifier(lab: Lab, directory: Path, plan: Dict[str, Any], condition: str) -
         chain=lab.reader() if condition == "C" else None,
         rekor=lab.rekor if condition == "R" else None,
         ots_dir=directory, header_provider=lab.header_provider() if condition == "OTS" else None,
-        conditions={condition}, pinned_deployer=lab.deployer, pinned_registry=lab.registry_address,
-        study_pem=lab.study_key.pem,
+        conditions={condition}, pins=lab.pins(), prereg=lab.prereg_path(), study_pem=lab.study_key.pem,
     )
 
 
@@ -284,7 +306,7 @@ def run_scenario(
                 latency_sink.setdefault(mode, []).extend(values)
         plan = _plan(board, akey)
         study = lab.single_shot(root / "study")        # the operator anchors prereg and run plan once, before the runs
-        study.anchor("prereg", hashlib.sha256(PREREG_DOC).digest())
+        study.anchor("prereg", hashlib.sha256(lab.prereg_doc()).digest())
         study.anchor("runplan", hashlib.sha256(jcs_bytes(plan)).digest())
         pos_label = (f"tail_truncate_{k}" if attack == "T2" else "tail") if tail else position
 
@@ -354,19 +376,19 @@ def _collect(lab: Lab, directory: Path, plan, attack: str, position: str, write_
 def _t4(lab: Lab, root: Path, position: str) -> List[Outcome]:
     public_dir, forged_dir = root / "public", root / "forged"
     prereg_path = root / "prereg.md"
-    prereg_path.write_bytes(PREREG_DOC)
+    prereg_path.write_bytes(lab.prereg_doc())
     plan = {"study": "v4.1", "runs": []}
     plan_digest = hashlib.sha256(jcs_bytes(plan)).digest()
     honest = lab.single_shot(public_dir)
-    honest.anchor("prereg", hashlib.sha256(PREREG_DOC).digest())
+    honest.anchor("prereg", hashlib.sha256(lab.prereg_doc()).digest())
     honest.anchor("runplan", plan_digest)
     lab.confirm_ots(public_dir)
     original_ots = public_dir / "prereg.ots"          # pushed to the public PR when the prereg was locked, after upgrade
     # The operator swaps the document and anchors the new one wherever the systems allow.
     forged_path = root / "prereg-forged.md"
-    forged_path.write_bytes(FORGED_DOC)
+    forged_path.write_bytes(lab.forged_prereg_doc())
     attacker = lab.single_shot(forged_dir)
-    attacker.anchor("prereg", hashlib.sha256(FORGED_DOC).digest())
+    attacker.anchor("prereg", hashlib.sha256(lab.forged_prereg_doc()).digest())
     write_rejected = any(e["mode"] == "C" for e in attacker.errors)
     out: List[Outcome] = []
     for cond in CONDITIONS:

@@ -21,7 +21,7 @@ the first in at least one root, so at the first differing anchor size it has a d
 | **OTS** (Bitcoin via calendars) | stamp any digest, any time; choose which `.ots` files to hand over | backdate a stamp; remove a stamp from Bitcoin | A `.ots` proves "this digest existed by block T". Nothing public says which stamps belong to a run, so the operator supplies the stamps for the history it shows. OTS catches a **backdated single document** only: the preregistration `.ots` is pushed to the public PR at lock time, so the verifier holds an independent copy and compares it to the document it is shown (T4). It gives anchor *time*, not uniqueness. |
 | **R** (Rekor) | append more entries under the run's anchor key (it holds the key) | delete or edit an entry; hide an entry from search | The run's anchor public key is in the anchored run plan (as a sha256 fingerprint) and the PEM travels with the export. The verifier lists **every** entry under that key (`index/retrieve`, then `GET entries/{uuid}`) and compares the set of logged digests with the digests recomputed from the export it was given. A rewrite, a truncation or a second history leaves digests that match no prefix of the shown history: the log still holds the old ones. Detection is at **audit** time, because Rekor accepts the second history's entries too. |
 | **C** (`AnchorRegistry`) | nothing past what the deployer key may write (still all of it) | overwrite an anchored `(runId, size)`, shrink or reorder anchors | The contract is write-once per `(runId, size)`, size-increasing and `prevRoot`-linked, so a second root for an anchored size **reverts at write time**. The verifier reads `lastSize`, `anchorCount` and `rootAt` through `eth_call`, with the registry address and the deployer pinned, and recomputes every root from the export. A shorter export than `lastSize` is a truncation. |
-| **D** (`BoardLog`) | post entries | rewrite posted entries (contiguous `seq`, `prevHash` link) | Entries are posted as they are produced; included entries are what workers see. Verifying it is the same recomputation as C against the emitted `Entry` events. D is a worker-visibility mechanism in v4.1; the tamper suite covers B, OTS, R and C. |
+| **D** (`BoardLog`) | post entries, but only as the deployer (`postBatch` is deployer-only, like `anchor`; S2b) | rewrite posted entries (contiguous `seq`, `prevHash` link); squat a `runId` | Entries are posted as they are produced; included entries are what workers see. Verifying it is the same recomputation as C against the emitted `Entry` events. D is a worker-visibility mechanism in v4.1; the tamper suite covers B, OTS, R and C. |
 
 ### Why Rekor counts as "one history per planned run"
 
@@ -53,10 +53,69 @@ INTERFACES keeps `anchor_pubkey` as 32 hex bytes: it is `sha256(SubjectPublicKey
 key. Rekor can only search by the full key, so the public PEM is published as `<run_id>.anchor_pub.pem`
 next to the export, and the verifier checks its fingerprint against the anchored run plan before searching.
 
+## Trust anchors are pinned (S2b)
+
+A verifier told "the registry is X, the deployer is Y, the study key is Z" by the party it audits has
+verified nothing. `antelligence/anchoring/pins.py` therefore builds a `TrustPins` from public,
+operator-independent inputs only:
+
+| Pin | Source |
+|---|---|
+| `AnchorRegistry` address | `blockchain/deployments/<network>.json`, key `v4_1`, **read at a full 40-hex git commit** (`git show <commit>:<path>`; a branch name is refused because it moves) |
+| deployer | the same record |
+| code hash (keccak256 of the code the chain serves at the address) | the same record (`code_hash`, written by `deploy-zksync-v41.js` from `eth_getCode` right after deploy) |
+| study key fingerprint (sha256 of the SPKI DER) | the line ``Study key fingerprint (sha256 of SPKI DER): `...` `` **inside the preregistration**, whose digest is `anchorOnce`'d on chain |
+
+Anything a caller supplies on top (`--registry`, `--deployer`, `--study-pem`, a chain reader pointed
+somewhere) is only *compared* with the pins and fails the verdict on a mismatch. Condition C refuses to
+run without pins, and every chain read (per-run, plan, study) first checks address, deployer and code hash.
+
+**Chain of trust for the run plan.** pins -> registry -> `onceDigestOf(prereg)` == sha256(`--prereg` document)
+-> the study key written in that document -> the Rekor entries signed by that key. The plan is
+`plan_authenticated` only if the preregistration is anchored on the pinned registry **and** the plan digest is
+confirmed by every outside log available (chain `onceDigestOf(runplan)`; Rekor under the pinned study key).
+Rekor alone cannot root the study key (the key and the entries both come from the operator), so a Rekor-only
+or OTS-only verification stays `unverified` for the plan, never `verified`. Because the study key is
+operator-held, Rekor cannot stop a *second* plan being logged under it; the verifier requires that exactly the
+preregistration digest and the plan digest are logged under the study key.
+
+## Rekor split view (S2b)
+
+Rekor is one operator's log. It could show verifier A one tree and verifier B another; each tree would carry
+valid inclusion proofs and validly signed checkpoints. The defence implemented is **checkpoint consistency**:
+
+1. At anchor time the harness archives, per anchor, the signed checkpoint Rekor returned with the new entry
+   (`rekor_checkpoint` in `<run_id>.anchors.json`).
+2. At audit time the verifier verifies each archived checkpoint under the pinned log key, then collects every
+   checkpoint it sees now: the one inside each inclusion proof and the log's current head
+   (`GET /api/v1/log`, covering the active tree and frozen shards).
+3. Per tree (checkpoint origin) these are sorted by size and each consecutive pair must be linked by an
+   RFC 6962 consistency proof (`GET /api/v1/log/proof?firstSize&lastSize&treeID`), verified locally. Two roots
+   for one size, or a proof that does not verify, is a `failed` split view. An archived checkpoint must also be
+   at least as large as its own entry's index.
+4. No archived checkpoint, or an unreachable log, makes the Rekor check `unverified` (never `verified`).
+
+**Residual risk.** This detects a log that shows *this* verifier a history different from the one the harness
+saw. It does not detect a log that shows the same fork to the harness and to every verifier (no witness gossip,
+no third-party cosigned checkpoints, no monitor comparing independent views), and an operator can archive an old,
+small checkpoint to weaken step 3 (steps 1-4 then reduce to the entry's own inclusion proof). Rekor alone is
+therefore not a uniqueness guarantee; the chain (write-once roots) is, and Rekor's value here is detecting
+rewrites by an operator who is not also the log. Independent witnesses would close the gap; v4.1 does not run any.
+
+## Bitcoin headers are validated, not trusted (S2b)
+
+`BlockstreamHeaderProvider` used to return whatever header an Esplora server sent, so a lying server could
+confirm any `.ots` proof by choosing the merkle root. It now requires the header to hash to the block hash the
+server named, to meet its own `nBits` target, and to carry real difficulty (target at or below the mainnet
+proof-of-work limit and at least `MIN_DIFFICULTY` = 1e12 times harder than difficulty 1, so forging one costs
+about 2^32 x 1e12 hashes). Residual: without a Bitcoin node it cannot check that the header is on the best
+chain, or recompute difficulty retargets; point `--no-check-bitcoin` off only against a server you trust, or
+cross-check the height with a second source.
+
 ## What the verifier checks (`scripts/v41_verify_board.py`)
 
-No private key, no `.env`, no signer import. Inputs: exported JSONL, run plan, RPC + pinned registry +
-pinned deployer, `.ots` proofs, Rekor URL.
+No private key, no `.env`, no signer import. Inputs: exported JSONL (with `<run_id>.anchors.json`), run plan,
+RPC, `--deployments-commit` + `--prereg` (the pins), `.ots` proofs, Rekor URL.
 
 1. **header**: `run_id = sha256(JCS(header))`; header public keys and anchor key equal the plan's.
 2. **integrity / signatures**: ids recomputed, `seq` contiguous, `prev_hash` chain, cites earlier, every
@@ -64,8 +123,8 @@ pinned deployer, `.ots` proofs, Rekor URL.
 3. **chain (C)**, **rekor (R)**, **ots (OTS)** as above, each against roots recomputed from the export.
 4. **anchor times**: per system, times are monotone in size; optional `--claims` (a claim made at time t
    covering size s needs an anchor of size >= s no later than t).
-5. **study** (`--prereg`): the preregistration in hand matches the public `.ots`, `onceDigestOf(prereg)`
-   and the digests logged under the study Rekor key.
+5. **study** (`--prereg`): the preregistration in hand fixes the pinned study key and matches the public
+   `.ots`, `onceDigestOf(prereg)` and the digests logged under the study Rekor key.
 
 The report records wall time, bytes read and network calls. The size of the **unanchored tail** (entries
 after the last anchor) is reported, not failed: that is exactly the window an operator can still rewrite.
@@ -78,16 +137,23 @@ source are `unverified`). An enabled outside condition with zero verified anchor
 the run-end anchor is required). B alone is at most `unverified`. Rekor needs a mandatory inclusion proof, an
 entry key equal to the searched key, and a checkpoint signed by the log key pinned by sha256
 (`REKOR_LOG_KEY_SHA256`, fetched once from `/api/v1/log/publicKey`); `integratedTime` is used only when the
-signed entry timestamp verifies. Condition C requires a pinned deployer and registry. The plan must hash to
-the anchored run-plan digest (`plan_authenticated`) or the verdict is capped at `unverified`. Network and RPC
-errors give `unverified` with the error string.
+signed entry timestamp verifies. Condition C requires pins (registry, deployer, code hash). The plan must hash to
+the anchored run-plan digest through the pinned preregistration (`plan_authenticated`, see above) or the verdict
+is capped at `unverified`. Network and RPC errors give `unverified` with the error string.
+
+**Failed dominates.** The verdict is the worst over all checks, files and attestations: a proof with one
+provably bad Bitcoin attestation is `invalid` regardless of the order attestations are visited or whether another
+header lookup failed first; a garbage `.ots` is `invalid` whatever the parser raises; a missing or wrong-digest
+proof fails even when no header source is available (`--no-check-bitcoin` can only leave a *good* proof
+unconfirmed); a study-level finding can only make the CLI verdict worse. A proven problem is never replaced by
+"could not check".
 
 ## Limits, stated plainly
 
 - Entries after the last anchor are not protected. Anchor often, and always at run end.
 - Rekor's key is pinned by hash in code; a key rotation needs a code change (`--rekor-log-key-sha256` for private logs).
 - OTS gives time, not uniqueness; its detection value is limited to the single published preregistration.
-- The verifier trusts the RPC it is pointed at; pinning the deployer detects a wrong registry, not a lying node.
+- The verifier trusts the RPC it is pointed at; the pins (address, deployer, code hash) detect a wrong or swapped registry, not a lying node. Cross-check with a second RPC for high-stakes audits.
 - A refusal to anchor (operator withholds) is visible only as a missing anchor.
 
 ## Tamper suite (`scripts/v41_tamper.py`)
