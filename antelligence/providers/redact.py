@@ -36,6 +36,19 @@ def register_url(url: str) -> None:
             register_secret(seg)
 
 
+_LONG_TOKEN = re.compile(r"\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-.]+|[A-Za-z0-9+/_\-]{32,}={0,2}")
+ERROR_BODY_CHARS = 500
+
+
+def redact_body(text: object, extra_secrets: Iterable[str] = (), limit: int = ERROR_BODY_CHARS) -> str:
+    """A failed provider reply body made safe to store: scrubbed like everything else, then bearer tokens, ``sk-`` keys,
+    JWTs and any long base64-like run become ``[redacted]``, then cut to ``limit`` characters. Redaction runs on the
+    whole text first so a key straddling the cut cannot survive as a fragment."""
+    out = scrub(text, extra_secrets)
+    out = _LONG_TOKEN.sub("***", out)
+    return out.replace("***", "[redacted]")[:limit]
+
+
 def scrub(text: object, extra_secrets: Iterable[str] = ()) -> str:
     out = str(text)
     with _lock:

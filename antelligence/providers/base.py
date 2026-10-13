@@ -9,7 +9,14 @@ from antelligence.kernel.canonical import content_hash, plain
 
 
 class ProviderError(RuntimeError):
-    """The provider failed or returned something we refuse to trust."""
+    """The provider failed or returned something we refuse to trust.
+
+    ``http_status`` / ``error_body`` (redacted, at most 500 characters) are set when the failure was an HTTP reply."""
+
+    def __init__(self, *args: object, http_status: "int | None" = None, error_body: "str | None" = None) -> None:
+        super().__init__(*args)
+        self.http_status = http_status
+        self.error_body = error_body
 
 
 class BudgetExceeded(ProviderError):

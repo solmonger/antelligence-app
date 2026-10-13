@@ -4,6 +4,8 @@ import json
 from datetime import datetime, timedelta, timezone
 
 import httpx
+from pathlib import Path
+
 import pytest
 
 from antelligence.experiments import v41_budget, v41_prod
@@ -117,14 +119,29 @@ def test_pod_endpoint_urls_and_secret_hidden_in_repr(tmp_path):
         v41_prod.read_pod_endpoint(pod_state(tmp_path, "https://pod123-9999.proxy.runpod.net/v1"))
 
 
-def test_nous_key_read_from_auth_json_only(tmp_path):
-    auth = tmp_path / "auth.json"
-    auth.write_text(json.dumps({"providers": {"nous": {"agent_key": FAKE_NOUS}}}))
-    assert v41_prod.read_nous_key(auth) == FAKE_NOUS
-    auth.write_text(json.dumps({"providers": {}}))
-    with pytest.raises(v41_prod.ProdConfigError) as ei:
-        v41_prod.read_nous_key(auth)
-    assert FAKE_NOUS not in str(ei.value)
+def test_nous_key_read_from_env_file_only(tmp_path, monkeypatch):
+    env = tmp_path / "hermes.env"
+    env.write_text(f"OTHER=1\nNOUS_API_KEY={FAKE_NOUS}\n")
+    assert v41_prod.read_nous_key(env) == FAKE_NOUS
+    monkeypatch.setenv(v41_prod.NOUS_ENV_FILE_VAR, str(env))        # the override variable
+    assert v41_prod.read_nous_key() == FAKE_NOUS
+    import os
+    assert "NOUS_API_KEY" not in os.environ                        # returned to the caller only
+    for bad in ("OTHER=1\n", "NOUS_API_KEY=\n", "NOUS_API_KEY=   \n"):
+        env.write_text(bad)
+        with pytest.raises(v41_prod.ProdConfigError, match="NOUS_API_KEY not available") as ei:
+            v41_prod.read_nous_key(env)
+        assert FAKE_NOUS not in str(ei.value)
+    with pytest.raises(v41_prod.ProdConfigError, match="NOUS_API_KEY not available"):
+        v41_prod.read_nous_key(tmp_path / "missing.env")
+
+
+def test_nothing_reads_hermes_auth_json():
+    """Hermes's login token is off limits (decisions/2026-10-13-nous-dedicated-key.md)."""
+    root = Path(v41_prod.__file__).resolve().parents[2]
+    files = list((root / "antelligence").rglob("*.py")) + list((root / "scripts").glob("v41_*"))
+    hits = [str(f.relative_to(root)) for f in files if f.is_file() and "auth.json" in f.read_text(errors="ignore")]
+    assert not hits, hits
 
 
 def test_build_live_workers_pins_and_only_builds_what_is_needed(tmp_path):

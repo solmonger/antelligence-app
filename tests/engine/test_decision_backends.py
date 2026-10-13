@@ -160,7 +160,8 @@ def test_retries_then_decision_error_and_error_row(tmp_path):
         run(LedgeredDecision(backend, writer).decide(jev_request()))
     assert len(seen) == 4  # first try + 3 retries
     rows = writer.rows()
-    assert len(rows) == 1 and "DecisionError" in rows[0]["error"] and rows[0]["served_model"] is None
+    assert len(rows) == 4 and rows[-1]["served_model"] is None    # 3 retried attempts (S18) + the call's own error row
+    assert "DecisionError" in rows[-1]["error"] and all(r["http_status"] == 503 for r in rows)
 
 
 def test_transient_errors_recover():
@@ -206,7 +207,7 @@ def test_persistent_401_fails_after_retries_plus_one(tmp_path):
         run(LedgeredDecision(backend, writer).decide(jev_request()))
     assert len(seen) == 4
     rows = writer.rows()
-    assert len(rows) == 1 and "DecisionError" in rows[0]["error"]
+    assert len(rows) == 4 and "DecisionError" in rows[-1]["error"] and all(r["http_status"] == 401 for r in rows)
 
 
 def test_served_model_mismatch_rejected_without_retry():

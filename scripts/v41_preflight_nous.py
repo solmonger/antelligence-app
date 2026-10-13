@@ -1,7 +1,7 @@
 """v4.1 preflight: one tiny request per variant to the queen model on Nous, to find the thinking-off parameter.
 
-Lead-only (it reads the Nous key). The key is read in-process from ~/.hermes/auth.json exactly as the
-v3/v4 collectors do, and is never printed or logged. Each probe appends one usage row to
+Lead-only (it reads the Nous key). The key is the dedicated NOUS_API_KEY from the Hermes env file, read
+in-process by antelligence.experiments.v41_prod.read_nous_key, and is never printed or logged. Each probe appends one usage row to
 ledger/v4.1-usage.jsonl (gitignored): status, served model, token usage, how much reasoning text came
 back, and latency. Only the first 40 characters of the reply are stored.
 
@@ -11,6 +11,7 @@ back, and latency. Only the first 40 characters of the reply are stored.
 from __future__ import annotations
 
 import json
+import sys
 import time
 from pathlib import Path
 
@@ -30,13 +31,15 @@ PROBES = [
 
 
 def _key() -> str:
-    return json.loads(Path("~/.hermes/auth.json").expanduser().read_text())["providers"]["nous"]["agent_key"]
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    from antelligence.experiments.v41_prod import read_nous_key
+
+    return read_nous_key()
 
 
 def main() -> None:
     headers = {"Authorization": f"Bearer {_key()}"}
     LEDGER.parent.mkdir(parents=True, exist_ok=True)
-    import sys
     only = set(sys.argv[sys.argv.index("--only") + 1].split(",")) if "--only" in sys.argv else None
     for label, extra in PROBES:
         if only and label not in only:

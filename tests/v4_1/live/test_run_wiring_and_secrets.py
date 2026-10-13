@@ -92,10 +92,10 @@ def test_no_code_path_prints_key_material(live_client, mocks_lab, deployment, tm
     with pytest.raises(Exception) as ei:
         live_client.preflight()
     texts.append(str(ei.value))
-    auth = tmp_path / "auth.json"
-    auth.write_text(json.dumps({"providers": {"nous": {"agent_key": FAKE_NOUS}}}))
+    auth = tmp_path / "nous.env"
+    auth.write_text(f"NOUS_API_KEY={FAKE_NOUS}\n")
     texts.append(repr(v41_prod.read_pod_endpoint(pod_state(tmp_path))))
-    for bad in (lambda: v41_prod.read_pod_endpoint(tmp_path / "nope.json"), lambda: v41_prod.read_nous_key(tmp_path / "nope.json")):
+    for bad in (lambda: v41_prod.read_pod_endpoint(tmp_path / "nope.json"), lambda: v41_prod.read_nous_key(tmp_path / "nope.env")):
         with pytest.raises(v41_prod.ProdConfigError) as ei:
             bad()
         texts.append(str(ei.value))
@@ -121,7 +121,7 @@ def test_no_code_path_prints_key_material(live_client, mocks_lab, deployment, tm
         assert s not in blob, "secret appeared in output"
     # nothing written to disk contains the chain signer key or the Nous / pod secrets (queue, archive, ledgers, outboxes)
     for path in tmp_path.rglob("*"):
-        if path.is_file() and path.name not in ("auth.json", "v4.1-pod-state.json"):      # the sources themselves
+        if path.is_file() and path.name not in ("nous.env", "v4.1-pod-state.json"):      # the sources themselves
             data = path.read_bytes()
             for s in secrets_:
                 assert s.encode() not in data, f"{s[:6]}... found in {path.name}"

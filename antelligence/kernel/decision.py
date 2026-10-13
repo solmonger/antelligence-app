@@ -38,9 +38,12 @@ class DecisionError(RuntimeError):
     ``billed`` (optional) is the usage the provider charged for the failed attempt:
     ``{"input_tokens", "output_tokens", "cost_usd"}``. A rejected reply still cost money."""
 
-    def __init__(self, *args: Any, billed: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, *args: Any, billed: Optional[Mapping[str, Any]] = None, http_status: Optional[int] = None,
+                 error_body: Optional[str] = None) -> None:
         super().__init__(*args)
         self.billed = dict(billed) if billed else None
+        self.http_status = http_status
+        self.error_body = error_body
 
 
 class DecisionAbort(DecisionError):

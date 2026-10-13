@@ -8,6 +8,7 @@ or left in an exception message (the ledger writer scrubs them from error text).
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, Optional, Set, Union
@@ -26,7 +27,8 @@ POD_STATE = REPO / "ledger/v4.1-pod-state.json"
 USAGE_LEDGER = REPO / "ledger/v4.1-usage.jsonl"
 POD_COSTS = REPO / "ledger/v4.1-pod-costs.jsonl"
 CACHE_DIR = REPO / "cache/v4.1-replies"
-HERMES_AUTH = Path("~/.hermes/auth.json")
+HERMES_ENV = Path("~/.hermes/.env")
+NOUS_ENV_FILE_VAR = "ANTELLIGENCE_NOUS_ENV_FILE"   # test/override path for the env file holding NOUS_API_KEY
 
 # Pinned identities (scripts/v41_pod_serve.sh and config/v4_1/model_revisions.json hold the same values).
 Q9_ID, Q9_REV = "RedHatAI/Qwen3.5-9B-FP8-dynamic", "790f0576d2d77dd5322aa0603a470bd9e3a3d1f6"
@@ -65,14 +67,21 @@ def read_pod_endpoint(state_path: Union[str, Path] = POD_STATE) -> PodEndpoint:
                        str(state.get("pod_id") or ""))
 
 
-def read_nous_key(auth_path: Union[str, Path] = HERMES_AUTH) -> str:
-    """providers.nous.agent_key, read in-process exactly as scripts/v41_preflight_nous.py does."""
+def read_nous_key(env_path: Optional[Union[str, Path]] = None) -> str:
+    """The dedicated ``NOUS_API_KEY`` from the Hermes env file (``ANTELLIGENCE_NOUS_ENV_FILE`` overrides the path).
+
+    Read in-process with ``dotenv_values`` and returned to the caller only: never put into ``os.environ``, logged or
+    printed. Hermes's own login token file is never read: it expires hourly and refreshing it would rotate
+    Hermes's login (decisions/2026-10-13-nous-dedicated-key.md)."""
+    from dotenv import dotenv_values
+
+    path = Path(env_path or os.environ.get(NOUS_ENV_FILE_VAR) or HERMES_ENV).expanduser()
     try:
-        key = json.loads(Path(auth_path).expanduser().read_text())["providers"]["nous"]["agent_key"]
-    except (OSError, KeyError, TypeError, ValueError):
-        raise ProdConfigError("Nous key not available (providers.nous.agent_key)") from None
-    if not isinstance(key, str) or not key:
-        raise ProdConfigError("Nous key not available (providers.nous.agent_key)")
+        key = (dotenv_values(path).get("NOUS_API_KEY") or "").strip() if path.is_file() else ""
+    except (OSError, UnicodeDecodeError):
+        key = ""
+    if not key:
+        raise ProdConfigError("NOUS_API_KEY not available")
     return key
 
 
