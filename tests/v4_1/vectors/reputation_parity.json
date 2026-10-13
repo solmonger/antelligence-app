@@ -1,0 +1,26 @@
+{
+  "rule": "start 1000000 ppm; contradicted -> floor(r/2); else min(1000000, r+100000); excluded when r < 300000",
+  "start_ppm": 1000000,
+  "exclude_below_ppm": 300000,
+  "cases": [
+    {"r": 1000000, "contradicted": true,  "expect": 500000},
+    {"r": 500000,  "contradicted": true,  "expect": 250000},
+    {"r": 250000,  "contradicted": true,  "expect": 125000},
+    {"r": 3,       "contradicted": true,  "expect": 1},
+    {"r": 1,       "contradicted": true,  "expect": 0},
+    {"r": 0,       "contradicted": true,  "expect": 0},
+    {"r": 1000000, "contradicted": false, "expect": 1000000},
+    {"r": 900001,  "contradicted": false, "expect": 1000000},
+    {"r": 900000,  "contradicted": false, "expect": 1000000},
+    {"r": 899999,  "contradicted": false, "expect": 999999},
+    {"r": 250000,  "contradicted": false, "expect": 350000},
+    {"r": 299999,  "contradicted": false, "expect": 399999},
+    {"r": 0,       "contradicted": false, "expect": 100000}
+  ],
+  "excluded": [
+    {"r": 299999, "excluded": true},
+    {"r": 300000, "excluded": false},
+    {"r": 0, "excluded": true},
+    {"r": 1000000, "excluded": false}
+  ]
+}
