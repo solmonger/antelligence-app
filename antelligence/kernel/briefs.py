@@ -35,10 +35,10 @@ class BriefError(ValueError):
 
 
 def estimate_tokens(text: str, tokenizer: Optional[Callable[[str], int]] = None) -> int:
-    """Token count: the supplied tokenizer, else the chars/4 rule (rounded up)."""
+    """Token count: the supplied tokenizer, else a conservative chars/3 rule (rounded up; JSON digits tokenise densely)."""
     if tokenizer is not None:
         return int(tokenizer(text))
-    return math.ceil(len(text) / 4)
+    return math.ceil(len(text) / 3)
 
 
 @dataclass(frozen=True)

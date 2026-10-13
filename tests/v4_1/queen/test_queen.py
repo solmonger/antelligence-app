@@ -156,14 +156,14 @@ def test_advise_never_gate_and_fixed_squad_count():
 def test_thinking_param_is_configurable():
     queen, provider, _ = make_queen()
     queen.step(0, make_regions(), make_squads(), 0)
-    assert provider.requests[0].extra_body == {"thinking": {"type": "disabled"}}
-    assert provider.requests[0].payload()["thinking"] == {"type": "disabled"}
+    assert provider.requests[0].extra_body == {"reasoning": {"enabled": False}}
+    assert provider.requests[0].payload()["reasoning"] == {"enabled": False}
     q2, p2, _ = make_queen(thinking_params={"thinking": {"type": "enabled", "budget_tokens": 5}})
     q2.step(0, make_regions(), make_squads(), 0)
     assert p2.requests[0].extra_body["thinking"]["type"] == "enabled"
     q3, p3, _ = make_queen(thinking_params=None)
     q3.step(0, make_regions(), make_squads(), 0)
-    assert "thinking" not in p3.requests[0].payload()
+    assert "reasoning" not in p3.requests[0].payload()
 
 
 def test_brief_count_within_6_12():

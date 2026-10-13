@@ -41,7 +41,7 @@ STALL_EPS_PPM = 5000          # estimated coverage must rise by 0.5 points to co
 STALL_LIMIT = 2
 FALLBACK_PRIORITY = 3
 MAX_EVIDENCE_PER_SQUAD = 2
-DEFAULT_THINKING_OFF: Mapping[str, Any] = {"thinking": {"type": "disabled"}}
+DEFAULT_THINKING_OFF: Mapping[str, Any] = {"reasoning": {"enabled": False}}  # live-probed 2026-10-13: 0 reasoning tokens on Nous
 _FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
 
 SYSTEM = (
