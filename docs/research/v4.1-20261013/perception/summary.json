@@ -1,0 +1,154 @@
+{
+ "pipeline": "v4.1-perception-1",
+ "prov": "MONAI/brats_mri_segmentation@370f7f9d062745fbac445e7fe6d6616d35df04ec",
+ "caveat_brats2018_overlap": "MSD Task01 cases are a subset of BraTS 2016/2017 data, and the MONAI brats_mri_segmentation bundle was trained on BraTS 2018, which overlaps these cases. Scores are therefore optimistic and are not an independent generalisation estimate.",
+ "note": "Dice/ECE/Brier are computed on the 2 mm grid (brain voxels for ECE/Brier); dice_full_res_raw is the uncalibrated 1 mm Dice at p>=0.5.",
+ "eval_metrics": "withheld until preregistration lock (80 perception-only cases)",
+ "split_dev_a": {
+  "n": 30,
+  "dice_2mm": {
+   "WT": {
+    "mean": 0.8853631674687248,
+    "median": 0.9172477682797775
+   },
+   "TC": {
+    "mean": 0.8270932237455322,
+    "median": 0.8884753713838937
+   },
+   "ET": {
+    "mean": 0.7328846500672793,
+    "median": 0.7931644900282052
+   }
+  },
+  "dice_full_res_raw": {
+   "WT": {
+    "mean": 0.8899992559480371,
+    "median": 0.9280521633270515
+   },
+   "TC": {
+    "mean": 0.8345554502384404,
+    "median": 0.9050338185908096
+   },
+   "ET": {
+    "mean": 0.7525372910427252,
+    "median": 0.8234815757206717
+   }
+  },
+  "ece_wt_raw": {
+   "mean": 0.00764009707011481,
+   "median": 0.005538534493259733
+  },
+  "ece_wt_cal": {
+   "mean": 0.006710388318928274,
+   "median": 0.004495717819708131
+  },
+  "brier_wt_raw": {
+   "mean": 0.008082340808698069,
+   "median": 0.0068028412239417736
+  },
+  "brier_wt_cal": {
+   "mean": 0.007803449422356191,
+   "median": 0.0063676948778092456
+  },
+  "truth_wt_share_outside_crop": {
+   "mean": 4.8709206039943e-05,
+   "median": 0.0
+  },
+  "seconds_per_case": {
+   "mean": 3.6563963572184246,
+   "median": 3.65716814994812
+  },
+  "crop_found_fraction": 1.0
+ },
+ "split_dev_b": {
+  "n": 10,
+  "dice_2mm": {
+   "WT": {
+    "mean": 0.8814361378127291,
+    "median": 0.8903731748725242
+   },
+   "TC": {
+    "mean": 0.7610472375930734,
+    "median": 0.8577797650673242
+   },
+   "ET": {
+    "mean": 0.6659998312254344,
+    "median": 0.8050284075360277
+   }
+  },
+  "dice_full_res_raw": {
+   "WT": {
+    "mean": 0.878646177828905,
+    "median": 0.891299603607689
+   },
+   "TC": {
+    "mean": 0.7633778455127906,
+    "median": 0.8698839040536407
+   },
+   "ET": {
+    "mean": 0.6828415181252369,
+    "median": 0.8357223991813695
+   }
+  },
+  "ece_wt_raw": {
+   "mean": 0.009638207396223388,
+   "median": 0.007219978125455425
+  },
+  "ece_wt_cal": {
+   "mean": 0.006615481956819444,
+   "median": 0.005521427661816401
+  },
+  "brier_wt_raw": {
+   "mean": 0.00830268467865609,
+   "median": 0.007808956432506267
+  },
+  "brier_wt_cal": {
+   "mean": 0.00742175077064298,
+   "median": 0.006586529751859391
+  },
+  "truth_wt_share_outside_crop": {
+   "mean": 0.000277220151037183,
+   "median": 0.0
+  },
+  "seconds_per_case": {
+   "mean": 3.6793781518936157,
+   "median": 3.6725475788116455
+  },
+  "crop_found_fraction": 1.0
+ },
+ "calibration": {
+  "headline_heldout_dev_b": {
+   "none": {
+    "ece": 0.008049617958356294,
+    "brier": 0.008251587047718556
+   },
+   "temperature": {
+    "ece": 0.007491322774053378,
+    "brier": 0.008276754737359355
+   },
+   "isotonic": {
+    "ece": 0.003116026423957771,
+    "brier": 0.0075133225998249556
+   }
+  },
+  "chosen": "isotonic",
+  "in_sample_dev_a_NOT_headline": {
+   "none": {
+    "ece": 0.005396050846181462,
+    "brier": 0.00797701978356331
+   },
+   "temperature": {
+    "ece": 0.004859055680626941,
+    "brier": 0.007983082375829805
+   },
+   "isotonic": {
+    "ece": 4.0069046579133005e-05,
+    "brier": 0.0076773358430040056
+   }
+  },
+  "in_sample_dev_ab_final_NOT_headline": {
+   "ece": 3.6670387112984015e-05,
+   "brier": 0.00762165462545891
+  }
+ }
+}
