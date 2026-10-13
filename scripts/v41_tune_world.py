@@ -6,7 +6,7 @@ perception arrays, the stored knowledge regions and the true outside-crop truth 
 config/v4_1/split.json; eval and reserve cases are refused before anything is loaded.
 
 Targets (goal section 4.2): median S' coverage 0.70-0.80, median S 0.30-0.50, S' - S >= 0.15 on >= 80% of cases.
-If no grid point meets them a widened band is tried (S' 0.65-0.85 / S 0.25-0.55 / gap on >= 70%; the status becomes
+If no grid point meets them a widened band is tried (S' 0.60-0.85 / S 0.20-0.55 / gap on >= 80%; the status becomes
 `fallback_widened_band`). If that fails too, the point whose medians sit in the widened bands with the most cases showing
 the gap is reported (`fallback_gap_unmet`), else the point nearest the band centres (`no_feasible_point`); world.yaml is
 written in every case with a comment saying which.
@@ -52,7 +52,7 @@ HEADER = """# v4.1 tumor_mri world constants.
 
 NOTES = {
     "ok": "Strict band met.",
-    "fallback_widened_band": "Strict band missed; the widened band (S' 0.65-0.85, S 0.25-0.55, gap on >= 70%) is met.",
+    "fallback_widened_band": "Strict band missed; the widened band (S' 0.60-0.85, S 0.20-0.55, gap on >= 80%) is met.",
     "fallback_gap_unmet": ("BOTH BANDS MISSED on the S' - S >= 0.15 criterion (the medians sit in the widened bands). The oracle "
                            "is only slightly better than script S on these tumours; raise at G1."),
     "no_feasible_point": "NO GRID POINT MEETS EVEN THE WIDENED MEDIANS. Best-effort point; raise at G1.",

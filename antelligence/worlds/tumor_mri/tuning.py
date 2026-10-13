@@ -14,7 +14,8 @@ from antelligence.worlds.tumor_mri.policies import ScriptS, oracle_for
 from antelligence.worlds.tumor_mri.world import TumorMRIWorld, run_episode
 
 STRICT = {"sprime": (0.70, 0.80), "s": (0.30, 0.50), "gap": 0.15, "gap_frac": 0.80}
-WIDENED = {"sprime": (0.65, 0.85), "s": (0.25, 0.55), "gap": 0.15, "gap_frac": 0.70}
+# Goal 4.2 widens only the two medians; the gap rule (S' - S >= 0.15 on >= 80% of cases) is unchanged.
+WIDENED = {"sprime": (0.60, 0.85), "s": (0.20, 0.55), "gap": 0.15, "gap_frac": 0.80}
 
 
 class SplitError(RuntimeError):
@@ -78,12 +79,13 @@ def serial_map(fn: Callable, arg_tuples: Sequence[Tuple]) -> List[Any]:
 
 
 def grid_search(crops: Mapping[str, Any], base: WorldConfig, drug_grid: Sequence[float], dt_grid: Sequence[float],
-                *, seed: int = 0, seeds: Optional[Sequence[int]] = None,
+                *, drug_field: str = "total_drug", seed: int = 0, seeds: Optional[Sequence[int]] = None,
                 evaluate: Callable[[Any, WorldConfig, int], Tuple[float, float]] = episode_coverages,
                 map_fn: Callable[[Callable, Sequence[Tuple]], List[Any]] = serial_map,
                 cache: Optional[MutableMapping[float, Dict[str, Any]]] = None) -> Dict[str, Any]:
-    """Search (total_drug, D_t). Both scale one-for-one (dose is linear in drug), so only D_t / total_drug changes
-    behaviour; equal ratios are evaluated once and shared.
+    """Search (``drug_field``, D_t), where ``drug_field`` is ``total_drug`` (fixed mode) or ``drug_scale_k``
+    (per_perceived_volume mode; set ``base.drug_mode`` accordingly). Dose is linear in the drug and the per-case budget
+    is linear in k, so only D_t / drug_field changes behaviour; equal ratios are evaluated once and shared.
 
     A case's coverage is the mean over ``seeds`` (default ``(seed,)``). ``map_fn(evaluate, [(crop, cfg, seed), ...])``
     runs the episodes (a process pool in the tuning script; serial by default). ``cache`` (ratio -> result) lets staged
@@ -96,7 +98,7 @@ def grid_search(crops: Mapping[str, Any], base: WorldConfig, drug_grid: Sequence
         for drug in drug_grid:
             ratio = round(dt / drug, 9)
             if ratio not in cache and ratio not in todo:
-                todo[ratio] = base.with_(total_drug=float(drug), dose_threshold=float(dt))
+                todo[ratio] = base.with_(**{drug_field: float(drug)}, dose_threshold=float(dt))
     jobs = [(ratio, c, sd) for ratio in todo for c in ids for sd in seeds]
     out = map_fn(evaluate, [(crops[c], todo[ratio], sd) for ratio, c, sd in jobs]) if jobs else []
     by: Dict[Tuple[float, str], List[Tuple[float, float]]] = {}
@@ -112,11 +114,11 @@ def grid_search(crops: Mapping[str, Any], base: WorldConfig, drug_grid: Sequence
     for dt in dt_grid:
         for drug in drug_grid:
             ratio = round(dt / drug, 9)
-            points.append({"total_drug": float(drug), "dose_threshold": float(dt), **cache[ratio]["summary"]})
+            points.append({drug_field: float(drug), "dose_threshold": float(dt), **cache[ratio]["summary"]})
     for band_name, band in (("strict", STRICT), ("widened", WIDENED)):
         ok = [p for p in points if in_band(p, band)]
         if ok:
-            best = min(ok, key=lambda p: (penalty(p), p["total_drug"], p["dose_threshold"]))
+            best = min(ok, key=lambda p: (penalty(p), p[drug_field], p["dose_threshold"]))
             status = "ok" if band_name == "strict" else "fallback_widened_band"
             break
     else:
@@ -125,12 +127,12 @@ def grid_search(crops: Mapping[str, Any], base: WorldConfig, drug_grid: Sequence
         med = [p for p in points if WIDENED["sprime"][0] <= p["median_sprime"] <= WIDENED["sprime"][1]
                and WIDENED["s"][0] <= p["median_s"] <= WIDENED["s"][1]]
         if med:
-            best = min(med, key=lambda p: (-p["gap_frac"], penalty(p), p["total_drug"], p["dose_threshold"]))
+            best = min(med, key=lambda p: (-p["gap_frac"], penalty(p), p[drug_field], p["dose_threshold"]))
             band_name, status = "widened_medians_only", "fallback_gap_unmet"
         else:
-            best = min(points, key=lambda p: (penalty(p), p["total_drug"], p["dose_threshold"]))
+            best = min(points, key=lambda p: (penalty(p), p[drug_field], p["dose_threshold"]))
             band_name, status = None, "no_feasible_point"
-    best_ratio = round(best["dose_threshold"] / best["total_drug"], 9)
+    best_ratio = round(best["dose_threshold"] / best[drug_field], 9)
     return {"status": status, "band": band_name, "best": best, "n_points": len(points), "cases": ids, "seeds": list(seeds),
             "points": points, "per_case": cache[best_ratio]["per_case"]}
 
@@ -161,3 +163,43 @@ def episode_coverages_for_case(case_id: str, cfg: WorldConfig, seed: int) -> Tup
 def timed_episode_coverages_for_case(case_id: str, cfg: WorldConfig, seed: int) -> Tuple[float, float, float, float]:
     """(S coverage, S' coverage, seconds for S, seconds for S')."""
     return episode_coverages(_loaded(case_id), cfg, seed, timed=True)  # type: ignore[return-value]
+
+
+def case_stats_for_case(case_id: str) -> Dict[str, float]:
+    """Dev-only diagnostics for one case: V_perceived (perception) and the in-crop truth WT voxel count (scorer side; used
+    only to bin the report, never as a world input)."""
+    lc = _loaded(case_id)
+    return {"v_perceived": float(lc.v_perceived), "truth_vox": int(lc.crop.truth.sum()),
+            "outside_crop_truth_voxels": int(lc.crop.outside_crop_truth_voxels)}
+
+
+TRUTH_BINS = ((0, 3000, "<3k"), (3000, 8000, "3-8k"), (8000, 15000, "8-15k"), (15000, 10 ** 9, ">15k"))
+
+
+def gap_by_truth_bin(per_case: Sequence[Mapping[str, Any]], bins=TRUTH_BINS) -> List[Dict[str, Any]]:
+    """Per truth-volume bin: n, median S, median S', median gap, share of cases with S' - S >= 0.15."""
+    out = []
+    for lo, hi, name in bins:
+        rows = [p for p in per_case if lo <= p["truth_vox"] < hi]
+        if not rows:
+            out.append({"bin": name, "n": 0})
+            continue
+        s, sp = np.array([p["s"] for p in rows]), np.array([p["sprime"] for p in rows])
+        out.append({"bin": name, "n": len(rows), "median_s": float(np.median(s)), "median_sprime": float(np.median(sp)),
+                    "median_gap": float(np.median(sp - s)), "gap_ge_0.15_fraction": float(np.mean(sp - s >= STRICT["gap"]))})
+    return out
+
+
+def drug_for_coverage(curve: Sequence[Tuple[float, float]], target: float) -> Optional[float]:
+    """Smallest drug scale at which the median-coverage curve first reaches ``target`` (log-linear interpolation between
+    grid points); None if it never does. ``curve`` is (drug_scale, median_coverage)."""
+    pts = sorted(curve)
+    if not pts or pts[-1][1] < target:
+        return None
+    if pts[0][1] >= target:
+        return float(pts[0][0])
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        if y0 < target <= y1:
+            t = (target - y0) / (y1 - y0) if y1 > y0 else 1.0
+            return float(np.exp(np.log(x0) + t * (np.log(x1) - np.log(x0))))
+    return None

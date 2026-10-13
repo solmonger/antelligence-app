@@ -23,6 +23,7 @@ import numpy as np
 from antelligence.experiments.v41_gate import GateError, assert_eval_allowed, load_checked_split
 from antelligence.experiments.v41_split import which_split
 from antelligence.perception import store as l1_store
+from antelligence.worlds.tumor_mri.config import perceived_volume_vox
 from antelligence.worlds.tumor_mri.data import Crop, Region
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -39,6 +40,11 @@ class LoadedCase:
     crop: Crop
     regions: List[Region]
     split: str  # "dev" or "eval"
+
+    @property
+    def v_perceived(self) -> float:
+        """V_perceived (voxels): sum of calibrated p_tumour over the crop; the per_perceived_volume drug basis."""
+        return perceived_volume_vox(self.crop.p_tumour)
 
 
 def _outside_voxels(case: str, metrics: dict, cases_root: Path, raw_dir: Optional[Path]) -> int:

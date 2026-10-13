@@ -115,7 +115,8 @@ class TumorMRIWorld:
             crop.brain, crop.p_tumour, self.seed, n=cfg.n_squads, voxel_mm=crop.voxel_mm,
             shell_mm=cfg.entry_shell_mm, min_dist_mm=cfg.entry_min_dist_mm)
         self._on_target = crop.truth & crop.brain
-        share = cfg.total_drug / cfg.n_squads
+        self.total_drug = cfg.resolve_total_drug(crop.p_tumour)  # perception only (never the truth mask)
+        share = self.total_drug / cfg.n_squads
         self._squads = [_Squad(i, site, share) for i, site in enumerate(self.entry_sites)]
         self._visited = np.zeros(self.shape, dtype=bool)
         for s in self._squads:
@@ -148,7 +149,7 @@ class TumorMRIWorld:
         for arr in (p.brain, p.p_tumour, p.unc):
             h.update(np.ascontiguousarray(arr).tobytes())
         return {"world": "tumor_mri", "case_id": self.case_id, "shape": list(self.shape), "voxel_mm": self.voxel_mm,
-                "seed": self.seed, "config": self.config.to_dict(), "perception_sha256": h.hexdigest(),
+                "seed": self.seed, "config": self.config.to_dict(), "total_drug": self.total_drug, "perception_sha256": h.hexdigest(),
                 "entry_sites": [list(s) for s in self.entry_sites], "entry_shell_widened_mm": self.entry_shell_widened_mm,
                 "n_regions": len(self.regions),
                 "outside_crop_truth_voxels": self._scorer.outside_crop_truth_voxels}
@@ -208,7 +209,7 @@ class TumorMRIWorld:
         cfg = self.config
         pr = self._percept
         dose = float(self.field.dose[sq.pos])
-        share = cfg.total_drug / cfg.n_squads
+        share = self.total_drug / cfg.n_squads
         cands = []
         for c in self.candidates_for(i):
             d = c.to_dict()
