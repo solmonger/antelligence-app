@@ -1,6 +1,8 @@
 """Build the live pieces of a v4.1 harness from a JSON config: worker backends (wrapped in the reply cache and the
 paid-call ledger), the queen provider, the case loader. Nothing is read from disk or the environment here except what
 the caller passes in: API keys come from ``get_env`` (named by ``api_key_env`` in the config), so a test can pass a dict.
+The one exception is ``NOUS_API_KEY``: every Nous path uses the single loader ``v41_prod.read_nous_key`` (the Hermes env
+file, ``ANTELLIGENCE_NOUS_ENV_FILE`` to override), never ``get_env`` or ``os.environ``.
 
 Config shape (all URLs and revisions are the operator's; model revisions default to ``config/v4_1/model_revisions.json``
 ids pinned in ``decision_backends``)::
@@ -47,6 +49,12 @@ def resolve_loader(spec: str = DEFAULT_LOADER) -> Callable[..., Any]:
 
 def _key(section: Mapping[str, Any], get_env: Callable[[str], Optional[str]]) -> str:
     name = section.get("api_key_env")
+    if name == "NOUS_API_KEY":
+        from antelligence.experiments.v41_prod import ProdConfigError, read_nous_key
+        try:
+            return read_nous_key()
+        except ProdConfigError as exc:
+            raise LiveConfigError(str(exc)) from None
     value = get_env(name) if name else None
     if not value:
         raise LiveConfigError(f"environment variable {name!r} is not set")

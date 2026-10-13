@@ -27,7 +27,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import numpy as np
 
-from antelligence.experiments import v41_analysis
+from antelligence.experiments import v41_analysis, v41_fallbacks
 from antelligence.experiments.v41_conformal import (DEFER_TARGET, QTYPES, ConformalDeferral, ConformalThresholds,
                                                     DevRecord, freeze_thresholds)
 from antelligence.experiments.v41_router import (BONSAI_ROUTER_MODELS, FEATURE_NAMES, K, ROUTER_MODELS, KNNRouter,
@@ -333,15 +333,33 @@ def throughput_report(runs: Sequence[Run], concurrency: Optional[int] = None) ->
 def run_fit(inputs: Sequence[Path], *, tag: str, cells_path: Optional[Path] = None, bonsai: bool = False,
             out_conformal: Optional[Path] = None, out_router: Optional[Path] = None, report_path: Optional[Path] = None,
             split_file: Optional[Path] = None, concurrency: Optional[int] = None, n_eval: int = 80,
-            force: bool = False, k: int = K) -> Dict[str, Any]:
-    """Load, fit, freeze (when output paths are given) and report. Returns the aggregates-only report."""
+            force: bool = False, k: int = K, allow_provider_fallbacks: bool = False) -> Dict[str, Any]:
+    """Load, fit, freeze (when output paths are given) and report. Returns the aggregates-only report.
+
+    Runs whose queen fell back because the PROVIDER failed (mistake-2039) are invalid for the fit: they are excluded and
+    counted (``inputs.provider_fallback_runs``, ``skipped.provider_fallback_run`` decisions) unless
+    ``allow_provider_fallbacks``."""
     split_doc = load_split(split_file) if split_file else None
     dirs = discover(inputs)
     if not dirs:
         raise FitError("no run directories (decisions.jsonl) found under the inputs")
     runs = [load_run(d, split_doc) for d in dirs]
+    tainted = [r for r in runs if v41_fallbacks.run_dir_provider_fallbacks(r.path, r.cell) > 0]
+    dropped_decisions = 0
+    if tainted and not allow_provider_fallbacks:
+        gone = {id(r) for r in tainted}
+        dropped_decisions = sum(len(r.rows) for r in tainted)
+        runs = [r for r in runs if id(r) not in gone]
+        if not runs:
+            raise FitError(f"all {len(tainted)} run(s) have provider-caused queen fallbacks; pass --allow-provider-fallbacks to fit them anyway")
     cells = load_cells(cells_path, split_doc) if cells_path else [dict(r.cell) for r in runs]
+    if tainted and not allow_provider_fallbacks and cells_path:
+        bad = {(r.arm, r.case, r.seed) for r in tainted}
+        cells = [c for c in cells if (c.get("arm"), c.get("case"), c.get("seed")) not in bad
+                 and not int(c.get("queen_fallbacks_provider") or 0)]
     samples, skipped = samples_from(runs, bonsai=bonsai)
+    if dropped_decisions:
+        skipped["provider_fallback_run"] = dropped_decisions
     for out in (out_conformal, out_router):
         if out is not None and Path(out).exists() and not force:
             raise FitError(f"{out} already exists; frozen files are not overwritten without --force")
@@ -352,6 +370,7 @@ def run_fit(inputs: Sequence[Path], *, tag: str, cells_path: Optional[Path] = No
                    "cases": len({r.case for r in runs}), "decisions": sum(len(r.rows) for r in runs),
                    "usable_decisions": len(samples), "skipped": skipped,
                    "cells_file_lines": len(cells) if cells_path else None,
+                   "provider_fallback_runs": len(tainted), "provider_fallback_runs_excluded": bool(tainted) and not allow_provider_fallbacks,
                    "dev_only": True},
         "conformal": conformal_report(th, samples)}
     if out_conformal is not None:

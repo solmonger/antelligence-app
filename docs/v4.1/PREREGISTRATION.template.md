@@ -41,6 +41,7 @@ The unit is the case: the mean over its seeds. They are tested in a fixed sequen
   - Implementation: the lower bound is the lower end of a two-sided 90% BCa bootstrap interval of the mean paired case difference. Coverage points are percentage points (0.01 of coverage).
   - Cost and seconds per decision are reported next to it.
   - If P1 is not significant, P2 is still reported, with its interval, as exploratory.
+  - **Reporting rule (worker override rate).** The pre-registered diagnostic is the share of decisions where the worker's chosen target, resolved to a region, differs from the queen's assignment for that squad at that time, per arm. Labels are resolved before they are compared: a candidate letter is its region, `S` (stay) is the squad's current target's region (a worker answering `S` with no current target counts as an override), `X` (explore) is its own region and never matches. Error fallbacks and decisions with no queen assignment are not counted. If the override rate is below 10% (strictly) in both SW-B and FW, P2 is reported as "workers followed the queen", not as "small matches frontier". The rate is pooled over each arm's evaluation decisions and reported with its counts.
 - **P3, verifiability (designed properties, measured).** A detection table by attack, position and verifier condition.
   - Expected:
     - **B:** detects no operator attack.
@@ -51,6 +52,8 @@ The unit is the case: the mean over its seeds. They are tested in a fixed sequen
   - Any departure from these expectations is a finding (a bug, or a surprise).
   - The informative parts are the anchor latency, the cost, the tail size, and write-time rejection vs audit-time detection.
 - **P4, chain as live bus.** SW-D vs SW-B on 12 cases: the coverage difference with a 95% interval, plus the overhead in wall-clock time to 50% coverage. No significance claim; 12 cases are too few.
+
+- **P1 gap secondary (pre-registered, reported, not used to declare a win).** P1, with the same test and interval, restricted to the evaluation cases with S' - S >= 0.15. S and S' are the case means over seeds, taken from the evaluation runs after the lock; the rule is fixed now. It never unlocks P2. The share of evaluation cases with S' - S >= 0.15 is reported next to it. The development-case gap condition ("S' - S >= 0.15 on at least 80% of cases") is not a gate and is not part of this preregistration; the achieved share (47.5% on development cases after perceived-volume drug scaling) is accepted as it is, without re-tuning (operator, 2026-10-13).
 
 Bootstrap: $bootstrap_resamples resamples, fixed seed $bootstrap_seed (scipy.stats.bootstrap).
 
@@ -65,6 +68,7 @@ Bootstrap: $bootstrap_resamples resamples, fixed seed $bootstrap_seed (scipy.sta
 - **S7:** citation validity, uncited decisions, and unread entries.
 - **S8:** off-target share and time to 50% coverage, for all arms.
 - **S9:** normalised score (coverage - S)/(S' - S), as a ratio of means only, on cases where S' - S >= 0.15.
+- **Worker override rate (diagnostic):** per arm, overrides over comparable decisions, as defined under P2. It decides how P2 is worded, not whether it passes.
 - **S10:** SW-B-missingFLAIR vs SW-B.
 - **S11:** cost: dollars, tokens, pod-minutes and gas per arm.
 - **S12:** the latency benchmark (4.7).

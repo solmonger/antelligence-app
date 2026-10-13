@@ -103,3 +103,38 @@ def test_permanent_4xx_records_status_and_body(tmp_path):
         run(LedgeredDecision(be, writer).decide(req))
     assert ei.value.http_status == 400 and KEY not in str(ei.value)
     assert all(r["http_status"] == 400 for r in writer.rows()) and len(writer.rows()) == 1
+
+
+@pytest.mark.parametrize("text,secret", [
+    ('{"api_key": "abc12345xyz"}', "abc12345xyz"),
+    ('{"error": {"Token":"t0k3n99"}, "x": 1}', "t0k3n99"),
+    ('{"password": "hunter2"}', "hunter2"),
+    ("GET /v1?access_token=abcdef123456&x=1", "abcdef123456"),
+    ("GET /x?apikey=zz99yy&b=2", "zz99yy"),
+    ("secret=s3cr3t;", "s3cr3t"),
+    ("Authorization: Basic dXNlcjpwYXNz", "dXNlcjpwYXNz"),
+    ("x-api-key: shortkey1\nnext line", "shortkey1"),
+    ("KEY: Abc123", "Abc123"),
+])
+def test_redact_body_hides_short_secrets_in_json_query_and_header_forms(text, secret):
+    out = redact_body(text)
+    assert secret not in out and "[redacted]" in out
+
+
+def test_redact_body_keeps_unrelated_text():
+    out = redact_body('{"error": {"message": "model not found", "code": 404}}')
+    assert "model not found" in out and "[redacted]" not in out
+
+
+def test_outage_rows_carry_status_and_body_and_keep_the_outage_class(tmp_path):
+    from antelligence.providers.base import ProviderUnavailable
+    transport = httpx.MockTransport(lambda r: httpx.Response(503, text=f"upstream down Bearer {KEY}"))
+    prov = OpenAICompatProvider("https://nous.test/v1", api_key=KEY, transport=transport)
+    writer = LedgerWriter(tmp_path / "u.jsonl", redact=[KEY])
+    chat = LedgeredChat(prov, writer, role="queen", expected_model="deepseek/deepseek-v4.1-flash")
+    with pytest.raises(ProviderUnavailable) as ei:
+        run(chat.complete(ChatRequest("deepseek/deepseek-v4.1-flash", ({"role": "user", "content": "hi"},), max_tokens=8)))
+    assert ei.value.status == 503 and ei.value.http_status == 503 and "upstream down" in ei.value.error_body
+    (row,) = writer.rows()
+    assert row["http_status"] == 503 and "upstream down" in row["error_body"]
+    assert KEY not in (tmp_path / "u.jsonl").read_text()

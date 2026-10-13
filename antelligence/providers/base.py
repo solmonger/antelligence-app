@@ -19,6 +19,18 @@ class ProviderError(RuntimeError):
         self.error_body = error_body
 
 
+class ProviderUnavailable(ProviderError):
+    """The provider could not be reached or refused for a reason that may pass: HTTP 401, 429, 5xx or a transport error.
+
+    ``status`` is the HTTP status, or ``None`` for a transport error. Callers that must not turn an outage into a
+    different answer (the queen, the sandbox proposer) retry the same request on this class and on no other."""
+
+    def __init__(self, message: str, *, status: Optional[int] = None, http_status: "int | None" = None,
+                 error_body: "str | None" = None) -> None:
+        super().__init__(message, http_status=status if http_status is None else http_status, error_body=error_body)
+        self.status = status
+
+
 class BudgetExceeded(ProviderError):
     """A call would exceed the run's call or token budget."""
 

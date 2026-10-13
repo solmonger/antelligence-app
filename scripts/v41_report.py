@@ -8,6 +8,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from antelligence.experiments.v41_analysis import P2_FOLLOWED_LABEL, P2_FRONTIER_LABEL
+
 LINK_TARGET = "results.json"
 
 
@@ -61,6 +63,22 @@ def render(results: Dict[str, Any]) -> str:
     add(f"- Cases: {n('p2.n_cases')}; mean difference {n('p2.mean_diff')}; one-sided lower bound "
         f"{n('p2.lower_bound')} against margin {n('p2.margin')}.")
     add(f"- Noninferior: {n('p2.noninferior')}; passed: {n('p2.passed')}.")
+    add("")
+    add(f"- Worker override rate: SW-B {n('p2.override_rates.SW-B')}, FW {n('p2.override_rates.FW')} "
+        f"(rule: below {n('thresholds.override_followed_max', 2)} in both reads as \"{P2_FOLLOWED_LABEL}\", not \"{P2_FRONTIER_LABEL}\").")
+    add(f"- Reading of P2: {results['p2'].get('reading') or 'not available (override rate missing)'}.")
+    add("")
+    add("## P1 gap secondary (P1 on evaluation cases with a large S' - S gap; reported, not used to declare a win)")
+    add(f"- Gap threshold: {n('thresholds.s9_min_gap', 2)}.")
+    add(f"- Cases in the gap subset: {n('p1_gap_secondary.n_cases_gap')} of {n('p1_gap_secondary.n_cases_total')} "
+        f"(share {n('p1_gap_secondary.gap_share')}, reported, not a gate).")
+    add(f"- Mean paired difference {n('p1_gap_secondary.mean_diff')} (BCa interval {n('p1_gap_secondary.ci_low')} to "
+        f"{n('p1_gap_secondary.ci_high')}); Wilcoxon p = {n('p1_gap_secondary.p_value')}; passed: {n('p1_gap_secondary.passed')}.")
+    add("")
+    add("## Worker override rate (pre-registered diagnostic, per arm)")
+    for arm in results["worker_override"]["arms"]:
+        k = f"worker_override.arms.{arm}"
+        add(f"- {arm}: {n(k + '.overrides')} overrides in {n(k + '.decisions')} comparable decisions, rate {n(k + '.rate')}.")
     add("")
     add("## P4 on-chain mode (SW-D vs SW-B), no significance test")
     add(f"- Cases: {n('p4.n_cases')}; mean score difference {n('p4.mean_diff')} "

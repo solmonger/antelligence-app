@@ -38,13 +38,22 @@ def register_url(url: str) -> None:
 
 _LONG_TOKEN = re.compile(r"\beyJ[A-Za-z0-9_\-]+\.[A-Za-z0-9_\-.]+|[A-Za-z0-9+/_\-]{32,}={0,2}")
 ERROR_BODY_CHARS = 500
+_KEYNAME = r"[\w.-]*(?:api[_-]?key|key|token|secret|password|passwd|authorization)"
+_KV_JSON = re.compile(r'(?i)("' + _KEYNAME + r'"\s*:\s*)(?:"(?:[^"\\]|\\.)*"|[^\s,}\]]+)')
+_KV_FORM = re.compile(r"(?i)(?<![\w.-])(" + _KEYNAME + r"=)[^&\s\"'<>;,]*")
+_KV_HEADER = re.compile(r"(?i)(?<![\w.-])(" + _KEYNAME + r":[ \t]*)[^\r\n\"',}]*")
 
 
 def redact_body(text: object, extra_secrets: Iterable[str] = (), limit: int = ERROR_BODY_CHARS) -> str:
-    """A failed provider reply body made safe to store: scrubbed like everything else, then bearer tokens, ``sk-`` keys,
+    """A failed provider reply body made safe to store: scrubbed like everything else, then values of secret-named keys (``api_key``, ``token``, ``access_token``, ``secret``, ``password``, ``authorization``
+    in JSON, ``k=v`` and ``k: v`` forms), bearer tokens, ``sk-`` keys,
     JWTs and any long base64-like run become ``[redacted]``, then cut to ``limit`` characters. Redaction runs on the
     whole text first so a key straddling the cut cannot survive as a fragment."""
-    out = scrub(text, extra_secrets)
+    out = str(text)                        # secret-named keys first: scrub() would half-eat "Authorization: Basic x"
+    out = _KV_JSON.sub(lambda m: m.group(1) + '"[redacted]"', out)
+    out = _KV_FORM.sub(lambda m: m.group(1) + "[redacted]", out)
+    out = _KV_HEADER.sub(lambda m: m.group(1) + "[redacted]", out)
+    out = scrub(out, extra_secrets)
     out = _LONG_TOKEN.sub("***", out)
     return out.replace("***", "[redacted]")[:limit]
 

@@ -114,3 +114,17 @@ def test_error_cell_carries_the_real_split(tmp_path):
         run.main(["--config", "x", "--out-dir", str(tmp_path / "o"), "--cells", str(cells), "--run", f"S:{case}:1"],
                  harness=rig.harness)
     assert [json.loads(l)["split"] for l in cells.read_text().splitlines()] == ["dev", "eval"]
+
+
+def test_nous_key_in_live_config_uses_the_one_loader_not_get_env(tmp_path, monkeypatch):
+    env = tmp_path / "hermes.env"
+    env.write_text("NOUS_API_KEY=fake-loader-value-1\n")
+    monkeypatch.setenv("ANTELLIGENCE_NOUS_ENV_FILE", str(env))
+    monkeypatch.setenv("NOUS_API_KEY", "from-os-environ")
+    from antelligence.experiments import v41_live
+    cfg = {"fw": {"api_key_env": "NOUS_API_KEY"}, "queen": {"url": "http://127.0.0.1:3", "api_key_env": "NOUS_API_KEY"}}
+    assert v41_live._key(cfg["fw"], {"NOUS_API_KEY": "from-get-env"}.get) == "fake-loader-value-1"
+    assert v41_live.build_queen_provider(cfg, {}.get) is not None
+    monkeypatch.setenv("ANTELLIGENCE_NOUS_ENV_FILE", str(tmp_path / "missing.env"))
+    with pytest.raises(LiveConfigError, match="NOUS_API_KEY not available"):
+        v41_live._key(cfg["fw"], {"NOUS_API_KEY": "from-get-env"}.get)

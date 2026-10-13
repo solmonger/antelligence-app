@@ -20,7 +20,10 @@ the same seeds, so a single-seed arm (FW, SW-D, ...) is paired with SW-B on the 
 | `wall_s` | float >= 0 | no | wall time of the run, seconds |
 | `ticks_to_50` | int | yes | first tick at which absolute coverage reaches 0.5 (goal 4.7); null = never reached |
 | `seconds_to_50` | float >= 0 | yes | wall seconds until 50% of the final score; null = never reached |
-| `queen_calls` | int | no | queen model calls |
+| `queen_calls` | int | no | queen model calls (retries of one call during a provider outage are not counted again) |
+| `queen_fallbacks_provider` | int | no | queen steps that fell back to the S-rule because the provider failed for a reason other than an outage (HTTP 4xx other than 401/429, malformed response, wrong served model). **A run with any is invalid for fits and the sandbox keep rule** (`v41_fit` excludes it unless `--allow-provider-fallbacks`; the sandbox never caches it) |
+| `queen_fallbacks_invalid_reply` | int | no | queen steps that fell back because the reply was invalid (not JSON, no valid route, length or over the 800-token output cap). Legitimate study behaviour |
+| `queen_fallbacks_cap` | int | no | queen steps that fell back because the per-run call cap (6) or a call/token budget was spent. Legitimate study behaviour |
 | `board_size` | int | no | entries on the board at run end |
 | `anchors` | int | no | anchor points posted (INTERFACES 3) |
 | `visibility_latency_ms` | int | yes | mode D: write to visible latency; null outside mode D |
@@ -48,6 +51,8 @@ the same seeds, so a single-seed arm (FW, SW-D, ...) is paired with SW-B on the 
 | `look_errors` | int | no | d1 local looks that still failed after 3 retries; the squad decides with no look (`look = null`), an error row (`kind: "look"`) is written to `decisions.jsonl` and an `alarm` of kind `other` ("look_error: ..."). Not counted in `decision_errors` |
 | `decision_error_share` | fraction [0,1] | no | `decision_errors` / decisions in the run |
 | `decision_error_alarm` | int 0/1 | no | 1 when `decision_error_share` > 0.05; flags the run for the explained-null checklist, changes nothing else |
+| `override_decisions` | int | no | decisions with a queen assignment for the squad that were not error fallbacks: the denominator of the worker override rate |
+| `override_count` | int | no | of those, decisions whose resolved target region differs from the queen's assignment (`S` = the current target's region, `X` never matches); never above `override_decisions` |
 | `backends_kind` | `live` / `config` / `fake` | yes | where worker answers came from; evaluation analysis accepts only `live` (null only on error cells) |
 | `router_kind` | `frozen` / `none` / `fake` | yes | evaluation analysis accepts only `frozen`; `none` is the Phase 0 bootstrap (development only) |
 | `router_sha256` | hex64 | yes | sha256 of the frozen router; null unless `router_kind` is `frozen` |
@@ -70,6 +75,8 @@ These are summaries of the fields above and of two external files. They are repo
 | S7 | citation validity, uncited decisions, unread entries | `citation_validity`, `uncited_decisions`, `unread_frac` |
 | S8 | off-target share and time to 50% coverage, all arms | `off_target`, `seconds_to_50`, `ticks_to_50` |
 | S9 | (coverage - S)/(S' - S), ratio of means, only on cases with S' - S >= 0.15 | `coverage` |
+| P1 gap secondary | P1 restricted to evaluation cases with S' - S >= 0.15 (computed after the lock); `p1_gap_secondary` also carries the share of such cases, which is reported and not a gate | `coverage` |
+| worker override rate | per arm, `override_count` / `override_decisions` pooled over runs; if below 10% in both SW-B and FW, `p2.reading` is "workers followed the queen" instead of "small matches frontier" | `override_count`, `override_decisions` |
 | S10 | SW-B-missingFLAIR vs SW-B | `coverage` |
 | S11 | cost per arm: dollars, tokens, pod-minutes, gas | `cost_usd`, `tokens_in`, `tokens_out`, `pod_minutes`, `gas` |
 | S12 | the latency benchmark (goal 4.7) | `latency/results.json`, passed to `analyze(latency=...)` |
@@ -103,6 +110,18 @@ error: the decision log row has `error=true` and `error_reason`, `decision_error
 and `decision_error_alarm` = 1 when the share is above 5%. A `DecisionAbort` (a spent budget) is never absorbed and still
 stops the run. The explained-null checklist reader should treat a flagged run as one whose decisions were partly neutral
 fallbacks.
+
+### Queen provider outages (decision 2026-10-13, mistake-2039)
+
+A queen provider outage (HTTP 401, 429, 5xx or a transport error) is never an invalid reply. The in-episode queen and the
+sandbox proposer send the SAME request again with exponential backoff (15 s, 30 s, 60 s, then 120 s between tries) for at
+most 600 s in total (`--queen-max-wait-s`). The retries are the same queen call: they do not count against the 6-call cap
+and each attempt still goes through the usage ledger and the Nous stop. Past the maximum wait `QueenUnavailable` (a
+`DecisionAbort`) ends the run as an **error** cell, never a fallback. `v41_run.py run_many` then starts no new episode
+(`EpisodeNotStarted`: no cell, no cache entry), lets in-flight ones finish or error, and the driver exits with code **75**
+(`EXIT_QUEEN_UNAVAILABLE`, EX_TEMPFAIL; the sandbox driver too). Rerun later: the reply caches and the sandbox results cache
+resume it. Fallbacks that remain are counted by cause in `queen_fallbacks_provider|invalid_reply|cap`, in the run log
+(`queen_fallbacks`) and in the summary line; the batch end prints the totals. Never read "0 errors" as clean without them.
 
 ### Follow-ups to the policy
 

@@ -349,3 +349,79 @@ def test_reply_cache_dir_carries_revision_and_migrates_pinned(tmp_path):
     pinned = d(tmp_path, "d1", "r1", "r1")                     # the pinned revision: legacy cache migrated
     assert pinned == tmp_path / "d1@r1" and (pinned / "x.jsonl").read_text() == "legacy" and not (tmp_path / "d1").exists()
     assert d(tmp_path, "d1", "r1", "r1") == pinned             # idempotent
+
+
+# --- queen outages and provider fallbacks (mistake-2039) -------------------------------------------------------------------
+
+class OutageHarness(FakeHarness):
+    """run_many returns what ``script`` says per request: a cell dict, or an exception to hand back."""
+
+    def __init__(self, script):
+        super().__init__()
+        self.script = script
+
+    async def run_many(self, requests, *, concurrency=4, calibration=False):
+        out = []
+        for i, (arm, case, seed) in enumerate(requests):
+            item = self.script(i)
+            if isinstance(item, BaseException):
+                out.append(item)
+                continue
+            out.append(SimpleNamespace(cell={"coverage": 0.5, "defer_rate": 0.2, "router_top_share": 0.6, "off_target": 0.1,
+                                             "decision_error_share": 0.0, "queen_calls": 4, "alarms": 0, "run_id": f"r{i}" * 8,
+                                             **item}))
+        return out
+
+
+def test_results_cache_refuses_provider_fallbacks_and_stores_the_split(tmp_path):
+    cache = sb.ResultsCache(tmp_path / "rc.jsonl", "ctx")
+    with pytest.raises(sb.ProviderFallbackError):
+        cache.put("h", "SW-B", "c1", 1, 0.5, {}, queen_fallbacks={"provider": 1, "invalid_reply": 0, "cap": 0})
+    assert not (tmp_path / "rc.jsonl").exists() and cache.get("h", "SW-B", "c1", 1) is None
+    cache.put("h", "SW-B", "c2", 1, 0.5, {}, queen_fallbacks={"provider": 0, "invalid_reply": 2, "cap": 1}, run_id="r" * 64)
+    row = json.loads((tmp_path / "rc.jsonl").read_text())
+    assert row["queen_fallbacks"] == {"provider": 0, "invalid_reply": 2, "cap": 1} and row["run_id"] == "r" * 64
+    assert cache.fallbacks == {"provider": 0, "invalid_reply": 2, "cap": 1}
+
+
+def test_evaluate_never_caches_an_episode_with_a_provider_fallback():
+    h = OutageHarness(lambda i: {"queen_fallbacks_provider": 1} if i == 1 else {})
+    evaluate, cache = evaluator(h)
+    with pytest.raises(HarnessError, match="provider-caused queen fallback"):
+        evaluate(load_harness(), "SW-B", DEV_A[:3])
+    assert cache.runs == 2 and cache.get(harness_sha256(load_harness()), "SW-B", DEV_A[1], 1) is None
+
+
+def test_evaluate_raises_queen_unavailable_after_caching_what_finished():
+    from antelligence.experiments.v41_harness import EpisodeNotStarted
+    from antelligence.providers.outage import QueenUnavailable
+    plan = {0: {}, 1: QueenUnavailable("queen provider unavailable for 600s"), 2: EpisodeNotStarted("not started")}
+    h = OutageHarness(lambda i: plan[i])
+    evaluate, cache = evaluator(h)
+    with pytest.raises(QueenUnavailable):
+        evaluate(load_harness(), "SW-B", DEV_A[:3])
+    sha = harness_sha256(load_harness())
+    assert cache.get(sha, "SW-B", DEV_A[0], 1) is not None and cache.get(sha, "SW-B", DEV_A[2], 1) is None
+
+
+def test_sandbox_exits_75_on_queen_unavailable_and_keeps_completed_rounds(tmp_path):
+    from antelligence.providers.outage import EXIT_QUEEN_UNAVAILABLE, QueenUnavailable
+    rig = build_rig(tmp_path / "rig")
+
+    def proposer(ctx):
+        if ctx["round"] == 1:
+            return patch("/router/cost_penalty", 0.3)
+        raise QueenUnavailable("queen provider unavailable for 600s")
+    out = tmp_path / "s.json"
+    code = sb.main(["--backends", "fake", "--anchors", "mock", "--router", "fake", "--thresholds", "none", "--rounds", "3",
+                    "--n-a", "2", "--n-b", "1", "--out", str(out), "--work-dir", str(tmp_path / "w")],
+                   harness=rig.harness, proposer=proposer)
+    doc = json.loads(out.read_text())
+    assert code == EXIT_QUEEN_UNAVAILABLE == 75
+    assert doc["status"] == "aborted_queen_unavailable" and "unavailable" in doc["error"]
+    assert len(doc["rounds"]) == 1 and doc["promotion_candidates"] == [] and doc["queen_fallbacks"]["provider"] == 0
+
+
+def test_sandbox_parser_has_the_max_wait_flag():
+    assert sb.parser().parse_args(["--router", "r", "--thresholds", "t"]).queen_max_wait_s == 600
+    assert sb.parser().parse_args(["--router", "r", "--thresholds", "t", "--queen-max-wait-s", "30"]).queen_max_wait_s == 30

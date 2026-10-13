@@ -5,11 +5,11 @@ Cases come from the L1 store through the tumor_mri store adapter (data/v4_1/case
 perception arrays, the stored knowledge regions and the true outside-crop truth count. Dev = dev_a + dev_b of
 config/v4_1/split.json; eval and reserve cases are refused before anything is loaded.
 
-Targets (goal section 4.2): median S' coverage 0.70-0.80, median S 0.30-0.50, S' - S >= 0.15 on >= 80% of cases.
-If no grid point meets them a widened band is tried (S' 0.60-0.85 / S 0.20-0.55 / gap on >= 80%; the status becomes
-`fallback_widened_band`). If that fails too, the point whose medians sit in the widened bands with the most cases showing
-the gap is reported (`fallback_gap_unmet`), else the point nearest the band centres (`no_feasible_point`); world.yaml is
-written in every case with a comment saying which.
+Targets (goal section 4.2): median S' coverage 0.70-0.80, median S 0.30-0.50. If no grid point meets them a widened band
+is tried (S' 0.60-0.85 / S 0.20-0.55; the status becomes `fallback_widened_band`). If that fails too, the point nearest
+the band centres is reported (`no_feasible_point`); world.yaml is written in every case with a comment saying which.
+The share of cases with S' - S >= 0.15 is reported but is NOT a gate (operator, 2026-10-13: the "on >= 80% of cases"
+condition was dropped).
 
 Coverage per case is the mean over --seeds (default 1,2). Dose is linear in the drug, so only D_t / total_drug changes
 behaviour: the search is one-dimensional in that ratio (several D_t values are accepted and share episodes). Stage 1 scans
@@ -52,9 +52,7 @@ HEADER = """# v4.1 tumor_mri world constants.
 
 NOTES = {
     "ok": "Strict band met.",
-    "fallback_widened_band": "Strict band missed; the widened band (S' 0.60-0.85, S 0.20-0.55, gap on >= 80%) is met.",
-    "fallback_gap_unmet": ("BOTH BANDS MISSED on the S' - S >= 0.15 criterion (the medians sit in the widened bands). The oracle "
-                           "is only slightly better than script S on these tumours; raise at G1."),
+    "fallback_widened_band": "Strict band missed; the widened band (S' 0.60-0.85, S 0.20-0.55) is met.",
     "no_feasible_point": "NO GRID POINT MEETS EVEN THE WIDENED MEDIANS. Best-effort point; raise at G1.",
 }
 

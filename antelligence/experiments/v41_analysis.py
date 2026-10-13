@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 import numpy as np
 from scipy import stats as sps
 
-from antelligence.experiments import v41_cells
+from antelligence.experiments import v41_cells, v41_override
 from antelligence.experiments.v4_metrics import mean
 
 POINT = 0.01
@@ -26,7 +26,10 @@ ALPHA = 0.05
 BOOTSTRAP_SEED = 20261013
 N_RESAMPLES = 9999
 P2_MARGIN_POINTS = -3.0  # noninferiority: lower bound of (SW-B - FW) must exceed -3 points
-S9_MIN_GAP = 0.15
+S9_MIN_GAP = 0.15  # S' - S size for S9 and for the P1 gap secondary; the share of cases above it is reported, never a gate
+OVERRIDE_FOLLOWED_MAX = 0.10  # worker override rate below this in BOTH SW-B and FW: P2 reads "workers followed the queen"
+P2_FOLLOWED_LABEL = "workers followed the queen"
+P2_FRONTIER_LABEL = "small matches frontier"
 POWER = 0.80
 WILCOXON_ARE = 3 / math.pi  # asymptotic relative efficiency of Wilcoxon vs t under normality
 P1_TREATMENT, P1_CONTROL = "SW-B", "SW-noBoard"
@@ -60,7 +63,7 @@ SECONDARY_IDS = tuple(f"S{i}" for i in range(1, 13))
 
 def thresholds() -> Dict[str, Any]:
     return {"alpha": ALPHA, "bootstrap_resamples": N_RESAMPLES, "bootstrap_seed": BOOTSTRAP_SEED,
-            "p2_margin_points": P2_MARGIN_POINTS, "s9_min_gap": S9_MIN_GAP, "power": POWER,
+            "p2_margin_points": P2_MARGIN_POINTS, "s9_min_gap": S9_MIN_GAP, "override_followed_max": OVERRIDE_FOLLOWED_MAX, "power": POWER,
             "wilcoxon_are": WILCOXON_ARE, "unread_max": NULL_UNREAD_MAX, "brief_age_max_ticks": NULL_BRIEF_AGE_MAX,
             "defer_band_low": NULL_DEFER_BAND[0], "defer_band_high": NULL_DEFER_BAND[1],
             "live_check_band_low": LIVE_CHECK_DEFER_BAND[0], "live_check_band_high": LIVE_CHECK_DEFER_BAND[1],
@@ -124,6 +127,33 @@ def wilcoxon_p(diffs: np.ndarray) -> Optional[float]:
     return float(sps.wilcoxon(diffs, alternative="two-sided").pvalue)
 
 
+# --- worker override rate (pre-registered diagnostic) --------------------------------------------------------
+
+
+def worker_override(cells: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
+    """Per arm: overrides / comparable decisions (pooled over runs). A decision is comparable when the squad had a queen
+    assignment and the decision was not an error fallback. Arms with no assignments have rate None."""
+    out: Dict[str, Any] = {"threshold": OVERRIDE_FOLLOWED_MAX, "arms": {}}
+    for arm in sorted({c["arm"] for c in cells}):
+        k, n, rate = v41_override.pooled_override(cells, arm)
+        out["arms"][arm] = {"overrides": k, "decisions": n, "rate": rate}
+    return out
+
+
+def p2_reading(cells: Sequence[Mapping[str, Any]], treatment: str = P1_TREATMENT,
+               comparator: str = P2_COMPARATOR) -> Dict[str, Any]:
+    """Pre-registered reporting rule: if the worker override rate is below 10% in both SW-B and FW, P2 is reported as
+    "workers followed the queen", not as "small matches frontier". Strictly below; a missing rate gives no label."""
+    arms = worker_override(cells)["arms"]
+    rates = {a: (arms.get(a) or {}).get("rate") for a in (treatment, comparator)}
+    if any(r is None for r in rates.values()):
+        return {"override_rates": rates, "followed_the_queen": None, "reading": None,
+                "reading_note": "override rate unavailable for SW-B or FW; the rule cannot be applied"}
+    followed = all(r < OVERRIDE_FOLLOWED_MAX for r in rates.values())
+    return {"override_rates": rates, "followed_the_queen": followed,
+            "reading": P2_FOLLOWED_LABEL if followed else P2_FRONTIER_LABEL, "reading_note": None}
+
+
 # --- hypotheses --------------------------------------------------------------
 
 
@@ -149,6 +179,7 @@ def p2(cells: Sequence[Mapping[str, Any]], p1_result: Mapping[str, Any], treatme
     gated = bool(p1_result.get("passed"))
     out: Dict[str, Any] = {"treatment": treatment, "comparator": comparator, "n_cases": len(shared),
                            "margin": margin, "p1_passed": gated, "status": "confirmatory" if gated else "exploratory"}
+    out.update(p2_reading(cells, treatment, comparator))
     if not len(d):
         return {**out, "mean_diff": None, "lower_bound": None, "noninferior": False, "passed": False}
     ci = bca_ci(d, 0.90)  # two-sided 90% lower end == one-sided 95% lower bound
@@ -190,6 +221,25 @@ def s9_normalised(cells: Sequence[Mapping[str, Any]], arms: Sequence[str], min_g
             sum(sp[k] - s[k] for k in ks) / len(ks))} if ks else {"n_cases": 0, "ratio": None})
     out["mean_gap"] = denom
     return out
+
+
+def gap_cases(cells: Sequence[Mapping[str, Any]], min_gap: float = S9_MIN_GAP) -> Dict[str, Any]:
+    """Cases with S' - S >= min_gap, from the S and S' runs of ``cells`` (case = mean over seeds). Computed after the lock."""
+    s, sp = case_means(cells, SINGLE), case_means(cells, SINGLE_PRIME)
+    both = sorted(set(s) & set(sp))
+    kept = sorted(k for k in both if sp[k] - s[k] >= min_gap)
+    return {"min_gap": min_gap, "n_cases": len(both), "n_cases_gap": len(kept),
+            "share": (len(kept) / len(both)) if both else None, "cases": kept}
+
+
+def p1_gap_secondary(cells: Sequence[Mapping[str, Any]], min_gap: float = S9_MIN_GAP) -> Dict[str, Any]:
+    """Pre-registered secondary: P1 (same test) restricted to the evaluation cases with S' - S >= 0.15. Reported, never
+    used to declare a win, never unlocks P2. The share of such cases is reported with it (it is not a gate)."""
+    g = gap_cases(cells, min_gap)
+    keep = set(g["cases"])
+    out = p1([c for c in cells if c["case"] in keep])
+    return {**out, "secondary": True, "min_gap": min_gap, "n_cases_total": g["n_cases"], "n_cases_gap": g["n_cases_gap"],
+            "gap_share": g["share"]}
 
 
 def pair_summary(cells: Sequence[Mapping[str, Any]], treatment: str, control: str) -> Dict[str, Any]:
@@ -349,7 +399,8 @@ def analyze(cells: Sequence[Mapping[str, Any]], split: Optional[str] = "eval",
         counts[c["arm"]] += 1
     return {"study": "v4.1", "split": split, "n_cells": len(scoped), "cells_by_arm": dict(sorted(counts.items())),
             "thresholds": thresholds(), "p1": r1, "p2": p2(scoped, r1), "p4": p4(scoped),
-            "secondary": secondary(scoped, latency),
+            "secondary": secondary(scoped, latency), "worker_override": worker_override(scoped),
+            "p1_gap_secondary": p1_gap_secondary(scoped), "gap_share": gap_cases(scoped),
             "decision_errors": decision_error_sensitivity(scoped), "power": power_analysis(dev),
             "explained_null": explained_null(scoped, dev_cells=dev), "live_check": live_check(dev)}
 

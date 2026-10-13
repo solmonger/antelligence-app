@@ -16,12 +16,13 @@ def load_script(name):
 def make_cell(arm, case, seed, score, split="eval", **kw):
     run_id = hashlib.sha256(f"{arm}|{case}|{seed}".encode()).hexdigest()
     cell = dict(run_id=run_id, arm=arm, case=case, seed=seed, split=split, wall_s=100.0,
-                ticks_to_50=20, seconds_to_50=40.0, queen_calls=5, board_size=60, anchors=2,
+                ticks_to_50=20, seconds_to_50=40.0, queen_calls=5, queen_fallbacks_provider=0, queen_fallbacks_invalid_reply=0, queen_fallbacks_cap=0, board_size=60, anchors=2,
                 visibility_latency_ms=None, coverage=score, off_target=0.1, defer_rate=0.2, citations=7, tokens_in=1000, tokens_out=100, pod_minutes=1.0, gas=None, alarms=0,
                 audit_conformal_coverage=0.9, citation_validity=1.0, uncited_decisions=0, perception_dice=0.8,
                 locallook_ece=0.05, truth_outside_crop=0.02, decision_errors=0, look_errors=0, decision_error_share=0.0, decision_error_alarm=0,
                 unread_frac=0.2, brief_age_median=10.0, router_top_share=0.5, perception_ece=0.05, cost_usd=0.0,
-                backends_kind="live", router_kind="frozen", router_sha256="a" * 64, identities="d1,qwen3.5-9b", look_temperature=0.44102, look_temperature_source="frozen")
+                backends_kind="live", router_kind="frozen", router_sha256="a" * 64, identities="d1,qwen3.5-9b", look_temperature=0.44102, look_temperature_source="frozen",
+                override_decisions=40, override_count=2)
     cell.update(kw)
     return cell
 

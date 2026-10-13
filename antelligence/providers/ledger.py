@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, Optional, Tuple, Union
 
-from antelligence.providers.base import ChatRequest, ChatResponse, Provider, ProviderError
+from antelligence.providers.base import ChatRequest, ChatResponse, Provider, ProviderError, ProviderUnavailable
 from antelligence.providers.redact import redact_body, scrub
 
 DEFAULT_LEDGER_PATH = Path("ledger/v4-pilot-usage.jsonl")
@@ -149,7 +149,11 @@ class LedgeredChat:
         except Exception as exc:
             status, body = getattr(exc, "http_status", None), getattr(exc, "error_body", None)
             self._row(request, served_model=None, error=f"{type(exc).__name__}: {exc}", http_status=status, error_body=body)
-            raise ProviderError(scrub(f"{type(exc).__name__}: {exc}"), http_status=status, error_body=body) from None
+            message = scrub(f"{type(exc).__name__}: {exc}")
+            if isinstance(exc, ProviderUnavailable):    # keep the outage class: the queen retries it
+                raise ProviderUnavailable(message, status=getattr(exc, "status", None), http_status=status,
+                                          error_body=body) from None
+            raise ProviderError(message, http_status=status, error_body=body) from None
         ok = response.model.startswith(self.expected_model) if self.prefix else response.model == self.expected_model
         reported = response.extra.get("cost") if response.extra else None
         cost = float(reported) if isinstance(reported, (int, float)) else cost_usd(
