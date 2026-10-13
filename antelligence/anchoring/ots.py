@@ -90,11 +90,16 @@ class HeaderError(RuntimeError):
 
 
 def nbits_target(nbits: int) -> int:
-    """Decode Bitcoin's compact difficulty target; raises :class:`HeaderError` for negative or zero targets."""
+    """Decode Bitcoin's compact difficulty target; raises :class:`HeaderError` for negative, zero or overflowing targets."""
+    if not 0 <= nbits <= 0xFFFFFFFF:
+        raise HeaderError(f"compact target out of range: {nbits}")
     exponent, mantissa = nbits >> 24, nbits & 0x007FFFFF
     if nbits & 0x00800000 or mantissa == 0:
         raise HeaderError(f"invalid compact target 0x{nbits:08x}")
-    return mantissa << (8 * (exponent - 3)) if exponent > 3 else mantissa >> (8 * (3 - exponent))
+    target = mantissa << (8 * (exponent - 3)) if exponent > 3 else mantissa >> (8 * (3 - exponent))
+    if target == 0 or target >= 1 << 256:          # a shift can round the mantissa away, or push it past 256 bits
+        raise HeaderError(f"compact target 0x{nbits:08x} decodes to {'zero' if target == 0 else 'an overflowing value'}")
+    return target
 
 
 def check_header_pow(header: CBlockHeader, *, pow_limit: int = MAINNET_POW_LIMIT, min_difficulty: float = MIN_DIFFICULTY) -> None:

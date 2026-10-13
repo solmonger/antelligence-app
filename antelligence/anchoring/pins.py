@@ -52,49 +52,107 @@ class TrustPins:
         return None if fp == self.study_key_sha256 else "study public key is not the key fixed in the preregistration"
 
 
+_HIDDEN_RE = re.compile(r"<!--.*?(?:-->|\Z)|^(?P<f>`{3,}|~{3,}).*?(?:^(?P=f)[`~]*[ \t]*$|\Z)", re.MULTILINE | re.DOTALL)
+
+
+def _rendered(text: str) -> str:
+    """The text a reader sees: HTML comments and fenced code blocks (also unterminated ones) removed."""
+    return _HIDDEN_RE.sub("", text)
+
+
 def study_key_in(prereg: Union[bytes, str]) -> str:
-    """The study key fingerprint written into a preregistration document (exactly one such line)."""
+    """The study key fingerprint written into a preregistration document.
+
+    Exactly one matching line in the raw text AND exactly one in the rendered text (outside HTML comments and
+    code fences, where a reader would not see it): a line hidden in a comment or code block can neither be the
+    key nor sit beside the real one.
+    """
     text = prereg.decode("utf-8", "replace") if isinstance(prereg, (bytes, bytearray)) else prereg
-    found = STUDY_KEY_RE.findall(text)
-    if len(found) != 1:
-        raise PinError(f"the preregistration must state the study key fingerprint exactly once (found {len(found)})")
-    return found[0]
+    raw, shown = STUDY_KEY_RE.findall(text), STUDY_KEY_RE.findall(_rendered(text))
+    if len(raw) != 1 or len(shown) != 1 or raw != shown:
+        raise PinError("the preregistration must state the study key fingerprint exactly once, in visible text "
+                       f"(found {len(raw)} in the raw text, {len(shown)} outside comments and code blocks)")
+    return shown[0]
 
 
 def load_pins(deployments: Mapping[str, Any], prereg: Union[bytes, str]) -> TrustPins:
     """Build pins from a parsed deployments file and the preregistration document."""
-    record = deployments.get("v4_1") or {}
-    if record.get("complete") is not True:
+    record = deployments.get("v4_1") if isinstance(deployments, Mapping) else None
+    if not isinstance(record, Mapping) or record.get("complete") is not True:
         raise PinError("deployments file has no complete v4_1 record")
-    contracts = [c for c in record.get("contracts", []) if c.get("name") == REGISTRY]
+    listed = record.get("contracts")
+    if not isinstance(listed, list) or not all(isinstance(c, Mapping) for c in listed):
+        raise PinError("deployments v4_1 record has no contracts list")
+    contracts = [c for c in listed if c.get("name") == REGISTRY]
     if len(contracts) != 1:
         raise PinError(f"deployments v4_1 record must list {REGISTRY} exactly once")
     entry = contracts[0]
-    code_hash = str(entry.get("code_hash", "")).lower()
-    if not re.fullmatch(r"0x[0-9a-f]{64}", code_hash):
+    code_hash = entry.get("code_hash", "")          # exact: lowercase 0x + 64 hex, as the deploy script writes it
+    if not isinstance(code_hash, str) or not re.fullmatch(r"0x[0-9a-f]{64}", code_hash):
         raise PinError(f"{REGISTRY} has no code_hash in the deployments record (redeploy with the v4.1 deploy script)")
     try:
         registry = Web3.to_checksum_address(entry.get("address", ""))
         deployer = Web3.to_checksum_address(record.get("deployer", ""))
     except (ValueError, TypeError) as exc:
         raise PinError(f"bad address in the deployments record: {exc}") from exc
-    if str(entry.get("deployer", record["deployer"])).lower() != deployer.lower():
+    try:                                   # no default: a missing per-contract deployer is a gap, not a match
+        entry_deployer = Web3.to_checksum_address(entry.get("deployer", ""))
+    except (ValueError, TypeError) as exc:
+        raise PinError(f"{REGISTRY} entry has no valid deployer: {exc}") from exc
+    if entry_deployer != deployer:
         raise PinError(f"{REGISTRY} entry names a different deployer than the v4_1 record")
     return TrustPins(registry=registry, deployer=deployer, code_hash=code_hash, study_key_sha256=study_key_in(prereg))
 
 
-def deployments_at_commit(repo: Union[str, Path], commit: str, path: str = DEFAULT_DEPLOYMENTS) -> Dict[str, Any]:
-    """Read the deployments file as it was at a full 40-hex git commit (read-only ``git show``)."""
+def _git(repo: Union[str, Path], *args: str) -> "subprocess.CompletedProcess[str]":
+    # --no-replace-objects: refs/replace/* in a (caller-supplied) repo must not be able to swap the pinned blob.
+    return subprocess.run(["git", "--no-replace-objects", "-C", str(repo), *args], capture_output=True, text=True)
+
+
+def _require_commit(repo: Union[str, Path], commit: str) -> None:
     if not _COMMIT_RE.match(commit or ""):
         raise PinError("a full 40-hex commit id is required (no branch names: they move)")
-    out = subprocess.run(["git", "-C", str(repo), "show", f"{commit}:{path}"], capture_output=True, text=True)
+    out = _git(repo, "rev-parse", "--verify", "--quiet", f"{commit}^{{commit}}")
+    if out.returncode != 0 or out.stdout.strip() != commit:
+        raise PinError(f"{commit} is not a commit object in the repository")
+
+
+def _show(repo: Union[str, Path], commit: str, path: str) -> bytes:
+    out = subprocess.run(["git", "--no-replace-objects", "-C", str(repo), "show", f"{commit}:{path}"], capture_output=True)
     if out.returncode != 0:
-        raise PinError(f"cannot read {path} at {commit}: {out.stderr.strip()[:200]}")
-    return json.loads(out.stdout)
+        raise PinError(f"cannot read {path} at {commit}: {out.stderr.decode('utf-8', 'replace').strip()[:200]}")
+    return out.stdout
 
 
-def pins_from_repo(repo: Union[str, Path], commit: str, prereg_path: Union[str, Path], path: str = DEFAULT_DEPLOYMENTS) -> TrustPins:
-    return load_pins(deployments_at_commit(repo, commit, path), Path(prereg_path).read_bytes())
+def deployments_at_commit(repo: Union[str, Path], commit: str, path: str = DEFAULT_DEPLOYMENTS) -> Dict[str, Any]:
+    """Read the deployments file as it was at a full 40-hex git commit (read-only ``git show``)."""
+    _require_commit(repo, commit)
+    try:
+        parsed = json.loads(_show(repo, commit, path))
+    except ValueError as exc:
+        raise PinError(f"{path} at {commit} is not valid JSON: {exc}") from exc
+    if not isinstance(parsed, dict):
+        raise PinError(f"{path} at {commit} is not a JSON object")
+    return parsed
+
+
+def pins_from_repo(repo: Union[str, Path], commit: str, prereg_path: Union[str, Path], path: str = DEFAULT_DEPLOYMENTS,
+                   prereg_commit: Optional[str] = None) -> TrustPins:
+    """Pins from the deployments file at ``commit`` and the preregistration.
+
+    With ``prereg_commit`` the preregistration is read from git too (``prereg_path`` is then a path inside the
+    repo) and ``commit`` must be an ancestor of, or equal to, ``prereg_commit``: the deployment the study key was
+    locked against cannot be a side-branch commit made afterwards. Without it the working-tree file is only as
+    good as its digest on chain (the verifier checks that); ``repo`` is caller-supplied either way, so pass a
+    clone of the public repository.
+    """
+    deployments = deployments_at_commit(repo, commit, path)
+    if prereg_commit is None:
+        return load_pins(deployments, Path(prereg_path).read_bytes())
+    _require_commit(repo, prereg_commit)
+    if _git(repo, "merge-base", "--is-ancestor", commit, prereg_commit).returncode != 0:
+        raise PinError("the deployments commit is not an ancestor of the preregistration commit")
+    return load_pins(deployments, _show(repo, prereg_commit, str(prereg_path)))
 
 
 def prereg_digest(prereg: bytes) -> bytes:

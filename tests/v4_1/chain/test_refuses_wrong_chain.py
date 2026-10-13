@@ -91,3 +91,15 @@ def test_refuses_board_log_deployed_by_someone_else(make_client, fake):
     with pytest.raises(ChainConfigError, match="deployed by"):
         c.pump()
     assert fake.sent_log == []
+
+
+def test_refuses_when_only_board_log_has_a_different_deployer(make_client, fake):
+    """AnchorRegistry matches the recorded deployer; ONLY BoardLog differs. The BoardLog check must stand alone."""
+    fake.deployer_by_contract[ADDRS["BoardLog"].lower()] = "0x" + "de" * 20
+    c = make_client()
+    c.enqueue_board_batch(b32(1), 0, b32(0), [b"\x01"])
+    with pytest.raises(ChainConfigError, match="BoardLog .*deployed by"):
+        c.pump()
+    assert fake.sent_log == []
+    fake.deployer_by_contract.clear()
+    assert c.preflight() == 300
