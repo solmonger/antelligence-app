@@ -34,7 +34,7 @@ from antelligence.anchoring import live  # noqa: E402
 from antelligence.providers.redact import scrub  # noqa: E402
 from antelligence.experiments import v41_fake, v41_live, v41_prod  # noqa: E402
 from antelligence.experiments.v41_conformal import ConformalThresholds  # noqa: E402
-from antelligence.experiments.v41_harness import (ARM_SPECS, ROUTER_MODELS_BY_ARM, GateConfig, KeyVault,  # noqa: E402
+from antelligence.experiments.v41_harness import (ARM_SPECS, D1, ROUTER_MODELS_BY_ARM, GateConfig, KeyVault,  # noqa: E402
                                                   V41Harness, append_cell, error_cell, make_gate)
 from antelligence.experiments.v41_router import KNNRouter  # noqa: E402
 from antelligence.experiments.v41_split import load_split, which_split  # noqa: E402
@@ -144,6 +144,8 @@ def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[st
         queen = v41_fake.build_fake_queen() if needs_queen else None
     elif live_backends:
         needed = {m for a in arms if ARM_SPECS[a].kind in ("workers", "fw") for m in ROUTER_MODELS_BY_ARM[a]}
+        if any(ARM_SPECS[a].kind in ("workers", "fw") for a in arms):
+            needed.add(D1)  # every swarm arm, FW included, takes a d1 local look each round (goal 4.5)
         workers = v41_prod.build_live_workers(pod_state=args.pod_state, bonsai_url=args.bonsai_url, needed=needed,
                                               usage_ledger=args.usage_ledger, pod_costs=args.pod_costs)
         queen = v41_prod.build_live_queen(usage_ledger=args.usage_ledger, pod_costs=args.pod_costs) if needs_queen else None
