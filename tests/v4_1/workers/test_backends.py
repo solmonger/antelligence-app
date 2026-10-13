@@ -433,9 +433,14 @@ def test_worker_backend_retries_transient_401_but_not_403():
     assert run(b.decide(req)).served_model
     assert state["n"] == 2
 
-    rec403 = Recorder(lambda r: httpx.Response(403, text="no"), version={"version": "0.30.0"})
+    hits403 = {"n": 0}
+
+    def forbidden(r):
+        hits403["n"] += 1
+        return httpx.Response(403, text="no")
+    rec403 = Recorder(forbidden, version={"version": "0.30.0"})
     b = VLLMLogprobBackend("http://pod:8100", *QWEN9, runtime_version="0.30.0", api_key="key-123", retries=3,
                            backoff_s=0, transport=rec403.transport())
     with pytest.raises(DecisionError, match="403"):
         run(b.decide(req))
-    assert state["n"] == 2
+    assert hits403["n"] == 1  # 403 is permanent: exactly one attempt
