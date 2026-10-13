@@ -51,9 +51,15 @@ FIELDS: Tuple[Field, ...] = (
     Field("perception_dice", "frac", True, "perception Dice against the truth mask; null if not measured"),
     Field("locallook_ece", "frac", True, "d1 local-look ECE; null if not measured"),
     Field("truth_outside_crop", "frac", True, "share of truth tumour voxels outside the perception crop"),
+    Field("backends_kind", "str", True, "live | config | fake: where the worker answers came from (null only on error cells)"),
+    Field("router_kind", "str", True, "frozen | none | fake (null only on error cells)"),
+    Field("router_sha256", "hex64", True, "sha256 of the frozen router; null unless router_kind is frozen"),
+    Field("identities", "str", True, "comma-joined served-model identities seen in the run; 'fake' marks fake backends; null for scripted arms"),
 )
 FIELD_NAMES = tuple(f.name for f in FIELDS)
 _OPTIONAL = {"error"}
+BACKENDS_KINDS = ("live", "config", "fake")
+ROUTER_KINDS = ("frozen", "none", "fake")
 
 
 def _ok(f: Field, v: Any) -> Optional[str]:
@@ -91,7 +97,45 @@ def validate_cell(cell: Mapping[str, Any]) -> List[str]:
         errs.append(f"arm: {cell.get('arm')!r} is not a v4.1 arm")
     if cell.get("split") not in SPLITS and "split" in cell:
         errs.append(f"split: {cell.get('split')!r} must be one of {SPLITS}")
+    if cell.get("backends_kind") is not None and cell["backends_kind"] not in BACKENDS_KINDS:
+        errs.append(f"backends_kind: {cell['backends_kind']!r} must be one of {BACKENDS_KINDS}")
+    if cell.get("router_kind") is not None and cell["router_kind"] not in ROUTER_KINDS:
+        errs.append(f"router_kind: {cell['router_kind']!r} must be one of {ROUTER_KINDS}")
+    if cell.get("router_kind") == "frozen" and not cell.get("router_sha256") and not cell.get("error"):
+        errs.append("router_sha256: required when router_kind is frozen")
+    if cell.get("router_kind") in ("none", "fake") and cell.get("router_sha256"):
+        errs.append("router_sha256: must be null unless router_kind is frozen")
     return errs
+
+
+def isolation_problems(cells: Sequence[Mapping[str, Any]], *, allow_router_none: bool = False,
+                       allow_fake: bool = False) -> List[str]:
+    """Why these (non-error) cells may not feed a result: fake backends or identities, a non-live backend, a router that
+    is not the frozen one. Evaluation results use the defaults (nothing relaxed). The development and calibration path
+    may read ``router_kind == "none"`` (Phase 0 bootstrap) but never a ``config`` backend mislabelled as live; fake needs
+    an explicit ``allow_fake`` and is never accepted for evaluation."""
+    out: List[str] = []
+    for i, c in enumerate(cells):
+        if c.get("error"):
+            continue
+        tag = f"cell {i} ({c.get('arm')}, {c.get('case')}, seed {c.get('seed')})"
+        idents = [x for x in str(c.get("identities") or "").split(",") if x]
+        bk, rk = c.get("backends_kind"), c.get("router_kind")
+        if "fake" in idents and not allow_fake:
+            out.append(f"{tag}: fake identity")
+        if bk is None:
+            out.append(f"{tag}: backends_kind missing")
+        elif bk == "fake" and not allow_fake:
+            out.append(f"{tag}: backends_kind is fake")
+        elif bk not in ("live", "fake") and not allow_router_none:
+            out.append(f"{tag}: backends_kind {bk!r} is not live")
+        if rk is None:
+            out.append(f"{tag}: router_kind missing")
+        elif rk == "fake" and not allow_fake:
+            out.append(f"{tag}: router_kind is fake")
+        elif rk == "none" and not allow_router_none:
+            out.append(f"{tag}: router_kind is none (bootstrap router, development only)")
+    return out
 
 
 def validate_cells(cells: Sequence[Mapping[str, Any]]) -> List[str]:

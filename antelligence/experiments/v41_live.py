@@ -29,7 +29,7 @@ from antelligence.providers.ledger import LedgerWriter
 from antelligence.providers.openai_compat import OpenAICompatProvider
 from antelligence.providers.wrappers import Cached
 
-DEFAULT_LOADER = "antelligence.worlds.tumor_mri.store_adapter:load_case"
+DEFAULT_LOADER = "antelligence.worlds.tumor_mri.store_adapter:harness_loader"
 
 
 class LiveConfigError(ValueError):

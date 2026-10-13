@@ -93,3 +93,36 @@ def load_case(case: str, *, root: Union[str, Path, None] = None, repo_root: Unio
                 case_id=case)
     regions = [Region.from_knowledge(p, voxel_mm) for p in metrics["regions"]]
     return LoadedCase(crop=crop, regions=regions, split=split)
+
+
+MISSING_FLAIR_SUFFIX = "_missing_flair"   # scripts/v41_perception.py --missing-flair writes <cases>_missing_flair / raw_missing_flair
+
+
+def make_harness_loader(*, root: Union[str, Path, None] = None, repo_root: Union[str, Path, None] = None,
+                        prereg_path: Union[str, Path, None] = None, anchor_receipt: Union[str, Path, None] = None,
+                        g1_file: Union[str, Path, None] = None):
+    """The ``load_case(case_id, variant="full") -> (Crop, regions)`` callable :class:`V41Harness` expects.
+
+    ``variant="missing_flair"`` reads the degraded-perception store beside ``root`` (``<root>_missing_flair`` and
+    ``raw_missing_flair``). The lock paths are forwarded so an evaluation case loads only through the gate.
+    """
+    cases_root = Path(root) if root is not None else l1_store.DEFAULT_ROOT
+
+    def load(case: str, variant: str = "full"):
+        if variant == "full":
+            root_v, raw_v = cases_root, cases_root.parent / "raw"
+        elif variant == "missing_flair":
+            root_v = cases_root.with_name(cases_root.name + MISSING_FLAIR_SUFFIX)
+            raw_v = cases_root.parent / "raw_missing_flair"
+        else:
+            raise AdapterError(f"unknown world variant {variant!r}")
+        loaded = load_case(case, root=root_v, repo_root=repo_root, prereg_path=prereg_path,
+                           anchor_receipt=anchor_receipt, g1_file=g1_file, raw_dir=raw_v)
+        return loaded.crop, loaded.regions
+
+    return load
+
+
+def harness_loader(case: str, variant: str = "full"):
+    """``module:function`` default for ``--loader`` (dev cases only; ``make_harness_loader`` carries the lock paths)."""
+    return make_harness_loader()(case, variant)

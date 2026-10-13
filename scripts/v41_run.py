@@ -32,7 +32,7 @@ sys.path.insert(0, str(REPO))
 
 from antelligence.anchoring import live  # noqa: E402
 from antelligence.providers.redact import scrub  # noqa: E402
-from antelligence.experiments import v41_live, v41_prod  # noqa: E402
+from antelligence.experiments import v41_fake, v41_live, v41_prod  # noqa: E402
 from antelligence.experiments.v41_conformal import ConformalThresholds  # noqa: E402
 from antelligence.experiments.v41_harness import (ARM_SPECS, ROUTER_MODELS_BY_ARM, GateConfig, KeyVault,  # noqa: E402
                                                   V41Harness, append_cell, error_cell, make_gate)
@@ -63,8 +63,9 @@ def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--run", action="append", required=True, metavar="ARM:CASE:SEED")
     ap.add_argument("--config", help="backends JSON (v41_live); not used with --backends live")
-    ap.add_argument("--backends", choices=("config", "live"), default="config",
-                    help="'config' builds backends from --config; 'live' from the pod state file, Nous auth and Bonsai URL")
+    ap.add_argument("--backends", choices=("config", "live", "fake"), default="config",
+                    help="'config' builds backends from --config; 'live' from the pod state file, Nous auth and Bonsai URL; "
+                         "'fake' = offline deterministic fakes (identity 'fake', dry plumbing runs, no network)")
     ap.add_argument("--pod-state", default=str(v41_prod.POD_STATE))
     ap.add_argument("--bonsai-url", default=v41_prod.DEFAULT_BONSAI_URL, help="llama.cpp server for the Bonsai arm")
     ap.add_argument("--usage-ledger", default=str(v41_prod.USAGE_LEDGER))
@@ -74,6 +75,7 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--cells", help="append one cell per run to this JSONL file")
     ap.add_argument("--loader", default=v41_live.DEFAULT_LOADER, help="module:function, load_case(case_id) -> (Crop, regions)")
+    ap.add_argument("--cases-root", help="L1 store (default data/v4_1/cases); the missing_flair variant reads <root>_missing_flair")
     ap.add_argument("--concurrency", type=int, default=4)
     ap.add_argument("--calibration", action="store_true")
     ap.add_argument("--anchors", choices=("none", "mock", "live"), default="none")
@@ -81,7 +83,8 @@ def parser() -> argparse.ArgumentParser:
                     help="let anchored arms (SW-B, FW, SW-D, SW-Byz-*) run without anchors; refused by default")
     ap.add_argument("--world-yaml", default=str(REPO / "config/v4_1/world.yaml"))
     ap.add_argument("--promoted-harness", help="harness.yaml with the promoted edits (default: the base harness)")
-    ap.add_argument("--router", help="frozen kNN router JSON")
+    ap.add_argument("--router", help="frozen kNN router JSON; 'none' = Phase 0 bootstrap (all to Qwen3.5-9B, no deferral); "
+                                     "'fake' = seeded random kNN + mid thresholds (only with --backends fake)")
     ap.add_argument("--thresholds", help="frozen conformal thresholds JSON")
     ap.add_argument("--bonsai-router")
     ap.add_argument("--bonsai-thresholds")
@@ -94,11 +97,31 @@ def parser() -> argparse.ArgumentParser:
     return ap
 
 
+def _routers(args: argparse.Namespace):
+    """(router, thresholds, bonsai_router, bonsai_thresholds) from the flags; 'none' / 'fake' build in-process bootstraps."""
+    def pick(spec: Optional[str], thr_path: Optional[str], bonsai: bool):
+        if spec == "none":
+            return v41_fake.null_bootstrap(bonsai)
+        if spec == "fake":
+            return v41_fake.fake_bootstrap(bonsai)
+        return (KNNRouter.load(spec) if spec else None,
+                ConformalThresholds.load(thr_path) if thr_path else None)
+    router, thresholds = pick(args.router, args.thresholds, False)
+    if args.bonsai_router in (None, "none", "fake") and args.router in ("none", "fake"):
+        bonsai_router, bonsai_thresholds = pick(args.bonsai_router or args.router, None, True)
+    else:
+        bonsai_router, bonsai_thresholds = pick(args.bonsai_router, args.bonsai_thresholds, True)
+    return router, thresholds, bonsai_router, bonsai_thresholds
+
+
 def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[str]]) -> V41Harness:
     live_backends = args.backends == "live"
-    if not live_backends and not args.config:
-        raise SystemExit("--config is required unless --backends live")
-    cfg = {} if live_backends else v41_live.load_config(args.config)
+    fake_backends = args.backends == "fake"
+    if not live_backends and not fake_backends and not args.config:
+        raise SystemExit("--config is required unless --backends live or fake")
+    if args.router == "fake" and not fake_backends:
+        raise SystemExit("--router fake is only for --backends fake")
+    cfg = {} if (live_backends or fake_backends) else v41_live.load_config(args.config)
     runs = [r.split(":") for r in args.run]
     arms = {r[0] for r in runs}
     if not arms <= set(ARM_SPECS):
@@ -107,9 +130,17 @@ def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[st
     if unanchored and not args.allow_unanchored:
         raise SystemExit(f"arms {unanchored} must be anchored: pass --anchors mock (or the live wiring), "
                          "or --allow-unanchored to run them without anchors on purpose")
-    loader = v41_live.resolve_loader(args.loader)
+    if args.loader == v41_live.DEFAULT_LOADER:
+        from antelligence.worlds.tumor_mri.store_adapter import make_harness_loader
+        loader = make_harness_loader(root=args.cases_root, repo_root=args.repo_root, prereg_path=args.prereg,
+                                     anchor_receipt=args.anchor_receipt, g1_file=args.g1)
+    else:
+        loader = v41_live.resolve_loader(args.loader)
     needs_queen = any(ARM_SPECS[a].uses_queen for a in arms)
-    if live_backends:
+    if fake_backends:
+        workers = v41_fake.build_fake_workers()
+        queen = v41_fake.build_fake_queen() if needs_queen else None
+    elif live_backends:
         needed = {m for a in arms if ARM_SPECS[a].kind in ("workers", "fw") for m in ROUTER_MODELS_BY_ARM[a]}
         workers = v41_prod.build_live_workers(pod_state=args.pod_state, bonsai_url=args.bonsai_url, needed=needed,
                                               usage_ledger=args.usage_ledger, pod_costs=args.pod_costs)
@@ -125,24 +156,24 @@ def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[st
         reputation_client = args.live_anchoring.reputation_client
     if args.anchors == "mock":
         from antelligence.anchoring.tamper import Lab
-        lab = Lab()
+        lab = args.mock_lab = Lab()
         anchorer_factory = lambda board, akey, out_dir: lab.anchorer(board, akey, out_dir)  # noqa: E731
+        post_mode_factory, reputation_client = v41_fake.MockPostMode, v41_fake.MockReputationClient()
     harness_doc = load_harness(args.promoted_harness) if args.promoted_harness else None
     out = Path(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
+    router, thresholds, bonsai_router, bonsai_thresholds = _routers(args)
     return V41Harness(
         load_case=loader, gate=make_gate(GateConfig(Path(args.repo_root), Path(args.prereg), Path(args.anchor_receipt),
                                                     Path(args.g1))),
         workers=workers, queen_provider=queen,
         world_config=WorldConfig.from_yaml(args.world_yaml), promoted_harness=harness_doc,
-        router=KNNRouter.load(args.router) if args.router else None,
-        bonsai_router=KNNRouter.load(args.bonsai_router) if args.bonsai_router else None,
-        thresholds=ConformalThresholds.load(args.thresholds) if args.thresholds else None,
-        bonsai_thresholds=ConformalThresholds.load(args.bonsai_thresholds) if args.bonsai_thresholds else None,
+        router=router, bonsai_router=bonsai_router, thresholds=thresholds, bonsai_thresholds=bonsai_thresholds,
         look_temperature=args.look_temperature, anchorer_factory=anchorer_factory,
         post_mode_factory=post_mode_factory, reputation_client=reputation_client,
         allow_unanchored=args.allow_unanchored, outbox=ProvenanceOutbox(str(out / "outbox.sqlite")),
-        keys=KeyVault(args.ledger_dir), out_dir=out, code_sha=_git_sha(), hardware=cfg.get("hardware") or ({"d1": "L40S", "qwen3.5-9b": "L40S", "qwen3.5-4b": "L40S", "bonsai-8b": "Mac"} if live_backends else None))
+        backends_kind=args.backends if args.backends in ("live", "fake") else "config", keys=KeyVault(args.ledger_dir), out_dir=out, code_sha=_git_sha(), hardware=cfg.get("hardware") or ({"d1": "L40S", "qwen3.5-9b": "L40S", "qwen3.5-4b": "L40S", "bonsai-8b": "Mac"} if live_backends else None)
+        or ({n: "fake" for n in ("d1", "qwen3.5-9b", "qwen3.5-4b", "bonsai-8b", "fw")} if fake_backends else None))
 
 
 def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optional[str]] = os.environ.get,
@@ -151,6 +182,7 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
     if args.anchors == "live" and not args.ledger_dir:
         args.ledger_dir = str(REPO / "ledger")        # live runs must keep their keys: the tamper suite needs them
     args.live_anchoring = None
+    args.mock_lab = None
     runs = []
     for spec in args.run:
         arm, case, seed = spec.rsplit(":", 2)
@@ -162,12 +194,16 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
     finally:
         if args.live_anchoring is not None:
             print(f"chain queue at exit: {args.live_anchoring.close()}")
+    if args.mock_lab is not None:
+        report = v41_fake.verify_mock_exports(args.mock_lab, args.out_dir, results)
+        print(f"mock verifier: {report.get('verdict')} (ok={report.get('ok')}) -> {args.out_dir}/verify-mock-report.json")
     failed = 0
     for (arm, case, seed), res in zip(runs, results):
         if isinstance(res, BaseException):
             failed += 1
             print(f"FAILED {arm} {case} {seed}: {scrub(f'{type(res).__name__}: {res}')}", file=sys.stderr)
-            cell: Any = error_cell(arm, case, seed, _split_of(args, case), res)
+            cell: Any = error_cell(arm, case, seed, _split_of(args, case), res,
+                              backends_kind=h.backends_kind, router_kind=h.router_kind)
         else:
             cell = res.cell
             print(f"{arm} {case} seed {seed}: coverage {cell['coverage']:.3f} off-target {cell['off_target']:.3f} "
