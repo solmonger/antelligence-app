@@ -125,3 +125,40 @@ def fit_calibrator(p_dev: np.ndarray, y_dev: np.ndarray) -> tuple[Calibrator, di
     report["chosen"] = best
     report["n_voxels"] = int(p.size)
     return cands[best], report
+
+
+def fit_select_heldout(p_a: np.ndarray, y_a: np.ndarray, p_b: np.ndarray, y_b: np.ndarray
+                       ) -> tuple[Calibrator, dict]:
+    """Held-out selection: fit candidates on dev-A, pick the lowest ECE on dev-B, refit the winner on A+B.
+
+    Headline figures are the dev-B (held-out) ECE/Brier; dev-A numbers are in-sample and labelled so.
+    """
+    pa = np.asarray(p_a, dtype=np.float64).ravel()
+    ya = np.asarray(y_a, dtype=np.float64).ravel()
+    pb = np.asarray(p_b, dtype=np.float64).ravel()
+    yb = np.asarray(y_b, dtype=np.float64).ravel()
+    fitted_a, rep_a = fit_calibrator(pa, ya)
+    t = fit_temperature(pa, ya)
+    ix, iy = fit_isotonic(apply_temperature(pa, t), ya)
+    cands = {"none": Calibrator("none"), "temperature": Calibrator("temperature", t),
+             "isotonic": Calibrator("isotonic", t, ix.tolist(), iy.tolist())}
+    held = {n: {"ece": ece(c.apply(pb), yb), "brier": brier(c.apply(pb), yb)} for n, c in cands.items()}
+    best = min(cands, key=lambda n: (held[n]["ece"], n))
+    p_ab, y_ab = np.concatenate([pa, pb]), np.concatenate([ya, yb])
+    if best == "none":
+        final = Calibrator("none")
+    else:
+        t2 = fit_temperature(p_ab, y_ab)
+        final = Calibrator("temperature", t2)
+        if best == "isotonic":
+            x2, y2 = fit_isotonic(apply_temperature(p_ab, t2), y_ab)
+            final = Calibrator("isotonic", t2, x2.tolist(), y2.tolist())
+    report = {
+        "chosen": best,
+        "heldout_dev_b": held,
+        "in_sample_dev_a": {k: v for k, v in rep_a.items() if k in cands},
+        "refit_on": "dev_a+dev_b",
+        "in_sample_dev_ab_final": {"ece": ece(final.apply(p_ab), y_ab), "brier": brier(final.apply(p_ab), y_ab)},
+        "n_voxels_dev_a": int(pa.size), "n_voxels_dev_b": int(pb.size),
+    }
+    return final, report

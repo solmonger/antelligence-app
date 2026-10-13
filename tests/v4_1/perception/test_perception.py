@@ -186,3 +186,74 @@ def test_missing_flair_zeroes_channel():
     assert (x[3] == 0).all() and x[:3].std() > 0.5
     full = infer.prepare_input(img, [2, 1, 3, 0])
     assert abs(float(full[3].mean())) < 1e-5 and abs(float(full[3].std()) - 1) < 1e-4
+
+
+def _cli():
+    import importlib.util
+    from pathlib import Path
+    path = Path(__file__).resolve().parents[3] / "scripts" / "v41_perception.py"
+    spec = importlib.util.spec_from_file_location("v41_perception_cli", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_cli_accepts_real_split_file_shape():
+    from pathlib import Path
+    cli = _cli()
+    split = Path(__file__).resolve().parents[3] / "config" / "v4_1" / "split.json"
+    raw = json.loads(split.read_text())
+    assert {"dev_a", "dev_b", "eval", "reserve"} <= set(raw)
+    g = cli.parse_cases(str(split))  # default: reserve never touched
+    assert set(g) == {"dev_a", "dev_b", "eval"}
+    assert (len(g["dev_a"]), len(g["dev_b"]), len(g["eval"])) == (len(raw["dev_a"]), len(raw["dev_b"]), len(raw["eval"]))
+    assert "reserve" in cli.parse_cases(str(split), include=("reserve",))
+    assert not set(g["dev_a"]) & set(g["dev_b"]) and not set(g["eval"]) & set(raw["reserve"])
+
+
+def test_calibration_selection_is_heldout():
+    rng = np.random.RandomState(2)
+
+    def draw(n):
+        tp = rng.uniform(0.02, 0.98, n)
+        return calibrate.apply_temperature(tp, 0.3), (rng.uniform(size=n) < tp).astype(float)
+
+    pa, ya = draw(20000)
+    pb, yb = draw(8000)
+    c, rep = calibrate.fit_select_heldout(pa, ya, pb, yb)
+    assert rep["refit_on"] == "dev_a+dev_b" and set(rep["heldout_dev_b"]) == {"none", "temperature", "isotonic"}
+    assert rep["chosen"] == min(rep["heldout_dev_b"], key=lambda n: (rep["heldout_dev_b"][n]["ece"], n))
+    assert rep["heldout_dev_b"][rep["chosen"]]["ece"] < rep["heldout_dev_b"]["none"]["ece"]
+    assert "in_sample_dev_a" in rep and c.method == rep["chosen"]
+
+
+def test_weights_sha256_pinned_and_verified(tmp_path):
+    assert len(model.WEIGHTS_SHA256) == 64
+    net = tiny_model()
+    pt = tmp_path / "model.pt"
+    torch.save(net.state_dict(), pt)
+    model.load_weights(tiny_model(), pt, expected_sha256=model.sha256_file(pt))
+    with pytest.raises(model.UnsafeWeightsError):
+        model.load_weights(tiny_model(), pt, expected_sha256=model.WEIGHTS_SHA256)
+
+
+def test_no_hit_outside_share_uses_stored_fallback_crop(tmp_path):
+    from antelligence.perception import pipeline
+    shp = (20, 20, 20)
+    brain = np.zeros(shp, bool)
+    brain[5:15, 5:15, 5:15] = True
+    truth = np.zeros((3, *shp), bool)
+    truth[0, 2:8, 6:10, 6:10] = True  # part of the truth lies outside the brain bbox fallback crop
+    z = np.zeros(shp, np.float32)
+    raw = dict(mean=np.zeros((3, *shp), np.float32), std=np.zeros((3, *shp), np.float32), flair=z, t1c=z,
+               brain=brain, truth=truth, full_res_dice=np.zeros(3), spacing_mm=np.array([2.0] * 3),
+               seconds=np.asarray(1.0))
+    (tmp_path / "raw").mkdir()
+    np.savez_compressed(tmp_path / "raw" / "C.npz", **raw)
+    m = pipeline.finalize_case("C", tmp_path / "raw", tmp_path / "out", calibrate.Calibrator("none"), "dev_a")
+    assert m["crop_found"] is False
+    expected = 1.0 - truth[0][5:15, 5:15, 5:15].sum() / truth[0].sum()
+    assert m["truth_wt_share_outside_crop"] == pytest.approx(expected) and 0.0 < expected < 1.0
+    m2 = pipeline.finalize_case("C2" if False else "C", tmp_path / "raw", tmp_path / "out2", calibrate.Calibrator("none"),
+                                "eval", truth_metrics=False)
+    assert "dice_2mm" not in m2 and "ece_wt_cal" not in m2

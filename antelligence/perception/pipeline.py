@@ -25,7 +25,7 @@ def _stack(a: np.ndarray) -> np.ndarray:
 
 
 def infer_case(root: Path, case_id: str, model, device, raw_dir: Path, missing_flair: bool = False,
-               roi_size=None, overlap=None, flips=None) -> Path:
+               truth_metrics: bool = True, roi_size=None, overlap=None, flips=None) -> Path:
     """Run TTA inference on one case and save the 2 mm raw bundle to raw_dir/<case>.npz."""
     from . import infer
 
@@ -44,7 +44,8 @@ def infer_case(root: Path, case_id: str, model, device, raw_dir: Path, missing_f
     mean = infer.to_msd_truth_order(mean_b)  # WT, TC, ET
     std = infer.to_msd_truth_order(std_b)
     truth = msd.truth_channels(case.label, ldef)
-    full_dice = [cal.dice(mean[i] >= 0.5, truth[i]) for i in range(3)]
+    # eval cases: no truth-derived metric before the preregistration lock
+    full_dice = [cal.dice(mean[i] >= 0.5, truth[i]) for i in range(3)] if truth_metrics else [float('nan')] * 3
 
     sp = case.spacing_mm
     rs = lambda a, o=1: crp.resample(a, sp, TARGET_SPACING_MM, o)  # noqa: E731
@@ -72,21 +73,28 @@ def load_raw(raw_dir: Path, case_id: str) -> dict:
         return {k: z[k] for k in z.files}
 
 
-def fit_from_dev(raw_dir: Path, dev_ids: list[str], out_path: Path) -> cal.Calibrator:
-    """Fit the WT calibrator on brain voxels of DEV cases only and save it."""
+def _brain_voxels(raw_dir: Path, ids: list[str]) -> tuple[np.ndarray, np.ndarray]:
     ps, ys = [], []
-    for cid in dev_ids:
+    for cid in ids:
         r = load_raw(raw_dir, cid)
         b = r["brain"]
         ps.append(r["mean"][0][b])
         ys.append(r["truth"][0][b])
-    calibrator, report = cal.fit_calibrator(np.concatenate(ps), np.concatenate(ys))
-    out_path.write_text(json.dumps({"calibrator": calibrator.to_dict(), "dev_cases": sorted(dev_ids),
-                                    "report": report}, indent=1))
+    return np.concatenate(ps), np.concatenate(ys)
+
+
+def fit_from_dev(raw_dir: Path, dev_a: list[str], dev_b: list[str], out_path: Path) -> cal.Calibrator:
+    """Fit candidates on dev-A, select on held-out dev-B, refit the winner on A+B. DEV cases only."""
+    pa, ya = _brain_voxels(raw_dir, dev_a)
+    pb, yb = _brain_voxels(raw_dir, dev_b)
+    calibrator, report = cal.fit_select_heldout(pa, ya, pb, yb)
+    out_path.write_text(json.dumps({"calibrator": calibrator.to_dict(), "dev_a": sorted(dev_a),
+                                    "dev_b": sorted(dev_b), "report": report}, indent=1))
     return calibrator
 
 
-def finalize_case(case_id: str, raw_dir: Path, out_root: Path, calibrator: cal.Calibrator, split: str) -> dict:
+def finalize_case(case_id: str, raw_dir: Path, out_root: Path, calibrator: cal.Calibrator, split: str,
+                  truth_metrics: bool = True) -> dict:
     """Calibrate, crop, extract regions, write the per-case store + metrics.json."""
     r = load_raw(raw_dir, case_id)
     spacing = float(r["spacing_mm"][0])
@@ -101,9 +109,7 @@ def finalize_case(case_id: str, raw_dir: Path, out_root: Path, calibrator: cal.C
         idx = np.nonzero(brain)
         box = tuple(slice(int(i.min()), int(i.max()) + 1) for i in idx) if idx[0].size else tuple(
             slice(0, s) for s in brain.shape)
-        outside = crp.truth_share_outside(truth[0], None)
-    else:
-        outside = crp.truth_share_outside(truth[0], box)
+    outside = crp.truth_share_outside(truth[0], box)  # against the crop actually stored
 
     sub = lambda a: np.ascontiguousarray(a[box])  # noqa: E731
     p_c, u_c = sub(p_cal), sub(r["std"][0])
@@ -118,29 +124,34 @@ def finalize_case(case_id: str, raw_dir: Path, out_root: Path, calibrator: cal.C
         origin_vox=np.asarray(origin), spacing_mm=np.asarray([spacing] * 3),
     )
 
-    bv = brain
-    y_wt = truth[0][bv]
     metrics = {
         "case": case_id, "split": split, "pipeline": PIPELINE_VERSION, "prov": MODEL_PROV,
-        "calibrator": calibrator.method,
-        "dice_2mm": {"WT": cal.dice(p_cal >= 0.5, truth[0]),
-                     "TC": cal.dice(r["mean"][1] >= 0.5, truth[1]),
-                     "ET": cal.dice(r["mean"][2] >= 0.5, truth[2])},
-        "dice_full_res_raw": dict(zip(CHANNELS, map(float, r["full_res_dice"]))),
-        "ece_wt_raw": cal.ece(p_raw[bv], y_wt), "ece_wt_cal": cal.ece(p_cal[bv], y_wt),
-        "brier_wt_raw": cal.brier(p_raw[bv], y_wt), "brier_wt_cal": cal.brier(p_cal[bv], y_wt),
-        "truth_wt_share_outside_crop": outside, "crop_found": found,
+        "calibrator": calibrator.method, "crop_found": found,
         "crop_origin_vox": origin, "crop_shape_vox": [int(s.stop - s.start) for s in box],
-        "n_regions": len(payloads), "regions": payloads,
-        "seconds_infer": float(r["seconds"]),
+        "n_regions": len(payloads), "regions": payloads, "seconds_infer": float(r["seconds"]),
+        "truth_metrics_computed": truth_metrics,
     }
+    if truth_metrics:
+        bv = brain
+        y_wt = truth[0][bv]
+        metrics.update({
+            "dice_2mm": {"WT": cal.dice(p_cal >= 0.5, truth[0]),
+                         "TC": cal.dice(r["mean"][1] >= 0.5, truth[1]),
+                         "ET": cal.dice(r["mean"][2] >= 0.5, truth[2])},
+            "dice_full_res_raw": dict(zip(CHANNELS, map(float, r["full_res_dice"]))),
+            "ece_wt_raw": cal.ece(p_raw[bv], y_wt), "ece_wt_cal": cal.ece(p_cal[bv], y_wt),
+            "brier_wt_raw": cal.brier(p_raw[bv], y_wt), "brier_wt_cal": cal.brier(p_cal[bv], y_wt),
+            "truth_wt_share_outside_crop": outside,
+        })
     (case_dir / "metrics.json").write_text(json.dumps(metrics, indent=1))
     return metrics
 
 
-def summarise(out_root: Path, only_split: str | None = None) -> dict:
+def summarise(out_root: Path, calibration_path: Path | None = None) -> dict:
     """Aggregates only (no per-voxel data, no per-case rows)."""
     ms = [json.loads(p.read_text()) for p in sorted(out_root.glob("*/metrics.json"))]
+    withheld = [m for m in ms if not m.get("truth_metrics_computed", True)]
+    ms = [m for m in ms if m.get("truth_metrics_computed", True)]
 
     def agg(rows: list[dict]) -> dict:
         if not rows:
@@ -164,11 +175,19 @@ def summarise(out_root: Path, only_split: str | None = None) -> dict:
         }
 
     splits = sorted({m["split"] for m in ms})
-    return {
+    out = {
         "pipeline": PIPELINE_VERSION, "prov": MODEL_PROV,
         "caveat_brats2018_overlap": CAVEAT,
         "note": "Dice/ECE/Brier are computed on the 2 mm grid (brain voxels for ECE/Brier); "
                 "dice_full_res_raw is the uncalibrated 1 mm Dice at p>=0.5.",
-        "all": agg(ms),
+        "eval_metrics": f"withheld until preregistration lock ({len(withheld)} perception-only cases)",
         **{f"split_{s}": agg([m for m in ms if m["split"] == s]) for s in splits},
     }
+    if calibration_path is not None and Path(calibration_path).exists():
+        rep_ = json.loads(Path(calibration_path).read_text())["report"]
+        out["calibration"] = {
+            "headline_heldout_dev_b": rep_["heldout_dev_b"], "chosen": rep_["chosen"],
+            "in_sample_dev_a_NOT_headline": rep_["in_sample_dev_a"],
+            "in_sample_dev_ab_final_NOT_headline": rep_["in_sample_dev_ab_final"],
+        }
+    return out

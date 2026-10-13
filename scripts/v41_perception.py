@@ -33,24 +33,45 @@ def _ids(spec: str) -> list[str]:
     return [s.strip() for s in spec.split(",") if s.strip()]
 
 
-def parse_cases(cases: str, dev: str | None) -> tuple[list[str], list[str], list[str]]:
-    """Return (all_ids, dev_ids, eval_ids)."""
+GROUPS = ("dev_a", "dev_b", "eval", "reserve")
+DEFAULT_GROUPS = ("dev_a", "dev_b", "eval")
+
+
+def parse_cases(cases: str, dev_a: str | None = None, dev_b: str | None = None,
+                include: tuple[str, ...] = DEFAULT_GROUPS) -> dict[str, list[str]]:
+    """Return {group: ids} for the requested groups. ``reserve`` only if explicitly included.
+
+    ``cases`` is config/v4_1/split.json (keys dev_a, dev_b, eval, reserve) or an id list/file,
+    in which case ids go to ``eval`` and dev-A/dev-B come from --dev-a/--dev-b.
+    """
     p = Path(cases)
     if p.is_file() and p.suffix == ".json":
         d = json.loads(p.read_text())
-        dev_ids, eval_ids = list(d.get("dev", [])), list(d.get("eval", []))
+        groups = {g: list(d.get(g, [])) for g in GROUPS}
     else:
-        dev_ids, eval_ids = [], _ids(cases)
-    if dev:
-        dev_ids = _ids(dev)
-    eval_ids = [c for c in eval_ids if c not in set(dev_ids)]
-    return dev_ids + eval_ids, dev_ids, eval_ids
+        groups = {"dev_a": [], "dev_b": [], "eval": _ids(cases), "reserve": []}
+    if dev_a:
+        groups["dev_a"] = _ids(dev_a)
+    if dev_b:
+        groups["dev_b"] = _ids(dev_b)
+    seen: set[str] = set()
+    for g in ("dev_a", "dev_b", "eval", "reserve"):
+        dup = seen & set(groups[g])
+        if dup:
+            raise SystemExit(f"case(s) in more than one group: {sorted(dup)[:3]}")
+        seen |= set(groups[g])
+    return {g: groups[g] for g in GROUPS if g in include or g in ("dev_a", "dev_b")}
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cases", help="split file (json/text) or comma-separated case ids")
-    ap.add_argument("--dev", help="dev case ids/file for calibration (overrides split file)")
+    ap.add_argument("--dev-a", help="dev-A ids/file (calibrator candidates are fit here)")
+    ap.add_argument("--dev-b", help="dev-B ids/file (held-out calibrator selection)")
+    ap.add_argument("--include", default=",".join(DEFAULT_GROUPS),
+                    help="groups to process: dev_a,dev_b,eval,reserve (reserve only when asked)")
+    ap.add_argument("--eval-metrics", action="store_true",
+                    help="compute truth metrics for eval/reserve cases (ONLY after the preregistration lock)")
     ap.add_argument("--device", default="mps", choices=["mps", "cpu"])
     ap.add_argument("--out", default=str(REPO / "data" / "v4_1" / "cases"))
     ap.add_argument("--msd-root", default=str(REPO / "data" / "v4_1" / "Task01_BrainTumour"))
@@ -67,19 +88,26 @@ def main(argv=None) -> int:
     raw_dir = base / ("raw_missing_flair" if args.missing_flair else "raw")
 
     if args.summary:
-        s = pipeline.summarise(out)
+        s = pipeline.summarise(out, base / ('calibration_missing_flair.json' if args.missing_flair else 'calibration.json'))
         dest = Path(args.summary_path)
         if args.missing_flair:
             dest = dest.with_name("summary_missing_flair.json")
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(json.dumps(s, indent=1) + "\n")
-        print(f"wrote {dest} (n={s['all']['n']})")
+        print(f"wrote {dest} ")
         return 0
 
     if not args.cases:
         ap.error("--cases is required unless --summary")
-    all_ids, dev_ids, eval_ids = parse_cases(args.cases, args.dev)
-    split_of = {**{c: "dev" for c in dev_ids}, **{c: "eval" for c in eval_ids}}
+    include = tuple(g.strip() for g in args.include.split(",") if g.strip())
+    bad = set(include) - set(GROUPS)
+    if bad:
+        ap.error(f"unknown groups {sorted(bad)}")
+    groups = parse_cases(args.cases, args.dev_a, args.dev_b, include)
+    dev_a, dev_b = groups["dev_a"], groups["dev_b"]
+    split_of = {c: g for g, ids in groups.items() for c in ids}
+    all_ids = [c for ids in groups.values() for c in ids]
+    metrics_ok = lambda c: split_of[c] in ("dev_a", "dev_b") or args.eval_metrics  # noqa: E731
     models_dir = Path(args.models_dir) if args.models_dir else base / "models"
     calib_path = base / ("calibration_missing_flair.json" if args.missing_flair else "calibration.json")
 
@@ -93,26 +121,27 @@ def main(argv=None) -> int:
         print(f"device={device} inferring {len(todo)}/{len(all_ids)} cases", flush=True)
         for c in todo:
             t0 = time.time()
-            pipeline.infer_case(Path(args.msd_root), c, net, device, raw_dir, args.missing_flair)
+            pipeline.infer_case(Path(args.msd_root), c, net, device, raw_dir, args.missing_flair,
+                                truth_metrics=metrics_ok(c))
             print(f"[infer] {c} {time.time() - t0:.1f}s", flush=True)
 
-    # 2. calibrator: fit on dev only
-    if calib_path.exists() and not dev_ids:
+    # 2. calibrator: candidates on dev-A, selection on held-out dev-B, refit on A+B
+    if dev_a and dev_b:
+        calibrator = pipeline.fit_from_dev(raw_dir, dev_a, dev_b, calib_path)
+        print(f"calibrator={calibrator.method} T={calibrator.temperature:.3f} -> {calib_path}", flush=True)
+    elif calib_path.exists():
         calibrator = cal.Calibrator.from_dict(json.loads(calib_path.read_text())["calibrator"])
     else:
-        if not dev_ids:
-            ap.error("need dev cases (split file 'dev' key or --dev) to fit the calibrator")
-        calibrator = pipeline.fit_from_dev(raw_dir, dev_ids, calib_path)
-        print(f"calibrator={calibrator.method} T={calibrator.temperature:.3f} -> {calib_path}", flush=True)
+        ap.error("need dev_a and dev_b (split file or --dev-a/--dev-b) to fit the calibrator")
 
     # 3. crop / regions / store
     for c in all_ids:
         if (out / c / "metrics.json").exists():
             continue
         t0 = time.time()
-        m = pipeline.finalize_case(c, raw_dir, out, calibrator, split_of.get(c, "unsplit"))
-        print(f"[store] {c} split={m['split']} WT dice={m['dice_2mm']['WT']:.3f} regions={m['n_regions']} "
-              f"outside={m['truth_wt_share_outside_crop']:.3f} {time.time() - t0:.1f}s", flush=True)
+        m = pipeline.finalize_case(c, raw_dir, out, calibrator, split_of[c], truth_metrics=metrics_ok(c))
+        extra = f" WT dice={m['dice_2mm']['WT']:.3f}" if "dice_2mm" in m else " (metrics withheld)"
+        print(f"[store] {c} split={m['split']}{extra} regions={m['n_regions']} {time.time() - t0:.1f}s", flush=True)
     return 0
 
 
