@@ -583,13 +583,23 @@ class OutsideVerifier:
             archived.append(cp)
             # Rekor is sharded: the global logIndex is NOT comparable with a checkpoint. Compare only within the
             # entry's own shard, using the shard-local index from its (verified) inclusion proof.
-            if entry.tree_id and cp.tree_id != entry.tree_id:
+            if not entry.tree_id or cp.tree_id != entry.tree_id:
                 problems.append(f"size {size}: the archived checkpoint is for tree {cp.tree_id!r}, the entry lives in tree {entry.tree_id!r}")
             elif entry.shard_index is None or cp.size <= entry.shard_index:
                 problems.append(f"size {size}: the archived checkpoint (size {cp.size}) predates its own entry (shard index {entry.shard_index})")
+            # the shard coordinates are REQUIRED in every record that names a Rekor entry
             for field, actual in (("rekor_tree_id", entry.tree_id), ("rekor_shard_index", entry.shard_index)):
-                if field in rec and rec[field] != actual:
+                if rec.get(field) in (None, ""):
+                    problems.append(f"size {size}: anchors.json record lacks {field}")
+                elif rec[field] != actual:
                     problems.append(f"size {size}: anchors.json {field} {rec[field]!r} differs from the log's {actual!r}")
+            # The tree size is the ANCHOR-TIME size (the log grows afterwards, so a fresh proof is larger): it must
+            # equal the size of the archived, log-signed checkpoint and cannot exceed what the log shows now.
+            ts = rec.get("rekor_tree_size")
+            if ts in (None, ""):
+                problems.append(f"size {size}: anchors.json record lacks rekor_tree_size")
+            elif ts != cp.size or (entry.tree_size is not None and ts > entry.tree_size):
+                problems.append(f"size {size}: anchors.json rekor_tree_size {ts!r} differs from the archived checkpoint size {cp.size} or exceeds the log's {entry.tree_size!r}")
         # every verified entry the run depends on needs its own archived view
         needed = {run.digest(s).hex() for s in required_sizes(n)}
         for r in good:

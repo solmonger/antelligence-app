@@ -213,3 +213,60 @@ def test_planned_run_with_missing_export_still_fails(sharded):
     (out / f"{board.run_id}.jsonl").unlink()
     report = OutsideVerifier(out, plan, rekor=lab.rekor, conditions={"R"}).verify()
     assert report["verdict"] == "failed" and any("has no export" in p for p in report["problems"])
+
+
+# -- fail-closed: stripped shard fields, unprefixed UUID, cross-tree checkpoint ---------------------------------------
+
+@pytest.mark.parametrize("field", ["rekor_tree_id", "rekor_shard_index", "rekor_tree_size"])
+def test_live_stripped_shard_field_fails(live, tmp_path, field):
+    d, client, records = live
+    d = copy.deepcopy(d)
+    del d["anchors"][0][field]
+    v, run = _verifier(tmp_path, d, client)
+    problems = []
+    v._split_view(run, records, client.log_key(), problems)
+    assert any(field in p and "lacks" in p for p in problems)
+
+
+def test_live_wrong_tree_size_fails(live, tmp_path):
+    d, client, records = live
+    d = copy.deepcopy(d)
+    d["anchors"][0]["rekor_tree_size"] += 1
+    v, run = _verifier(tmp_path, d, client)
+    problems = []
+    v._split_view(run, records, client.log_key(), problems)
+    assert any("rekor_tree_size" in p for p in problems)
+    d["anchors"][0]["rekor_tree_size"] = 10 ** 12                    # larger than the log has ever shown
+    v, run = _verifier(tmp_path, d, client)
+    problems = []
+    v._split_view(run, records, client.log_key(), problems)
+    assert any("rekor_tree_size" in p for p in problems)
+
+
+def test_unprefixed_uuid_with_cross_tree_checkpoint_fails(live):
+    d, client, records = live
+    r = copy.copy(records[0])
+    r.uuid = r.uuid[16:]                                      # 64 hex: no tree ID
+    r.inclusion_proof = dict(r.inclusion_proof)
+    r.inclusion_proof["checkpoint"] = r.inclusion_proof["checkpoint"].replace("1193050959916656506", "7")
+    problems = check_record(r, d["anchor_public_key_pem"].encode(), client.log_key())
+    assert any("no tree ID prefix" in p for p in problems) and problems
+
+
+def test_unprefixed_uuid_alone_fails(live):
+    d, client, records = live
+    r = copy.copy(records[0])
+    r.uuid = r.uuid[16:]
+    assert any("no tree ID prefix" in p for p in check_record(r, d["anchor_public_key_pem"].encode(), client.log_key()))
+
+
+def test_signer_fails_at_anchor_time_without_a_shard_proof(tmp_path):
+    from antelligence.anchoring.anchorer import Anchorer
+    from antelligence.anchoring.rekor import AnchorKey
+    log = mocks.MockRekor()
+    log.omit_proofs = True
+    a = Anchorer("r" * 64, {"R"}, tmp_path, rekor=RekorClient(log, pinned_log_key_sha256=log.log_key_sha256), anchor_key=AnchorKey())
+    rec = {}
+    with pytest.raises(RuntimeError):
+        a._rekor(rec, b"\x01" * 32)
+    assert rec == {}

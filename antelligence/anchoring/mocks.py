@@ -102,7 +102,7 @@ class MockOtsTransport:
 class MockRekor:
     """Append-only transparency log with ``hashedrekord`` signature checking and RFC 6962 proofs."""
 
-    def __init__(self, clock: Callable[[], float] = time.time, *, tree_id: Optional[int] = None,
+    def __init__(self, clock: Callable[[], float] = time.time, *, tree_id: int = 1,
                  global_offset: int = 0) -> None:
         """``tree_id`` / ``global_offset`` model the sharded public instance: UUIDs carry the tree ID as a
         16-hex prefix, the checkpoint origin names the tree, and the top-level ``logIndex`` is
@@ -117,7 +117,7 @@ class MockRekor:
         self.omit_proofs = False                                    # test switch: serve entries without proofs
 
     def _uuid(self, body: bytes) -> str:
-        prefix = f"{self.tree_id:016x}" if self.tree_id is not None else ""
+        prefix = f"{self.tree_id:016x}"
         return prefix + hashlib.sha256(b"\x00" + body).hexdigest()
 
     def create(self, proposed: Dict[str, Any]) -> Dict[str, Any]:
@@ -163,7 +163,7 @@ class MockRekor:
 
     @property
     def ORIGIN(self) -> str:
-        return f"mock-rekor - {self.tree_id if self.tree_id is not None else 1}"
+        return f"mock-rekor - {self.tree_id}"
 
     def _signed_note(self, size: int) -> str:
         root = merkle_root(self.bodies[:size])
@@ -174,7 +174,7 @@ class MockRekor:
     def log_info(self) -> Dict[str, Any]:
         self.requests += 1
         n = len(self.bodies)
-        return {"signedTreeHead": self._signed_note(n), "treeID": str(self.tree_id if self.tree_id is not None else 1), "treeSize": n,
+        return {"signedTreeHead": self._signed_note(n), "treeID": str(self.tree_id), "treeSize": n,
                 "rootHash": merkle_root(self.bodies[:n]).hex(), "inactiveShards": []}
 
     def consistency_proof(self, first_size: int, last_size: int, tree_id: str = "") -> List[str]:

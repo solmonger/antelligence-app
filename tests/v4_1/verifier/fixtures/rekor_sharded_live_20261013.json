@@ -7,7 +7,10 @@
    "rekor_checkpoint": "rekor.sigstore.dev - 1193050959916656506\n3123301898\nUGAAo9X3QSwFtt9jV96+p+xy3I75sZiDY+YomZ71lNA=\n\n\u2014 rekor.sigstore.dev wNI9ajBFAiAajv9mUOa3nMNyHirHXAlIHBUdZqMnuVF7ff1SX5chsgIhAJo6zk99PoNK4t0DXJJsRrzQ75//JMHX2lPQTlPlX/oH\n",
    "size": 50,
    "root": "03bd29a9450eaa1dbff703529d79a844d04de7a539ab44f5f4f8b420fe2a55b0",
-   "digest": "bc94d4536a2f8197a1c771e9de3a3a33afad6918ddfa8f31a80c04a229bd84e7"
+   "digest": "bc94d4536a2f8197a1c771e9de3a3a33afad6918ddfa8f31a80c04a229bd84e7",
+   "rekor_tree_id": "1193050959916656506",
+   "rekor_shard_index": 3123301896,
+   "rekor_tree_size": 3123301898
   },
   {
    "rekor_uuid": "108e9186e8c5677ae3586986075f194c8dbf6c1211d62ff478a2a601acd158fc10b487665ab1f3d6",
@@ -15,7 +18,10 @@
    "rekor_checkpoint": "rekor.sigstore.dev - 1193050959916656506\n3123304248\na8puXdaWtnAbUxuy0J9GWMdDm6SzYE8yhZj5UiclDeQ=\n\n\u2014 rekor.sigstore.dev wNI9ajBFAiAEC5FfKCMl42ld2UAHJTVKE73mZgU3s4xp0BEClRUPIwIhAJSoYalyUWtRgc0+BeowFQLAof+tqbOhLhhOksjg3tfx\n",
    "size": 100,
    "root": "4f5776a401de5154585618b0fbe39506b4c003c233a12a9ca647c66267c541c4",
-   "digest": "648f7631095784e316b3305d46b8d60ad9dc97157cbf8f530c199df6d15e5614"
+   "digest": "648f7631095784e316b3305d46b8d60ad9dc97157cbf8f530c199df6d15e5614",
+   "rekor_tree_id": "1193050959916656506",
+   "rekor_shard_index": 3123304247,
+   "rekor_tree_size": 3123304248
   },
   {
    "rekor_uuid": "108e9186e8c5677ac2ec5b0ccdcbb2803dcf49f223d40a44d25ba67db2c6411d70c6edb1991a00f6",
@@ -23,7 +29,10 @@
    "rekor_checkpoint": "rekor.sigstore.dev - 1193050959916656506\n3123305420\nF7wIIKfpO2niAUs00UEhZk7b/+wCzucPJDXTioElEcM=\n\n\u2014 rekor.sigstore.dev wNI9ajBGAiEA+jbaniaE/Y1XZQlfl5syESxMyaVuL7SKQdhYNWBPQI4CIQDMePviy9Kl/b9l+Q9Wk16NjnlLKkLLD1Dgwewsi/3OoA==\n",
    "size": 150,
    "root": "06c7f392de2f11bf6dede892e587292dc74863122e78114b3edc1e376ccba7bd",
-   "digest": "549a35dc5b92c400df4fd7cb231f97ffcfaaf0285d0083e1db493242189d1494"
+   "digest": "549a35dc5b92c400df4fd7cb231f97ffcfaaf0285d0083e1db493242189d1494",
+   "rekor_tree_id": "1193050959916656506",
+   "rekor_shard_index": 3123305415,
+   "rekor_tree_size": 3123305420
   },
   {
    "rekor_uuid": "108e9186e8c5677a22c8a10dee42566e3541a261cb4902f582dd3fea940886e69daf06f64f72b60b",
@@ -31,7 +40,10 @@
    "rekor_checkpoint": "rekor.sigstore.dev - 1193050959916656506\n3123306104\n/LBJHAbOtyh2LvbOWo//OnxK9139Lwom2sizSPJRYN0=\n\n\u2014 rekor.sigstore.dev wNI9ajBGAiEA/7MzbYYpw/qH+afMB8LcDSsHsO5wBZdMQWAB7uSa0OQCIQDgURsCXYb9nNNN2TSNXOo/JOWguww+2S5zufUvhBPCGA==\n",
    "size": 200,
    "root": "b9341f9f52061661b33fbd3a2e4809ddda78a24b1b7c939684909fe58d962a89",
-   "digest": "72a75e1659ff274f16fa79ad2950bcba735553d13ab59de9353b4b6253d4c0d7"
+   "digest": "72a75e1659ff274f16fa79ad2950bcba735553d13ab59de9353b4b6253d4c0d7",
+   "rekor_tree_id": "1193050959916656506",
+   "rekor_shard_index": 3123306101,
+   "rekor_tree_size": 3123306104
   },
   {
    "rekor_uuid": "108e9186e8c5677a1e0aa560160f32063c22cb654b829b3d883b967ec03c21fb8806514e5ccc40fa",
@@ -39,7 +51,10 @@
    "rekor_checkpoint": "rekor.sigstore.dev - 1193050959916656506\n3123307329\nQ6d17QqODXk4mnRN7o2mN31/nJyLVZqVCnrSgW1eTi4=\n\n\u2014 rekor.sigstore.dev wNI9ajBFAiBNkvvbX7RK/uopkfMfM+VauCqe62ndzMkFpc6vLW5CVQIhALnwp0MjfqQXF4BtjV9iAlU+AdiSoY4AGHVOd/4znX5O\n",
    "size": 250,
    "root": "917725da31c07ce1b791a03d3789223b5fa55276434bc5835b5581c9c5231ff7",
-   "digest": "5d38721439ac04150d052cfc79eeb65761cd25fc665c7b6a475a0bae8afe8807"
+   "digest": "5d38721439ac04150d052cfc79eeb65761cd25fc665c7b6a475a0bae8afe8807",
+   "rekor_tree_id": "1193050959916656506",
+   "rekor_shard_index": 3123307328,
+   "rekor_tree_size": 3123307329
   },
   {
    "rekor_uuid": "108e9186e8c5677a20c364e279ce79706b7f20ccdd2bde3d83d73728dc88a1be83b53beb1aea54b7",
@@ -47,7 +62,10 @@
    "rekor_checkpoint": "rekor.sigstore.dev - 1193050959916656506\n3123308187\njMCjee0zjHAzJMoeQQh73yN38OY/G8XIE7DPPU3DySo=\n\n\u2014 rekor.sigstore.dev wNI9ajBFAiBnUzwybVruoBPPqscflb240IFW3YXOhEVQt99qgoUl0AIhAK78/Pd189dvhPHBllIF4y66hsM+l8VwDyZo22eFFHj9\n",
    "size": 300,
    "root": "b63d9f76de4111075ab0220f23e20fddce8c629491fe2d47f9784620dae024ed",
-   "digest": "ca55cd8cb25c6e6ab0e11d2e00316d0eac2eb03b9368df7186e60049989b5120"
+   "digest": "ca55cd8cb25c6e6ab0e11d2e00316d0eac2eb03b9368df7186e60049989b5120",
+   "rekor_tree_id": "1193050959916656506",
+   "rekor_shard_index": 3123308184,
+   "rekor_tree_size": 3123308187
   },
   {
    "rekor_uuid": "108e9186e8c5677af3407b14f68ae7c5e5702d73ee78742c171f0632ea5f8b5939b15da8c8b345d8",
@@ -55,7 +73,10 @@
    "rekor_checkpoint": "rekor.sigstore.dev - 1193050959916656506\n3123309349\nhBYnPrJyofzHx7bPA8r/RehS61ijkw9P7Zf47rampmo=\n\n\u2014 rekor.sigstore.dev wNI9ajBGAiEA/hxkL2quVE5anP9AJLTOlRKFlYi3WZFbJbjqzwfsYK8CIQDIpvznockeruWGTOCiYDjQr2GiZ+1bFYiJXW/squFWsQ==\n",
    "size": 350,
    "root": "d466ccde14154d8dfbcae1d7a3c1b09b822273891168b9229e5660cef3481c61",
-   "digest": "b47a26971c03173c66a1d3380ed015ad02fbc24d93d479771fc1a08a6f2d1d0e"
+   "digest": "b47a26971c03173c66a1d3380ed015ad02fbc24d93d479771fc1a08a6f2d1d0e",
+   "rekor_tree_id": "1193050959916656506",
+   "rekor_shard_index": 3123309346,
+   "rekor_tree_size": 3123309349
   },
   {
    "rekor_uuid": "108e9186e8c5677a23f3e856407e166c26e6fc8391489d5d93770848d5b19dc1d8a7e2261b89e7fc",
@@ -63,7 +84,10 @@
    "rekor_checkpoint": "rekor.sigstore.dev - 1193050959916656506\n3123310215\nQYfZ6ti14HUKkGV4RlGwcO9HqmigQ0efLhUYdEEHqgY=\n\n\u2014 rekor.sigstore.dev wNI9ajBFAiARbFQTdp7V/0ai1ToaImbyk9Alm+IOjDHRvxWXS7pD5QIhAOIXa1L17gzaoKj1x2yZEe6PKW1VMb1WfcYJ6GBsXL7Q\n",
    "size": 400,
    "root": "9a5dcdb1adf43278c43afb4f360f76be0433dbd167fb25a34784ed39acbc3802",
-   "digest": "6d8b7a7a2369d78ecb266f4927f397e564a8929c4a50a3d7ebe1d422d71b8fd6"
+   "digest": "6d8b7a7a2369d78ecb266f4927f397e564a8929c4a50a3d7ebe1d422d71b8fd6",
+   "rekor_tree_id": "1193050959916656506",
+   "rekor_shard_index": 3123310214,
+   "rekor_tree_size": 3123310215
   },
   {
    "rekor_uuid": "108e9186e8c5677a1c6c109329f2da892b5d47f0c0dae1622053e0fd0f350fc3099ec9fd3e6740f9",
@@ -71,7 +95,10 @@
    "rekor_checkpoint": "rekor.sigstore.dev - 1193050959916656506\n3123311121\nIt9BQNnogwHKDMYoc+oOZGvBjaRS5S2pq8r8zZHxnic=\n\n\u2014 rekor.sigstore.dev wNI9ajBEAiAD5qm+0C3jBZNbii5vHeBOHDS0BdFK8nTngqI13JdgOAIgca9t+e2Deo2uuiks3e70J7vDtZXvxBeDZWQL/LZQBb0=\n",
    "size": 439,
    "root": "e97f40ac2708e87c56ad66cf91b70e2e3aca25d761240d3680dfece43c1cc56a",
-   "digest": "951752d931e0af8a7265b0e46de6ca51e9a516a9dcc7d3f755a9b8af2317430b"
+   "digest": "951752d931e0af8a7265b0e46de6ca51e9a516a9dcc7d3f755a9b8af2317430b",
+   "rekor_tree_id": "1193050959916656506",
+   "rekor_shard_index": 3123311110,
+   "rekor_tree_size": 3123311121
   }
  ],
  "entries": {

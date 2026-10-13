@@ -353,10 +353,16 @@ def _shard_problems(record: "RekorRecord", proof: Dict[str, Any]) -> List[str]:
     except RekorError:
         return out                       # already reported by _checkpoint_problems
     uuid_tree = record.tree_id
+    if not uuid_tree:
+        out.append("entry UUID carries no tree ID prefix (not 80 hex): a shard cannot be matched")
+    if not cp.tree_id:
+        out.append("checkpoint origin names no tree ID: a shard cannot be matched")
     if uuid_tree and cp.tree_id and uuid_tree != cp.tree_id:
         out.append(f"entry UUID names tree {uuid_tree} but its checkpoint is for tree {cp.tree_id}")
-    idx = record.shard_index
-    if idx is None or idx < 0 or idx >= cp.size:
+    idx, size = record.shard_index, record.tree_size
+    if idx is None:
+        out.append("inclusion proof carries no shard-local index")
+    elif idx < 0 or idx >= cp.size or (size is not None and idx >= size):
         out.append("shard-local index lies outside the checkpoint's tree")
     return out
 
