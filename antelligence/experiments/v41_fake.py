@@ -83,6 +83,9 @@ def build_fake_queen() -> FakeProvider:
 class NullRouter:
     """Phase 0 bootstrap router: every decision goes to ``target`` (Qwen3.5-9B drives). No fitted state."""
 
+    kind = "none"
+    sha256 = None
+
     def __init__(self, models: Sequence[str] = ROUTER_MODELS, target: str = Q9) -> None:
         self.models, self.target = tuple(models), target
 
@@ -113,7 +116,9 @@ def fake_bootstrap(bonsai: bool = False):
     rows = [TrainRow(list(rng.random(len(FEATURE_NAMES))), models[i % len(models)]) for i in range(30)]
     per = {q: {"alpha": 0.2, "qhat": 0.45, "n": 0, "dev_defer_rate": 0.2, "on_target": True}
            for q in ("target", "release", "amount")}
-    return KNNRouter.fit(rows, models, 5), ConformalThresholds("SW-Bonsai" if bonsai else "SW-B", target, per, 0.2, 0.2, True)
+    router = KNNRouter.fit(rows, models, 5)
+    router.kind = "fake"
+    return router, ConformalThresholds("SW-Bonsai" if bonsai else "SW-B", target, per, 0.2, 0.2, True)
 
 
 class MockPostMode:

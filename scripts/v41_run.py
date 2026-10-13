@@ -172,7 +172,7 @@ def build_harness(args: argparse.Namespace, get_env: Callable[[str], Optional[st
         look_temperature=args.look_temperature, anchorer_factory=anchorer_factory,
         post_mode_factory=post_mode_factory, reputation_client=reputation_client,
         allow_unanchored=args.allow_unanchored, outbox=ProvenanceOutbox(str(out / "outbox.sqlite")),
-        keys=KeyVault(args.ledger_dir), out_dir=out, code_sha=_git_sha(), hardware=cfg.get("hardware") or ({"d1": "L40S", "qwen3.5-9b": "L40S", "qwen3.5-4b": "L40S", "bonsai-8b": "Mac"} if live_backends else None)
+        backends_kind=args.backends if args.backends in ("live", "fake") else "config", keys=KeyVault(args.ledger_dir), out_dir=out, code_sha=_git_sha(), hardware=cfg.get("hardware") or ({"d1": "L40S", "qwen3.5-9b": "L40S", "qwen3.5-4b": "L40S", "bonsai-8b": "Mac"} if live_backends else None)
         or ({n: "fake" for n in ("d1", "qwen3.5-9b", "qwen3.5-4b", "bonsai-8b", "fw")} if fake_backends else None))
 
 
@@ -202,7 +202,8 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
         if isinstance(res, BaseException):
             failed += 1
             print(f"FAILED {arm} {case} {seed}: {scrub(f'{type(res).__name__}: {res}')}", file=sys.stderr)
-            cell: Any = error_cell(arm, case, seed, _split_of(args, case), res)
+            cell: Any = error_cell(arm, case, seed, _split_of(args, case), res,
+                              backends_kind=h.backends_kind, router_kind=h.router_kind)
         else:
             cell = res.cell
             print(f"{arm} {case} seed {seed}: coverage {cell['coverage']:.3f} off-target {cell['off_target']:.3f} "

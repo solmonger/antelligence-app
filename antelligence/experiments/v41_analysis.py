@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 import numpy as np
 from scipy import stats as sps
 
+from antelligence.experiments import v41_cells
 from antelligence.experiments.v4_metrics import mean
 
 POINT = 0.01
@@ -291,10 +292,26 @@ def live_check(dev_cells: Sequence[Mapping[str, Any]], arm: str = P1_TREATMENT) 
 # --- driver ------------------------------------------------------------------
 
 
+class IsolationError(ValueError):
+    """Cells from a fake backend, a non-live backend or a bootstrap router reached an evaluation analysis."""
+
+
 def analyze(cells: Sequence[Mapping[str, Any]], split: Optional[str] = "eval",
-            latency: Optional[Mapping[str, float]] = None) -> Dict[str, Any]:
-    """Full results.json payload. Hypothesis tests use ``split`` cells; power, perception ECE and the live check use dev cells."""
+            latency: Optional[Mapping[str, float]] = None, *, allow_fake: bool = False) -> Dict[str, Any]:
+    """Full results.json payload. Hypothesis tests use ``split`` cells; power, perception ECE and the live check use dev cells.
+
+    Evaluation (``split == "eval"``) is strict: every eval cell must be backends_kind "live", router_kind "frozen" and carry
+    no fake identity, else :class:`IsolationError`. The dev cells that feed power and the live check may be Phase 0
+    calibration cells (router_kind "none") but never fake. Any other ``split`` is the explicit development / calibration
+    path; fake cells are read only with ``allow_fake=True`` there, never for evaluation."""
     scoped, dev = usable(cells, split), usable(cells, "dev")
+    if split == "eval":
+        bad = (v41_cells.isolation_problems(scoped) +
+               v41_cells.isolation_problems([c for c in dev if c.get("split") != "eval"], allow_router_none=True))
+    else:
+        bad = v41_cells.isolation_problems(scoped, allow_router_none=True, allow_fake=allow_fake)
+    if bad:
+        raise IsolationError("cells refused for analysis:\n" + "\n".join(bad[:20]))
     r1 = p1(scoped)
     counts: Dict[str, int] = defaultdict(int)
     for c in scoped:

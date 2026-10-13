@@ -425,7 +425,7 @@ class V41Harness:
                  allow_unanchored: bool = False, post_mode_factory: Optional[Callable[[], Any]] = None,
                  reputation_client: Any = None, outbox: Any = None, keys: Optional[KeyVault] = None,
                  out_dir: Optional[Union[str, Path]] = None, code_sha: str = "0" * 40,
-                 hardware: Optional[Mapping[str, str]] = None,
+                 hardware: Optional[Mapping[str, str]] = None, backends_kind: str = "config",
                  perception_stats: Optional[Callable[[str], Mapping[str, float]]] = None,
                  clock: Callable[[], float] = time.perf_counter) -> None:
         self.load_case, self.gate = load_case, gate
@@ -444,7 +444,35 @@ class V41Harness:
         self.outbox, self.keys = outbox, keys or KeyVault()
         self.out_dir = Path(out_dir) if out_dir is not None else None
         self.code_sha, self.hardware = code_sha, dict(hardware or {})
+        if backends_kind not in v41_cells.BACKENDS_KINDS:
+            raise HarnessError(f"backends_kind must be one of {v41_cells.BACKENDS_KINDS}, got {backends_kind!r}")
+        self.backends_kind = backends_kind
         self.perception_stats, self.clock = perception_stats, clock
+
+    @staticmethod
+    def _router_kind(router: Any) -> str:
+        return "none" if router is None else str(getattr(router, "kind", "frozen"))
+
+    @property
+    def router_kind(self) -> str:
+        """frozen | none | fake for this harness's router (the Bonsai arm's router must agree)."""
+        kinds = {self._router_kind(r) for r in (self.router, self.bonsai_router) if r is not None}
+        if not kinds:
+            return "none"
+        return kinds.pop() if len(kinds) == 1 else ("fake" if "fake" in kinds else "none")
+
+    def _check_isolation(self, split: str) -> None:
+        """Fake backends and bootstrap/fake routers are for development cases only (goal 5 step 7). Raised before anything
+        is loaded or called, and independent of the gate: a present prereg, receipt and G1 file do not lift it."""
+        if split == "dev":
+            return
+        problems = []
+        if self.backends_kind == "fake":
+            problems.append("fake backends")
+        if self.router_kind in ("none", "fake"):
+            problems.append(f"router {self.router_kind!r}")
+        if problems:
+            raise HarnessError(f"{' and '.join(problems)} refused on a {split} case: development cases only")
 
     # ---- public --------------------------------------------------------------------------------
 
@@ -457,6 +485,7 @@ class V41Harness:
         split = self.gate(case)
         if split not in ("dev", "eval"):
             raise HarnessError(f"gate returned {split!r}")
+        self._check_isolation(split)
         if calibration and (spec.name not in CALIBRATION_ARMS or split != "dev"):
             raise HarnessError("calibration mode is for SW-B and SW-noBoard on development cases only")
         if spec.kind in ("workers", "fw"):
@@ -990,6 +1019,17 @@ class V41Harness:
 
     # ---- finishing -------------------------------------------------------------------------------------
 
+    def _router_sha(self, spec: ArmSpec) -> Optional[str]:
+        router = self.bonsai_router if spec.bonsai else self.router
+        if self.router_kind != "frozen" or router is None:
+            return None
+        return str(router.sha256)
+
+    @staticmethod
+    def _identities(ctx: "_Ctx") -> Optional[str]:
+        ids = sorted({str((r.get("identity") or {}).get("served_model") or "none") for r in ctx.log})
+        return ",".join(ids) if ids else None
+
     def _finish(self, ctx: _Ctx, t0: float, marks: Mapping[str, Any]) -> EpisodeResult:
         metrics: Dict[str, Any] = marks["metrics"]
         board = ctx.board
@@ -1040,6 +1080,8 @@ class V41Harness:
             "uncited_decisions": sum(1 for r in ctx.log if not r["cited_ids"]),
             "perception_dice": stats.get("perception_dice"), "locallook_ece": stats.get("locallook_ece"),
             "truth_outside_crop": float(metrics["truth_share_outside_crop"]),
+            "backends_kind": self.backends_kind, "router_kind": self.router_kind,
+            "router_sha256": self._router_sha(ctx.spec), "identities": self._identities(ctx),
         }
         problems = v41_cells.validate_cell(cell)
         if problems:
@@ -1057,6 +1099,7 @@ class V41Harness:
             "shared_store": shared, "calibration": ctx.calibration, "variant": spec.variant,
             "alarms": ctx.alarm_count, "dropped_cites": ctx.dropped_cites,
             "identities": sorted({str((r.get("identity") or {}).get("served_model") or "none") for r in ctx.log}),
+            "backends_kind": self.backends_kind, "router_kind": self.router_kind,
             "reputation": dict(ctx.reputation.score) if ctx.reputation else {}, "d_timeouts": ctx.d_timeouts,
             "errors": [scrub(e) for e in list(ctx.errors) + ([f"{e['mode']}: {e['error']}" for e in ctx.anchorer.errors] if ctx.anchorer else [])]}
         bundle = self._bundle(ctx, cell, metrics, trace_hash, board if shared else None, anchors)
@@ -1105,8 +1148,10 @@ def append_cell(path: Union[str, Path], cell: Mapping[str, Any]) -> None:
         handle.write(json.dumps(dict(cell), sort_keys=True) + "\n")
 
 
-def error_cell(arm: str, case: str, seed: int, split: str, error: BaseException) -> Dict[str, Any]:
+def error_cell(arm: str, case: str, seed: int, split: str, error: BaseException, *,
+               backends_kind: Optional[str] = None, router_kind: Optional[str] = None) -> Dict[str, Any]:
     """A failed run's cell: required fields zeroed or null, plus ``error`` (the analysis excludes it)."""
     cell: Dict[str, Any] = {f.name: (None if f.nullable else (0 if f.kind == "int" else 0.0)) for f in v41_cells.FIELDS}
-    cell.update(run_id="0" * 64, arm=arm, case=case, seed=seed, split=split, error=scrub(f"{type(error).__name__}: {error}")[:300])
+    cell.update(run_id="0" * 64, arm=arm, case=case, seed=seed, split=split, backends_kind=backends_kind,
+                router_kind=router_kind, error=scrub(f"{type(error).__name__}: {error}")[:300])
     return cell

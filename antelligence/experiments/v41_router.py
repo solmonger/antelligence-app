@@ -113,6 +113,8 @@ def make_rows(samples: Sequence[Tuple[Sequence[float], Mapping[str, Mapping[str,
 
 
 class KNNRouter:
+    kind = "frozen"      # fake_bootstrap marks its instance "fake"; NullRouter says "none" (isolation: v41_cells.isolation_problems)
+
     def __init__(self, models: Sequence[str], k: int, mean: np.ndarray, std: np.ndarray, x: np.ndarray,
                  y: Sequence[int]) -> None:
         self.models, self.k = tuple(models), int(k)

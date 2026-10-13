@@ -171,3 +171,119 @@ def test_mock_reputation_client_is_idempotent():
     c.enqueue_report("r", "a" * 64, "c" * 64, True)
     c.enqueue_report("r", "a" * 64, "c" * 64, False)
     assert c.reports == {("r", "a" * 64, "c" * 64): True}
+
+
+# --- fake isolation (reviewer requirement) --------------------------------------------------------------------------
+
+from antelligence.experiments.v41_analysis import IsolationError, analyze  # noqa: E402
+from antelligence.experiments.v41_harness import GateConfig, HarnessError, make_gate  # noqa: E402
+from tests.v4_1.analysis.conftest import make_cell, synth  # noqa: E402
+from tests.v4_1.analysis.test_split_gate import _commit, world  # noqa: E402,F401
+
+
+def _locked_rig(tmp_path, w, **kw):
+    """A harness whose gate is the real one with a committed prereg, confirmed receipt and G1 file: eval is OPEN."""
+    _commit(w)
+    gate = make_gate(GateConfig(w["repo"], w["prereg"], w["receipt"], w["g1"]))
+    return build_rig(tmp_path, gate=gate, **kw)
+
+
+def test_eval_case_runs_with_live_style_harness_when_the_lock_is_present(tmp_path, world):  # noqa: F811
+    eval_case = world["doc"]["eval"][0]
+    res = run(_locked_rig(tmp_path, world, backends_kind="live"), "SW-B", case=eval_case)
+    c = res.cell
+    assert (c["backends_kind"], c["router_kind"]) == ("live", "frozen") and len(c["router_sha256"]) == 64
+    assert v41_cells.validate_cell(c) == []
+    assert json.loads((Path(res.run_dir) / "run_log.json").read_text())["router_kind"] == "frozen"
+
+
+def test_fake_backends_refused_on_eval_even_with_lock_files(tmp_path, world):  # noqa: F811
+    rig = _locked_rig(tmp_path, world, backends_kind="fake")
+    with pytest.raises(HarnessError, match="fake backends"):
+        run(rig, "SW-B", case=world["doc"]["eval"][0])
+    with pytest.raises(HarnessError, match="fake backends"):
+        run(rig, "S", case=world["doc"]["eval"][0])
+    assert run(rig, "SW-B", case=world["doc"]["dev_a"][0]).cell["backends_kind"] == "fake"
+
+
+@pytest.mark.parametrize("kind", ["none", "fake"])
+def test_bootstrap_and_fake_routers_refused_on_eval_allowed_on_dev(tmp_path, world, kind):  # noqa: F811
+    rig = _locked_rig(tmp_path, world, backends_kind="live")
+    router, thr = v41_fake.null_bootstrap() if kind == "none" else v41_fake.fake_bootstrap()
+    rig.harness.router, rig.harness.thresholds = router, thr
+    with pytest.raises(HarnessError, match=f"router '{kind}'"):
+        run(rig, "SW-B", case=world["doc"]["eval"][0])
+    dev = run(rig, "SW-B", case=world["doc"]["dev_a"][0])
+    assert dev.cell["router_kind"] == kind and dev.cell["router_sha256"] is None
+    assert v41_cells.validate_cell(dev.cell) == []
+
+
+def test_cli_fake_flags_are_refused_on_a_non_dev_case(tmp_path):
+    mod = script("v41_run")
+    (tmp_path / "w.yaml").write_text(json.dumps(_phantom_world().to_dict()))
+    cells = tmp_path / "c.jsonl"
+    code = mod.main(["--backends", "fake", "--anchors", "mock", "--router", "none", "--out-dir", str(tmp_path / "o"),
+                     "--cells", str(cells), "--loader", f"{__name__}:phantom_loader", "--world-yaml", str(tmp_path / "w.yaml"),
+                     "--run", "SW-B:BRATS_001:1"])      # not in the committed split: counts as non-dev
+    row = json.loads(cells.read_text())
+    assert code == 1 and "error" in row and row["backends_kind"] == "fake"
+
+
+def test_validator_rules_for_kinds():
+    ok = make_cell("SW-B", "C1", 1, 0.5)
+    assert v41_cells.validate_cell(ok) == []
+    assert v41_cells.validate_cell({**ok, "backends_kind": "mock"})
+    assert v41_cells.validate_cell({**ok, "router_sha256": None})                       # frozen needs a hash
+    assert v41_cells.validate_cell({**ok, "router_kind": "none", "router_sha256": "a" * 64})
+
+
+def _with(cells, i, **kw):
+    cells = list(cells)
+    cells[i] = {**cells[i], **kw}
+    return cells
+
+
+@pytest.mark.parametrize("bad", [dict(backends_kind="fake"), dict(backends_kind="config"), dict(router_kind="none", router_sha256=None),
+                                 dict(router_kind="fake", router_sha256=None), dict(identities="fake"),
+                                 dict(identities="d1,fake"), dict(backends_kind=None)])
+def test_eval_analysis_rejects_non_live_cells(bad):
+    cells = synth(n_cases=12, seeds=1)
+    assert analyze(cells)["n_cells"] == len(cells)
+    with pytest.raises(IsolationError):
+        analyze(_with(cells, 3, **bad))
+
+
+def test_eval_analysis_rejects_fake_dev_cells_but_accepts_calibration_dev_cells():
+    ev = synth(n_cases=12, seeds=1)
+    dev = synth(n_cases=12, seeds=1, split="dev")
+    boot = [{**c, "router_kind": "none", "router_sha256": None} for c in dev]          # Phase 0 calibration cells
+    assert analyze(ev + boot)["n_cells"] == len(ev)
+    with pytest.raises(IsolationError):
+        analyze(ev + _with(dev, 0, backends_kind="fake"))
+
+
+def test_dev_path_reads_router_none_and_fake_only_when_asked():
+    dev = synth(n_cases=12, seeds=1, split="dev")
+    boot = [{**c, "router_kind": "none", "router_sha256": None} for c in dev]
+    assert analyze(boot, split="dev")["n_cells"] == len(boot)
+    fake = [{**c, "backends_kind": "fake", "router_kind": "fake", "router_sha256": None, "identities": "fake"} for c in dev]
+    with pytest.raises(IsolationError):
+        analyze(fake, split="dev")
+    assert analyze(fake, split="dev", allow_fake=True)["n_cells"] == len(fake)
+    with pytest.raises(IsolationError):
+        analyze([{**c, "split": "eval"} for c in fake], split="eval", allow_fake=True)
+
+
+def test_fake_dry_run_cells_carry_fake_stamps_and_are_rejected_by_eval_analysis(tmp_path):
+    mod = script("v41_run")
+    (tmp_path / "w.yaml").write_text(json.dumps(_phantom_world().to_dict()))
+    cells = tmp_path / "c.jsonl"
+    mod.main(["--backends", "fake", "--anchors", "mock", "--router", "none", "--out-dir", str(tmp_path / "o"), "--cells", str(cells),
+              "--loader", f"{__name__}:phantom_loader", "--world-yaml", str(tmp_path / "w.yaml"),
+              "--run", f"SW-B:{DEV_CASE}:1", "--run", f"S:{DEV_CASE}:1"])
+    rows = [json.loads(l) for l in cells.read_text().splitlines()]
+    assert {r["backends_kind"] for r in rows} == {"fake"} and {r["router_kind"] for r in rows} == {"none"}
+    assert rows[0]["identities"] == "fake" and rows[1]["identities"] is None
+    assert v41_cells.isolation_problems(rows, allow_router_none=True)       # fake is never accepted unless asked
+    with pytest.raises(IsolationError):
+        analyze([{**r, "split": "eval"} for r in rows])

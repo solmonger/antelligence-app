@@ -44,6 +44,10 @@ the same seeds, so a single-seed arm (FW, SW-D, ...) is paired with SW-B on the 
 | `perception_dice` | fraction [0,1] | yes | perception Dice against the truth mask; null if not measured |
 | `locallook_ece` | fraction [0,1] | yes | d1 local-look ECE; null if not measured |
 | `truth_outside_crop` | fraction [0,1] | yes | share of truth tumour voxels outside the perception crop |
+| `backends_kind` | `live` / `config` / `fake` | yes | where worker answers came from; evaluation analysis accepts only `live` (null only on error cells) |
+| `router_kind` | `frozen` / `none` / `fake` | yes | evaluation analysis accepts only `frozen`; `none` is the Phase 0 bootstrap (development only) |
+| `router_sha256` | hex64 | yes | sha256 of the frozen router; null unless `router_kind` is `frozen` |
+| `identities` | comma list | yes | served-model identities seen in the run; `fake` marks fake backends and is rejected for analysis; null for scripted arms |
 
 ## Secondary outcomes S1 to S12 (goal section 7)
 
