@@ -27,7 +27,10 @@ FIELDS: Tuple[Field, ...] = (
     Field("wall_s", "float", False, "wall time of the run, seconds"),
     Field("ticks_to_50", "int", True, "first tick at which absolute coverage reaches 0.5 (goal 4.7); null = never reached"),
     Field("seconds_to_50", "float", True, "wall seconds until 50% of the final score; null = never reached"),
-    Field("queen_calls", "int", False, "queen model calls"),
+    Field("queen_calls", "int", False, "queen model calls (provider-outage retries of one call are not counted again)"),
+    Field("queen_fallbacks_provider", "int", False, "queen steps that fell back to the S-rule because the provider failed for a reason other than an outage (outages are waited out, never a fallback); a run with any is invalid for fits and the sandbox"),
+    Field("queen_fallbacks_invalid_reply", "int", False, "queen steps that fell back because the reply was invalid (parse, schema, length or over the output cap)"),
+    Field("queen_fallbacks_cap", "int", False, "queen steps that fell back because the per-run call cap or a budget was spent"),
     Field("board_size", "int", False, "entries on the board at run end"),
     Field("anchors", "int", False, "anchor points posted (INTERFACES 3)"),
     Field("visibility_latency_ms", "int", True, "mode D: write to visible latency; null outside mode D"),
@@ -63,6 +66,7 @@ FIELDS: Tuple[Field, ...] = (
     Field("identities", "str", True, "comma-joined served-model identities seen in the run; 'fake' marks fake backends; null for scripted arms"),
 )
 FIELD_NAMES = tuple(f.name for f in FIELDS)
+QUEEN_FALLBACK_FIELDS = ("queen_fallbacks_provider", "queen_fallbacks_invalid_reply", "queen_fallbacks_cap")
 _OPTIONAL = {"error"}
 BACKENDS_KINDS = ("live", "config", "fake")
 ROUTER_KINDS = ("frozen", "none", "fake")

@@ -14,6 +14,14 @@ requests free). The queen sees aggregates only (per-arm mean coverage, router an
 Every edit is an ``edit`` board entry on a sandbox board, anchored with the run's anchorer (``--anchors mock`` per
 decisions/2026-10-13-calibration-runs-mock-anchors). Nothing is promoted: the output lists candidate edits for G1.
 Every queen call goes through the usage ledger and the Nous $7.50 stop; the projected cost is printed first.
+
+Queen outages (decision 2026-10-13, mistake-2039): the in-episode queen and the proposer wait out a provider outage
+(HTTP 401/429/5xx, transport errors) with backoff, up to ``--queen-max-wait-s`` (default 600), and resend the same request.
+Past that the sandbox stops (status ``aborted_queen_unavailable``, no new episode starts, in-flight ones finish or error)
+and exits **75** (EX_TEMPFAIL); rerun later and the results cache resumes it. An episode whose queen fell back because the
+provider failed (``queen_fallbacks.provider > 0``) is never stored in the results cache and aborts the sandbox as an error;
+``scripts/v41_purge_provider_fallbacks.py <work_dir>`` removes such rows from older caches.
+Exit codes: 0 complete; 2 projected cost over the Nous headroom; 3 aborted (budget or error); 75 queen provider unavailable.
 """
 from __future__ import annotations
 
@@ -35,7 +43,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import v41_run  # noqa: E402  (scripts/v41_run.py: backend, router and mock-anchor wiring)
 from antelligence.experiments import v41_budget, v41_prod, v4_budget  # noqa: E402
 from antelligence.experiments.v4_wiring import NOUS_EXTRA  # noqa: E402
-from antelligence.experiments.v41_harness import QUEEN_MODEL, HarnessError, V41Harness, _HookedBoard  # noqa: E402
+from antelligence.experiments.v41_harness import (QUEEN_MODEL, EpisodeNotStarted, HarnessError, V41Harness,  # noqa: E402
+                                                  _HookedBoard)
 from antelligence.experiments.v41_sandbox import (ARMS, DEV_A_SIZE, DEV_B_SIZE, MAX_ROUNDS, EvalResult, llm_proposer,  # noqa: E402
                                                   run_sandbox)
 from antelligence.experiments.v41_split import load_split  # noqa: E402
@@ -43,12 +52,17 @@ from antelligence.kernel.canonical import canonical_json  # noqa: E402
 from antelligence.kernel.decision import DecisionAbort  # noqa: E402
 from antelligence.kernel.policies.v41_harness import harness_sha256, load_allowed_keys, load_harness  # noqa: E402
 from antelligence.providers.ledger import PRICES  # noqa: E402
+from antelligence.providers.outage import DEFAULT_MAX_WAIT_S, EXIT_QUEEN_UNAVAILABLE, OutagePolicy, QueenUnavailable  # noqa: E402
 from antelligence.providers.redact import scrub  # noqa: E402
 
 SEED = 1
 QUEEN_CALLS_PER_EPISODE = 6          # goal 4.6 cap per run, re-plans included
 STAT_KEYS = ("defer_rate", "router_top_share", "off_target", "decision_error_share", "queen_calls", "alarms")
 DEFAULT_OUT = "docs/research/v4.1-20261013/phase0/sandbox.json"
+
+
+class ProviderFallbackError(HarnessError):
+    """An episode's queen fell back to the S-rule because the provider failed; it must not enter the results cache."""
 
 
 class DevOnlyError(HarnessError):
@@ -89,6 +103,7 @@ class ResultsCache:
         self._rows: Dict[Tuple[str, str, str, int], Dict[str, Any]] = {}
         self.hits = 0
         self.runs = 0
+        self.fallbacks = {"provider": 0, "invalid_reply": 0, "cap": 0}   # queen fallbacks of the episodes run this session
         if path is not None and path.exists():
             for line in path.read_text(encoding="utf-8").splitlines():
                 if line.strip():
@@ -99,14 +114,30 @@ class ResultsCache:
     def get(self, sha: str, arm: str, case: str, seed: int) -> Optional[Dict[str, Any]]:
         return self._rows.get((sha, arm, case, seed))
 
-    def put(self, sha: str, arm: str, case: str, seed: int, coverage: float, stats: Mapping[str, float]) -> None:
+    def put(self, sha: str, arm: str, case: str, seed: int, coverage: float, stats: Mapping[str, float], *,
+            queen_fallbacks: Optional[Mapping[str, int]] = None, run_id: Optional[str] = None) -> None:
+        """Store one episode. Refused (``ProviderFallbackError``) when its queen fell back because the provider failed:
+        such an episode is invalid for the keep rule and must be rerun, never cached."""
+        if queen_fallbacks and int(queen_fallbacks.get("provider", 0)) > 0:
+            raise ProviderFallbackError(f"{arm} {case}: {queen_fallbacks['provider']} provider-caused queen fallback(s); "
+                                        "not cached (mistake-2039)")
         row = {"harness": sha, "arm": arm, "case": case, "seed": seed, "coverage": coverage, "stats": dict(stats),
                "ctx": self.context}
+        if queen_fallbacks is not None:
+            row["queen_fallbacks"] = {k: int(v) for k, v in queen_fallbacks.items()}
+            for k in self.fallbacks:
+                self.fallbacks[k] += int(queen_fallbacks.get(k, 0))
+        if run_id is not None:
+            row["run_id"] = run_id
         self._rows[(sha, arm, case, seed)] = row
         if self.path is not None:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             with self.path.open("a", encoding="utf-8") as f:
                 f.write(json.dumps(row, sort_keys=True) + "\n")
+
+
+def _cell_fallbacks(cell: Mapping[str, Any]) -> Dict[str, int]:
+    return {c: int(cell.get(f"queen_fallbacks_{c}") or 0) for c in ("provider", "invalid_reply", "cap")}
 
 
 def _cell_stats(cell: Mapping[str, Any]) -> Dict[str, float]:
@@ -158,14 +189,27 @@ def make_evaluate(h: V41Harness, cache: ResultsCache, loop: EventLoop, allowed_c
             h.promoted_harness = dict(harness_cfg)       # SW-B / SW-noBoard run the promoted harness (not calibration)
             results = loop.run(h.run_many([(arm, c, seed) for c in todo], concurrency=concurrency))
             failed = []
+            abort: Optional[DecisionAbort] = None
             for case, res in zip(todo, results):
+                if isinstance(res, EpisodeNotStarted):
+                    continue                      # the batch stopped on a queen outage; the abort below says why
                 if isinstance(res, DecisionAbort):
-                    raise res
+                    # QueenUnavailable first: it is the reason the batch stopped, a budget stop is the next most useful
+                    if abort is None or (isinstance(res, QueenUnavailable) and not isinstance(abort, QueenUnavailable)):
+                        abort = res
+                    continue
                 if isinstance(res, BaseException):
                     failed.append(f"{case}: {type(res).__name__}: {res}")
                     continue
-                cache.put(sha, arm, case, seed, float(res.cell["coverage"]), _cell_stats(res.cell))
+                fallbacks = _cell_fallbacks(res.cell)
+                if fallbacks["provider"]:
+                    failed.append(f"{case}: {fallbacks['provider']} provider-caused queen fallback(s), not cached")
+                    continue
+                cache.put(sha, arm, case, seed, float(res.cell["coverage"]), _cell_stats(res.cell),
+                          queen_fallbacks=fallbacks, run_id=res.cell.get("run_id"))
                 cache.runs += 1
+            if abort is not None:
+                raise abort                       # finished episodes are already in the results cache; rerun resumes
             if failed:
                 raise HarnessError(scrub(f"{len(failed)} sandbox episode(s) failed under {arm}: " + "; ".join(failed[:3])))
         rows = [cache.get(sha, arm, c, seed) for c in case_ids]
@@ -284,6 +328,9 @@ def parser() -> argparse.ArgumentParser:
     ap.add_argument("--pod-costs", default=str(v41_prod.POD_COSTS))
     ap.add_argument("--reply-cache", default=str(v41_prod.CACHE_DIR))
     ap.add_argument("--repo-root", default=str(REPO))
+    ap.add_argument("--queen-max-wait-s", type=float, default=DEFAULT_MAX_WAIT_S,
+                    help=f"longest total wait for the queen provider to come back, per queen or proposer call (default "
+                         f"{DEFAULT_MAX_WAIT_S:.0f}); past it the sandbox stops and exits {EXIT_QUEEN_UNAVAILABLE}")
     ap.add_argument("--dry-projection", action="store_true", help="print the projected cost and exit")
     return ap
 
@@ -321,7 +368,8 @@ def _run_args(args: argparse.Namespace, work: Path, dev_a: Sequence[str]) -> arg
     argv = ["--backends", args.backends, "--anchors", "mock", "--router", args.router, "--thresholds", args.thresholds,
             "--out-dir", str(work), "--concurrency", str(args.concurrency), "--world-yaml", args.world_yaml,
             "--pod-state", args.pod_state, "--bonsai-url", args.bonsai_url, "--usage-ledger", args.usage_ledger,
-            "--pod-costs", args.pod_costs, "--reply-cache", args.reply_cache, "--repo-root", args.repo_root]
+            "--pod-costs", args.pod_costs, "--reply-cache", args.reply_cache, "--repo-root", args.repo_root,
+            "--queen-max-wait-s", str(args.queen_max_wait_s)]
     if args.loader:
         argv += ["--loader", args.loader]
     if args.cases_root:
@@ -385,7 +433,8 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
     evaluate = make_evaluate(h, cache, loop, [*dev_a, *dev_b], seed=args.seed, concurrency=args.concurrency)
     if proposer is None:
         if paid:
-            proposer = llm_proposer(h.queen_provider, QUEEN_MODEL, thinking_params=NOUS_EXTRA, run=loop.run)
+            proposer = llm_proposer(h.queen_provider, QUEEN_MODEL, thinking_params=NOUS_EXTRA, run=loop.run,
+                                    outage=OutagePolicy(max_wait_s=args.queen_max_wait_s))
         else:
             proposer = fake_proposer()
     status, error = "complete", None
@@ -394,6 +443,8 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
     try:
         result = run_sandbox(board, base, allowed_keys, dev_a, dev_b, evaluate, proposer, max_rounds=args.rounds,
                              on_round=partial.append)
+    except QueenUnavailable as exc:        # the queen provider stayed down past the max wait: not a budget stop, not a fallback
+        status, error = "aborted_queen_unavailable", scrub(str(exc))
     except DecisionAbort as exc:           # the Nous stop: results so far are in the results cache, rerun to resume
         status, error = "aborted_budget", scrub(str(exc))
     except Exception as exc:               # any other failure: keep what finished, say why
@@ -414,7 +465,7 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
         "dev_a": dev_a, "dev_b": dev_b, "queen_model": QUEEN_MODEL, "queen_extra_body": NOUS_EXTRA,
         "projection": projection, "base_harness_sha256": base_sha,
         "board": {"run_id": board.run_id, "entries": board.size(), "anchors": anchors},
-        "episodes_run": cache.runs, "results_cache_hits": cache.hits,
+        "episodes_run": cache.runs, "results_cache_hits": cache.hits, "queen_fallbacks": dict(cache.fallbacks),
         "promotion": "Nothing is promoted automatically. promotion_candidates are the candidate edits for G1; the lead approves.",
     }
     if result is not None:
@@ -433,7 +484,12 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n", encoding="utf-8")
     print(f"sandbox {status}: {len(doc.get('rounds', []))} round(s), {cache.runs} episodes run, {cache.hits} cache hits, "
-          f"{len(doc.get('promotion_candidates', []))} candidate edit(s) -> {out}")
+          f"{len(doc.get('promotion_candidates', []))} candidate edit(s); queen fallbacks provider {cache.fallbacks['provider']} "
+          f"invalid_reply {cache.fallbacks['invalid_reply']} cap {cache.fallbacks['cap']} -> {out}")
+    if status == "aborted_queen_unavailable":
+        print(f"queen provider unavailable past {args.queen_max_wait_s:.0f}s; rerun later, the results cache resumes it "
+              f"(exit {EXIT_QUEEN_UNAVAILABLE})", file=sys.stderr)
+        return EXIT_QUEEN_UNAVAILABLE
     return 0 if status == "complete" else 3
 
 

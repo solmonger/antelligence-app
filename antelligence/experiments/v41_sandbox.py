@@ -26,6 +26,7 @@ from antelligence.kernel.board import Board
 from antelligence.kernel.canonical import canonical_json
 from antelligence.kernel.policies.v41_harness import HarnessError, harness_sha256, load_allowed_keys, validate_harness
 from antelligence.providers.base import ChatRequest, Provider
+from antelligence.providers.outage import OutagePolicy, complete_with_outage_retry
 
 ARMS = ("SW-B", "SW-noBoard")
 MAX_ROUNDS = 4
@@ -403,15 +404,20 @@ PROPOSER_SYSTEM = (
 
 
 def llm_proposer(provider: Provider, model: str, *, thinking_params: Optional[Mapping[str, Any]] = None,
-                 run: Callable[[Awaitable[Any]], Any] = asyncio.run) -> Proposer:
+                 run: Callable[[Awaitable[Any]], Any] = asyncio.run, outage: Optional[OutagePolicy] = None) -> Proposer:
     """A proposer backed by a provider. One call per round, 800-token output cap. ``run`` drives the coroutine (the
-    sandbox script passes one that uses the harness's own event loop, so shared async locks stay on one loop)."""
+    sandbox script passes one that uses the harness's own event loop, so shared async locks stay on one loop).
+
+    A provider outage (HTTP 401/429/5xx, transport error) is waited out with backoff and the same request is sent
+    again (``outage`` sets the maximum wait, default 600 s); past it :class:`QueenUnavailable` propagates and ends the
+    sandbox as an error. The proposer has no fallback."""
+    policy = outage if outage is not None else OutagePolicy()
     def propose(ctx: Mapping[str, Any]) -> Optional[Mapping[str, Any]]:
         request = ChatRequest(model=model, messages=({"role": "system", "content": PROPOSER_SYSTEM},
                                                      {"role": "user", "content": canonical_json(dict(ctx))}),
                               max_tokens=800, temperature=0.0, seed=ctx["round"], response_format={"type": "json_object"},
                               extra_body=thinking_params)
-        response = run(_complete(provider, request))
+        response = run(_complete(provider, request, policy))
         text = response.content.strip()
         fenced = _FENCE.match(text)
         try:
@@ -421,5 +427,5 @@ def llm_proposer(provider: Provider, model: str, *, thinking_params: Optional[Ma
     return propose
 
 
-async def _complete(provider: Provider, request: ChatRequest) -> Any:
-    return await provider.complete(request)
+async def _complete(provider: Provider, request: ChatRequest, policy: Optional[OutagePolicy] = None) -> Any:
+    return await complete_with_outage_retry(provider, request, policy)

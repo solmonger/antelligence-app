@@ -16,7 +16,7 @@ def load_script(name):
 def make_cell(arm, case, seed, score, split="eval", **kw):
     run_id = hashlib.sha256(f"{arm}|{case}|{seed}".encode()).hexdigest()
     cell = dict(run_id=run_id, arm=arm, case=case, seed=seed, split=split, wall_s=100.0,
-                ticks_to_50=20, seconds_to_50=40.0, queen_calls=5, board_size=60, anchors=2,
+                ticks_to_50=20, seconds_to_50=40.0, queen_calls=5, queen_fallbacks_provider=0, queen_fallbacks_invalid_reply=0, queen_fallbacks_cap=0, board_size=60, anchors=2,
                 visibility_latency_ms=None, coverage=score, off_target=0.1, defer_rate=0.2, citations=7, tokens_in=1000, tokens_out=100, pod_minutes=1.0, gas=None, alarms=0,
                 audit_conformal_coverage=0.9, citation_validity=1.0, uncited_decisions=0, perception_dice=0.8,
                 locallook_ece=0.05, truth_outside_crop=0.02, decision_errors=0, look_errors=0, decision_error_share=0.0, decision_error_alarm=0,

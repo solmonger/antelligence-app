@@ -20,7 +20,10 @@ the same seeds, so a single-seed arm (FW, SW-D, ...) is paired with SW-B on the 
 | `wall_s` | float >= 0 | no | wall time of the run, seconds |
 | `ticks_to_50` | int | yes | first tick at which absolute coverage reaches 0.5 (goal 4.7); null = never reached |
 | `seconds_to_50` | float >= 0 | yes | wall seconds until 50% of the final score; null = never reached |
-| `queen_calls` | int | no | queen model calls |
+| `queen_calls` | int | no | queen model calls (retries of one call during a provider outage are not counted again) |
+| `queen_fallbacks_provider` | int | no | queen steps that fell back to the S-rule because the provider failed for a reason other than an outage (HTTP 4xx other than 401/429, malformed response, wrong served model). **A run with any is invalid for fits and the sandbox keep rule** (`v41_fit` excludes it unless `--allow-provider-fallbacks`; the sandbox never caches it) |
+| `queen_fallbacks_invalid_reply` | int | no | queen steps that fell back because the reply was invalid (not JSON, no valid route, length or over the 800-token output cap). Legitimate study behaviour |
+| `queen_fallbacks_cap` | int | no | queen steps that fell back because the per-run call cap (6) or a call/token budget was spent. Legitimate study behaviour |
 | `board_size` | int | no | entries on the board at run end |
 | `anchors` | int | no | anchor points posted (INTERFACES 3) |
 | `visibility_latency_ms` | int | yes | mode D: write to visible latency; null outside mode D |
@@ -103,6 +106,18 @@ error: the decision log row has `error=true` and `error_reason`, `decision_error
 and `decision_error_alarm` = 1 when the share is above 5%. A `DecisionAbort` (a spent budget) is never absorbed and still
 stops the run. The explained-null checklist reader should treat a flagged run as one whose decisions were partly neutral
 fallbacks.
+
+### Queen provider outages (decision 2026-10-13, mistake-2039)
+
+A queen provider outage (HTTP 401, 429, 5xx or a transport error) is never an invalid reply. The in-episode queen and the
+sandbox proposer send the SAME request again with exponential backoff (15 s, 30 s, 60 s, then 120 s between tries) for at
+most 600 s in total (`--queen-max-wait-s`). The retries are the same queen call: they do not count against the 6-call cap
+and each attempt still goes through the usage ledger and the Nous stop. Past the maximum wait `QueenUnavailable` (a
+`DecisionAbort`) ends the run as an **error** cell, never a fallback. `v41_run.py run_many` then starts no new episode
+(`EpisodeNotStarted`: no cell, no cache entry), lets in-flight ones finish or error, and the driver exits with code **75**
+(`EXIT_QUEEN_UNAVAILABLE`, EX_TEMPFAIL; the sandbox driver too). Rerun later: the reply caches and the sandbox results cache
+resume it. Fallbacks that remain are counted by cause in `queen_fallbacks_provider|invalid_reply|cap`, in the run log
+(`queen_fallbacks`) and in the summary line; the batch end prints the totals. Never read "0 errors" as clean without them.
 
 ### Follow-ups to the policy
 
