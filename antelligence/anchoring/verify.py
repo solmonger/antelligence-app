@@ -49,6 +49,7 @@ Report ``verdict``: ``verified`` | ``unverified`` | ``failed``; ``ok`` is True o
 from __future__ import annotations
 
 import hashlib
+import re
 import json
 import time
 from dataclasses import dataclass, field
@@ -161,6 +162,8 @@ def load_export(path: Path, metrics: Metrics) -> LoadedRun:
     return LoadedRun(run_id_of(header) if header else "", header, entries, problems)
 
 
+_RUN_EXPORT = re.compile(r"[0-9a-f]{64}\.jsonl")
+
 class OutsideVerifier:
     def __init__(
         self,
@@ -249,7 +252,10 @@ class OutsideVerifier:
         planned = self._planned(report)
         if not planned:
             report["problems"].append("the run plan lists no runs: nothing to verify")
-        present = {p.stem for p in self.dir.glob("*.jsonl")}
+        # Only ``<64-hex run_id>.jsonl`` is a board export; any other *.jsonl (e.g. decisions.jsonl) is listed, never judged.
+        files = sorted(self.dir.glob("*.jsonl"))
+        present = {p.stem for p in files if _RUN_EXPORT.fullmatch(p.name)}
+        report["ignored_files"] = [p.name for p in files if not _RUN_EXPORT.fullmatch(p.name)]
         for rid in sorted(set(planned) - present):
             report["problems"].append(f"planned run {rid} has no export")
         for rid in sorted(present - set(planned)):

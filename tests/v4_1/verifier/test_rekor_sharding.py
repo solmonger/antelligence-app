@@ -188,3 +188,28 @@ def test_sharded_wrong_archived_shard_index_fails(sharded):
     path.write_text(json.dumps(recs))
     report = OutsideVerifier(out, plan, rekor=lab.rekor, conditions={"R"}).verify()
     assert report["verdict"] == "failed"
+
+
+# -- export file discovery ----------------------------------------------------------------------------------------
+
+def test_decisions_jsonl_beside_the_export_is_ignored(sharded):
+    lab, board, out, plan = sharded
+    base = OutsideVerifier(out, plan, rekor=lab.rekor, conditions={"R"}).verify()
+    (out / "decisions.jsonl").write_text('{"x":1}\n')
+    report = OutsideVerifier(out, plan, rekor=lab.rekor, conditions={"R"}).verify()
+    assert report["ignored_files"] == ["decisions.jsonl"]
+    assert report["verdict"] == base["verdict"] and report["problems"] == base["problems"]
+
+
+def test_forged_hex_export_not_in_plan_still_fails(sharded):
+    lab, board, out, plan = sharded
+    (out / ("ab" * 32 + ".jsonl")).write_text((out / f"{board.run_id}.jsonl").read_text())
+    report = OutsideVerifier(out, plan, rekor=lab.rekor, conditions={"R"}).verify()
+    assert report["verdict"] == "failed" and any("not in the anchored run plan" in p for p in report["problems"])
+
+
+def test_planned_run_with_missing_export_still_fails(sharded):
+    lab, board, out, plan = sharded
+    (out / f"{board.run_id}.jsonl").unlink()
+    report = OutsideVerifier(out, plan, rekor=lab.rekor, conditions={"R"}).verify()
+    assert report["verdict"] == "failed" and any("has no export" in p for p in report["problems"])
