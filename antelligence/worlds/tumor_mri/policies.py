@@ -8,20 +8,29 @@ label can only name a perceived region; the label is the router-training target 
 Rules in brief
 * S targets *candidates* (the labelled A..F pool) that are unvisited; "visited" is world state (a squad within 6 mm of
   the region centroid, ``visit_radius_mm``). S releases 50% of remaining payload whenever local p_tumour >= 0.5.
-* S' efficiency heuristic. For a puff of mass m at voxel v it estimates marginal coverage as
-  sum over uncovered truth voxels u in a 21^3 window of min(1, m * R(u - v) / (D_t - dose(u))), where R is the
-  cumulative dose of a unit puff over the ticks left (computed once per 10-tick bucket with the same physics, no
-  boundary effects). Efficiency = marginal coverage / m. Per point it picks the largest of the five amount levels whose
-  efficiency is within 10% of the best level (big puffs saturate). Squads are assigned to uncovered truth masses
-  largest first, discounted by 1 / (1 + squads already assigned). A squad releases where it stands when that is within
-  80% of the best point's efficiency; otherwise it walks to the best point (S' passes ``target_vox`` for that).
-* Explore and the walked-cluster rule live in the world (see ``world.py``); S' never explores.
+* S' is a greedy oracle (goal 4.2) that maximises the number of truth voxels whose *final* dose reaches D_t.
+  Each decision tick it builds one plan for all squads:
+    1. projected final dose P = dose so far + the future exposure of the drug already in flight (a forward run of
+       the world's own diffusion/decay on the part of the crop the drug can reach);
+    2. the *target set*: the cheapest truth voxels the drug left can afford to bring to D_t. A thin lattice of puffs fills
+       a region at far less drug than a few stacked ones (a stacked puff overshoots D_t at its centre and leaves a
+       shell short), so a puff is valued by the dose it delivers into the target set without overshoot, plus the count
+       of voxels it lifts past D_t;
+    3. squads are committed one after another. A squad scores release points (cluster centres of the uncovered target
+       mass at several scales, hill-climbed, plus its own position and previous goal) at the time it would arrive
+       (A* path length, rounded up to the next decision tick), for all five amount levels, with a unit-puff response
+       kernel for the horizon left;
+    4. a squad releases where it stands iff that is at least as good (per unit of drug) as the best point after
+       walking there; the amount is the biggest level within half the best gain per unit of drug (all gain at the last chance);
+    5. every committed puff, now or planned, is added to P before the next squad plans, so squads spread out.
+  Explore and the walked-cluster rule live in the world (see ``world.py``); S' never explores.
 """
 
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, Mapping, Optional, Sequence, Tuple
+from dataclasses import dataclass
+from typing import Any, Dict, Mapping, Optional, Sequence
 
 import numpy as np
 from scipy import ndimage
@@ -29,7 +38,7 @@ from scipy import ndimage
 from antelligence.kernel.types import Intent, LocalView
 from antelligence.worlds.tumor_mri.config import WorldConfig
 from antelligence.worlds.tumor_mri.data import Candidate
-from antelligence.worlds.tumor_mri.physics import DrugField
+from antelligence.worlds.tumor_mri.physics import DrugField, Vox
 from antelligence.worlds.tumor_mri.questions import EXPLORE, STAY
 from antelligence.worlds.tumor_mri.world import ACTION_DECIDE, Scorer
 
@@ -75,127 +84,367 @@ class ScriptS:
         return {"policy": "script_S", "release_p": self.release_p, "amount": self.amount}
 
 
-_RESP_R, _WIN_R = 24, 10
+_KERN_R, _WIN_R = 24, 16  # simulation grid radius / gain-window radius (voxels) of the unit-puff response kernels
+_COUNT_W = 1.0  # weight of the integer count of voxels lifted past D_t next to the dose delivered to the target set
+_SPREAD_SIGMA = 3.0  # voxels: width of the plume a release smears over (leakage estimate for the target set)
+_LEVEL_TOL = 0.5  # take the biggest amount whose gain per unit of drug is within this share of the best level's
+_WASTE = 1.3  # overshoot / unevenness allowance when sizing the target set to the drug left
+_PROJ_REL_TOL = 1e-4  # projection ignores concentration below this share of the peak
+_PROJ_REACH = 2.8  # ... and sources reach 2.8 diffusion widths (sqrt(ticks left) voxels each) beyond the drug's bounding box
+_EXACT_BUDGET = 3e7  # voxel-ticks above which the projection runs on a 2x coarser grid
+_KCACHE: Dict[tuple, Dict[int, np.ndarray]] = {}
+
+
+def _response_kernels(cfg: WorldConfig, voxel_mm: float) -> Dict[int, np.ndarray]:
+    """Cumulative dose in a (2*_WIN_R+1)^3 window around a unit puff deposited ``n`` ticks before the end, for every ``n``
+    a decision tick can have (``ticks - k * decision_every``). Same physics as the world, away from the crop boundary."""
+    key = (cfg.release_sigma_mm, voxel_mm, cfg.diffuse_sigma_vox, cfg.decay, cfg.ticks, cfg.decision_every)
+    if key not in _KCACHE:
+        needed = {cfg.ticks - cfg.decision_every * j for j in range(cfg.rounds + 1)}
+        needed = {n for n in needed if n >= 1}
+        size = 2 * _KERN_R + 1
+        f = DrugField((size, size, size), release_sigma_vox=cfg.release_sigma_mm / voxel_mm,
+                      diffuse_sigma_vox=cfg.diffuse_sigma_vox, decay=cfg.decay)
+        f.deposit((_KERN_R,) * 3, 1.0)
+        lo, hi = _KERN_R - _WIN_R, _KERN_R + _WIN_R + 1
+        out: Dict[int, np.ndarray] = {}
+        for k in range(1, (max(needed) if needed else 0) + 1):
+            f.step()
+            if k in needed:
+                out[k] = f.dose[lo:hi, lo:hi, lo:hi].astype(np.float32)
+        _KCACHE[key] = out
+    return _KCACHE[key]
+
+
+@dataclass(frozen=True)
+class _Option:
+    """A release point for one squad: where, when it would arrive and release, the amount level, and its value."""
+    point: Vox
+    steps: int
+    release_tick: int
+    level: int  # 1..5
+    eff: float  # voxels lifted past D_t per unit of drug (plus a tiny progress term)
+    gain: float
+    mass: float
+
+
+@dataclass
+class _Action:
+    release_level: int = 0  # >0: release this level where the squad stands
+    goal: Optional[Vox] = None  # walk here next (None: stay put)
+    goal_level: int = 3
 
 
 class OracleSPrime:
-    """Greedy oracle (goal 4.2): sees the truth mask and the live dose.
+    """Greedy oracle ceiling (goal 4.2): sees the truth mask and the live dose, plans all squads together each decision tick.
 
-    1. Uncovered truth = WT voxels with dose < D_t. Squads are assigned to its connected masses, largest first
-       (a mass with more squads already on it is discounted: size / (1 + assigned)), each taking the nearest free squad.
-    2. Within its mass a squad evaluates up to ``n_points`` release points (densest uncovered voxels, plus its own
-       position) and the five amount levels, scoring each by marginal coverage per unit of drug: the number of
-       uncovered voxels a puff would lift to D_t, from a unit-response kernel for the time left. It releases where
-       it stands if that is nearly the best option, otherwise it walks to the best point.
-    Built with the world's scorer accessor; it is the achievable ceiling for tuning, not a fair arm.
+    Objective: the number of truth voxels whose *final* dose reaches D_t (coverage is binary at D_t).
+    * Projected dose: dose so far plus the exposure the drug in flight will still deliver (forward run of the world's own
+      diffusion and decay, box-limited, on a 2x coarser grid when the box is large).
+    * Target set: truth voxels, cheapest first (deficit over what a unit of drug delivers there, discounted by the share
+      of the plume that leaves the tumour), until the drug left is spent. Pure per-puff counts are myopic: no single
+      puff can lift a voxel when D_t needs several overlapping ones, and stacking puffs wastes drug above D_t. So a
+      puff's value is the dose it adds toward D_t inside the target set (no credit above D_t) plus the count of voxels
+      it lifts past D_t.
+    * Squads commit in index order. Each scores candidate release points with a unit-puff response kernel for the
+      horizon left when it would arrive (A* path length, rounded up to the next decision tick), for all five amount levels.
+    * Release here iff that is at least as good per unit of drug as the best point after walking there. Amount: the
+      biggest level within ``_LEVEL_TOL`` of the best gain per unit of drug (earlier drug is exposed longer, so spend it).
+    * Every committed puff (now or planned) joins the projected dose before the next squad plans, and a point another squad
+      already claimed this tick is worth 0.89x, so squads spread unless nothing within 90% of its value exists.
+    Not a fair arm: it is the achievable ceiling for tuning the world and the router's training target.
     """
 
+    CLAIM_PENALTY = 0.89
+    GOAL_BONUS = 1.05  # hysteresis for the previous goal
+
     def __init__(self, scorer: Scorer, positions, dose_field: DrugField, config: WorldConfig, *, voxel_mm: float = 2.0,
-                 n_points: int = 16, here_tolerance: float = 0.8, map_radius_mm: float = MAP_RADIUS_MM) -> None:
+                 payloads=None, pathfinder=None, n_points: int = 5, map_radius_mm: float = MAP_RADIUS_MM) -> None:
         self._scorer, self._positions, self._dose, self.cfg = scorer, positions, dose_field, config
-        self.voxel_mm, self.n_points, self.here_tolerance, self.map_radius_mm = voxel_mm, n_points, here_tolerance, map_radius_mm
-        self._cache_tick: Optional[int] = None
-        self._lab = np.zeros(0)
-        self._assign: Dict[int, int] = {}
-        self._resp: Dict[int, np.ndarray] = {}
+        self._payloads, self._paths = payloads, pathfinder
+        self.voxel_mm, self.n_points, self.map_radius_mm = voxel_mm, n_points, map_radius_mm
+        self._kern = _response_kernels(config, voxel_mm)
+        self._brain = pathfinder.brain if pathfinder is not None else np.ones(scorer.truth.shape, dtype=bool)
+        idx = np.argwhere(scorer.truth)
+        self._tbox = (idx.min(axis=0), idx.max(axis=0) + 1) if len(idx) else None
+        self._rho = ndimage.gaussian_filter(scorer.truth.astype(np.float32), _SPREAD_SIGMA, mode="constant", truncate=3.0)
+        self._target = np.zeros(scorer.truth.shape, dtype=bool)
+        self._plan_tick: Optional[int] = None
+        self._actions: Dict[int, _Action] = {}
+        self._last_goal: Dict[int, Vox] = {}
+        self._claimed: list = []
 
-    def _response(self, horizon: int) -> np.ndarray:
-        """Cumulative dose around a unit puff after ``horizon`` ticks (window radius _WIN_R), cached per 10-tick bucket."""
-        h = max(10, int(math.ceil(horizon / 10.0)) * 10)
-        if h not in self._resp:
-            n = 2 * _RESP_R + 1
-            f = DrugField((n, n, n), release_sigma_vox=self.cfg.release_sigma_mm / self.voxel_mm,
-                          diffuse_sigma_vox=self.cfg.diffuse_sigma_vox, decay=self.cfg.decay)
-            f.deposit((_RESP_R,) * 3, 1.0)
-            for _ in range(h):
-                f.step()
-            lo, hi = _RESP_R - _WIN_R, _RESP_R + _WIN_R + 1
-            self._resp[h] = f.dose[lo:hi, lo:hi, lo:hi].copy()
-        return self._resp[h]
+    # --- projected dose ---------------------------------------------------------------------------------------
 
-    def _plan(self, tick: int) -> None:
-        if self._cache_tick == tick:
-            return
-        sc = self._scorer
-        need = sc.truth & (self._dose.dose < sc.dose_threshold)
-        self._need = need
-        self._lab, n = ndimage.label(need, structure=np.ones((3, 3, 3), dtype=bool))
-        self._assign = {}
-        if n:
-            idx = np.arange(1, n + 1)
-            sizes = ndimage.sum(need, self._lab, idx)
-            cents = np.array(ndimage.center_of_mass(need, self._lab, idx))
-            pos = np.array(self._positions(), dtype=np.float64)
-            taken = np.zeros(n, dtype=int)
-            free = list(range(len(pos)))
-            while free:
-                comp = int(np.argmax(sizes / (1.0 + taken)))
-                sq = min(free, key=lambda i: (float(np.linalg.norm(pos[i] - cents[comp])), i))
-                self._assign[sq] = comp + 1
-                taken[comp] += 1
-                free.remove(sq)
-        self._cache_tick = tick
+    def _projected(self, tick: int) -> np.ndarray:
+        """Dose so far + exposure the drug now in flight will still add by the end of the run (exact, box-limited)."""
+        f, cfg = self._dose, self.cfg
+        proj = f.dose.copy()
+        n = cfg.ticks - tick
+        peak = float(f.conc.max())
+        if n < 1 or peak <= 0.0:
+            return proj
+        idx = np.argwhere(f.conc > peak * _PROJ_REL_TOL)
+        pad = int(math.ceil(_PROJ_REACH * math.sqrt(n) * cfg.diffuse_sigma_vox)) + 2
+        lo = np.maximum(idx.min(axis=0) - pad, 0)
+        hi = np.minimum(idx.max(axis=0) + 1 + pad, proj.shape)
+        sl = tuple(slice(int(a), int(b)) for a, b in zip(lo, hi))
+        box = f.conc[sl].astype(np.float32)
+        if box.size * n > _EXACT_BUDGET:
+            acc = self._expose(box, n, coarse=True)
+        else:
+            acc = self._expose(box, n, coarse=False)
+        proj[sl] += acc
+        return proj
 
-    def _gain(self, resp: np.ndarray, v: Tuple[int, int, int], mass: float) -> float:
-        """Marginal coverage of a puff of ``mass`` at ``v``: uncovered truth voxels lifted toward D_t, each counted by the
-        fraction of its remaining deficit the puff fills (capped at 1). Fractional so partial progress is valued; a
-        single puff rarely crosses the threshold alone."""
-        shape = self._need.shape
+    def _expose(self, conc: np.ndarray, n: int, *, coarse: bool) -> np.ndarray:
+        """Cumulative dose over the next ``n`` ticks from concentration ``conc`` under the world's diffusion and decay.
+        ``coarse`` runs it on a 2x down-sampled grid (about 8x cheaper) for big boxes; the dose is a smooth field."""
+        cfg = self.cfg
+        sigma, keep = cfg.diffuse_sigma_vox, np.float32(1.0 - cfg.decay)
+        shape = conc.shape
+        if coarse:
+            even = [s + (s % 2) for s in shape]
+            conc = np.pad(conc, [(0, e - s) for e, s in zip(even, shape)])
+            conc = conc.reshape(even[0] // 2, 2, even[1] // 2, 2, even[2] // 2, 2).sum(axis=(1, 3, 5))
+            sigma *= 0.5
+        box, acc = conc, np.zeros(conc.shape, dtype=np.float32)
+        for _ in range(n):
+            box = ndimage.gaussian_filter(box, sigma, mode="constant", cval=0.0, truncate=3.0)
+            np.maximum(box, 0.0, out=box)
+            box *= keep
+            acc += box
+        if coarse:
+            acc = np.repeat(np.repeat(np.repeat(acc, 2, axis=0), 2, axis=1), 2, axis=2)[tuple(slice(0, s) for s in shape)] / 8.0
+        return acc
+
+    # --- scoring ----------------------------------------------------------------------------------------------
+
+    def _kernel(self, n: int) -> Optional[np.ndarray]:
+        if n < 1 or not self._kern:
+            return None
+        return self._kern[min(self._kern, key=lambda k: (abs(k - n), k))]
+
+    @staticmethod
+    def _window(shape, v):
         lo = [max(v[a] - _WIN_R, 0) for a in range(3)]
         hi = [min(v[a] + _WIN_R + 1, shape[a]) for a in range(3)]
-        rlo = [lo[a] - (v[a] - _WIN_R) for a in range(3)]
-        rhi = [rlo[a] + hi[a] - lo[a] for a in range(3)]
         sl = tuple(slice(lo[a], hi[a]) for a in range(3))
-        rs = tuple(slice(rlo[a], rhi[a]) for a in range(3))
-        deficit = self._scorer.dose_threshold - self._dose.dose[sl]
-        need = self._need[sl]
-        return float(np.minimum(1.0, mass * resp[rs][need] / deficit[need]).sum())
+        ks = tuple(slice(lo[a] - (v[a] - _WIN_R), hi[a] - (v[a] - _WIN_R)) for a in range(3))
+        return sl, ks
+
+    def _gains(self, proj: np.ndarray, v: Vox, kern: np.ndarray, masses: np.ndarray):
+        """(count of truth voxels lifted past D_t, dose delivered into the target set as a share of D_t) per mass."""
+        sl, ks = self._window(proj.shape, v)
+        d_t = self._scorer.dose_threshold
+        pw = proj[sl]
+        m = self._scorer.truth[sl] & (pw < d_t)
+        if not m.any():
+            return np.zeros(len(masses)), np.zeros(len(masses))
+        k = kern[ks][m].astype(np.float64)
+        d = d_t - pw[m]
+        counts = (d[None, :] <= masses[:, None] * k[None, :]).sum(axis=1).astype(np.float64)
+        x0 = np.clip(pw[m], 0.0, None) / d_t
+        gain = np.minimum(1.0 - x0[None, :], masses[:, None] * k[None, :] / d_t)  # dose toward D_t, no credit above it
+        frac = (gain * self._target[sl][m][None, :]).sum(axis=1)  # ... and only inside the target set
+        return counts, frac
+
+    def _commit(self, proj: np.ndarray, v: Vox, kern: np.ndarray, mass: float) -> None:
+        sl, ks = self._window(proj.shape, v)
+        proj[sl] += mass * kern[ks]
+
+    def _option(self, proj, v: Vox, steps: int, tick: int, payload: float) -> Optional[_Option]:
+        cfg = self.cfg
+        every = cfg.decision_every
+        release_tick = tick + int(math.ceil(steps / every)) * every
+        n = cfg.ticks - release_tick
+        kern = self._kernel(n)
+        if kern is None:
+            return None
+        masses = payload * np.asarray(cfg.amount_fractions, dtype=np.float64)
+        counts, frac = self._gains(proj, v, kern, masses)
+        score = _COUNT_W * counts + frac
+        if n <= every:  # last chance to release: take all the gain
+            lvl = int(np.flatnonzero(score >= score.max() * (1.0 - 1e-9)).max())
+        else:
+            eff = score / masses
+            lvl = int(np.flatnonzero(eff >= eff.max() * _LEVEL_TOL).max())
+        return _Option(v, steps, release_tick, lvl + 1, float(score[lvl] / masses[lvl]), float(counts[lvl]), float(masses[lvl]))
+
+    def _target_set(self, proj: np.ndarray, tick: int, budget: float) -> None:
+        """The truth voxels the drug left can afford to bring to D_t, cheapest first. A voxel's cost is its dose deficit over
+        what a unit of drug delivers there (the response kernel's total, times the share of the plume that stays in the
+        tumour), times a waste allowance. Spreading dose thinly over this set, not stacking it, is what covers it."""
+        self._target[:] = False
+        if self._tbox is None or budget <= 0.0:
+            return
+        lo, hi = self._tbox
+        box = tuple(slice(int(a), int(b)) for a, b in zip(lo, hi))
+        d_t = self._scorer.dose_threshold
+        need = self._scorer.truth[box] & (proj[box] < d_t)
+        kern = self._kernel(max(self.cfg.ticks - tick - 25, 1))
+        if kern is None or not need.any():
+            return
+        cost = _WASTE * (d_t - proj[box][need]) / (float(kern.sum()) * np.maximum(self._rho[box][need], 0.05))
+        order = np.argsort(cost, kind="stable")
+        keep = order[np.cumsum(cost[order]) <= budget]
+        flat = np.zeros(int(need.sum()), dtype=bool)
+        flat[keep] = True
+        sub = np.zeros(need.shape, dtype=bool)
+        sub[need] = flat
+        self._target[box] = sub
+
+    # --- candidate points -------------------------------------------------------------------------------------
+
+    def _snap(self, v: Sequence[float]) -> Vox:
+        w = tuple(int(min(max(round(c), 0), s - 1)) for c, s in zip(v, self._scorer.truth.shape))
+        if self._brain[w]:
+            return w  # type: ignore[return-value]
+        return self._paths.nearest_brain_voxel(w) if self._paths is not None else w  # type: ignore[return-value]
+
+    def _candidate_points(self, proj: np.ndarray):
+        if self._tbox is None:
+            return []
+        lo, hi = self._tbox
+        box = tuple(slice(int(a), int(b)) for a, b in zip(lo, hi))
+        need = self._target[box] & (proj[box] < self._scorer.dose_threshold)
+        if not need.any():
+            return []
+        nf = need.astype(np.float32)
+        lab, nc = ndimage.label(need, structure=np.ones((3, 3, 3), dtype=bool))
+        idx = np.arange(1, nc + 1)
+        sizes = ndimage.sum(need, lab, idx)
+        big = idx[np.argsort(-sizes, kind="stable")[: self.n_points + 3]]  # largest uncovered masses
+        pts: list = []
+        for sigma in (1.5, 3.0, 6.0):
+            dens = ndimage.gaussian_filter(nf, sigma, mode="constant")
+            peak = (dens == ndimage.maximum_filter(dens, size=int(2 * sigma) + 1)) & (dens >= 0.1 * float(dens.max()))
+            cand = np.argwhere(peak)
+            order = np.argsort(-dens[tuple(cand.T)], kind="stable")[: self.n_points]
+            pts += [tuple(cand[j] + lo) for j in order]
+            pts += [tuple(np.asarray(q) + lo) for q in ndimage.maximum_position(dens, lab, big)]  # one per mass
+        cents = ndimage.center_of_mass(need, lab, big)
+        pts += [tuple(np.asarray(c) + lo) for c in cents]
+        seen, out = set(), []
+        for p in pts:
+            s = self._snap(p)
+            if s not in seen:
+                seen.add(s)
+                out.append(s)
+        return out
+
+    # --- planning ---------------------------------------------------------------------------------------------
+
+    def _steps(self, a: Vox, b: Vox, exact: bool) -> int:
+        if exact and self._paths is not None:
+            return len(self._paths.path(a, b))
+        return max(abs(a[i] - b[i]) for i in range(3))
+
+    def _value(self, o: _Option) -> float:
+        return o.eff * (self.CLAIM_PENALTY if o.point in self._claimed else 1.0)
+
+    def _best_walk(self, proj, pos: Vox, tick: int, payload: float, prev: Optional[Vox]) -> Optional[_Option]:
+        pts = [p for p in self._candidate_points(proj) if p != pos]
+        if prev is not None and prev != pos and prev not in pts:
+            pts.append(prev)
+        scored = []
+        for p in pts:
+            o = self._option(proj, p, self._steps(pos, p, False), tick, payload)
+            if o is not None and o.eff > 0.0:
+                scored.append(o)
+        if not scored:
+            return None
+
+        def val(o: _Option) -> float:
+            return self._value(o) * (self.GOAL_BONUS if o.point == prev else 1.0)
+
+        scored.sort(key=lambda o: (-val(o), o.steps, o.point))
+        best = scored[0]
+        for _ in range(2):  # hill-climb: release points may sit off the mass
+            improved = False
+            for a in range(3):
+                for d in (-2, 2):
+                    q = list(best.point)
+                    q[a] += d
+                    if not 0 <= q[a] < self._brain.shape[a] or not self._brain[tuple(q)]:
+                        continue
+                    qv: Vox = (q[0], q[1], q[2])
+                    o = self._option(proj, qv, self._steps(pos, qv, False), tick, payload)
+                    if o is not None and val(o) > val(best) * (1.0 + 1e-9):
+                        best, improved = o, True
+            if not improved:
+                break
+        finalists = [best] + [o for o in scored if o.point != best.point][:2]
+        refined = []
+        for o in finalists:  # A* path lengths for the leaders
+            r = self._option(proj, o.point, self._steps(pos, o.point, True), tick, payload)
+            if r is not None and r.eff > 0.0:
+                refined.append(r)
+        if not refined:
+            return None
+        refined.sort(key=lambda o: (-val(o), o.steps, o.point))
+        return refined[0]
+
+    def _plan_squad(self, i: int, pos: Vox, payload: float, tick: int, proj: np.ndarray) -> _Action:
+        act = _Action()
+        if payload <= 1e-12:
+            return act
+        prev = self._last_goal.get(i)
+        here = self._option(proj, pos, 0, tick, payload)
+        walk = self._best_walk(proj, pos, tick, payload, prev)
+        if here is not None and here.eff > 0.0 and (walk is None or here.eff >= self._value(walk)):
+            act.release_level = here.level
+            self._commit(proj, pos, self._kernel(self.cfg.ticks - tick), here.mass)  # type: ignore[arg-type]
+            payload -= here.mass
+            walk = self._best_walk(proj, pos, tick, payload, prev) if payload > 1e-12 else None
+        if walk is not None:
+            act.goal, act.goal_level = walk.point, walk.level
+            self._commit(proj, walk.point, self._kernel(self.cfg.ticks - walk.release_tick), walk.mass)  # type: ignore[arg-type]
+            self._claimed.append(walk.point)
+        elif act.release_level:
+            self._claimed.append(pos)
+        return act
+
+    def _plan(self, tick: int, caller: int, caller_payload: float) -> None:
+        proj = self._projected(tick)
+        pos = [tuple(int(c) for c in p) for p in self._positions()]
+        if self._payloads is not None:
+            pay = list(self._payloads())
+        else:
+            pay = [self.cfg.total_drug / self.cfg.n_squads] * len(pos)
+            pay[caller] = caller_payload
+        self._target_set(proj, tick, float(sum(pay)))
+        self._claimed, self._actions = [], {}
+        for i in range(len(pos)):
+            self._actions[i] = self._plan_squad(i, pos[i], pay[i], tick, proj)  # type: ignore[arg-type]
+            g = self._actions[i].goal
+            if g is not None:
+                self._last_goal[i] = g
+            else:
+                self._last_goal.pop(i, None)
+        self._plan_tick = tick
 
     def decide(self, view: LocalView) -> Intent:
         o = view.observation
-        self._plan(view.tick)
-        i, pos = o["squad"], tuple(o["position_vox"])
-        comp = self._assign.get(i)
-        hold = Intent(ACTION_DECIDE, {"target": STAY, "release": 0, "amount": 3})
-        if comp is None or o["payload"] <= 0.0:
-            return hold
-        pts = np.argwhere(self._lab == comp)
-        if len(pts) == 0:
-            return hold
-        dens = ndimage.gaussian_filter(self._need.astype(np.float32), 2.0)[tuple(pts.T)]
-        order = np.argsort(-dens, kind="stable")
-        step = max(1, len(order) // self.n_points)
-        cand_pts = [tuple(int(c) for c in pts[j]) for j in order[::step][: self.n_points]]
-        remaining = self.cfg.ticks - view.tick
-        fracs = self.cfg.amount_fractions
-
-        def best_at(v):
-            horizon = remaining - max(abs(v[a] - pos[a]) for a in range(3))
-            resp = self._response(max(horizon, 1))
-            effs = [self._gain(resp, v, o["payload"] * fracs[l]) / (o["payload"] * fracs[l]) for l in range(5)]
-            top = max(effs)
-            if top <= 0.0:
-                return (0.0, 3)
-            # largest amount whose efficiency is within 10% of the best (saturation makes big puffs less efficient)
-            lvl = max(l for l in range(5) if effs[l] >= 0.9 * top)
-            return (effs[lvl], lvl + 1)
-
-        here = best_at(pos)
-        scored = [(best_at(v), v) for v in cand_pts]
-        (top_eff, top_lvl), top_v = max(scored, key=lambda t: (t[0][0], -math.dist(t[1], pos)))
-        if here[0] > 0.0 and here[0] >= self.here_tolerance * max(top_eff, here[0]):
-            return Intent(ACTION_DECIDE, {"target": STAY, "release": 1, "amount": here[1]})
-        if top_eff <= 0.0:
-            return hold
-        label = sprime_candidate_label(top_v, o["candidates"], self.voxel_mm, self.map_radius_mm)
-        return Intent(ACTION_DECIDE, {"target": label, "release": 0, "amount": top_lvl, "target_vox": list(top_v)},
-                      meta={"oracle_goal": list(top_v)})
+        i, pos = o["squad"], tuple(int(c) for c in o["position_vox"])
+        if self._plan_tick != view.tick:
+            self._plan(view.tick, i, o["payload"])
+        act = self._actions.get(i, _Action())
+        release = int(act.release_level > 0 and o["payload"] > 0.0)
+        amount = act.release_level if release else act.goal_level
+        if act.goal is not None:
+            label = sprime_candidate_label(act.goal, o["candidates"], self.voxel_mm, self.map_radius_mm)
+            return Intent(ACTION_DECIDE, {"target": label, "release": release, "amount": amount,
+                                          "target_vox": list(act.goal)}, meta={"oracle_goal": list(act.goal)})
+        label = sprime_candidate_label(pos, o["candidates"], self.voxel_mm, self.map_radius_mm)
+        return Intent(ACTION_DECIDE, {"target": STAY if label == EXPLORE else label, "release": release,
+                                      "amount": max(amount, 1), "target_vox": list(pos)})  # stay put: no stale path
 
     def describe(self) -> Dict[str, Any]:
-        return {"policy": "oracle_Sprime", "n_points": self.n_points, "here_tolerance": self.here_tolerance,
-                "map_radius_mm": self.map_radius_mm}
+        return {"policy": "oracle_Sprime", "n_points": self.n_points, "map_radius_mm": self.map_radius_mm}
 
 
 def oracle_for(world) -> OracleSPrime:
     """Wire S' to a world (scorer accessor + live dose + squad positions)."""
-    return OracleSPrime(world.scorer_truth(), world.squad_positions, world.field, world.config, voxel_mm=world.voxel_mm)
+    return OracleSPrime(world.scorer_truth(), world.squad_positions, world.field, world.config, voxel_mm=world.voxel_mm,
+                        payloads=world.squad_payloads, pathfinder=world.pathfinder)

@@ -4,10 +4,10 @@
    "coverage": 0.43956043956043955,
    "coverage_at_queen": {
     "0": 0.0,
+    "120": 0.43956043956043955,
     "30": 0.15521978021978022,
     "60": 0.35027472527472525,
-    "90": 0.4217032967032967,
-    "120": 0.43956043956043955
+    "90": 0.4217032967032967
    },
    "decayed": 328.2660102566099,
    "lost_boundary": 40.809421424049894,
@@ -16,19 +16,19 @@
    "time_to_50_coverage": null
   },
   "Sprime": {
-   "coverage": 0.39972527472527475,
+   "coverage": 0.5054945054945055,
    "coverage_at_queen": {
     "0": 0.0,
-    "30": 0.21978021978021978,
-    "60": 0.35714285714285715,
-    "90": 0.3901098901098901,
-    "120": 0.39972527472527475
+    "120": 0.5054945054945055,
+    "30": 0.1662087912087912,
+    "60": 0.4065934065934066,
+    "90": 0.4876373626373626
    },
-   "decayed": 330.204637553932,
-   "lost_boundary": 42.22835683284238,
-   "off_target_share": 0.7680501274839941,
+   "decayed": 329.151093836333,
+   "lost_boundary": 36.863492956966034,
+   "off_target_share": 0.7666370713204553,
    "released_total": 400.0,
-   "time_to_50_coverage": null
+   "time_to_50_coverage": 99
   },
   "entry_sites": [
    [
@@ -78,10 +78,10 @@
    "coverage": 0.1813186813186813,
    "coverage_at_queen": {
     "0": 0.0,
+    "120": 0.1813186813186813,
     "30": 0.04945054945054945,
     "60": 0.14972527472527472,
-    "90": 0.17032967032967034,
-    "120": 0.1813186813186813
+    "90": 0.17032967032967034
    },
    "decayed": 315.0296379346719,
    "lost_boundary": 57.28905092679844,
@@ -90,19 +90,19 @@
    "time_to_50_coverage": null
   },
   "Sprime": {
-   "coverage": 0.4010989010989011,
+   "coverage": 0.5096153846153846,
    "coverage_at_queen": {
     "0": 0.0,
-    "30": 0.22664835164835165,
-    "60": 0.3585164835164835,
-    "90": 0.39285714285714285,
-    "120": 0.4010989010989011
+    "120": 0.5096153846153846,
+    "30": 0.1936813186813187,
+    "60": 0.4217032967032967,
+    "90": 0.4876373626373626
    },
-   "decayed": 331.1122416403856,
-   "lost_boundary": 40.76106553497969,
-   "off_target_share": 0.765834355569609,
+   "decayed": 329.4463371562251,
+   "lost_boundary": 37.27881657448247,
+   "off_target_share": 0.7617899863628952,
    "released_total": 400.0,
-   "time_to_50_coverage": null
+   "time_to_50_coverage": 102
   },
   "entry_sites": [
    [
@@ -146,5 +146,6 @@
     8
    ]
   ]
- }
+ },
+ "_note": "Sprime entries regenerated 2026-10-12 for the L2b oracle rewrite (projected dose, target set, coordinated squads); S entries and entry sites unchanged. Regenerate by running run_episode(world, oracle_for(world)) on the fixture phantom with phantom_config() for seeds 1 and 2."
 }

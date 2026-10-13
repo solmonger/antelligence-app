@@ -102,6 +102,7 @@ class Pathfinder:
         self.weight = float(weight)
         self.max_expand = int(max_expand)
         self._brain = brain
+        self.brain = brain
 
     @staticmethod
     def _h(dx: int, dy: int, dz: int) -> float:

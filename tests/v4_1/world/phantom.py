@@ -32,3 +32,8 @@ def phantom_config(**kw) -> WorldConfig:
     base = dict(total_drug=400.0, dose_threshold=6.0, entry_shell_mm=4.0)
     base.update(kw)
     return WorldConfig(**base)
+
+
+def oracle_config(**kw) -> WorldConfig:
+    """Enough drug that a sane oracle covers the large tumour (S' ~0.75 on the phantom) while the script usually trails."""
+    return phantom_config(**{"total_drug": 600.0, **kw})
