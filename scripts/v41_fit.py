@@ -35,6 +35,8 @@ def main(argv=None) -> int:
     ap.add_argument("--concurrency", type=int, help="episode concurrency of the calibration run (effective throughput)")
     ap.add_argument("--n-eval", type=int, default=80)
     ap.add_argument("--force", action="store_true", help="overwrite existing frozen files")
+    ap.add_argument("--router-bound", choices=("lower", "upper"), default="lower",
+                    help="legacy logs: count undecidable S answers as misses (lower, default) or matches (upper)")
     ap.add_argument("--allow-provider-fallbacks", action="store_true",
                     help="fit runs whose queen fell back because the provider failed (excluded by default: mistake-2039)")
     a = ap.parse_args(argv)
@@ -45,7 +47,7 @@ def main(argv=None) -> int:
     try:
         out = v41_fit.run_fit(a.runs, tag=a.tag, cells_path=a.cells, bonsai=a.bonsai, out_conformal=conf, out_router=rout,
                               report_path=report, split_file=a.split_file, concurrency=a.concurrency, n_eval=a.n_eval,
-                              force=a.force, allow_provider_fallbacks=a.allow_provider_fallbacks)
+                              force=a.force, allow_provider_fallbacks=a.allow_provider_fallbacks, bound=a.router_bound)
     except v41_fit.FitError as exc:
         print(f"REFUSED: {exc}", file=sys.stderr)
         return 1

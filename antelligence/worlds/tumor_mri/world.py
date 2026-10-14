@@ -43,7 +43,7 @@ from antelligence.worlds.tumor_mri.questions import CANDIDATE_LABELS, EXPLORE, S
 ACTION_DECIDE = "decide"
 QUEEN_HOOK_AGENT = "queen"
 OBS_KEYS = ("squad", "tick", "round", "rounds", "position_vox", "payload", "payload_fraction", "last_release",
-            "local_p_tumour", "local_unc", "local_look", "local_dose", "local_dose_rel", "target", "candidates", "goal_dist_mm", "target_source")
+            "local_p_tumour", "local_unc", "local_look", "local_dose", "local_dose_rel", "target", "target_region", "candidates", "goal_dist_mm", "target_source")
 
 LookFn = Callable[[int, Vox, int], Optional[float]]
 QueenHook = Callable[[int, "TumorMRIWorld"], None]
@@ -85,6 +85,7 @@ class _Squad:
     pos: Vox
     payload: float
     target: str = STAY
+    target_region: Optional[int] = None   # perception region id the current target refers to (None: none, or exploring)
     target_source: Optional[str] = None   # 'queen' while the target is the queen's assignment, 'worker' once it chose
     goal: Optional[Vox] = None
     path: Optional[List[Vox]] = None
@@ -177,7 +178,7 @@ class TumorMRIWorld:
             return False
         for c in self.candidates_for(int(squad)):
             if c.region_id == region_id:
-                sq.target, sq.target_source = c.label, "queen"
+                sq.target, sq.target_source, sq.target_region = c.label, "queen", c.region_id
                 sq.goal = self._paths.nearest_brain_voxel(c.centroid_vox)
                 sq.path = self._paths.path(sq.pos, sq.goal) if sq.goal != sq.pos else []
                 self._revision += 1
@@ -240,7 +241,7 @@ class TumorMRIWorld:
             "local_p_tumour": float(pr.p_tumour[sq.pos]), "local_unc": float(pr.unc[sq.pos]),
             "local_look": None if look is None else float(look),
             "local_dose": dose, "local_dose_rel": dose / cfg.dose_threshold,
-            "target": sq.target, "candidates": cands,
+            "target": sq.target, "target_region": sq.target_region, "candidates": cands,
             "target_source": sq.target_source,
             "goal_dist_mm": None if sq.goal is None else round(self.voxel_mm * math.dist(sq.pos, sq.goal), 3),
         }
@@ -276,6 +277,7 @@ class TumorMRIWorld:
         if override is not None or target != STAY:  # Stay keeps the current target (and its path)
             sq.target = target
             sq.target_source = "worker"
+            sq.target_region = next((c.region_id for c in self.candidates_for(i) if c.label == target), None)
             sq.goal = self._resolve_goal(i, sq, target, override)
             sq.path = self._paths.path(sq.pos, sq.goal) if sq.goal is not None and sq.goal != sq.pos else []
         self._revision += 1

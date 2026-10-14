@@ -52,11 +52,12 @@ from antelligence.providers.redact import scrub
 from antelligence.anchoring.rekor import AnchorKey
 from antelligence.experiments import v41_cells
 from antelligence.experiments.v41_conformal import (ConformalDeferral, ConformalThresholds, DeferralMonitor,
-                                                    audit_coverage, audit_selected, decision_labels)
+                                                    QTYPES, audit_coverage, audit_selected, decision_labels)
 from antelligence.experiments.v41_gate import assert_eval_allowed
 from antelligence.experiments.v41_local_look import (apply_temperature, load_frozen_temperature, look_request,
                                                      LOOK_QUESTION)
 from antelligence.experiments.v41_override import is_override, queen_region, resolve_target_region
+from antelligence.experiments.v41_resolve import resolution_record
 from antelligence.experiments.v41_router import KNNRouter, router_features, sprime_labels
 from antelligence.kernel import briefs as briefs_mod
 from antelligence.kernel.board import (DEFAULT_AUTHORS, Board, Entry, RunKeys, anchor_sizes,
@@ -87,12 +88,12 @@ DECISION_LOG_FIELDS = (
     "server_ms", "network_ms", "queue_ms", "tokens_in", "tokens_out", "cost_usd", "router_pick", "deferred",
     "escalated", "cited_ids", "brief_ids", "target", "release", "amount", "p_target_ppm", "p_release_ppm",
     "p_amount_ppm", "look_p_ppm", "prob_method", "identity", "calls", "counterfactual", "audit", "sprime",
-    "error", "error_reason", "attempts", "notes", "failures", "kind", "features", "queen_region", "target_region",
-    "override")
+    "error", "error_reason", "attempts", "notes", "failures", "kind", "features", "resolution", "deferral",
+    "queen_region", "target_region", "override")
 RUN_LOG_FIELDS = (
     "run_id", "arm", "case", "seed", "split", "wall_s", "ticks", "ticks_to_50", "seconds_to_50", "queen_calls",
     "queen_fallbacks", "queen_outage_retries", "board_size", "anchors", "anchor_latency_s", "visibility_latency_ms", "decisions", "rounds", "shared_store",
-    "calibration", "variant", "alarms", "dropped_cites", "reputation", "d_timeouts", "decision_errors", "look_errors", "errors")
+    "calibration", "log_counterfactuals", "variant", "alarms", "dropped_cites", "reputation", "d_timeouts", "decision_errors", "look_errors", "errors")
 # What a replay from cache must reproduce: every cell field except the wall-clock ones and the anchor count
 # (checked separately against ``anchor_sizes``).
 METRIC_FIELDS = tuple(f for f in v41_cells.FIELD_NAMES
@@ -100,6 +101,7 @@ METRIC_FIELDS = tuple(f for f in v41_cells.FIELD_NAMES
 _TRACE_KEYS = ("squad", "round", "tick", "backend", "model", "revision", "router_pick", "deferred", "escalated",
                "cited_ids", "brief_ids", "target", "release", "amount", "p_target_ppm", "p_release_ppm",
                "p_amount_ppm", "look_p_ppm", "tokens_in", "tokens_out", "cost_usd", "error")
+LOG_CF_MODES = ("none", "all")
 DECISION_RETRIES = 3          # goal 8: retry provider errors up to 3 times with the same request, then mark an error
 DECISION_ERROR_ALARM = 0.05   # a run with more than this share of error decisions is flagged for the explained-null checklist
 FALLBACK_TARGET, FALLBACK_RELEASE, FALLBACK_AMOUNT = "S", 0, 1   # the neutral decision: stay, release nothing
@@ -443,6 +445,7 @@ class _Ctx:
     attempt_log: Dict[str, List[Dict[str, Any]]] = field(default_factory=dict)
     replay_attempts: Optional[Mapping[str, Any]] = None
     oracle: Any = None
+    log_cf: bool = False          # --log-counterfactuals all: every model answers every decision, logged only
 
 
 class V41Harness:
@@ -513,7 +516,8 @@ class V41Harness:
     # ---- public --------------------------------------------------------------------------------
 
     async def run(self, arm: str, case: str, seed: int, *, calibration: bool = False,
-                  anchor: bool = True, replay_attempts: Optional[Mapping[str, Any]] = None) -> EpisodeResult:
+                  anchor: bool = True, replay_attempts: Optional[Mapping[str, Any]] = None,
+                  log_counterfactuals: str = "none") -> EpisodeResult:
         """One episode. The gate is the first thing that happens; nothing is loaded or called before it passes."""
         if arm not in ARM_SPECS:
             raise HarnessError(f"unknown arm {arm!r}")
@@ -527,12 +531,18 @@ class V41Harness:
                                f"{self.frozen_look_temperature}: refused on an eval case (it must match the prereg)")
         if calibration and (spec.name not in CALIBRATION_ARMS or split != "dev"):
             raise HarnessError("calibration mode is for SW-B and SW-noBoard on development cases only")
+        if log_counterfactuals not in LOG_CF_MODES:
+            raise HarnessError(f"log_counterfactuals must be one of {LOG_CF_MODES}, got {log_counterfactuals!r}")
+        log_cf = log_counterfactuals == "all"
+        if log_cf and (calibration or spec.kind != "workers" or split != "dev"):
+            raise HarnessError("--log-counterfactuals all is for the worker arms on development cases, with the live "
+                               "router and deferral policy driving (not together with --calibration)")
         if spec.kind in ("workers", "fw"):
-            self._check_ready(spec, calibration)
+            self._check_ready(spec, calibration, log_cf)
             if spec.anchored and anchor and self.anchorer_factory is None and not self.allow_unanchored:
                 raise HarnessError(f"arm {spec.name} must be anchored: pass anchorer_factory (or allow_unanchored)")
         t0 = self.clock()
-        ctx = self._build(spec, case, int(seed), split, calibration, anchor)
+        ctx = self._build(spec, case, int(seed), split, calibration, anchor, log_cf)
         ctx.replay_attempts = replay_attempts
         if spec.kind in ("script", "oracle"):
             wall_marks = self._run_scripted(ctx, t0)
@@ -541,7 +551,7 @@ class V41Harness:
         return self._finish(ctx, t0, wall_marks)
 
     async def run_many(self, requests: Sequence[Tuple[str, str, int]], *, concurrency: int = 4,
-                       calibration: bool = False) -> List[Union[EpisodeResult, BaseException]]:
+                       calibration: bool = False, log_counterfactuals: str = "none") -> List[Union[EpisodeResult, BaseException]]:
         """Episodes concurrently (asyncio) in ``requests`` order; each owns its world, board, queen and anchorer. A
         failed episode comes back as its exception so the others still finish.
 
@@ -556,7 +566,8 @@ class V41Harness:
                 if stop.is_set():
                     return EpisodeNotStarted(f"{r[0]} {r[1]} seed {r[2]}: not started, the queen provider is unavailable")
                 try:
-                    return await self.run(r[0], r[1], r[2], calibration=calibration)
+                    return await self.run(r[0], r[1], r[2], calibration=calibration,
+                                          log_counterfactuals=log_counterfactuals)
                 except QueenUnavailable as exc:
                     stop.set()
                     return exc
@@ -569,7 +580,8 @@ class V41Harness:
         the same trace hash, every metric field and the same anchor sizes."""
         spec = bundle["spec"]
         again = await self.run(spec["arm"], spec["case"], spec["seed"], calibration=spec["calibration"], anchor=False,
-                                 replay_attempts=bundle["extra"].get("attempts") or {})
+                                 replay_attempts=bundle["extra"].get("attempts") or {},
+                                 log_counterfactuals=spec.get("log_counterfactuals", "none"))
         recorded = bundle["extra"]["cell"]
         mismatched = [f for f in METRIC_FIELDS if recorded.get(f) != again.cell.get(f)
                       and not (f in v41_cells.QUEEN_FALLBACK_FIELDS and f not in recorded)]   # bundles from before the field existed
@@ -581,7 +593,8 @@ class V41Harness:
 
     # ---- construction ----------------------------------------------------------------------------
 
-    def _build(self, spec: ArmSpec, case: str, seed: int, split: str, calibration: bool, anchor: bool) -> _Ctx:
+    def _build(self, spec: ArmSpec, case: str, seed: int, split: str, calibration: bool, anchor: bool,
+               log_cf: bool = False) -> _Ctx:
         if spec.variant == "full":
             crop, regions = self.load_case(case)
         else:
@@ -590,7 +603,7 @@ class V41Harness:
             except TypeError as exc:
                 raise HarnessError(f"the case loader cannot produce variant {spec.variant!r}: {exc}") from exc
         harness = dict(self.promoted_harness if spec.queen == "promoted" and not calibration else self.base_harness)
-        arm_label = f"{spec.name}:calibration" if calibration else spec.name
+        arm_label = f"{spec.name}:calibration" if calibration else f"{spec.name}:cf-all" if log_cf else spec.name
         label = f"{arm_label}-{case}-{seed}".replace(":", "_").replace("/", "_")
         world_cfg_sha = _sha({"world": self.world_config.to_dict(), "variant": spec.variant})
         scripted = spec.kind in ("script", "oracle")
@@ -604,7 +617,7 @@ class V41Harness:
                   "code_sha": self.code_sha}
         run_id = run_id_of(header)
         ctx_kw: Dict[str, Any] = dict(spec=spec, arm=spec.name, case=case, seed=seed, split=split,
-                                      calibration=calibration, harness=harness, run_id=run_id, header=header,
+                                      calibration=calibration, log_cf=log_cf, harness=harness, run_id=run_id, header=header,
                                       crop=crop, queen=None, queen_provider=None, anchorer=None, post_mode=None,
                                       reputation=None, router=None, deferral=None, target_name=Q9)
         world = TumorMRIWorld(crop, self.world_config, seed, regions=regions)
@@ -664,7 +677,7 @@ class V41Harness:
         ctx_holder.append(ctx)
         return ctx
 
-    def _check_ready(self, spec: ArmSpec, calibration: bool) -> None:
+    def _check_ready(self, spec: ArmSpec, calibration: bool, log_cf: bool = False) -> None:
         need = {D1} if spec.kind == "workers" or spec.kind == "fw" else set()
         if spec.kind == "fw":
             need.add(FW)
@@ -679,6 +692,9 @@ class V41Harness:
                 raise HarnessError(f"arm {spec.name} routes {ROUTER_MODELS_BY_ARM[spec.name]}, "
                                    f"but the router was trained on {tuple(router.models)}")
             need |= set(router.models) | {BONSAI if spec.bonsai else Q9}
+            need |= {m for m in (thresholds.model_for(q) for q in QTYPES) if m}
+            if log_cf:
+                need |= set(self._cf_names(spec))
         missing = sorted(need - set(self.workers))
         if missing:
             raise HarnessError(f"arm {spec.name} needs workers {missing}")
@@ -714,7 +730,7 @@ class V41Harness:
         for payload in ctx.region_payloads:
             board.append("knowledge", "perception", payload, 0)
         cadence = int(ctx.harness["queen"]["cadence"]) if spec.uses_queen else cfg.queen_every
-        if ctx.calibration:
+        if ctx.calibration or ctx.log_cf:
             ctx.oracle = oracle_for(world)
         t50_wall: Optional[float] = None
         for tick in range(cfg.ticks):
@@ -1044,7 +1060,13 @@ class V41Harness:
         return {"decision": decision, "final": final, "final_name": failed.worker, "pick": failed.worker, "deferred": 0,
                 "escalated": 0, "calls": [], "counterfactual": None, "audit": None, "features": None,
                 "sprime": dict(sprime) if sprime else None, "look": look, "brief": brief, "fields": fields,
+                "resolution": resolution_record(fields, sprime), "deferral": None,
                 "trail": trail, "error": f"decision_error: {failed.reason}"}
+
+    @staticmethod
+    def _cf_names(spec: ArmSpec) -> Tuple[str, ...]:
+        """Models that answer every decision counterfactually under ``--log-counterfactuals all``: the arm's router set."""
+        return ROUTER_MODELS_BY_ARM[spec.name]
 
     async def _decide_models(self, ctx: _Ctx, i: int, fields: Mapping[str, Any], look: Optional[float],
                              brief: briefs_mod.Brief, tick: int, rnd: int, sprime: Optional[Mapping[str, str]],
@@ -1052,12 +1074,18 @@ class V41Harness:
         spec = ctx.spec
         text = self._compact(brief, with_ids=spec.board_on)
         used: List[Tuple[str, DecisionResponse]] = []
-        counterfactual = audit = features = None
+        counterfactual = audit = features = deferral_log = None
         deferred = escalated = 0
         key = f"{ctx.arm}|{ctx.case}|{ctx.seed}|{i}|{rnd}"
+        resolution = None if spec.kind == "fw" else resolution_record(fields, sprime)
+        tmap = resolution["target_map"] if resolution else None
+        memo: Dict[str, Tuple[DecisionRequest, DecisionResponse]] = {}
 
         async def go(name: str) -> Tuple[DecisionRequest, DecisionResponse]:
-            return await self._call(ctx, name, fields, text, brief, tick, i, trail)
+            """One call per model per decision: a second ask for the same model is answered from the first."""
+            if name not in memo:
+                memo[name] = await self._call(ctx, name, fields, text, brief, tick, i, trail)
+            return memo[name]
 
         if spec.kind == "fw":
             req, final = await go(FW)
@@ -1084,21 +1112,37 @@ class V41Harness:
             if pick not in self.workers:
                 raise HarnessError(f"router picked {pick!r}, which is not a worker")
             if pick == D1:
-                result = ctx.deferral.decide_answers(req1, d1r.answers)
+                th = ctx.deferral.thresholds
+                result = ctx.deferral.decide_answers(req1, d1r.answers, tmap)
                 deferred = int(result.deferred)
                 ctx.monitor.record(result.deferred)
                 audited = audit_selected(key)
                 req, final, final_name = req1, d1r, D1
-                if deferred or audited:
-                    treq, tr = await go(ctx.target_name)
-                    if audited:
-                        ctx.audits.append((result.sets, decision_labels(treq, tr.answers)))
-                        audit = {"sets": {q: list(s) for q, s in result.sets.items()},
-                                 "target_labels": decision_labels(treq, tr.answers), "used": bool(deferred),
-                                 "call": self._call_info(ctx.target_name, tr)}
-                    if deferred:
-                        req, final, final_name = treq, tr, ctx.target_name
-                        used.append((ctx.target_name, tr))
+                to = {q: th.model_for(q) for q in result.deferred_questions}
+                for name in dict.fromkeys(to.values()):    # one call per model, however many questions it answers
+                    await go(name)
+                if audited:   # the deferral models answer even if d1 kept the decision; logged only, never acted on
+                    audit_models = dict.fromkeys(m for m in (th.model_for(q) for q in th.deferring()) if m)
+                    for name in audit_models:
+                        await go(name)
+                    labels = {q: decision_labels(memo[th.model_for(q)][0], memo[th.model_for(q)][1].answers, tmap)[q]
+                              for q in th.deferring()}
+                    ctx.audits.append(({q: result.sets[q] for q in th.deferring()}, labels))
+                    audit = {"sets": {q: list(x) for q, x in result.sets.items()}, "target_labels": labels,
+                             "used": bool(deferred),
+                             "calls": [self._call_info(n, memo[n][1]) for n in audit_models]}
+                if deferred:
+                    answers = dict(d1r.answers)
+                    for q, name in to.items():       # only the deferred questions take their answer from their model
+                        answers[q] = memo[name][1].answers[q]
+                    lead = to.get("target") or next(iter(to.values()))
+                    final = dataclasses.replace(memo[lead][1], answers=answers)
+                    final_name = lead
+                    used.extend((n, memo[n][1]) for n in dict.fromkeys(to.values()))
+                deferral_log = {"sets": {q: list(x) for q, x in result.sets.items()},
+                                "deferred_questions": list(result.deferred_questions), "to": dict(to),
+                                "d1": decision_labels(req1, d1r.answers),
+                                "answers_from": {q: (to.get(q) or D1) for q in QTYPES}}
             else:
                 ctx.monitor.record(False)
                 req, final = await go(pick)
@@ -1108,11 +1152,33 @@ class V41Harness:
                     req, final = await go(ctx.target_name)
                     escalated, final_name = 1, ctx.target_name
                     used.append((ctx.target_name, final))
+            if ctx.log_cf:
+                counterfactual = await self._counterfactuals(ctx, spec, go)
         decision = decide_from_answers(final.answers, req)
         return {"decision": decision, "final": final, "final_name": final_name, "pick": pick, "deferred": deferred,
                 "escalated": escalated, "calls": [self._call_info(n, r) for n, r in used],
                 "counterfactual": counterfactual, "audit": audit, "features": features,
-                "sprime": dict(sprime) if sprime else None, "look": look, "brief": brief, "fields": fields}
+                "sprime": dict(sprime) if sprime else None, "look": look, "brief": brief, "fields": fields,
+                "resolution": resolution, "deferral": deferral_log}
+
+    async def _counterfactuals(self, ctx: _Ctx, spec: ArmSpec, go: Callable[[str], Any]) -> Dict[str, Any]:
+        """Every model of the arm's router set answers the decision; logged, never used. A model that is already in the
+        decision's memo is not asked again. A failed counterfactual is logged as an error entry and never fails the
+        live decision."""
+        names = self._cf_names(spec)
+        got = await asyncio.gather(*(go(n) for n in names), return_exceptions=True)
+        out: Dict[str, Any] = {}
+        for name, g in zip(names, got):
+            if isinstance(g, DecisionAbort):
+                raise g
+            if isinstance(g, _DecisionFailed):
+                out[name] = {"error": g.reason}
+            elif isinstance(g, BaseException):
+                raise g
+            else:
+                req, resp = g
+                out[name] = {**self._cf(req, resp), "call": self._call_info(name, resp)}
+        return out
 
     @staticmethod
     def _cf(req: DecisionRequest, resp: DecisionResponse) -> Dict[str, Any]:
@@ -1175,7 +1241,8 @@ class V41Harness:
             "queen_region": assigned,
             "target_region": resolve_target_region(d["target"], fields.get("target"), fields.get("candidates", [])),
             "override": override,
-            "sprime": rec["sprime"], "entry_id": entry_id, "kind": "decision", "error": bool(error), "error_reason": error,
+            "sprime": rec["sprime"], "resolution": rec.get("resolution"), "deferral": rec.get("deferral"),
+            "entry_id": entry_id, "kind": "decision", "error": bool(error), "error_reason": error,
             "attempts": sum(1 for t in rec["trail"] if t["error"]) + (0 if error else 1),
             "notes": [t["note"] for t in rec["trail"] if t["note"]],
             "failures": [{"attempt": t["attempt"], "error": t["error"], "billed": t["billed"]}
@@ -1269,7 +1336,8 @@ class V41Harness:
             "board_size": cell["board_size"], "anchors": len(anchors),
             "anchor_latency_s": ({m: list(v) for m, v in ctx.anchorer.latency_s.items()} if ctx.anchorer else {}),
             "visibility_latency_ms": vis, "decisions": n_dec, "rounds": self.world_config.rounds,
-            "shared_store": shared, "calibration": ctx.calibration, "variant": spec.variant,
+            "shared_store": shared, "calibration": ctx.calibration,
+            "log_counterfactuals": "all" if ctx.log_cf else "none", "variant": spec.variant,
             "alarms": ctx.alarm_count, "dropped_cites": ctx.dropped_cites,
             "identities": sorted({str((r.get("identity") or {}).get("served_model") or "none")
                                   for r in ctx.log if not r["error"]}),
@@ -1290,6 +1358,8 @@ class V41Harness:
                 board: Optional[Board], anchors: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:
         spec = {"study": "v4.1", "world": "tumor_mri", "arm": ctx.arm, "case": ctx.case, "seed": ctx.seed,
                 "calibration": ctx.calibration, "variant": ctx.spec.variant, "split": ctx.split}
+        if ctx.log_cf:   # only when on, so every other run keeps its bundle hash
+            spec["log_counterfactuals"] = "all"
         numeric = {k: v for k, v in metrics.items() if isinstance(v, (int, float)) or v is None}
         result = RunResult(run_id=ctx.run_id, arm=ctx.arm, scope=SCOPE, ticks=int(metrics["ticks"]),
                            metrics={**numeric, "coverage_at_queen": {str(k): v for k, v in metrics["coverage_at_queen"].items()}},
