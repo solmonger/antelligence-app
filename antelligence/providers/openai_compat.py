@@ -16,7 +16,7 @@ from typing import Any, Dict, FrozenSet, Iterable, Optional
 import httpx
 
 from antelligence.providers.base import ChatRequest, ChatResponse, ProviderError, ProviderUnavailable
-from antelligence.providers.redact import register_secret, scrub
+from antelligence.providers.redact import redact_body, register_secret, scrub
 
 MAX_RESPONSE_BYTES = 2_000_000
 
@@ -73,10 +73,11 @@ class OpenAICompatProvider:
                 raise ProviderUnavailable(scrub(f"transport error: {type(exc).__name__}: {exc}", [self._key_for_scrub()])) from exc
             elapsed = time.monotonic() - start
         if response.status_code != 200:
-            message = scrub(f"HTTP {response.status_code}: {response.text[:200]}", [self._key_for_scrub()])
+            body = redact_body(response.text, [self._key_for_scrub()])
+            message = f"HTTP {response.status_code}: {body}"
             if response.status_code in (401, 429) or response.status_code >= 500:
-                raise ProviderUnavailable(message, status=response.status_code)   # an outage, not a bad answer
-            raise ProviderError(message)
+                raise ProviderUnavailable(message, status=response.status_code, error_body=body)   # an outage
+            raise ProviderError(message, http_status=response.status_code, error_body=body)
         if len(response.content) > MAX_RESPONSE_BYTES:
             raise ProviderError("response exceeds size limit")
         try:

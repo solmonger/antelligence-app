@@ -32,6 +32,7 @@ import httpx
 from antelligence.kernel.canonical import canonical_json, content_hash
 from antelligence.kernel.decision import (Answer, DecisionAbort, DecisionBackend, DecisionError, DecisionRequest, DecisionResponse,
                                           Question, QUESTION_TYPES, check_answers)
+from antelligence.providers.redact import redact_body
 from antelligence.providers.base import BudgetExceeded, ChatRequest, Provider, ProviderError
 from antelligence.providers.ledger import LedgerWriter, cost_usd
 
@@ -46,9 +47,11 @@ logger = logging.getLogger(__name__)
 class _Transient(Exception):
     """Worth retrying. ``billed`` is the usage a rejected reply was still charged."""
 
-    def __init__(self, message: str = "", billed: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, message: str = "", billed: Optional[Mapping[str, Any]] = None, *,
+                 http_status: Optional[int] = None, error_body: Optional[str] = None) -> None:
         super().__init__(message)
         self.billed = billed
+        self.http_status, self.error_body = http_status, error_body
 
 
 def _add_billed(*parts: Optional[Mapping[str, Any]]) -> Optional[Dict[str, Any]]:
@@ -64,9 +67,11 @@ def _add_billed(*parts: Optional[Mapping[str, Any]]) -> Optional[Dict[str, Any]]
 class _Permanent(Exception):
     """Retrying cannot help. ``billed`` is the usage a rejected reply was still charged."""
 
-    def __init__(self, message: str = "", billed: Optional[Mapping[str, Any]] = None) -> None:
+    def __init__(self, message: str = "", billed: Optional[Mapping[str, Any]] = None, *,
+                 http_status: Optional[int] = None, error_body: Optional[str] = None) -> None:
         super().__init__(message)
         self.billed = billed
+        self.http_status, self.error_body = http_status, error_body
 
 
 # --- wire <-> Answer -------------------------------------------------------
@@ -121,6 +126,8 @@ class _TypedHTTPBackend:
         self.timeout_s, self.retries, self.backoff_s, self.price = timeout_s, retries, backoff_s, price
         self._transport = transport
         self.calls = 0  # physical HTTP attempts
+        # Set by LedgeredDecision: called with (request, info) for every failed attempt, retries included.
+        self.failure_sink: Optional[Callable[[DecisionRequest, Dict[str, Any]], None]] = None
 
     def describe(self) -> Dict[str, Any]:
         return {"backend": self.name, "model": self.model, "base_url": self.base_url}
@@ -132,19 +139,30 @@ class _TypedHTTPBackend:
     def _check_served(self, served: str) -> None:
         raise NotImplementedError
 
+    def _raise_for_status(self, reply: httpx.Response, where: str = "") -> None:
+        """Non-200 -> _Transient (401/429/5xx) or _Permanent, carrying ``http_status`` and the redacted body (<= 500 chars)."""
+        status = reply.status_code
+        if status == 200:
+            return
+        body = redact_body(reply.text, (self._api_key,) if self._api_key else ())
+        cls = _Transient if (status in _RETRYABLE_4XX or status >= 500) else _Permanent
+        raise cls(f"HTTP {status}{where}: {body}", http_status=status, error_body=body)
+
     async def decide(self, request: DecisionRequest) -> DecisionResponse:
         if request.model != self.model:
             raise DecisionError(f"request model {request.model!r} != backend model {self.model!r}")
-        last = ""
+        last, last_status, last_body = "", None, None
         spent: Optional[Dict[str, Any]] = None   # usage billed for the rejected replies of this call
         for attempt in range(self.retries + 1):
             try:
                 response = await self._once(request)
             except _Permanent as exc:
-                raise DecisionError(self._scrub(f"{self.name}: {exc}"),
-                                    billed=_add_billed(spent, exc.billed)) from None
+                self._report_failure(request, attempt, exc)
+                raise DecisionError(self._scrub(f"{self.name}: {exc}"), billed=_add_billed(spent, exc.billed),
+                                    http_status=exc.http_status, error_body=exc.error_body) from None
             except _Transient as exc:
-                last = self._scrub(str(exc))
+                self._report_failure(request, attempt, exc)
+                last, last_status, last_body = self._scrub(str(exc)), exc.http_status, exc.error_body
                 spent = _add_billed(spent, exc.billed)
                 if attempt < self.retries:
                     await asyncio.sleep(self.backoff_s * (attempt + 1))
@@ -155,7 +173,16 @@ class _TypedHTTPBackend:
                     output_tokens=response.output_tokens + spent["output_tokens"],
                     cost_usd=round(response.cost_usd + spent["cost_usd"], 10))
             return response
-        raise DecisionError(f"{self.name}: failed after {self.retries + 1} attempts: {last}", billed=spent)
+        raise DecisionError(f"{self.name}: failed after {self.retries + 1} attempts: {last}", billed=spent,
+                            http_status=last_status, error_body=last_body)
+
+    def _report_failure(self, request: DecisionRequest, attempt: int, exc: Exception) -> None:
+        """Tell the ledger about a failed attempt that a retry follows (status + redacted body). The attempt that ends
+        the call is recorded by the call's own failure row, so it is not reported twice."""
+        sink = self.failure_sink
+        if sink is not None and isinstance(exc, _Transient) and attempt < self.retries:
+            sink(request, {"attempt": attempt + 1, "of": self.retries + 1, "message": self._scrub(str(exc)),
+                           "http_status": getattr(exc, "http_status", None), "error_body": getattr(exc, "error_body", None)})
 
     async def _once(self, request: DecisionRequest) -> DecisionResponse:
         headers = {"Content-Type": "application/json", "Accept": "application/json"}
@@ -170,10 +197,7 @@ class _TypedHTTPBackend:
         except httpx.HTTPError as exc:
             raise _Transient(f"transport error: {type(exc).__name__}") from None
         elapsed = time.monotonic() - start
-        if reply.status_code in _RETRYABLE_4XX or reply.status_code >= 500:
-            raise _Transient(f"HTTP {reply.status_code}")
-        if reply.status_code != 200:
-            raise _Permanent(f"HTTP {reply.status_code}: {reply.text[:200]}")
+        self._raise_for_status(reply)
         if len(reply.content) > MAX_RESPONSE_BYTES:
             raise _Permanent("response exceeds size limit")
         try:
@@ -366,7 +390,7 @@ class SLMBackend:
         chat = ChatRequest(self.model, ({"role": "system", "content": _SLM_SYSTEM},
                                         {"role": "user", "content": _slm_prompt(request)}),
                            max_tokens=slm_max_tokens(request, self.max_tokens), temperature=0.0, seed=request.seed)
-        last = ""
+        last, last_status, last_body = "", None, None
         for attempt in range(self.retries + 1):
             try:
                 reply = await self.provider.complete(chat)
@@ -374,13 +398,14 @@ class SLMBackend:
             except BudgetExceeded as exc:
                 raise DecisionAbort(f"{self.name}: {exc}") from None
             except ProviderError as exc:
-                last = str(exc)
+                last, last_status, last_body = str(exc), exc.http_status, exc.error_body
                 if "(length)" in last:  # the provider's own length cut-off: deterministic, never retried
                     raise DecisionError(f"{self.name}: reply cut off at max_tokens={chat.max_tokens}") from None
                 if attempt < self.retries:
                     await asyncio.sleep(self.backoff_s * (attempt + 1))
         else:
-            raise DecisionError(f"{self.name}: failed after {self.retries + 1} attempts: {last}")
+            raise DecisionError(f"{self.name}: failed after {self.retries + 1} attempts: {last}",
+                                http_status=last_status, error_body=last_body)
         if reply.model != self.model:
             raise DecisionError(f"{self.name}: served model {reply.model!r} is not {self.model!r}")
         if reply.finish_reason == "length":  # deterministic at temperature 0: a retry would only repeat it
@@ -533,9 +558,18 @@ class LedgeredDecision:
     def __init__(self, inner: DecisionBackend, writer: LedgerWriter, *, role: str = "worker") -> None:
         self.inner, self.writer, self.role = inner, writer, role
         self.backend = str(inner.describe().get("backend", "unknown"))
+        if hasattr(inner, "failure_sink"):
+            inner.failure_sink = self._attempt_failed
 
     def describe(self) -> Dict[str, Any]:
         return self.inner.describe()
+
+    def _attempt_failed(self, request: DecisionRequest, info: Mapping[str, Any]) -> None:
+        """One zero-cost row per failed attempt that is retried; billed usage of rejected replies stays on the call's final row."""
+        self.writer.write(role=self.role, backend=self.backend, model=request.model, served_model=None,
+                          request_hash=request.request_hash,
+                          error=f"attempt {info['attempt']}/{info['of']}: {info['message']}",
+                          http_status=info["http_status"], error_body=info["error_body"])
 
     async def decide(self, request: DecisionRequest) -> DecisionResponse:
         try:
@@ -545,7 +579,8 @@ class LedgeredDecision:
             self.writer.write(role=self.role, backend=self.backend, model=request.model, served_model=None,
                               request_hash=request.request_hash, error=f"{type(exc).__name__}: {exc}",
                               input_tokens=billed.get("input_tokens", 0), output_tokens=billed.get("output_tokens", 0),
-                              cost_usd=billed.get("cost_usd", 0.0))
+                              cost_usd=billed.get("cost_usd", 0.0), http_status=getattr(exc, "http_status", None),
+                              error_body=getattr(exc, "error_body", None))
             raise
         self.writer.write(role=self.role, backend=self.backend, model=request.model,
                           served_model=response.served_model, request_hash=request.request_hash,
@@ -892,10 +927,7 @@ class _WorkerHTTPBackend(_TypedHTTPBackend):
         except httpx.HTTPError as exc:
             raise _Transient(f"transport error: {type(exc).__name__}") from None
         elapsed = time.monotonic() - start
-        if reply.status_code in _RETRYABLE_4XX or reply.status_code >= 500:
-            raise _Transient(f"HTTP {reply.status_code}")
-        if reply.status_code != 200:
-            raise _Permanent(f"HTTP {reply.status_code}: {reply.text[:200]}")
+        self._raise_for_status(reply)
         if len(reply.content) > MAX_RESPONSE_BYTES:
             raise _Permanent("response exceeds size limit")
         billed = None
@@ -1012,8 +1044,7 @@ class VLLMLogprobBackend(_ChatLabelBackend):
 
     async def _fetch_runtime_version(self, client: httpx.AsyncClient) -> Optional[str]:
         reply = await client.get(f"{self.base_url}/version", headers=self._headers())
-        if reply.status_code != 200:
-            raise _Transient(f"HTTP {reply.status_code} from /version")
+        self._raise_for_status(reply, " from /version")
         version = reply.json().get("version")
         if not isinstance(version, str) or not version:
             raise _Permanent("identity mismatch: /version does not look like vLLM")
@@ -1050,8 +1081,7 @@ class LlamaCppBackend(_ChatLabelBackend):
 
     async def _fetch_runtime_version(self, client: httpx.AsyncClient) -> Optional[str]:
         reply = await client.get(f"{self.base_url}/props", headers=self._headers())
-        if reply.status_code != 200:
-            raise _Transient(f"HTTP {reply.status_code} from /props")
+        self._raise_for_status(reply, " from /props")
         build = reply.json().get("build_info")
         if not isinstance(build, str) or not build:
             raise _Permanent("identity mismatch: /props does not look like llama.cpp")

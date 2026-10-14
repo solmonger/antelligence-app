@@ -9,7 +9,14 @@ from antelligence.kernel.canonical import content_hash, plain
 
 
 class ProviderError(RuntimeError):
-    """The provider failed or returned something we refuse to trust."""
+    """The provider failed or returned something we refuse to trust.
+
+    ``http_status`` / ``error_body`` (redacted, at most 500 characters) are set when the failure was an HTTP reply."""
+
+    def __init__(self, *args: object, http_status: "int | None" = None, error_body: "str | None" = None) -> None:
+        super().__init__(*args)
+        self.http_status = http_status
+        self.error_body = error_body
 
 
 class ProviderUnavailable(ProviderError):
@@ -18,8 +25,9 @@ class ProviderUnavailable(ProviderError):
     ``status`` is the HTTP status, or ``None`` for a transport error. Callers that must not turn an outage into a
     different answer (the queen, the sandbox proposer) retry the same request on this class and on no other."""
 
-    def __init__(self, message: str, *, status: Optional[int] = None) -> None:
-        super().__init__(message)
+    def __init__(self, message: str, *, status: Optional[int] = None, http_status: "int | None" = None,
+                 error_body: "str | None" = None) -> None:
+        super().__init__(message, http_status=status if http_status is None else http_status, error_body=error_body)
         self.status = status
 
 

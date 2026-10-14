@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, Iterator, Optional, Tuple, Union
 
 from antelligence.providers.base import ChatRequest, ChatResponse, Provider, ProviderError, ProviderUnavailable
-from antelligence.providers.redact import scrub
+from antelligence.providers.redact import redact_body, scrub
 
 DEFAULT_LEDGER_PATH = Path("ledger/v4-pilot-usage.jsonl")
 ROLES = ("worker", "queen", "escalation", "every_agent", "calibration")
@@ -87,7 +87,8 @@ class LedgerWriter:
 
     def write(self, *, role: str, backend: str, model: str, served_model: Optional[str], request_hash: str,
               input_tokens: int = 0, output_tokens: int = 0, latency_s: float = 0.0, cost_usd: float = 0.0,
-              error: Optional[str] = None) -> Dict[str, Any]:
+              error: Optional[str] = None, http_status: Optional[int] = None,
+              error_body: Optional[str] = None) -> Dict[str, Any]:
         if role not in ROLES:
             raise ValueError(f"role must be one of {ROLES}")
         tags = _CONTEXT.get()
@@ -98,6 +99,10 @@ class LedgerWriter:
                    latency_s=round(float(latency_s), 3), cost_usd=float(cost_usd))
         if error is not None:
             row["error"] = self._clean(error)[:240]
+            if http_status is not None:
+                row["http_status"] = int(http_status)
+            if error_body is not None:
+                row["error_body"] = redact_body(self._clean(error_body), self._redact)
         line = json.dumps(row, sort_keys=True, ensure_ascii=False)
         with self._lock:
             self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -142,11 +147,13 @@ class LedgeredChat:
         try:
             response = await self.inner.complete(request)
         except Exception as exc:
-            self._row(request, served_model=None, error=f"{type(exc).__name__}: {exc}")
+            status, body = getattr(exc, "http_status", None), getattr(exc, "error_body", None)
+            self._row(request, served_model=None, error=f"{type(exc).__name__}: {exc}", http_status=status, error_body=body)
             message = scrub(f"{type(exc).__name__}: {exc}")
             if isinstance(exc, ProviderUnavailable):    # keep the outage class: the queen retries it
-                raise ProviderUnavailable(message, status=exc.status) from None
-            raise ProviderError(message) from None
+                raise ProviderUnavailable(message, status=getattr(exc, "status", None), http_status=status,
+                                          error_body=body) from None
+            raise ProviderError(message, http_status=status, error_body=body) from None
         ok = response.model.startswith(self.expected_model) if self.prefix else response.model == self.expected_model
         reported = response.extra.get("cost") if response.extra else None
         cost = float(reported) if isinstance(reported, (int, float)) else cost_usd(
