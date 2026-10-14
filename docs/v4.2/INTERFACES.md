@@ -223,7 +223,7 @@ Value shapes: `look` float|None; `uptake_reading`, `washout_reading` `{"value": 
 ```
 
 `public()` summary = `{"ant_id","policy","model","in_run","band"}` where band is `"new"` (< 5 claims), `"usually right"`
-(confirm rate ≥ 0.7) or `"mixed"`. **Cards reset at the start of every section 9 run** (thresholds back to 0.5); only the
+(confirm rate = confirmed / (confirmed + contradicted) ≥ 0.7; ≥ 5 claims with none resolved reads "mixed") or `"mixed"`. **Cards reset at the start of every section 9 run** (thresholds back to 0.5); only the
 section 10 check carries them. Persist as `runs/<colony>/cards/<ant_id>.json` (canonical JSON). Future mapping to
 `ReputationRegistry` is documented in the code docstring; nothing is written on chain.
 
