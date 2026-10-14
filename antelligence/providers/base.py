@@ -31,6 +31,13 @@ class ProviderUnavailable(ProviderError):
         self.status = status
 
 
+class ProviderTruncated(ProviderError):
+    """The reply was cut off at the output cap (``finish_reason == "length"``).
+
+    A truncated reply is an INVALID REPLY, not a provider failure: the provider answered, the answer is unusable, and
+    asking again would cut off again. It is not a :class:`ProviderUnavailable`, so nothing retries it as an outage."""
+
+
 class BudgetExceeded(ProviderError):
     """A call would exceed the run's call or token budget."""
 

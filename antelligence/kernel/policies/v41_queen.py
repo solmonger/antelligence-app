@@ -36,7 +36,7 @@ from antelligence.kernel.briefs import Brief, build_brief, build_brief_board_off
 from antelligence.kernel.canonical import canonical_json
 from antelligence.kernel.decision import DecisionAbort
 from antelligence.kernel.policies.v41_harness import load_harness, validate_harness
-from antelligence.providers.base import BudgetExceeded, ChatRequest, Provider
+from antelligence.providers.base import BudgetExceeded, ChatRequest, Provider, ProviderTruncated
 from antelligence.providers.outage import OutagePolicy, complete_with_outage_retry
 
 MAX_CALLS = 6
@@ -348,7 +348,7 @@ class V41Queen:
                 raise
             except Exception as exc:   # invalid reply, other provider failure and per-run call/token trips land here
                 why = f"{type(exc).__name__}: {str(exc)[:90]}"
-                cause = "invalid_reply" if isinstance(exc, QueenReplyError) else "cap" if isinstance(exc, BudgetExceeded) else "provider"
+                cause = "invalid_reply" if isinstance(exc, (QueenReplyError, ProviderTruncated)) else "cap" if isinstance(exc, BudgetExceeded) else "provider"
         if replan and called:
             self.progress.replans += 1
             self.progress.stalls = 0

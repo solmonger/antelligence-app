@@ -6,7 +6,8 @@
 
 WORK_DIR is the sandbox work dir (``results-cache.jsonl`` and ``runs/<run_id>/`` with ``cell.json`` and the board export).
 A cached entry is dropped when its run export holds an ``alarm`` whose note starts ``queen fallback: ProviderError`` (what
-the old queen wrote when a provider outage became an S-rule fallback), when its cell says ``queen_fallbacks_provider > 0``,
+the old queen wrote when a provider outage became an S-rule fallback; a length cut-off, ``ProviderTruncated`` or the
+legacy "(length)" text, is an invalid reply and is NOT matched), when its cell says ``queen_fallbacks_provider > 0``,
 or when the cache row itself records ``queen_fallbacks.provider > 0``. Rows written by the current sandbox carry the
 episode's ``run_id`` and are matched exactly; older rows have none and are matched on (harness sha, arm, case, seed) against
 every export of that key: if any of them is tainted the row goes, because a cached coverage cannot be traced to one run.

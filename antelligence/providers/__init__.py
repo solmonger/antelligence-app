@@ -1,6 +1,6 @@
 """LLM providers: one OpenAI-compatible client plus cache/budget/fake wrappers."""
 
-from antelligence.providers.base import BudgetExceeded, ChatRequest, ChatResponse, Provider, ProviderError, ProviderUnavailable, Usage
+from antelligence.providers.base import BudgetExceeded, ChatRequest, ChatResponse, Provider, ProviderError, ProviderTruncated, ProviderUnavailable, Usage
 from antelligence.providers.decision_backends import (CachedDecision, EscalatingBackend, FakeBackend, JevBackend,
                                                       LayaBackend, LedgeredDecision, SLMBackend)
 from antelligence.providers.ledger import LedgerWriter, LedgeredChat, ledger_context
@@ -25,6 +25,7 @@ __all__ = [
     "OpenAICompatProvider",
     "Provider",
     "ProviderError",
+    "ProviderTruncated",
     "ProviderUnavailable",
     "SLMBackend",
     "Usage",
