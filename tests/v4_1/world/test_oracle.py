@@ -251,9 +251,12 @@ def test_target_vox_only_scripted(crop):
 
     far = [3, 30, 8]
 
-    def goal(params, meta=None):
+    def attempt(params, meta=None):
         w, _ = _start(crop)
-        out = w.apply("squad-0", Intent(ACTION_DECIDE, params, meta=meta or {}), 0)
+        return w.apply("squad-0", Intent(ACTION_DECIDE, params, meta=meta or {}), 0)
+
+    def goal(params, meta=None):
+        out = attempt(params, meta)
         assert out.accepted
         return out.effects["goal"]
 
@@ -263,9 +266,15 @@ def test_target_vox_only_scripted(crop):
     w, _ = _start(crop)
     forced = list(w.pathfinder.nearest_brain_voxel(far))
     assert forced != plain_goal
-    assert goal({**base, "target_vox": far}) == plain_goal  # untagged: ignored, the label decides
-    for tag in (False, None, 1, "true", "yes"):
-        assert goal({**base, "target_vox": far}, {"scripted": tag}) == plain_goal  # only the literal True counts
+    # untagged, or tagged with anything but the literal True: refused, the squad is not steered
+    for meta in (None, {"scripted": False}, {"scripted": None}, {"scripted": 1}, {"scripted": "true"}, {"scripted": "yes"}):
+        out = attempt({**base, "target_vox": far}, meta)
+        assert not out.accepted and "scripted" in out.reason, meta
+    w, _ = _start(crop)
+    before = w.observe("squad-0", 0).data
+    assert not w.apply("squad-0", Intent(ACTION_DECIDE, {**base, "target_vox": far}), 0).accepted
+    assert w.observe("squad-0", 0).data == before   # a refused intent changes nothing (no deposit, no target)
+    assert goal(base) == plain_goal                 # label-only intents are unaffected
     assert goal({**base, "target_vox": far}, {"scripted": True}) == forced
     # the oracle tags every intent that carries a target_vox
     w, o = _start(crop)

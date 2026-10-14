@@ -258,6 +258,10 @@ class TumorMRIWorld:
         i = self._idx(agent_id)
         sq = self._squads[i]
         p = intent.params
+        # target_vox (a raw goal voxel) is for scripted arms only (oracle S'), which tag meta["scripted"] = True. Any other
+        # intent that carries it is refused outright, so a label is the only way a model arm can steer a squad.
+        if p.get("target_vox") is not None and intent.meta.get("scripted") is not True:
+            return Outcome(False, "target_vox is allowed only for scripted policies")
         target, release, amount = p.get("target"), int(p.get("release", 0)), int(p.get("amount", 1))
         valid = {c.label for c in self.candidates_for(i)} | {STAY, EXPLORE}
         if target not in valid:
@@ -271,9 +275,7 @@ class TumorMRIWorld:
             sq.payload -= deposited
             sq.last_release = {"tick": int(tick), "amount_level": amount,
                                "fraction": cfg.amount_fractions[amount - 1], "mass": deposited}
-        # target_vox is honoured only for intents a scripted arm tagged meta["scripted"] = True (oracle S'); a model arm
-        # (or anything else) that sends it gets it ignored, so a label is the only way to steer a squad.
-        override = p.get("target_vox") if intent.meta.get("scripted") is True else None
+        override = p.get("target_vox")
         if override is not None or target != STAY:  # Stay keeps the current target (and its path)
             sq.target = target
             sq.target_source = "worker"

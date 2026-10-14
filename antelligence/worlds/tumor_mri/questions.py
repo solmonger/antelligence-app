@@ -31,8 +31,13 @@ def build_questions(candidate_labels: Sequence[str]) -> Dict[str, Question]:
     present = [l for l in CANDIDATE_LABELS if l in set(candidate_labels)]
     options = tuple(present) + (STAY, EXPLORE)
     criteria = {l: f"head to region {l}" for l in present}
-    criteria[STAY] = "keep the current target (a squad with no target stays where it is)"
-    criteria[EXPLORE] = "go to the nearest perceived region no squad has visited, else the nearest most uncertain area"
+    # Goal 4.2 wording, verbatim. The prompt text is hashed into config/cache keys, so changing it invalidates reply caches.
+    # Goal 4.2: "Stay: keep the current target."
+    criteria[STAY] = "keep the current target"
+    # Goal 4.2: "Explore: go to the nearest perceived region no squad has visited. If there is none, go to the nearest
+    # highest-uncertainty voxel cluster."
+    criteria[EXPLORE] = ("go to the nearest perceived region no squad has visited. If there is none, "
+                         "go to the nearest highest-uncertainty voxel cluster")
     return {
         Q_TARGET: Question("choice", "Where should this squad go next?", options, criteria),
         Q_RELEASE: Question("noul", "Should this squad release drug here and now?",
