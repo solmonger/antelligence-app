@@ -117,36 +117,44 @@ def run_terminate(responses, *, cli=False, run_rc=1):
 
 
 def test_routes_are_tried_in_documented_order_and_each_result_is_logged():
-    refused = [(403, '{"error":"forbidden %s"}' % POD_KEY)] * 3 + [(200, '{"errors":[{"message":"not allowed"}]}')] * 2
+    refused = ([(403, '{"error":"forbidden %s"}' % POD_KEY)] * 2 + [(200, '{"errors":[{"message":"not allowed"}]}')]
+               + [(403, '{"error":"forbidden %s"}' % POD_KEY)] + [(200, '{"errors":[{"message":"not allowed"}]}')])
     out, seen, events, logs, ran = run_terminate(refused, cli=True)
     assert out == "failed"
     assert [(m, u.split("/pods/")[0] if "/pods/" in u else u) for m, u, _ in seen] == [
-        ("DELETE", "https://rest.runpod.io/v1"), ("POST", "https://rest.runpod.io/v1"),
-        ("DELETE", "https://api.runpod.io/v2"), ("POST", "https://api.runpod.io/graphql"),
+        ("DELETE", "https://rest.runpod.io/v1"), ("DELETE", "https://api.runpod.io/v2"),
+        ("POST", "https://api.runpod.io/graphql"), ("POST", "https://rest.runpod.io/v1"),
         ("POST", "https://api.runpod.io/graphql")]
-    assert 'podTerminate(input: {podId: "podZ"})' in seen[3][2] and "podStop" in seen[4][2]
-    assert ran == [["runpodctl", "remove", "pod", "podZ"], ["runpodctl", "stop", "pod", "podZ"]]
+    assert 'podTerminate(input: {podId: "podZ"})' in seen[2][2] and "podStop" in seen[4][2]
+    assert ran == [["runpodctl", "pod", "delete", "podZ"], ["runpodctl", "remove", "pod", "podZ"],
+                   ["runpodctl", "pod", "stop", "podZ"], ["runpodctl", "stop", "pod", "podZ"]]
     routes = [e["route"] for e in events]
-    assert routes == ["rest-v1-delete", "rest-v1-stop", "rest-v2-delete", "graphql-podTerminate", "graphql-podStop",
-                      "runpodctl-remove-pod", "runpodctl-stop-pod"]
-    assert [e["outcome"] for e in events] == ["refused"] * 7
+    assert routes == ["rest-v1-delete", "rest-v2-delete", "graphql-podTerminate", "runpodctl-pod-delete",
+                      "runpodctl-remove-pod", "rest-v1-stop", "graphql-podStop", "runpodctl-pod-stop",
+                      "runpodctl-stop-pod"]
+    assert [e["outcome"] for e in events] == ["refused"] * 9
     assert events[0]["status"] == 403 and events[0]["path"] == "rest.runpod.io/v1/pods/<id>"
     blob = json.dumps(events) + "".join(logs)
     assert POD_KEY not in blob and "[redacted]" in events[0]["body"] and "podZ" not in blob
 
 
 def test_runpodctl_is_skipped_when_absent_and_stop_counts_as_stopped():
-    out, _, events, _, ran = run_terminate([(403, ""), (204, "")], cli=False)
-    assert out == "stopped" and ran == [] and [e["route"] for e in events] == ["rest-v1-delete", "rest-v1-stop"]
+    out, _, events, _, ran = run_terminate([(403, "")] * 3 + [(204, "")], cli=False)
+    assert out == "stopped" and ran == [] and [e["route"] for e in events] == [
+        "rest-v1-delete", "rest-v2-delete", "graphql-podTerminate", "runpodctl-pod-delete", "runpodctl-remove-pod",
+        "rest-v1-stop"]
+    assert [e["outcome"] for e in events[3:5]] == ["skipped", "skipped"]
     out, _, events, _, _ = run_terminate([(401, "")] * 5, cli=False)
     assert out == "failed" and [e["outcome"] for e in events[-2:]] == ["skipped", "skipped"]
 
 
 def test_graphql_success_and_runpodctl_success():
-    out, _, events, _, _ = run_terminate([(403, "")] * 3 + [(200, '{"data":{"podTerminate":null}}')])
+    out, _, events, _, _ = run_terminate([(403, "")] * 2 + [(200, '{"data":{"podTerminate":null}}')])
     assert out == "terminated" and events[-1]["route"] == "graphql-podTerminate" and events[-1]["outcome"] == "ok"
-    out, _, _, _, ran = run_terminate([(403, "")] * 5, cli=True, run_rc=0)
-    assert out == "terminated" and ran == [["runpodctl", "remove", "pod", "podZ"]]
+    out, _, _, _, ran = run_terminate([(403, "")] * 3, cli=True, run_rc=0)
+    assert out == "terminated" and ran == [["runpodctl", "pod", "delete", "podZ"]]
+    out, _, events, _, ran = run_terminate([(403, "")] * 3, cli=True, run_rc=0)
+    assert out == "terminated" and "rest-v1-stop" not in [e["route"] for e in events]
 
 
 def test_missing_credentials_are_logged_with_which_one_is_absent():
@@ -165,8 +173,16 @@ def test_network_error_is_logged_and_next_route_runs():
         return 204
 
     events = []
-    assert wd.terminate_self({"RUNPOD_POD_ID": "p", "RUNPOD_API_KEY": "k"}, request, lambda _m: None, events=events.append) == "stopped"
+    assert wd.terminate_self({"RUNPOD_POD_ID": "p", "RUNPOD_API_KEY": "k"}, request, lambda _m: None, events=events.append) == "terminated"
     assert [e["outcome"] for e in events] == ["error", "ok"] and events[0]["body"] == "OSError"
+
+
+def test_every_terminate_route_precedes_every_stop_route():
+    names = [route[0] for route in wd.ROUTES]
+    idx = {n: i for i, n in enumerate(names)}
+    stops = [n for n in names if n not in wd.TERMINATE_ROUTES]
+    assert stops and set(wd.TERMINATE_ROUTES) <= set(names)
+    assert max(idx[n] for n in wd.TERMINATE_ROUTES) < min(idx[n] for n in stops)
 
 
 # --- d1 serves the log ------------------------------------------------------------------------------------------

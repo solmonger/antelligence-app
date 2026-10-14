@@ -116,7 +116,7 @@ def test_terminate_falls_back_to_stop_then_reports_failure():
         return 403 if method == "DELETE" else 200
 
     assert wd.terminate_self({"RUNPOD_POD_ID": "p", "RUNPOD_API_KEY": "k"}, delete_refused, lambda _m: None) == "stopped"
-    assert seen == ["DELETE", "POST"]
+    assert seen == ["DELETE", "DELETE", "POST"]
     assert wd.terminate_self({"RUNPOD_POD_ID": "p", "RUNPOD_API_KEY": "k"}, lambda *a: 401, lambda _m: None) == "failed"
 
     def boom(*_a):

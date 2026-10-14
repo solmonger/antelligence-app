@@ -233,15 +233,19 @@ RunCmd = Callable[[List[str], Mapping[str, str]], Tuple[int, str]]
 # stop billing for compute and container disk; stop routes are the fallback (a stopped pod still bills storage).
 # REST v1 is what docs.runpod.io/pods/manage-pods documents; v2 and GraphQL are what the other docs pages show.
 ROUTES: Tuple[Tuple[str, str, str, str, Optional[str]], ...] = (
+    # every terminate route first: a stop that succeeds early would leave the pod billing storage
     ("rest-v1-delete", "http", "DELETE", REST_URL + "/pods/{id}", None),
-    ("rest-v1-stop", "http", "POST", REST_URL + "/pods/{id}/stop", None),
     ("rest-v2-delete", "http", "DELETE", REST_V2_URL + "/pods/{id}", None),
     ("graphql-podTerminate", "http", "POST", GRAPHQL_URL, 'mutation { podTerminate(input: {podId: "{id}"}) }'),
+    ("runpodctl-pod-delete", "cli", "", "runpodctl pod delete {id}", None),  # spelling in docs.runpod.io/pods/manage-pods
+    ("runpodctl-remove-pod", "cli", "", "runpodctl remove pod {id}", None),  # older runpodctl spelling
+    # stop fallbacks (GPU billing stops; storage still bills)
+    ("rest-v1-stop", "http", "POST", REST_URL + "/pods/{id}/stop", None),
     ("graphql-podStop", "http", "POST", GRAPHQL_URL, 'mutation { podStop(input: {podId: "{id}"}) { id desiredStatus } }'),
-    ("runpodctl-remove-pod", "cli", "", "runpodctl remove pod {id}", None),
+    ("runpodctl-pod-stop", "cli", "", "runpodctl pod stop {id}", None),
     ("runpodctl-stop-pod", "cli", "", "runpodctl stop pod {id}", None),
 )
-TERMINATE_ROUTES = ("rest-v1-delete", "rest-v2-delete", "graphql-podTerminate", "runpodctl-remove-pod")
+TERMINATE_ROUTES = ("rest-v1-delete", "rest-v2-delete", "graphql-podTerminate", "runpodctl-pod-delete", "runpodctl-remove-pod")
 
 
 def _http(method: str, url: str, headers: Mapping[str, str], body: Optional[str] = None) -> Tuple[int, str]:
