@@ -37,7 +37,10 @@ MODEL = v4_pod.WORKERS_KEY
 DEFAULT_IDLE_DOWN_MIN = 15.0
 WATCH_POLL_S = 60.0
 BOOT_TIMEOUT_MIN = 45.0  # boot allowance: a pod that answers nothing is judged on the usage ledger only after this
-POD_BACKENDS = ("vllm", "d1")  # usage-ledger ``backend`` values served by the pod
+# Usage-ledger ``backend`` values that are NOT served by the pod (Nous queen/FW, Bonsai on the Mac). Any other named
+# backend counts as pod activity: an unknown name keeps the pod up (bounded by the deadline) rather than killing a
+# working pod. Rows without a backend name (e.g. Nous preflight probes) are not pod activity.
+NON_POD_BACKENDS = frozenset({"nous", "nous_fw", "llamacpp", "bonsai"})
 WATCH_PORTS = (8100, 8101, 8102)
 KEEP_POD_FLAG = "--keep-pod"
 Echo = v4_pod.Echo
@@ -237,10 +240,13 @@ def read_ledger_rows(path: Path) -> List[Dict[str, Any]]:
 
 
 def last_pod_row_utc(rows: List[Dict[str, Any]]) -> Optional[datetime]:
-    """Newest ``utc`` among usage-ledger rows written by the pod backends (vLLM or d1), failed calls included."""
+    """Newest ``utc`` among usage-ledger rows written by pod backends, failed calls included.
+
+    Fail-safe: every named backend outside ``NON_POD_BACKENDS`` (vllm, d1, slm, anything new) counts as the pod."""
     best: Optional[datetime] = None
     for row in rows:
-        if str(row.get("backend", "")).lower() not in POD_BACKENDS:
+        backend = str(row.get("backend") or "").strip().lower()
+        if not backend or backend in NON_POD_BACKENDS or row.get("provider") == "nous":
             continue
         try:
             when = datetime.fromisoformat(str(row["utc"]).replace("Z", "+00:00"))

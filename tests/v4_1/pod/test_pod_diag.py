@@ -485,3 +485,15 @@ def test_scripts_pin_hashes_the_new_launcher_files_as_committed():
     assert set(pin.hashes) == set(v4_pod.WORKERS_FETCH) and all(re.fullmatch(r"[0-9a-f]{64}", h) for h in pin.hashes.values())
     frag = v4_pod.fetch_fragment(pin)
     assert "v41_pod_watchdog.py" in frag and pin.hashes["v41_pod_watchdog.py"] in frag
+
+
+def test_ledger_activity_is_fail_safe_for_pod_backend_names():
+    """Any named backend that is not a known non-pod one counts as the pod (S19 review: ``slm`` rows were ignored)."""
+    t = "2026-10-13T20:00:00Z"
+    later = "2026-10-13T20:05:00Z"
+    for name in ("vllm", "d1", "slm", "laya", "jev", "something-new"):
+        assert v41_pod.last_pod_row_utc([{"backend": name, "utc": t}]) == datetime(2026, 10, 13, 20, 0, tzinfo=timezone.utc)
+    not_pod = [{"backend": "nous", "utc": later}, {"backend": "nous_fw", "utc": later}, {"backend": "llamacpp", "utc": later},
+               {"backend": None, "utc": later}, {"utc": later}, {"backend": "x", "provider": "nous", "utc": later}]
+    assert v41_pod.last_pod_row_utc(not_pod) is None
+    assert v41_pod.last_pod_row_utc(not_pod + [{"backend": "slm", "utc": t}]) == datetime(2026, 10, 13, 20, 0, tzinfo=timezone.utc)
