@@ -484,11 +484,24 @@ def run_with_pod_down(fn: Callable[[], int], *, keep_pod: bool = False, paths: O
             down(paths)
 
 
-def run_main_with_pod_down(main: Callable[[Optional[List[str]]], int], argv: Optional[List[str]] = None) -> int:
-    """Thin wrapper for the ``__main__`` of v41_run / v41_sandbox / v41_latency: strips ``--keep-pod`` and runs main."""
+def run_main_with_pod_down(main: Callable[[Optional[List[str]]], int], argv: Optional[List[str]] = None, *,
+                           parser: Optional[Callable[[], argparse.ArgumentParser]] = None) -> int:
+    """Thin wrapper for the ``__main__`` of v41_run / v41_sandbox / v41_latency.
+
+    Strips ``--keep-pod``, then validates the remaining arguments with the script's own ``parser()`` (passed as
+    ``parser=``, else the ``parser`` attribute of ``main``'s module) BEFORE entering the down-on-exit scope. So
+    ``--help``, ``-h``, an unknown flag or a missing required argument exits through argparse (SystemExit) without
+    touching the pod: a help call must never terminate a live pod another process is using (mistake-2043).
+
+    Once the arguments parse, the run has started: ANY exit (return, error, exception, KeyboardInterrupt, SIGTERM,
+    exit 75) brings the pod down unless ``--keep-pod`` was given. A ``main`` module with no ``parser`` is run
+    without pre-validation (legacy behaviour)."""
     args = list(sys.argv[1:] if argv is None else argv)
     keep = KEEP_POD_FLAG in args
     rest = [a for a in args if a != KEEP_POD_FLAG]
+    make = parser or getattr(sys.modules.get(getattr(main, "__module__", "")), "parser", None)
+    if make is not None:
+        make().parse_args(rest)  # argparse help / usage errors raise SystemExit here, before any down()
     return run_with_pod_down(lambda: main(rest), keep_pod=keep)
 
 
