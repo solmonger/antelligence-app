@@ -1,0 +1,283 @@
+{
+ "anchors": "mock",
+ "arms": [
+  "SW-B",
+  "SW-noBoard"
+ ],
+ "backends": "live",
+ "base_harness_sha256": "540273f36628ff287e08f30347767aab9fbfaf580bd8e119629f036f36cbfc11",
+ "board": {
+  "anchors": [
+   {
+    "chain_tx": "direct-1",
+    "digest": "c255b5391688903478735bf66626559e85573d48ffb13ca8ec48c0c3190046c7",
+    "ots_path": "04685fa86e655c3d3759aada71983082a0aa8ee6dd879de20cd2b958bda9880d.4.ots",
+    "rekor_checkpoint": "mock-rekor - 1\n1106\ng/VlrO0+Ek6cz/6t2tmd0QIUWw7qagmUCIXBYPZ2j+k=\n\n\u2014 mock-rekor AAAAADBEAiAwVPpKREhHYlr2fLtmXTgZYmWYjkP7Rua8HlX18AsdggIgew08e1H3QAIzysInMNphrK9in2BE4tAqix67j75CeWY=\n",
+    "rekor_log_index": 1105,
+    "rekor_shard_index": 1105,
+    "rekor_tree_id": "1",
+    "rekor_tree_size": 1106,
+    "rekor_uuid": "0000000000000001491baf9fdf7e24f0a71702562f4bcdea04af4a8496d8054b5fd3804ba7ba8561",
+    "root": "d766913f52e108455eccadd8ad8905b8029760a24c7840a186f512b84cc872d4",
+    "size": 4
+   }
+  ],
+  "entries": 4,
+  "run_id": "04685fa86e655c3d3759aada71983082a0aa8ee6dd879de20cd2b958bda9880d"
+ },
+ "dev_a": [
+  "BRATS_016",
+  "BRATS_406",
+  "BRATS_183",
+  "BRATS_238",
+  "BRATS_193",
+  "BRATS_464",
+  "BRATS_479",
+  "BRATS_303",
+  "BRATS_420",
+  "BRATS_337",
+  "BRATS_056",
+  "BRATS_441",
+  "BRATS_373",
+  "BRATS_462",
+  "BRATS_113",
+  "BRATS_375",
+  "BRATS_205",
+  "BRATS_246",
+  "BRATS_468",
+  "BRATS_368",
+  "BRATS_034",
+  "BRATS_356",
+  "BRATS_120",
+  "BRATS_389",
+  "BRATS_343",
+  "BRATS_483",
+  "BRATS_287",
+  "BRATS_328",
+  "BRATS_286",
+  "BRATS_069"
+ ],
+ "dev_b": [
+  "BRATS_167",
+  "BRATS_067",
+  "BRATS_355",
+  "BRATS_297",
+  "BRATS_149",
+  "BRATS_161",
+  "BRATS_290",
+  "BRATS_423",
+  "BRATS_374",
+  "BRATS_101"
+ ],
+ "episodes_run": 240,
+ "error": null,
+ "evaluations": 8,
+ "final_harness_sha256": "540273f36628ff287e08f30347767aab9fbfaf580bd8e119629f036f36cbfc11",
+ "generated_utc": "2026-10-14T12:56:37+00:00",
+ "projection": {
+  "basis": "measured over 804 ledgered queen calls",
+  "cost_per_call_usd": 0.0003683776366915423,
+  "fits": true,
+  "headroom_usd": 7.1565103227,
+  "max_episodes": 400,
+  "note": "worst case, nothing cached; RunPod pod time for the worker calls is billed by the pod script, not per call",
+  "nous_spent_usd": 0.3434896772999998,
+  "nous_stop_usd": 7.5,
+  "projected_nous_usd": 0.8855798386064677,
+  "queen_calls": 2404,
+  "rounds": 4
+ },
+ "promotion": "Nothing is promoted automatically. promotion_candidates are the candidate edits for G1; the lead approves.",
+ "promotion_candidates": [],
+ "queen_extra_body": {
+  "reasoning": {
+   "enabled": false
+  }
+ },
+ "queen_fallbacks": {
+  "cap": 0,
+  "invalid_reply": 5,
+  "provider": 0
+ },
+ "queen_model": "deepseek/deepseek-v4.1-flash",
+ "results_cache_hits": 0,
+ "rounds": [
+  {
+   "candidate_harness_sha256": null,
+   "dev_a": null,
+   "dev_b": null,
+   "diff": [],
+   "edit_entry_id": "36947422f76f77635e6030a2aa2ccea790060d8e74130cd301e6d70965c041b3",
+   "kept": false,
+   "patch_sha256": "6e5b3ac0ec353373491db10dfcc7ec3bd1d2a6ed9598cc091d2faa516f276a4d",
+   "prediction": {
+    "delta_ppm": 15000,
+    "metric": "coverage"
+   },
+   "promotion_candidate": false,
+   "proposal": {
+    "patch": [
+     {
+      "op": "replace",
+      "path": "/queen/cadence",
+      "value": 20
+     }
+    ],
+    "prediction": {
+     "delta_ppm": 15000,
+     "metric": "coverage"
+    }
+   },
+   "rejected": "patched harness is invalid: queen.cadence must be an int in 30..40",
+   "round": 1
+  },
+  {
+   "candidate_harness_sha256": "e301d7386a9dcef099ae419c4e03a7281d5139a5d0cc3e888ec45e6f97e77955",
+   "dev_a": {
+    "losses": 19,
+    "n_pairs": 60,
+    "per_arm_points": {
+     "SW-B": -3.0178274446353943,
+     "SW-noBoard": 1.055941488054883
+    },
+    "score_points": -0.9809429782902557,
+    "ties": 7,
+    "win_rate": 0.6415094339622641,
+    "wins": 34
+   },
+   "dev_b": null,
+   "diff": [
+    {
+     "after": 0.45,
+     "before": 0.55,
+     "op": "replace",
+     "path": "/router/slm_conf_min"
+    }
+   ],
+   "edit_entry_id": "a845a18fa103eb468f99dbc03b201439f64c05e0b505a8548261e24b3f7c88d1",
+   "kept": false,
+   "patch_sha256": "53974d1ec0bbe36b895488efab665b570b419c1f86db5357542d7cec74cca28d",
+   "prediction": {
+    "delta_ppm": 8000,
+    "metric": "coverage"
+   },
+   "promotion_candidate": false,
+   "proposal": {
+    "patch": [
+     {
+      "op": "replace",
+      "path": "/router/slm_conf_min",
+      "value": 0.45
+     }
+    ],
+    "prediction": {
+     "delta_ppm": 8000,
+     "metric": "coverage"
+    }
+   },
+   "rejected": null,
+   "round": 2
+  },
+  {
+   "candidate_harness_sha256": "4cf83561905dd51acf43811efdde6612f5c55143742fb574c3f0ebf33fe54ddd",
+   "dev_a": {
+    "losses": 33,
+    "n_pairs": 60,
+    "per_arm_points": {
+     "SW-B": -3.3568976803460506,
+     "SW-noBoard": -1.4694516544544605
+    },
+    "score_points": -2.4131746674002557,
+    "ties": 12,
+    "win_rate": 0.3125,
+    "wins": 15
+   },
+   "dev_b": null,
+   "diff": [
+    {
+     "after": 0.65,
+     "before": 0.55,
+     "op": "replace",
+     "path": "/router/slm_conf_min"
+    }
+   ],
+   "edit_entry_id": "d229d561fedc482bb6ae9242bb1c6d4ed7cacdb6be52bdd309ebddc0f04722f0",
+   "kept": false,
+   "patch_sha256": "3d93fd4bb33847e0afd7a3c2e3fde891008430c956d986dc594dcb6349ab5b10",
+   "prediction": {
+    "delta_ppm": 6000,
+    "metric": "coverage"
+   },
+   "promotion_candidate": false,
+   "proposal": {
+    "patch": [
+     {
+      "op": "replace",
+      "path": "/router/slm_conf_min",
+      "value": 0.65
+     }
+    ],
+    "prediction": {
+     "delta_ppm": 6000,
+     "metric": "coverage"
+    }
+   },
+   "rejected": null,
+   "round": 3
+  },
+  {
+   "candidate_harness_sha256": "bb97d65329fb199c96acc5320b0f2626d504368b6a60ff6b9c288c218c9cc089",
+   "dev_a": {
+    "losses": 27,
+    "n_pairs": 60,
+    "per_arm_points": {
+     "SW-B": -2.094325914628883,
+     "SW-noBoard": 0.3319879199550431
+    },
+    "score_points": -0.8811689973369199,
+    "ties": 0,
+    "win_rate": 0.55,
+    "wins": 33
+   },
+   "dev_b": null,
+   "diff": [
+    {
+     "after": 35,
+     "before": 30,
+     "op": "replace",
+     "path": "/queen/cadence"
+    }
+   ],
+   "edit_entry_id": "58b4620c94df32f192ee61ab264eab19d84bf31537d1fd6816a78a78a5067971",
+   "kept": false,
+   "patch_sha256": "e2f4842f95e46a383b7d7724aca5041ea8e10da68b17575b5ee1f85ea17ae710",
+   "prediction": {
+    "delta_ppm": 4000,
+    "metric": "coverage"
+   },
+   "promotion_candidate": false,
+   "proposal": {
+    "patch": [
+     {
+      "op": "replace",
+      "path": "/queen/cadence",
+      "value": 35
+     }
+    ],
+    "prediction": {
+     "delta_ppm": 4000,
+     "metric": "coverage"
+    }
+   },
+   "rejected": null,
+   "round": 4
+  }
+ ],
+ "router_kind": "frozen",
+ "router_sha256": "e8908b326170f0730c0a3ca8ae4a1064d310767252a0909b279b9dccb1639045",
+ "seed": 1,
+ "status": "complete",
+ "step": "Phase 0 step 8 (queen sandbox loop, goal 4.6)",
+ "study": "v4.1",
+ "thresholds_sha256": "607ad75539bc27d656d368ac0f22e80411a57b2789ce68ccf7938f2d0201fbee"
+}
