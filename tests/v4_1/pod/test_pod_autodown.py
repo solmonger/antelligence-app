@@ -175,7 +175,7 @@ def test_watchdog_against_a_fake_local_metrics_server():
 def test_main_terminate_now_and_env_knobs(monkeypatch):
     sent = []
     monkeypatch.setattr(wd, "_http", lambda m, u, h: sent.append((m, u)) or 204)
-    monkeypatch.setattr(wd, "terminate_self", lambda env, request=wd._http, log=print: "terminated")
+    monkeypatch.setattr(wd, "terminate_self", lambda env, request=wd._http, log=print, **kw: "terminated")
     assert wd.main(["--terminate-now"], {"RUNPOD_POD_ID": "p", "RUNPOD_API_KEY": "k"}) == 0
     seen = {}
     monkeypatch.setattr(wd, "watch", lambda env, idle_s, poll_s, **kw: seen.update(idle=idle_s, poll=poll_s) or 0)
@@ -368,7 +368,7 @@ def test_watcher_ignores_boot_then_enforces_boot_timeout(tmp_path):
     rc, out = run_watch(transport, paths, c, max_polls=40)  # 40 min: not idle (never ready), under 45 min boot limit
     assert paths.state.exists() and not any(m == "DELETE" for m, _ in log)
     rc, out = run_watch(transport, paths, c)
-    assert not paths.state.exists() and any("no metrics 45 min" in m for m in out)
+    assert not paths.state.exists() and any("usage ledger only" in m and "idle" in m for m in out)
 
 
 def test_watcher_enforces_auto_down_deadline(tmp_path):

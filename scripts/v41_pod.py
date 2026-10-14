@@ -27,6 +27,7 @@ sys.path.insert(0, str(ROOT))
 
 from antelligence.experiments import v41_budget  # noqa: E402
 from scripts import v4_pod  # noqa: E402
+from scripts import v41_pod_watchdog as wd  # noqa: E402
 from scripts.v41_pod_watchdog import IdleTracker, parse_activity  # noqa: E402
 
 HARD_STOP_USD = v41_budget.STOPS["runpod"]  # 24.00
@@ -35,7 +36,8 @@ IMAGE = v4_pod.VLLM_IMAGE  # pinned by v4_pod (vLLM >= 0.17)
 MODEL = v4_pod.WORKERS_KEY
 DEFAULT_IDLE_DOWN_MIN = 15.0
 WATCH_POLL_S = 60.0
-BOOT_TIMEOUT_MIN = 45.0  # the watcher gives up on a pod that never serves metrics
+BOOT_TIMEOUT_MIN = 45.0  # boot allowance: a pod that answers nothing is judged on the usage ledger only after this
+POD_BACKENDS = ("vllm", "d1")  # usage-ledger ``backend`` values served by the pod
 WATCH_PORTS = (8100, 8101, 8102)
 KEEP_POD_FLAG = "--keep-pod"
 Echo = v4_pod.Echo
@@ -196,29 +198,83 @@ def cmd_down(client: v4_pod.RunPod, paths: v4_pod.Paths, echo: Echo, *,
         return v4_pod.cmd_down(client, paths, echo)
 
 
-def fetch_activity(state: Dict[str, Any], http: httpx.Client) -> Dict[str, Optional[Dict[str, float]]]:
-    """Scrape /metrics of each server through the RunPod proxy. Unreachable -> None."""
+def proxy_stem(state: Dict[str, Any]) -> str:
     base = str(state["base_url"]).rstrip("/").removesuffix("/v1")
-    stem = base[: -len("-8100.proxy.runpod.net")]
+    return base[: -len("-8100.proxy.runpod.net")]
+
+
+def proxy_url(state: Dict[str, Any], port: int, path: str) -> str:
+    return f"{proxy_stem(state)}-{port}.proxy.runpod.net{path}"
+
+
+def fetch_activity(state: Dict[str, Any], http: httpx.Client) -> Dict[str, Optional[Dict[str, float]]]:
+    """Scrape /metrics of each server through the RunPod proxy. Unreachable, non-200, or reachable with none of the known
+    metric names (nothing we can read) -> None, so the caller falls back to the usage ledger."""
     out: Dict[str, Optional[Dict[str, float]]] = {}
     for port in WATCH_PORTS:
         try:
-            r = http.get(f"{stem}-{port}.proxy.runpod.net/metrics", headers={"Authorization": f"Bearer {state['api_secret']}"})
-            out[str(port)] = parse_activity(r.text) if r.status_code == 200 else None
+            r = http.get(proxy_url(state, port, "/metrics"), headers={"Authorization": f"Bearer {state['api_secret']}"})
+            act = parse_activity(r.text) if r.status_code == 200 else None
+            out[str(port)] = act or None
         except httpx.HTTPError:
             out[str(port)] = None
     return out
+
+
+def models_reachable(state: Dict[str, Any], http: httpx.Client) -> bool:
+    """True if the 9B server answers /v1/models through the proxy (the pod is up even if /metrics is not forwarded)."""
+    try:
+        r = http.get(proxy_url(state, 8100, "/v1/models"), headers={"Authorization": f"Bearer {state['api_secret']}"})
+        return r.status_code == 200
+    except httpx.HTTPError:
+        return False
+
+
+def read_ledger_rows(path: Path) -> List[Dict[str, Any]]:
+    from antelligence.experiments import v4_budget
+
+    return v4_budget.read_jsonl(path)
+
+
+def last_pod_row_utc(rows: List[Dict[str, Any]]) -> Optional[datetime]:
+    """Newest ``utc`` among usage-ledger rows written by the pod backends (vLLM or d1), failed calls included."""
+    best: Optional[datetime] = None
+    for row in rows:
+        if str(row.get("backend", "")).lower() not in POD_BACKENDS:
+            continue
+        try:
+            when = datetime.fromisoformat(str(row["utc"]).replace("Z", "+00:00"))
+        except (KeyError, ValueError):
+            continue
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        if best is None or when > best:
+            best = when
+    return best
+
+
+def usage_ledger_path(paths: v4_pod.Paths) -> Path:
+    return paths.state.parent / "v4.1-usage.jsonl"
 
 
 def watch_loop(client: v4_pod.RunPod, paths: v4_pod.Paths, pod_id: str, idle_min: float, echo: Echo, *,
                transport: Optional[httpx.BaseTransport] = None, clock: Callable[[], float] = time.monotonic,
                sleep: Callable[[float], None] = time.sleep, now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
                poll_s: float = WATCH_POLL_S, boot_timeout_min: float = BOOT_TIMEOUT_MIN,
-               max_polls: Optional[int] = None) -> int:
-    """Poll status and /metrics every ``poll_s``; `down` after ``idle_min`` idle minutes, once the auto-down deadline
-    passes, if the pod is gone, or if it never serves metrics within ``boot_timeout_min``. Exits quietly when the state
-    file is gone or now belongs to another pod (someone ran `down`)."""
+               max_polls: Optional[int] = None, usage: Optional[Path] = None) -> int:
+    """Poll status, /metrics and the usage ledger every ``poll_s``; `down` after ``idle_min`` idle minutes, once the
+    auto-down deadline passes, or if the pod is gone. Exits quietly when the state file is gone or now belongs to
+    another pod (someone ran `down`).
+
+    A pod is ACTIVE if its metrics show activity OR the usage ledger has a pod-backend row (vLLM or d1) inside the idle
+    window. If the proxy does not forward /metrics (or exports no known names) the ledger alone decides, and the log
+    says so: this watcher must never kill a working pod just because it cannot read metrics. The idle baseline is the
+    first moment the pod answered anything (metrics or /v1/models); a pod that answers nothing for ``boot_timeout_min``
+    is judged on the ledger from the watcher's start."""
+    usage = usage or usage_ledger_path(paths)
     tracker, started, polls = IdleTracker(clock), clock(), 0
+    first_ready: Optional[float] = None
+    mode = ""
     with httpx.Client(timeout=20.0, trust_env=False, follow_redirects=False, transport=transport) as http:
         while max_polls is None or polls < max_polls:
             polls += 1
@@ -231,19 +287,106 @@ def watch_loop(client: v4_pod.RunPod, paths: v4_pod.Paths, pod_id: str, idle_min
                 status = v4_pod.pod_status(client, pod_id)
             except (httpx.HTTPError, ValueError):
                 status = None
-            idle = tracker.observe(fetch_activity(state, http))
+            activity = fetch_activity(state, http)
+            metrics_ok = any(v is not None for v in activity.values())
+            tracker.observe(activity)
+            ready = metrics_ok or models_reachable(state, http)
+            if ready and first_ready is None:
+                first_ready = clock()
+            new_mode = "metrics+ledger" if metrics_ok else "ledger-only"
+            if new_mode != mode and (metrics_ok or ready or polls > 1):
+                mode = new_mode
+                if not metrics_ok:
+                    echo("watcher: /metrics is not readable through the proxy; judging idleness on the usage ledger alone")
+            ledger_dt = last_pod_row_utc(read_ledger_rows(usage))
+            candidates = [t for t in (tracker.last_active, first_ready,
+                                      clock() - (now() - ledger_dt).total_seconds() if ledger_dt else None) if t is not None]
+            if not candidates and (clock() - started) >= boot_timeout_min * 60:
+                candidates = [started]  # nothing ever answered: count from the watcher's start
+            idle = clock() - max(candidates) if candidates else 0.0
             if status == "GONE":
                 reason = "pod is gone"
             elif deadline_passed(state, now()):
                 reason = "auto-down deadline passed"
             elif idle >= idle_min * 60:
-                reason = f"idle {idle / 60:.1f} min"
-            elif tracker.last_active is None and (clock() - started) >= boot_timeout_min * 60:
-                reason = f"no metrics {boot_timeout_min:g} min after start"
+                how = "metrics and usage ledger" if metrics_ok else "usage ledger only (metrics unreachable)"
+                reason = f"idle {idle / 60:.1f} min by {how}"
             if reason:
                 echo(f"watcher: {reason}; taking the pod down")
                 return cmd_down(client, paths, echo)
             sleep(poll_s)
+    return 0
+
+
+DIAG_TAIL_DEFAULT = 40
+
+
+def _scrub(text: str, secret: str) -> str:
+    return wd.redact(text.replace(secret, "[redacted]") if secret else text, None, limit=100_000)
+
+
+def cmd_diag(paths: v4_pod.Paths, echo: Echo, *, transport: Optional[httpx.BaseTransport] = None,
+             tail: int = DIAG_TAIL_DEFAULT) -> int:
+    """Plain-text pod health through the proxy: per port /v1/models and /metrics status, which watchdog metric names are
+    present (with values) or missing, then the watchdog log tail from the d1 shim. Makes only GET requests, needs no
+    RunPod key, and never prints any secret (every line is scrubbed). Safe to paste."""
+    state = v4_pod.load_state(paths.state)
+    if not state or "base_url" not in state:
+        echo("diag: no pod recorded")
+        return 1
+    secret = str(state.get("api_secret", ""))
+    say = lambda line: echo(_scrub(line, secret))  # noqa: E731
+    headers = {"Authorization": f"Bearer {secret}"}
+    say(f"diag: pod {state.get('pod_id')} image {state.get('image', IMAGE)}")
+    problems: List[str] = []
+    with httpx.Client(timeout=20.0, trust_env=False, follow_redirects=False, transport=transport) as http:
+        def get(port: int, path: str) -> Optional[httpx.Response]:
+            try:
+                return http.get(proxy_url(state, port, path), headers=headers)
+            except httpx.HTTPError as exc:
+                say(f"  :{port}{path.split('?')[0]} -> {type(exc).__name__}")
+                return None
+
+        for port in WATCH_PORTS:
+            models = get(port, "/v1/models")
+            if models is not None:
+                say(f"  :{port} /v1/models -> HTTP {models.status_code}")
+            resp = get(port, "/metrics")
+            if resp is None:
+                problems.append(f":{port} /metrics unreachable through the proxy")
+                continue
+            say(f"  :{port} /metrics -> HTTP {resp.status_code}")
+            if resp.status_code != 200:
+                problems.append(f":{port} /metrics HTTP {resp.status_code} (proxy may not forward it)")
+                continue
+            act = parse_activity(resp.text)
+            names = wd.metric_names(resp.text)
+            missing = wd.missing_core(act, port)
+            say("    present: " + (", ".join(f"{k}={v:g}" for k, v in sorted(act.items())) or "(none of the watched names)"))
+            say("    missing core names: " + (", ".join(missing) or "(none)"))
+            say(f"    exported metric names ({len(names)}): " + ", ".join(names[:25]) + (" ..." if len(names) > 25 else ""))
+            if not act:
+                problems.append(f":{port} /metrics reachable but none of the watched names are present")
+        log = get(8102, f"/v41/watchdog-log?n={tail}")
+    say(f"watchdog log tail (:8102 /v41/watchdog-log) -> " + ("unreachable" if log is None else f"HTTP {log.status_code}"))
+    lines: List[Any] = []
+    if log is not None and log.status_code == 200:
+        try:
+            body = log.json()
+            lines = body.get("lines", [])
+            if not body.get("exists"):
+                problems.append("watchdog log file does not exist on the pod (the watchdog never started)")
+        except ValueError:
+            problems.append("watchdog log reply was not JSON")
+    elif log is not None:
+        problems.append(f"watchdog log HTTP {log.status_code}")
+    for line in lines:
+        say("  " + json.dumps(line, sort_keys=True))
+    attempts = [ln for ln in lines if isinstance(ln, dict) and ln.get("event") == "selfterm"]
+    if attempts:
+        say("self-termination attempts: " + "; ".join(f"{a.get('route')}={a.get('status')}/{a.get('outcome')}" for a in attempts[-8:]))
+    for problem in problems:
+        say(f"PROBLEM: {problem}")
     return 0
 
 
@@ -323,6 +466,8 @@ def main(argv: Optional[List[str]] = None, *, paths: Optional[v4_pod.Paths] = No
     watch.add_argument("--state", required=True)
     watch.add_argument("--costs", required=True)
     watch.add_argument("--idle-down-min", type=float, default=DEFAULT_IDLE_DOWN_MIN)
+    diag = sub.add_parser("diag", help="plain-text pod health through the proxy plus the watchdog log tail (no key needed)")
+    diag.add_argument("--tail", type=int, default=DIAG_TAIL_DEFAULT, metavar="N", help="watchdog log lines to print")
     for name in ("status", "wait", "down", "cost"):
         sub.add_parser(name)
     args = parser.parse_args(argv)
@@ -331,6 +476,8 @@ def main(argv: Optional[List[str]] = None, *, paths: Optional[v4_pod.Paths] = No
         paths = v4_pod.Paths(state=Path(args.state), costs=Path(args.costs))
     if args.cmd == "cost":
         return cmd_cost(paths, echo)
+    if args.cmd == "diag":
+        return cmd_diag(paths, echo, transport=transport, tail=args.tail)
     if args.cmd == "wait":
         return v4_pod.cmd_wait(paths, echo, transport, sleep)
     key = api_key or v4_pod.runpod_key()
