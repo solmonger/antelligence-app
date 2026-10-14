@@ -130,6 +130,32 @@ _PAYLOADS: Dict[str, Dict[str, Callable[[Any], bool]]] = {
 }
 
 
+# v4.2 colony evidence subtypes (INTERFACES v4.2 sections 2.4, 3.3, 4). An ``evidence`` payload WITHOUT ``subtype`` keeps the
+# six-key v4.1 spec above, byte for byte; one WITH ``subtype`` is checked against that subtype's exact key set.
+MARK_KINDS = ("dosed", "dose_ok", "slow_uptake", "washout", "tumour_here", "not_tumour", "need_more")
+
+_EVIDENCE_SUBTYPES: Dict[str, Dict[str, Callable[[Any], bool]]] = {
+    "mark": {
+        "subtype": _enum("mark"), "mark_kind": _enum(*MARK_KINDS), "ant": _int(0), "pos_vox": _triple,
+        "amount_milli": _NONNEG, "reading_ppm": _PPM,
+    },
+    "message": {
+        "subtype": _enum("message"), "msg_type": _enum("ask", "answer"), "msg_id": _int(0), "from_ant": _int(0),
+        "to_ant": _int(0), "about_pos_vox": _triple, "about_region": _int(-1), "question": _int(1, 3),
+        "sender_reading_ppm": _PPM, "reply_to": _int(-1), "answer": _int(-1, 2),
+        "answerer_reading_ppm": _int(-1, 1_000_000), "note": _str(120),
+    },
+    "status": {
+        "subtype": _enum("status"), "region_id": _int(), "status": _enum("done", "not_tumour"), "k": _int(0),
+        "tick_first": _int(0),
+    },
+    "need": {
+        "subtype": _enum("need"), "region_id": _int(), "need": _enum("none", "low", "medium", "high"),
+        "need_milli": _NONNEG, "delivered_milli": _NONNEG,
+    },
+}
+
+
 def validate_payload(entry_type: str, payload: Any) -> None:
     """Raise :class:`ValidationError` unless ``payload`` has exactly the keys for ``entry_type``."""
     if entry_type not in _PAYLOADS:
@@ -137,6 +163,11 @@ def validate_payload(entry_type: str, payload: Any) -> None:
     if not isinstance(payload, dict):
         raise ValidationError("payload must be an object")
     spec = _PAYLOADS[entry_type]
+    if entry_type == "evidence" and "subtype" in payload:
+        subtype = payload["subtype"]
+        if not isinstance(subtype, str) or subtype not in _EVIDENCE_SUBTYPES:
+            raise ValidationError(f"unknown evidence subtype {subtype!r}")
+        spec = _EVIDENCE_SUBTYPES[subtype]
     extra = set(payload) - set(spec)
     missing = set(spec) - set(payload)
     if extra or missing:

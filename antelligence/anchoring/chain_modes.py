@@ -87,7 +87,37 @@ _COMPACT_FIELDS: Dict[str, Sequence[str]] = {
 KEPT_NULL = 2   # `kept` is 0/1/null; null is posted as 2 (INTERFACES is silent, see the S2 report)
 
 
+# v4.2 colony evidence subtypes (INTERFACES v4.2 sections 2.4, 3.3, 4). Integer-only; the message ``note`` is free text and is
+# never posted (the entry id commits to it). Keyed ``("evidence", subtype)``; chosen when the payload carries a ``subtype``.
+MARK_KIND_CODES = {"dosed": 1, "dose_ok": 2, "slow_uptake": 3, "washout": 4, "tumour_here": 5, "not_tumour": 6, "need_more": 7}
+MSG_TYPE_CODES = {"ask": 1, "answer": 2}
+STATUS_CODES = {"done": 1, "not_tumour": 2}
+NEED_CODES = {"none": 0, "low": 1, "medium": 2, "high": 3}
+_SUBTYPE_FIELDS: Dict[tuple, Sequence[tuple]] = {
+    ("evidence", "mark"): (("ant", None), ("pos_vox", None), ("mark_kind", MARK_KIND_CODES), ("amount_milli", None),
+                           ("reading_ppm", None)),
+    ("evidence", "message"): (("msg_type", MSG_TYPE_CODES), ("msg_id", None), ("from_ant", None), ("to_ant", None),
+                              ("about_pos_vox", None), ("about_region", None), ("question", None),
+                              ("sender_reading_ppm", None), ("reply_to", None), ("answer", None),
+                              ("answerer_reading_ppm", None)),
+    ("evidence", "status"): (("region_id", None), ("status", STATUS_CODES), ("k", None), ("tick_first", None)),
+    ("evidence", "need"): (("region_id", None), ("need", NEED_CODES), ("need_milli", None), ("delivered_milli", None)),
+}
+
+
+def _subtype_ints(payload: Any) -> List[int]:
+    out: List[int] = []
+    for key, codes in _SUBTYPE_FIELDS[("evidence", payload["subtype"])]:
+        value = payload[key]
+        if codes is not None:
+            value = codes[value]
+        out.extend(value if isinstance(value, list) else [value])
+    return [int(v) for v in out]
+
+
 def payload_ints(entry: Entry) -> List[int]:
+    if entry.type == "evidence" and "subtype" in entry.payload:
+        return _subtype_ints(entry.payload)
     out: List[int] = []
     for key in _COMPACT_FIELDS[entry.type]:
         value: Any = entry.payload
