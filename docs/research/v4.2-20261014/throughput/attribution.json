@@ -1,0 +1,507 @@
+{
+ "method": "Calls inside one round run concurrently, so wall time is the critical path, not the sum:\n  round wait = max over squads of the squad's decision wait (looks excluded, see below)\n  squad wait = max over the calls of a calibration decision, or d1 first then the max of the others (router mode)\n  look wait  = NOT logged by v4.1 (look rows are written only on error), so it cannot be attributed; it stays in the\n               unlogged remainder. (A first draft used the longest d1 decision call as a stand-in; that overshot the\n               wall time in calib1, 596 s modelled against 479 s measured, so it was dropped.)\nA call served from the reply cache waited ~0 in that run, so the *actual-wall view* counts only non-cached calls. The\n*recorded view* counts every call at its recorded timing (the cache stores the original timing) and is the latency source\nfor the sleeping fake backend. Remainder = wall - decision wait: the d1 looks (not logged), queen calls (not logged), engine and event-loop time. It is an\nUPPER bound on the engine share; v42_profile.py measures the engine directly. Components of the modelled wait come from the critical call of each round.",
+ "schema": "v42-c0-attribution/1",
+ "sets": {
+  "bonsai-calib": {
+   "actual_wall_view": {
+    "cached_call_share": 0.0,
+    "calls_per_episode": 288.0,
+    "episodes": 8,
+    "share_of_wall": {
+     "network": 0.48788945929818617,
+     "queue": 0.0,
+     "server": 0.07627112737129743,
+     "unlogged_remainder": 0.4358394133305164
+    },
+    "time_s_per_episode": {
+     "modelled_wait": 746.591,
+     "network": 645.656375,
+     "queue": 0.0,
+     "server": 100.934625,
+     "unlogged_remainder": 576.775108234346
+    },
+    "wall_s_max": 1660.570380207966,
+    "wall_s_mean": 1323.366108234346,
+    "wall_s_median": 1326.203832416446,
+    "wall_s_min": 958.1812853330048,
+    "whatif_all_calls_started_together_wait_s": 746.591
+   },
+   "arms": [
+    "SW-Bonsai"
+   ],
+   "context": "Bonsai calibration, concurrency 4, Bonsai 8B on the Mac (:8521) driving, while step 9 ran on the pod (session-log 2026-10-14 09:21, 10:09)",
+   "critical_by_model_s_per_episode": {
+    "bonsai-8b": 746.591
+   },
+   "per_model_live_only": {
+    "bonsai-8b": {
+     "calls": 768,
+     "mean_s": 56.450024739583334,
+     "p50_s": 57.5475,
+     "p95_s": 64.805,
+     "share_network": 0.8511094079596908,
+     "share_queue": 0.0,
+     "share_server": 0.14889059204030924,
+     "sum_s": 43353.619
+    },
+    "d1": {
+     "calls": 768,
+     "mean_s": 7.090434895833333,
+     "p50_s": 6.5065,
+     "p95_s": 15.15,
+     "share_network": 0.9703310320865809,
+     "share_queue": 0.019985110516037782,
+     "share_server": 0.009683857397381377,
+     "sum_s": 5445.454
+    },
+    "qwen3.5-4b": {
+     "calls": 768,
+     "mean_s": 10.46936328125,
+     "p50_s": 9.184999999999999,
+     "p95_s": 22.248,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 8040.471
+    }
+   },
+   "per_model_recorded": {
+    "bonsai-8b": {
+     "calls": 768,
+     "mean_s": 56.450024739583334,
+     "p50_s": 57.5475,
+     "p95_s": 64.805,
+     "share_network": 0.8511094079596908,
+     "share_queue": 0.0,
+     "share_server": 0.14889059204030924,
+     "sum_s": 43353.619
+    },
+    "d1": {
+     "calls": 768,
+     "mean_s": 7.090434895833333,
+     "p50_s": 6.5065,
+     "p95_s": 15.15,
+     "share_network": 0.9703310320865809,
+     "share_queue": 0.019985110516037782,
+     "share_server": 0.009683857397381377,
+     "sum_s": 5445.454
+    },
+    "qwen3.5-4b": {
+     "calls": 768,
+     "mean_s": 10.46936328125,
+     "p50_s": 9.184999999999999,
+     "p95_s": 22.248,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 8040.471
+    }
+   },
+   "recorded_latency_view": {
+    "cached_call_share": 0.0,
+    "calls_per_episode": 288.0,
+    "episodes": 8,
+    "note": "recorded timings of every call, cached ones included; the remainder is meaningful only where cached_call_share is 0",
+    "share_of_wall": {
+     "network": 0.48788945929818617,
+     "queue": 0.0,
+     "server": 0.07627112737129743,
+     "unlogged_remainder": 0.4358394133305164
+    },
+    "time_s_per_episode": {
+     "modelled_wait": 746.591,
+     "network": 645.656375,
+     "queue": 0.0,
+     "server": 100.934625,
+     "unlogged_remainder": 576.775108234346
+    },
+    "wall_s_max": 1660.570380207966,
+    "wall_s_mean": 1323.366108234346,
+    "wall_s_median": 1326.203832416446,
+    "wall_s_min": 958.1812853330048,
+    "whatif_all_calls_started_together_wait_s": 746.591
+   },
+   "rounds": [
+    24
+   ],
+   "ticks": [
+    120
+   ]
+  },
+  "calib1": {
+   "actual_wall_view": {
+    "cached_call_share": 0.00703125,
+    "calls_per_episode": 576.0,
+    "episodes": 80,
+    "share_of_wall": {
+     "network": 0.7895240257715003,
+     "queue": 0.00035053499809057113,
+     "server": 6.440474105414646e-05,
+     "unlogged_remainder": 0.210061034489355
+    },
+    "time_s_per_episode": {
+     "modelled_wait": 378.5356625,
+     "network": 378.336825,
+     "queue": 0.16797499999999999,
+     "server": 0.030862499999999998,
+     "unlogged_remainder": 100.6604260931243
+    },
+    "wall_s_max": 717.0307611250319,
+    "wall_s_mean": 479.1960885931243,
+    "wall_s_median": 477.2716044795234,
+    "wall_s_min": 148.86176912498195,
+    "whatif_all_calls_started_together_wait_s": 378.5356625
+   },
+   "arms": [
+    "SW-B",
+    "SW-noBoard"
+   ],
+   "context": "step 7, concurrency 8, one pod, static queen, mock anchors; nothing else heavy on the Mac (session-log 2026-10-13 'Phase 0 step 7 running')",
+   "critical_by_model_s_per_episode": {
+    "d1": 4.2852,
+    "qwen3.5-4b": 23.9344125,
+    "qwen3.5-9b": 350.58335
+   },
+   "per_model_live_only": {
+    "d1": {
+     "calls": 15198,
+     "mean_s": 7.565358205026977,
+     "p50_s": 6.859,
+     "p95_s": 14.816,
+     "share_network": 0.8426557463697024,
+     "share_queue": 0.143414000661029,
+     "share_server": 0.01393025296926862,
+     "sum_s": 114978.314
+    },
+    "qwen3.5-4b": {
+     "calls": 15360,
+     "mean_s": 11.572373893229166,
+     "p50_s": 11.376,
+     "p95_s": 19.967,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 177751.663
+    },
+    "qwen3.5-9b": {
+     "calls": 15198,
+     "mean_s": 13.81914955915252,
+     "p50_s": 13.693000000000001,
+     "p95_s": 22.927,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 210023.435
+    }
+   },
+   "per_model_recorded": {
+    "d1": {
+     "calls": 15360,
+     "mean_s": 7.503924869791667,
+     "p50_s": 6.811,
+     "p95_s": 14.782,
+     "share_network": 0.8428740667882779,
+     "share_queue": 0.14316262411495317,
+     "share_server": 0.01396330909676903,
+     "sum_s": 115260.286
+    },
+    "qwen3.5-4b": {
+     "calls": 15360,
+     "mean_s": 11.572373893229166,
+     "p50_s": 11.376,
+     "p95_s": 19.967,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 177751.663
+    },
+    "qwen3.5-9b": {
+     "calls": 15360,
+     "mean_s": 13.7106353515625,
+     "p50_s": 13.6195,
+     "p95_s": 22.861,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 210595.359
+    }
+   },
+   "recorded_latency_view": {
+    "cached_call_share": 0.00703125,
+    "calls_per_episode": 576.0,
+    "episodes": 80,
+    "note": "recorded timings of every call, cached ones included; the remainder is meaningful only where cached_call_share is 0",
+    "share_of_wall": {
+     "network": 0.7900818349990021,
+     "queue": 0.00035053499809057113,
+     "server": 6.440474105414646e-05,
+     "unlogged_remainder": 0.20950322526185322
+    },
+    "time_s_per_episode": {
+     "modelled_wait": 378.80296250000004,
+     "network": 378.604125,
+     "queue": 0.16797499999999999,
+     "server": 0.030862499999999998,
+     "unlogged_remainder": 100.3931260931243
+    },
+    "wall_s_max": 717.0307611250319,
+    "wall_s_mean": 479.1960885931243,
+    "wall_s_median": 477.2716044795234,
+    "wall_s_min": 148.86176912498195,
+    "whatif_all_calls_started_together_wait_s": 378.80296250000004
+   },
+   "rounds": [
+    24
+   ],
+   "ticks": [
+    120
+   ]
+  },
+  "calib1f": {
+   "actual_wall_view": {
+    "cached_call_share": 0.497265625,
+    "calls_per_episode": 576.0,
+    "episodes": 80,
+    "share_of_wall": {
+     "network": 0.7645392800302807,
+     "queue": 0.00011663925753611497,
+     "server": 5.660907560539448e-05,
+     "unlogged_remainder": 0.23528747163657776
+    },
+    "time_s_per_episode": {
+     "modelled_wait": 326.90947500000004,
+     "network": 326.83541249999996,
+     "queue": 0.0498625,
+     "server": 0.0242,
+     "unlogged_remainder": 100.58381545206832
+    },
+    "wall_s_max": 1032.6742927080486,
+    "wall_s_mean": 427.4932904520683,
+    "wall_s_median": 419.4796817085589,
+    "wall_s_min": 3.6107379579916596,
+    "whatif_all_calls_started_together_wait_s": 326.90947500000004
+   },
+   "arms": [
+    "SW-B",
+    "SW-noBoard"
+   ],
+   "context": "step 7 refit replay: replies come from the reply cache, so wall is mostly engine time (session-log 2026-10-13 'step 7 fit (calib1f)')",
+   "critical_by_model_s_per_episode": {
+    "d1": 15.5043625,
+    "qwen3.5-4b": 47.592237499999996,
+    "qwen3.5-9b": 414.6901
+   },
+   "per_model_live_only": {
+    "d1": {
+     "calls": 7722,
+     "mean_s": 12.639423983423983,
+     "p50_s": 12.172,
+     "p95_s": 21.654,
+     "share_network": 0.9063793625909862,
+     "share_queue": 0.0851569879487261,
+     "share_server": 0.008463649460287714,
+     "sum_s": 97601.632
+    },
+    "qwen3.5-4b": {
+     "calls": 7722,
+     "mean_s": 19.246255374255373,
+     "p50_s": 18.883499999999998,
+     "p95_s": 28.708,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 148619.584
+    },
+    "qwen3.5-9b": {
+     "calls": 7722,
+     "mean_s": 22.21632893032893,
+     "p50_s": 22.054499999999997,
+     "p95_s": 31.671,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 171554.492
+    }
+   },
+   "per_model_recorded": {
+    "d1": {
+     "calls": 15360,
+     "mean_s": 10.021137369791667,
+     "p50_s": 9.042,
+     "p95_s": 19.724,
+     "share_network": 0.8896457598382377,
+     "share_queue": 0.09996567801639593,
+     "share_server": 0.010388562145366301,
+     "sum_s": 153924.67
+    },
+    "qwen3.5-4b": {
+     "calls": 15360,
+     "mean_s": 14.2978396484375,
+     "p50_s": 13.369499999999999,
+     "p95_s": 26.706,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 219614.817
+    },
+    "qwen3.5-9b": {
+     "calls": 15360,
+     "mean_s": 16.477365299479168,
+     "p50_s": 15.5195,
+     "p95_s": 29.658,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 253092.331
+    }
+   },
+   "recorded_latency_view": {
+    "cached_call_share": 0.497265625,
+    "calls_per_episode": 576.0,
+    "episodes": 80,
+    "note": "recorded timings of every call, cached ones included; the remainder is meaningful only where cached_call_share is 0",
+    "share_of_wall": {
+     "network": 1.1170247245167955,
+     "queue": 0.0005000078475476476,
+     "server": 0.00012251654276167505,
+     "unlogged_remainder": -0.11764724890710468
+    },
+    "time_s_per_episode": {
+     "modelled_wait": 477.7867,
+     "network": 477.520575,
+     "queue": 0.21375000000000002,
+     "server": 0.05237499999999999,
+     "unlogged_remainder": -50.29340954793168
+    },
+    "wall_s_max": 1032.6742927080486,
+    "wall_s_mean": 427.4932904520683,
+    "wall_s_median": 419.4796817085589,
+    "wall_s_min": 3.6107379579916596,
+    "whatif_all_calls_started_together_wait_s": 477.7867
+   },
+   "rounds": [
+    24
+   ],
+   "ticks": [
+    120
+   ]
+  },
+  "step9": {
+   "actual_wall_view": {
+    "cached_call_share": 0.7918402777777778,
+    "calls_per_episode": 576.0,
+    "episodes": 20,
+    "share_of_wall": {
+     "network": 0.4557420226572644,
+     "queue": 0.0,
+     "server": 0.0,
+     "unlogged_remainder": 0.5442579773427356
+    },
+    "time_s_per_episode": {
+     "modelled_wait": 424.8206,
+     "network": 424.8206,
+     "queue": 0.0,
+     "server": 0.0,
+     "unlogged_remainder": 507.330877985346
+    },
+    "wall_s_max": 1796.4477755419211,
+    "wall_s_mean": 932.151477985346,
+    "wall_s_median": 1019.3672431040322,
+    "wall_s_min": 134.59092570806388,
+    "whatif_all_calls_started_together_wait_s": 424.8206
+   },
+   "arms": [
+    "SW-noBoard"
+   ],
+   "context": "step 9, --log-counterfactuals all, concurrency 16, plus Bonsai calibration (concurrency 4) in parallel on the same pod, the Mac Bonsai server (6.7 GB RSS), and the lead Claude process at ~20 GB (session-log 2026-10-14 ~09:50 and 10:10); the 135 s runs are cache replays after the restart",
+   "critical_by_model_s_per_episode": {
+    "qwen3.5-4b": 936.3055,
+    "qwen3.5-9b": 445.0251
+   },
+   "per_model_live_only": {
+    "qwen3.5-4b": {
+     "calls": 1829,
+     "mean_s": 25.71715418261345,
+     "p50_s": 24.206,
+     "p95_s": 50.826,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 47036.675
+    },
+    "qwen3.5-9b": {
+     "calls": 569,
+     "mean_s": 25.274007029876977,
+     "p50_s": 24.87,
+     "p95_s": 46.23,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 14380.91
+    }
+   },
+   "per_model_recorded": {
+    "d1": {
+     "calls": 3840,
+     "mean_s": 18.575225,
+     "p50_s": 18.568,
+     "p95_s": 30.286,
+     "share_network": 0.9607041687920336,
+     "share_queue": 0.03593152696221266,
+     "share_server": 0.003364304245753865,
+     "sum_s": 71328.864
+    },
+    "qwen3.5-4b": {
+     "calls": 3840,
+     "mean_s": 24.690373177083334,
+     "p50_s": 22.822,
+     "p95_s": 49.655,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 94811.033
+    },
+    "qwen3.5-9b": {
+     "calls": 3840,
+     "mean_s": 19.88266171875,
+     "p50_s": 18.766,
+     "p95_s": 36.088,
+     "share_network": 1.0,
+     "share_queue": 0.0,
+     "share_server": 0.0,
+     "sum_s": 76349.421
+    }
+   },
+   "recorded_latency_view": {
+    "cached_call_share": 0.7918402777777778,
+    "calls_per_episode": 576.0,
+    "episodes": 20,
+    "note": "recorded timings of every call, cached ones included; the remainder is meaningful only where cached_call_share is 0",
+    "share_of_wall": {
+     "network": 0.9007476465248919,
+     "queue": 0.0,
+     "server": 0.0,
+     "unlogged_remainder": -0.48187352873747763
+    },
+    "time_s_per_episode": {
+     "modelled_wait": 1381.3305999999998,
+     "network": 839.6332500000001,
+     "queue": 0.0,
+     "server": 0.0,
+     "unlogged_remainder": -449.1791220146539
+    },
+    "wall_s_max": 1796.4477755419211,
+    "wall_s_mean": 932.151477985346,
+    "wall_s_median": 1019.3672431040322,
+    "wall_s_min": 134.59092570806388,
+    "whatif_all_calls_started_together_wait_s": 894.253
+   },
+   "rounds": [
+    24
+   ],
+   "ticks": [
+    120
+   ]
+  }
+ }
+}

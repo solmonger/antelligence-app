@@ -1,0 +1,240 @@
+{
+ "attempts": [],
+ "inprocess": {
+  "1": {
+   "cpu_s": 2.525609,
+   "episodes_ok": 1,
+   "episodes_per_hour": 30.14422314104325,
+   "failed": [],
+   "fingerprints": {
+    "BRATS_016:1": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   },
+   "lag": {
+    "interval_ms": 20.0,
+    "max_ms": 52.2811670275405,
+    "mean_ms": 1.7404569785461803,
+    "p50_ms": 2.0311669399961825,
+    "p95_ms": 2.180792060680687,
+    "p99_ms": 2.4495419533923264,
+    "samples": 5490
+   },
+   "mode": "inprocess",
+   "n": 1,
+   "peak_rss_mb": 160.203125,
+   "swap_after": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "swap_before": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "time_scale": 0.1,
+   "wall_s": 119.4258675420424
+  },
+  "16": {
+   "cpu_s": 24.089055,
+   "episodes_ok": 16,
+   "episodes_per_hour": 432.9104871894453,
+   "failed": [],
+   "fingerprints": {
+    "BRATS_016:1": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee",
+    "BRATS_056:1": "69da6409f0ab6460fab68eed78a06feead3a9a9d3291c52f1eed19951c726133",
+    "BRATS_113:1": "c0b72910fe49ccea8f5d9eeadf7141fbd0754e9839e42dfb06e6388743309466",
+    "BRATS_183:1": "380842d1d2e6d5bc7f762d0d0fceac3527970da1cfd875c19b9d3dadd3884317",
+    "BRATS_193:1": "dce573ab1244a210d3c1311d96bc8c3b1f1ed5b463113492631e870d6720415d",
+    "BRATS_238:1": "62b66586fe28c37a03a5defd1473136fa6163ee7dc238cf9966bdeb170f2510f",
+    "BRATS_303:1": "8208b61c45d5560318328edf62f0a5191bf6215aad62b76c4a4b12cdb1990d6c",
+    "BRATS_337:1": "14097b46ac4e5bb5b0c4d4c6bcf27e6fa560ac7c4c3caca1f55ad8ede68d7beb",
+    "BRATS_373:1": "a31ab519b035f9055a70820bc8dafd3dc3aca7027cce8209e68efdbe0a1e3316",
+    "BRATS_375:1": "0d1577388bdbe3e1f813c783331ab53ca8fc9553585f8fdd3ff5c27595f191ae",
+    "BRATS_406:1": "eca9f1dc46247599f1a6b2a28da10662b6519edb665403cbbd3b4d39a6798055",
+    "BRATS_420:1": "52a211e6d937a5d80812c9f57d88fd886df961cabdd29dfa4a9f80c75411d41d",
+    "BRATS_441:1": "2f9cb913cda9a2150d2d2440976b501c4cec6b8a5c3e720695fbb8a39615410c",
+    "BRATS_462:1": "74fb81a7ddc218d663f8a0c66947917ff16c2f058f84b6fff2aed01bb7351e48",
+    "BRATS_464:1": "1f5cd05fd2ba4a7029f9394d347bef8fdadf8ff4637f40f15a54ae96076c368c",
+    "BRATS_479:1": "09f333b60b5d56d628b9ab0f2be1bdaffd7faaffe538f09731d0e1c26edc7cd0"
+   },
+   "lag": {
+    "interval_ms": 20.0,
+    "max_ms": 609.618874983862,
+    "mean_ms": 3.055658380635148,
+    "p50_ms": 1.6020839288830753,
+    "p95_ms": 14.290000097826123,
+    "p99_ms": 36.76629208028316,
+    "samples": 5768
+   },
+   "mode": "inprocess",
+   "n": 16,
+   "peak_rss_mb": 412.84375,
+   "swap_after": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "swap_before": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "time_scale": 0.1,
+   "wall_s": 133.05290979193524
+  },
+  "4": {
+   "cpu_s": 7.867006,
+   "episodes_ok": 4,
+   "episodes_per_hour": 120.46881069238087,
+   "failed": [],
+   "fingerprints": {
+    "BRATS_016:1": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee",
+    "BRATS_183:1": "380842d1d2e6d5bc7f762d0d0fceac3527970da1cfd875c19b9d3dadd3884317",
+    "BRATS_238:1": "62b66586fe28c37a03a5defd1473136fa6163ee7dc238cf9966bdeb170f2510f",
+    "BRATS_406:1": "eca9f1dc46247599f1a6b2a28da10662b6519edb665403cbbd3b4d39a6798055"
+   },
+   "lag": {
+    "interval_ms": 20.0,
+    "max_ms": 126.91083400975914,
+    "mean_ms": 2.0469239303407636,
+    "p50_ms": 1.9213339732959862,
+    "p95_ms": 2.2285409690812226,
+    "p99_ms": 23.778749997727573,
+    "samples": 5418
+   },
+   "mode": "inprocess",
+   "n": 4,
+   "peak_rss_mb": 203.640625,
+   "swap_after": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "swap_before": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "time_scale": 0.1,
+   "wall_s": 119.5330137090059
+  },
+  "8": {
+   "cpu_s": 12.095037,
+   "episodes_ok": 8,
+   "episodes_per_hour": 241.1578823088414,
+   "failed": [],
+   "fingerprints": {
+    "BRATS_016:1": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee",
+    "BRATS_183:1": "380842d1d2e6d5bc7f762d0d0fceac3527970da1cfd875c19b9d3dadd3884317",
+    "BRATS_193:1": "dce573ab1244a210d3c1311d96bc8c3b1f1ed5b463113492631e870d6720415d",
+    "BRATS_238:1": "62b66586fe28c37a03a5defd1473136fa6163ee7dc238cf9966bdeb170f2510f",
+    "BRATS_303:1": "8208b61c45d5560318328edf62f0a5191bf6215aad62b76c4a4b12cdb1990d6c",
+    "BRATS_406:1": "eca9f1dc46247599f1a6b2a28da10662b6519edb665403cbbd3b4d39a6798055",
+    "BRATS_464:1": "1f5cd05fd2ba4a7029f9394d347bef8fdadf8ff4637f40f15a54ae96076c368c",
+    "BRATS_479:1": "09f333b60b5d56d628b9ab0f2be1bdaffd7faaffe538f09731d0e1c26edc7cd0"
+   },
+   "lag": {
+    "interval_ms": 20.0,
+    "max_ms": 298.4904999798164,
+    "mean_ms": 2.2985234206776592,
+    "p50_ms": 1.6497080400586124,
+    "p95_ms": 3.0268340092152353,
+    "p99_ms": 27.77150007430464,
+    "samples": 5352
+   },
+   "mode": "inprocess",
+   "n": 8,
+   "peak_rss_mb": 293.703125,
+   "swap_after": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "swap_before": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "time_scale": 0.1,
+   "wall_s": 119.42383854207583
+  }
+ },
+ "meta": {
+  "cpu_count": 14,
+  "label": null,
+  "machine": "arm64",
+  "python": "3.12.13",
+  "started_unix": 1792013936.263911,
+  "swap": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)"
+ },
+ "pool": {
+  "1": {
+   "cpu_s_sum": 2.551282,
+   "distinct_pids": 1,
+   "episodes_ok": 1,
+   "episodes_per_hour": 30.064538260270506,
+   "fingerprints": {
+    "BRATS_016:1": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   },
+   "lag": {
+    "max_ms_worst_process": 40.789040988311164,
+    "p50_ms_median_process": 1.9995420193299647,
+    "p95_ms_worst_process": 2.1665829885751005
+   },
+   "mode": "pool",
+   "n": 1,
+   "peak_rss_mb_child_max": 160.015625,
+   "startup_s": 0.3865165830357,
+   "swap_after": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "swap_before": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "time_scale": 0.1,
+   "wall_s": 119.74240112502594
+  },
+  "2": {
+   "cpu_s_sum": 4.457758,
+   "distinct_pids": 2,
+   "episodes_ok": 2,
+   "episodes_per_hour": 60.205797421997055,
+   "fingerprints": {
+    "BRATS_016:1": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee",
+    "BRATS_406:1": "eca9f1dc46247599f1a6b2a28da10662b6519edb665403cbbd3b4d39a6798055"
+   },
+   "lag": {
+    "max_ms_worst_process": 46.654958995059125,
+    "p50_ms_median_process": 1.9834165181964631,
+    "p95_ms_worst_process": 2.1701669506728645
+   },
+   "mode": "pool",
+   "n": 2,
+   "peak_rss_mb_child_max": 160.125,
+   "startup_s": 0.3727606669999659,
+   "swap_after": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "swap_before": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "time_scale": 0.1,
+   "wall_s": 119.58981208293699
+  },
+  "4": {
+   "cpu_s_sum": 8.663332,
+   "distinct_pids": 4,
+   "episodes_ok": 4,
+   "episodes_per_hour": 120.43729086660991,
+   "fingerprints": {
+    "BRATS_016:1": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee",
+    "BRATS_183:1": "380842d1d2e6d5bc7f762d0d0fceac3527970da1cfd875c19b9d3dadd3884317",
+    "BRATS_238:1": "62b66586fe28c37a03a5defd1473136fa6163ee7dc238cf9966bdeb170f2510f",
+    "BRATS_406:1": "eca9f1dc46247599f1a6b2a28da10662b6519edb665403cbbd3b4d39a6798055"
+   },
+   "lag": {
+    "max_ms_worst_process": 46.597583936527364,
+    "p50_ms_median_process": 1.9079375383444126,
+    "p95_ms_worst_process": 2.171708988025784
+   },
+   "mode": "pool",
+   "n": 4,
+   "peak_rss_mb_child_max": 165.5,
+   "startup_s": 0.420643457910046,
+   "swap_after": "vm.swapusage: total = 12288.00M  used = 10771.50M  free = 1516.50M  (encrypted)",
+   "swap_before": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)",
+   "time_scale": 0.1,
+   "wall_s": 119.5642968750326
+  },
+  "8": {
+   "cpu_s_sum": 18.40632,
+   "distinct_pids": 6,
+   "episodes_ok": 8,
+   "episodes_per_hour": 240.78439244591664,
+   "fingerprints": {
+    "BRATS_016:1": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee",
+    "BRATS_183:1": "380842d1d2e6d5bc7f762d0d0fceac3527970da1cfd875c19b9d3dadd3884317",
+    "BRATS_193:1": "dce573ab1244a210d3c1311d96bc8c3b1f1ed5b463113492631e870d6720415d",
+    "BRATS_238:1": "62b66586fe28c37a03a5defd1473136fa6163ee7dc238cf9966bdeb170f2510f",
+    "BRATS_303:1": "8208b61c45d5560318328edf62f0a5191bf6215aad62b76c4a4b12cdb1990d6c",
+    "BRATS_406:1": "eca9f1dc46247599f1a6b2a28da10662b6519edb665403cbbd3b4d39a6798055",
+    "BRATS_464:1": "1f5cd05fd2ba4a7029f9394d347bef8fdadf8ff4637f40f15a54ae96076c368c",
+    "BRATS_479:1": "09f333b60b5d56d628b9ab0f2be1bdaffd7faaffe538f09731d0e1c26edc7cd0"
+   },
+   "lag": {
+    "max_ms_worst_process": 45.668417024426155,
+    "p50_ms_median_process": 1.8608750146813686,
+    "p95_ms_worst_process": 2.183708031661808
+   },
+   "mode": "pool",
+   "n": 8,
+   "peak_rss_mb_child_max": 170.078125,
+   "startup_s": 0.41075741697568446,
+   "swap_after": "vm.swapusage: total = 12288.00M  used = 10771.50M  free = 1516.50M  (encrypted)",
+   "swap_before": "vm.swapusage: total = 12288.00M  used = 10771.50M  free = 1516.50M  (encrypted)",
+   "time_scale": 0.1,
+   "wall_s": 119.60908141697291
+  }
+ },
+ "time_scale": 0.1
+}

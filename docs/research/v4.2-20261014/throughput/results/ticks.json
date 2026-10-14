@@ -1,0 +1,76 @@
+{
+ "meta": {
+  "cpu_count": 14,
+  "label": null,
+  "machine": "arm64",
+  "python": "3.12.13",
+  "started_unix": 1792013243.997986,
+  "swap": "vm.swapusage: total = 12288.00M  used = 10787.50M  free = 1500.50M  (encrypted)"
+ },
+ "sets": {
+  "bonsai-calib": {
+   "board_size_min_median_max": [
+    421,
+    526.0,
+    631
+   ],
+   "episodes_without_run_log": 0,
+   "finished_episodes": 8,
+   "last_anchor_checkpoint_of_unfinished": {},
+   "median_last_anchor_checkpoint_of_unfinished": null,
+   "ticks_values": [
+    120
+   ]
+  },
+  "calib1": {
+   "board_size_min_median_max": [
+    0,
+    210.5,
+    463
+   ],
+   "episodes_without_run_log": 0,
+   "finished_episodes": 80,
+   "last_anchor_checkpoint_of_unfinished": {},
+   "median_last_anchor_checkpoint_of_unfinished": null,
+   "ticks_values": [
+    120
+   ]
+  },
+  "calib1f": {
+   "board_size_min_median_max": [
+    0,
+    210.5,
+    466
+   ],
+   "episodes_without_run_log": 0,
+   "finished_episodes": 80,
+   "last_anchor_checkpoint_of_unfinished": {},
+   "median_last_anchor_checkpoint_of_unfinished": null,
+   "ticks_values": [
+    120
+   ]
+  },
+  "step9": {
+   "board_size_min_median_max": [
+    0,
+    0.0,
+    0
+   ],
+   "episodes_without_run_log": 26,
+   "finished_episodes": 20,
+   "last_anchor_checkpoint_of_unfinished": {
+    "100": 5,
+    "150": 7,
+    "200": 11,
+    "250": 2,
+    "50": 1
+   },
+   "median_last_anchor_checkpoint_of_unfinished": 175.0,
+   "ticks_values": [
+    120
+   ]
+  }
+ },
+ "verdict": "Every finished episode in calib1, calib1f, step9 and bonsai-calib has ticks == 120 == world.yaml ticks. The 26 killed step-9 episodes left run directories without a run_log; their highest OTS anchor checkpoint is a BOARD ENTRY COUNT (anchors fall at board sizes 50, 100, ...), median 200 with a board of ~440 entries per SW-B episode. 'About tick 200' therefore counted board entries (the 10:10 log line speaks of 'board steps' and ~450 entries per episode), not world ticks.",
+ "world_ticks_config": 120
+}
