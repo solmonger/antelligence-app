@@ -137,9 +137,12 @@ def test_phase_timer_is_exclusive():
         time.sleep(0.02)
 
     w_inner, w_outer = t.wrap(inner, "inner"), t.wrap(outer, "outer")
+    t0 = time.perf_counter()
     w_outer()
-    assert t.total["inner"] == pytest.approx(0.03, abs=0.015)
-    assert t.total["outer"] == pytest.approx(0.04, abs=0.015)      # outer excludes inner
+    wall = time.perf_counter() - t0
+    # load-proof: exclusive times add up to the wall time (inclusive timing would double-count inner)
+    assert t.total["inner"] + t.total["outer"] == pytest.approx(wall, abs=0.005)
+    assert t.total["outer"] < wall - 0.9 * t.total["inner"]        # outer excludes inner
     assert t.calls["inner"] == 1 and t.calls["outer"] == 1
 
 
