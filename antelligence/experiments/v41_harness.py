@@ -25,6 +25,8 @@ Choices worth knowing (each is a small interpretation of the goal; see ``docs/v4
   counted as the run's board (``board_size`` 0).
 * Calibration mode (Phase 0 step 7): Qwen3.5-9B drives every decision. d1 and Qwen3.5-4B answer the same state
   counterfactually; their answers and S' labels are logged and never touch the world, the board or a brief.
+  Bonsai calibration (goal 4.5, step 9; arm label ``SW-Bonsai:calibration``): the same, with Bonsai 8B driving where the
+  9B drives in SW-B (the 9B is not called), for ``scripts/v41_fit.py --bonsai``.
 * ``router.slm_conf_min`` escalates a Qwen3.5-4B answer whose top target probability is below it to the deferral
   target. ``router.fw_conf_min`` and ``router.cost_penalty`` have no effect here (no second FW model; the kNN router
   already prefers the cheaper model on ties).
@@ -166,7 +168,7 @@ ARM_SPECS: Dict[str, ArmSpec] = {s.name: s for s in (
     ArmSpec("SW-B-missingFLAIR", "workers", "promoted", "B", variant="missing_flair"),
 )}
 assert tuple(ARM_SPECS) == v41_cells.ARMS
-CALIBRATION_ARMS = ("SW-B", "SW-noBoard")
+CALIBRATION_ARMS = ("SW-B", "SW-noBoard", "SW-Bonsai")
 ANCHORED_ARMS = tuple(n for n, s in ARM_SPECS.items() if s.anchored)
 _STD = (D1, Q4, Q9)
 # Router model set per arm (goal section 6), checked against the frozen router before an episode starts.
@@ -530,7 +532,7 @@ class V41Harness:
             raise HarnessError(f"look temperature override {self.look_temperature} differs from the frozen "
                                f"{self.frozen_look_temperature}: refused on an eval case (it must match the prereg)")
         if calibration and (spec.name not in CALIBRATION_ARMS or split != "dev"):
-            raise HarnessError("calibration mode is for SW-B and SW-noBoard on development cases only")
+            raise HarnessError("calibration mode is for SW-B, SW-noBoard and SW-Bonsai on development cases only")
         if log_counterfactuals not in LOG_CF_MODES:
             raise HarnessError(f"log_counterfactuals must be one of {LOG_CF_MODES}, got {log_counterfactuals!r}")
         log_cf = log_counterfactuals == "all"
@@ -619,7 +621,8 @@ class V41Harness:
         ctx_kw: Dict[str, Any] = dict(spec=spec, arm=spec.name, case=case, seed=seed, split=split,
                                       calibration=calibration, log_cf=log_cf, harness=harness, run_id=run_id, header=header,
                                       crop=crop, queen=None, queen_provider=None, anchorer=None, post_mode=None,
-                                      reputation=None, router=None, deferral=None, target_name=Q9)
+                                      reputation=None, router=None, deferral=None,
+                                      target_name=BONSAI if spec.bonsai else Q9)
         world = TumorMRIWorld(crop, self.world_config, seed, regions=regions)
         ctx_kw.update(world=world, region_by_id={r.region_id: r for r in world.regions}, liars=[],
                       pubkeys=dict(keys.pubkeys) if keys else {}, board=None, shared=False)
@@ -682,7 +685,7 @@ class V41Harness:
         if spec.kind == "fw":
             need.add(FW)
         elif calibration:
-            need |= {Q4, Q9, D1}
+            need |= {Q4, D1, BONSAI if spec.bonsai else Q9}
         else:
             router = self.bonsai_router if spec.bonsai else self.router
             thresholds = self.bonsai_thresholds if spec.bonsai else self.thresholds
@@ -1092,13 +1095,14 @@ class V41Harness:
             final_name = pick = FW
             used.append((FW, final))
         elif ctx.calibration:
-            got = await asyncio.gather(go(Q9), go(D1), go(Q4), return_exceptions=True)
+            driver = ctx.target_name     # the arm's driving model: the 9B, or Bonsai 8B in SW-Bonsai
+            got = await asyncio.gather(go(driver), go(D1), go(Q4), return_exceptions=True)
             for g in got:  # every call runs to its end first; the first failure then decides
                 if isinstance(g, BaseException):
                     raise g
             (req, final), (r1, d1r), (r4, q4r) = got
-            final_name = pick = Q9
-            used.append((Q9, final))
+            final_name = pick = driver
+            used.append((driver, final))
             counterfactual = {D1: self._cf(r1, d1r), Q4: self._cf(r4, q4r)}
             counterfactual[D1]["call"] = self._call_info(D1, d1r)
             counterfactual[Q4]["call"] = self._call_info(Q4, q4r)

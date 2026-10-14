@@ -43,7 +43,7 @@ from antelligence.experiments.v41_router import (BONSAI_ROUTER_MODELS, FEATURE_N
 from antelligence.experiments.v41_split import load_split, which_split
 
 D1, Q4, Q9, BONSAI = "d1", "qwen3.5-4b", "qwen3.5-9b", "bonsai-8b"
-CALIBRATION_ARMS = ("SW-B", "SW-noBoard")
+CALIBRATION_ARMS = {False: ("SW-B", "SW-noBoard"), True: ("SW-Bonsai",)}   # arms whose logs each fit accepts
 TARGET_BACKEND = {False: Q9, True: BONSAI}
 DEFERRAL_CANDIDATES = {False: (Q4, Q9), True: (BONSAI,)}   # cheapest first; Bonsai is the only candidate in its arm
 
@@ -130,7 +130,7 @@ def check_dev(split_doc: Optional[Mapping[str, Any]], case: str, where: str) -> 
         raise FitError(f"{where}: case {case!r} is an {kind} case; the fit uses development calibration logs only")
 
 
-def load_run(path: Path, split_doc: Optional[Mapping[str, Any]]) -> Run:
+def load_run(path: Path, split_doc: Optional[Mapping[str, Any]], *, bonsai: bool = False) -> Run:
     run_log_p, cell_p = path / "run_log.json", path / "cell.json"
     if not run_log_p.is_file() or not cell_p.is_file():
         raise FitError(f"{path}: needs run_log.json and cell.json next to decisions.jsonl")
@@ -141,8 +141,11 @@ def load_run(path: Path, split_doc: Optional[Mapping[str, Any]]) -> Run:
     mixed = run_log.get("log_counterfactuals") == "all"
     if not (run_log.get("calibration") or mixed):
         raise FitError(f"{where}: not a --calibration or --log-counterfactuals all run; the fit needs the counterfactual logs")
-    if run_log.get("arm", "").split(":")[0] not in CALIBRATION_ARMS:
-        raise FitError(f"{where}: arm {run_log.get('arm')!r} is not SW-B or SW-noBoard")
+    arm = run_log.get("arm", "").split(":")[0]
+    if arm not in CALIBRATION_ARMS[bonsai]:
+        hint = (" (a Bonsai calibration log; fit it with --bonsai)" if arm in CALIBRATION_ARMS[True] else
+                " (--bonsai fits SW-Bonsai logs only)" if bonsai and arm in CALIBRATION_ARMS[False] else "")
+        raise FitError(f"{where}: arm {run_log.get('arm')!r} is not {' or '.join(CALIBRATION_ARMS[bonsai])}{hint}")
     check_dev(split_doc, run_log["case"], where)
     rows = []
     for line in (path / "decisions.jsonl").read_text(encoding="utf-8").splitlines():
@@ -461,7 +464,7 @@ def run_fit(inputs: Sequence[Path], *, tag: str, cells_path: Optional[Path] = No
     dirs = discover(inputs)
     if not dirs:
         raise FitError("no run directories (decisions.jsonl) found under the inputs")
-    runs = [load_run(d, split_doc) for d in dirs]
+    runs = [load_run(d, split_doc, bonsai=bonsai) for d in dirs]
     tainted = [r for r in runs if v41_fallbacks.run_dir_provider_fallbacks(r.path, r.cell) > 0]
     dropped_decisions = 0
     if tainted and not allow_provider_fallbacks:
