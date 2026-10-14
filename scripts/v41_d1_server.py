@@ -93,6 +93,30 @@ def metrics_text() -> str:
         return (f"v41_d1_requests_total {ACTIVITY['requests']}\nv41_d1_in_flight {ACTIVITY['in_flight']}\n")
 
 
+WATCHDOG_LOG_DEFAULT = "/opt/v41/watchdog-log.jsonl"
+WATCHDOG_TAIL_MAX = 2000
+
+
+def watchdog_tail(path: str, n: int) -> Dict[str, Any]:
+    """The last ``n`` lines of the pod watchdog's JSONL log, parsed (a torn or foreign line comes back as ``{"raw": ..}``).
+    The watchdog redacts keys before writing; the tail is read-only and size-bounded."""
+    n = max(1, min(int(n), WATCHDOG_TAIL_MAX))
+    out: Dict[str, Any] = {"path": path, "exists": os.path.isfile(path), "lines": []}
+    if not out["exists"]:
+        return out
+    with open(path, "rb") as fh:
+        fh.seek(0, os.SEEK_END)
+        size = fh.tell()
+        fh.seek(max(0, size - 2_000_000))  # a tail never needs more than the last 2 MB
+        raw = fh.read().decode("utf-8", "replace").splitlines()
+    for line in raw[-n:]:
+        try:
+            out["lines"].append(json.loads(line))
+        except ValueError:
+            out["lines"].append({"raw": line[:300]})
+    return out
+
+
 def make_handler(model: Any, identity: Mapping[str, str], lock: threading.Lock, token: Optional[str]):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_: Any) -> None:  # no request text in logs
@@ -110,7 +134,18 @@ def make_handler(model: Any, identity: Mapping[str, str], lock: threading.Lock, 
             return token is None or hmac.compare_digest(self.headers.get("Authorization", ""), f"Bearer {token}")
 
         def do_GET(self) -> None:
-            if self.path == "/health":
+            route, _, query = self.path.partition("?")
+            if route == "/v41/watchdog-log":
+                if not self._authorised():
+                    self._send(401, {"error": "unauthorised"})
+                    return
+                n = 200
+                for part in query.split("&"):
+                    key, _, value = part.partition("=")
+                    if key == "n" and value.isdigit():
+                        n = int(value)
+                self._send(200, watchdog_tail(os.environ.get("V41_WATCHDOG_LOG", WATCHDOG_LOG_DEFAULT), n))
+            elif self.path == "/health":
                 self._send(200, {"ok": True, "identity": dict(identity)})
             elif self.path == "/metrics":
                 raw = metrics_text().encode("utf-8")

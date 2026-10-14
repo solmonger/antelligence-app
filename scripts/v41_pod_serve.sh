@@ -35,6 +35,19 @@ READY_TIMEOUT_S="${V41_READY_TIMEOUT_S:-900}"
 # Idle watchdog (scripts/v41_pod_watchdog.py, fetched and sha256-verified beside this file). V41_IDLE_SHUTDOWN_S is the
 # idle limit in seconds (default 900 = 15 min); V41_WATCHDOG_POLL_S the scrape interval (default 60).
 WATCHDOG="${V41_WATCHDOG:-/opt/v41/v41_pod_watchdog.py}"
+# The watchdog appends one JSON line per poll (and per self-termination attempt) here; the d1 shim serves the tail at
+# GET /v41/watchdog-log?n=200 (same bearer auth) and `v41_pod.py diag` prints it. This launcher adds its own lines.
+export V41_WATCHDOG_LOG="${V41_WATCHDOG_LOG:-/opt/v41/watchdog-log.jsonl}"
+export PYTHONUNBUFFERED=1
+wlog() {  # event message: one JSON line in the watchdog log and on stdout (messages are plain words only)
+  local line
+  line="{\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"event\":\"launcher\",\"msg\":\"$1\"}"
+  mkdir -p "$(dirname "$V41_WATCHDOG_LOG")" 2>/dev/null || true
+  printf '%s\n' "$line" >> "$V41_WATCHDOG_LOG" 2>/dev/null || true
+  echo "$line"
+}
+
+wlog "launcher started"
 
 pids=()
 cleanup() { for p in "${pids[@]:-}"; do kill "$p" 2>/dev/null || true; done; }
@@ -103,8 +116,18 @@ nvidia-smi --query-gpu=memory.used,memory.total --format=csv,noheader || true
 echo "final: gpu_util_9b=$GPU_UTIL_9B gpu_util_4b=$GPU_UTIL_4B max_model_len=$MAX_MODEL_LEN max_num_seqs=$MAX_NUM_SEQS cudagraph=${CUDAGRAPH_SIZE:-default}"
 
 # Every server is ready: from here the pod terminates itself after V41_IDLE_SHUTDOWN_S without requests.
+if [[ ! -f "$WATCHDOG" ]]; then
+  wlog "watchdog file missing at $WATCHDOG; the pod will NOT self-terminate on idle"
+fi
 python3 "$WATCHDOG" &
 pids+=("$!")
+wd_pid="$!"
+sleep 3
+if kill -0 "$wd_pid" 2>/dev/null; then
+  wlog "watchdog started pid $wd_pid idle_limit_s=${V41_IDLE_SHUTDOWN_S:-900}"
+else
+  wlog "watchdog FAILED to start or exited within 3s (see the lines above)"
+fi
 
 wait -n "${pids[@]}"
 echo "FATAL: a server (or the idle watchdog) exited" >&2
