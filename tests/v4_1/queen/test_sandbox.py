@@ -130,7 +130,7 @@ def test_proposer_sees_aggregates_only():
     text = json.dumps(seen)
     assert not any(c in text for c in DEV_A + DEV_B)
     ctx = seen[1]
-    assert set(ctx) == {"round", "harness", "allowed_keys", "aggregates", "previous_edits"}
+    assert set(ctx) == {"round", "harness", "allowed_keys", "aggregates", "previous_edits", "key_effects"}
     assert set(ctx["aggregates"]) == set(ARMS) and ctx["aggregates"]["SW-B"]["n_cases"] == 30
     assert ctx["previous_edits"][0]["round"] == 1 and "keys" in ctx["previous_edits"][0]
 
