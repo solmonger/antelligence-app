@@ -309,3 +309,12 @@ Replay: `run_colony_episode(replay=bundle)` reproduces `metrics` exactly; a remo
 - `store_adapter` keeps TC and ET as scorer-side arrays on `Scorer`, never in `Crop` observations or `Crop.truth`.
 - `SimLook` is built by `worlds/tumor_mri/simlook.py` from a cell table `cells_v4_2.json` (counts + quantiles per cell,
   no MRI data), and injected as `look_fn(squad, pos, tick) -> float`. Identical at a voxel for every ant, tick, seed, process.
+
+## 14. K1 clarifications (accepted after review, 2026-10-14)
+- Bundle `extra.colony` also carries `params`, `region_status`, `metrics`; `counters` gains `marks_refused`, `asks_refused`, `answers_refused`. Bundle JSON uses string keys.
+- An ask with no reading to quote is refused (`asks_refused`). An over-budget answer is refused and counted, the ask stays open and is retried on later ticks until it lapses (2 ticks).
+- `dosed_enough` answers from the newest dose reading within 6 mm; `should_i_come` is yes/no only.
+- `tick_first` = tick quorum was first met; `done` and `not_tumour` meeting in the same evaluation: `done` wins.
+- Judgement marks must lie within 6 mm of the placing ant, else refused.
+- Approximation (logged): a zone is the equal-volume sphere around the centroid plus 6 mm (`Region` has no voxel set). Affects `dose_ok` placement and the `not_tumour` quorum.
+- Queen: the colony queen is passed as `queen=` (key-checked inputs: board marks of kinds dosed, dose_ok, tumour_here, not_tumour with tick < t, plus quorum events); returns `{zone_need, colony_note, need_rows}`. In S-solo it runs at tick 0 only. The v4.1 `world.queen_hook` path is outside the barrier and MUST stay unset in every colony arm (Q1 test asserts this).
