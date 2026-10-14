@@ -1,0 +1,156 @@
+{
+ "auroc_by_zone": {
+  "edge": {
+   "auroc_look": 0.6079025452303424,
+   "auroc_scan": 0.861165969827171,
+   "negative": "out_0_4",
+   "positive": "in_0_4"
+  },
+  "far": {
+   "auroc_look": 0.8379476606587495,
+   "auroc_scan": 0.9595259063919301,
+   "negative": "out_gt10",
+   "positive": "in_gt4"
+  },
+  "mid": {
+   "auroc_look": 0.6902067536821308,
+   "auroc_scan": 0.9994344783013068,
+   "negative": "out_4_10",
+   "positive": "in_gt4"
+  }
+ },
+ "auroc_overall": {
+  "look": 0.776290734228022,
+  "scan": 0.9637334548442374
+ },
+ "cases": 40,
+ "definitions": {
+  "inside_depth": "mm to nearest non-tumour voxel",
+  "look": "d1 look p (temperature-calibrated)",
+  "outside_distance": "mm to nearest tumour voxel",
+  "scan": "perception p_tumour at the look"
+ },
+ "dropped": {},
+ "ece_overall": 0.13033322109374992,
+ "n_looks": 7680,
+ "per_band": {
+  "in_0_4": {
+   "accuracy_at_0.5": 0.7346101231190151,
+   "brier_look": 0.18919850236772914,
+   "brier_scan": 0.06127540612041723,
+   "calibration_gap_look": -0.3711225882352941,
+   "calibration_gap_scan": -0.1515984363885089,
+   "label_rate": 1.0,
+   "mean_look": 0.6288774117647059,
+   "mean_scan_p": 0.8484015636114911,
+   "n": 731
+  },
+  "in_gt4": {
+   "accuracy_at_0.5": 0.8828154967395474,
+   "brier_look": 0.12309653447100076,
+   "brier_scan": 0.0004330972264955887,
+   "calibration_gap_look": -0.2954866405830455,
+   "calibration_gap_scan": -0.013165346758726493,
+   "label_rate": 1.0,
+   "mean_look": 0.7045133594169545,
+   "mean_scan_p": 0.9868346532412735,
+   "n": 5214
+  },
+  "out_0_4": {
+   "accuracy_at_0.5": 0.4612676056338028,
+   "brier_look": 0.3548398705816972,
+   "brier_scan": 0.3013694215077042,
+   "calibration_gap_look": 0.5386973380281691,
+   "calibration_gap_scan": 0.4355589154929578,
+   "label_rate": 0.0,
+   "mean_look": 0.5386973380281691,
+   "mean_scan_p": 0.4355589154929578,
+   "n": 284
+  },
+  "out_4_10": {
+   "accuracy_at_0.5": 0.3013698630136986,
+   "brier_look": 0.3671477038961644,
+   "brier_scan": 0.08272338725384246,
+   "calibration_gap_look": 0.5743218561643837,
+   "calibration_gap_scan": 0.12130806164383562,
+   "label_rate": 0.0,
+   "mean_look": 0.5743218561643837,
+   "mean_scan_p": 0.12130806164383562,
+   "n": 292
+  },
+  "out_gt10": {
+   "accuracy_at_0.5": 0.6289905090595341,
+   "brier_look": 0.21944455022697326,
+   "brier_scan": 0.13140746450382657,
+   "calibration_gap_look": 0.4230429611734253,
+   "calibration_gap_scan": 0.17428428041415014,
+   "label_rate": 0.0,
+   "mean_look": 0.4230429611734253,
+   "mean_scan_p": 0.17428428041415014,
+   "n": 1159
+  }
+ },
+ "reliability_curve_overall": [
+  {
+   "bin": "0.0-0.1",
+   "mean_look": 0.08966041463414631,
+   "n": 123,
+   "observed_tumour_rate": 0.15447154471544716
+  },
+  {
+   "bin": "0.1-0.2",
+   "mean_look": 0.16698997794117645,
+   "n": 136,
+   "observed_tumour_rate": 0.19117647058823528
+  },
+  {
+   "bin": "0.2-0.3",
+   "mean_look": 0.2735875891472868,
+   "n": 516,
+   "observed_tumour_rate": 0.48255813953488375
+  },
+  {
+   "bin": "0.3-0.4",
+   "mean_look": 0.36195999999999995,
+   "n": 552,
+   "observed_tumour_rate": 0.5797101449275363
+  },
+  {
+   "bin": "0.4-0.5",
+   "mean_look": 0.42961199999999994,
+   "n": 426,
+   "observed_tumour_rate": 0.44835680751173707
+  },
+  {
+   "bin": "0.5-0.6",
+   "mean_look": 0.5348171905781585,
+   "n": 1401,
+   "observed_tumour_rate": 0.7844396859386152
+  },
+  {
+   "bin": "0.6-0.7",
+   "mean_look": 0.63804,
+   "n": 602,
+   "observed_tumour_rate": 0.8189368770764119
+  },
+  {
+   "bin": "0.7-0.8",
+   "mean_look": 0.7202937233201583,
+   "n": 1012,
+   "observed_tumour_rate": 0.8162055335968379
+  },
+  {
+   "bin": "0.8-0.9",
+   "mean_look": 0.836529913446677,
+   "n": 1941,
+   "observed_tumour_rate": 0.9289026275115919
+  },
+  {
+   "bin": "0.9-1.0",
+   "mean_look": 0.9271816601441814,
+   "n": 971,
+   "observed_tumour_rate": 0.9464469618949537
+  }
+ ],
+ "source": "boards"
+}

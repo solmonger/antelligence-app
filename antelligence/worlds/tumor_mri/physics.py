@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import heapq
 import math
 from collections import OrderedDict
@@ -13,6 +14,15 @@ from scipy.ndimage import gaussian_filter, gaussian_filter1d
 Vox = Tuple[int, int, int]
 
 
+def seed64(*parts) -> int:
+    """INTERFACES section 1: sha256 of the '|'-joined parts, first 8 bytes big-endian."""
+    return int.from_bytes(hashlib.sha256("|".join(str(p) for p in parts).encode()).digest()[:8], "big")
+
+
+def rng(*parts) -> np.random.Generator:
+    return np.random.default_rng(seed64(*parts))
+
+
 class DrugField:
     """Concentration ``conc`` (mass per voxel) and cumulative exposure ``dose``.
 
@@ -21,10 +31,15 @@ class DrugField:
     mass crossing the boundary is lost), decays by ``decay``, then adds the new concentration to ``dose``.
 
     Mass balance (checked by tests): ``released == mass + decayed + lost_boundary`` to float precision.
+
+    Hidden facts (v4.2, scorer-side; both ``None`` is the v4.1 arithmetic path exactly):
+    ``uptake`` (F2) is u(v): ``dose += u * conc``, mass accounting untouched. ``dose_raw`` then keeps the u = 1 dose so the
+    uptake sensor can form its ratio. ``washout`` (F3) is delta(v): ``conc *= 1 - decay - delta(v)`` per voxel, with the
+    decayed mass (and ``decayed_in_region``) accounted per voxel, so the balance still closes.
     """
 
     def __init__(self, shape: Sequence[int], *, release_sigma_vox: float = 1.0, diffuse_sigma_vox: float = 1.0,
-                 decay: float = 0.02) -> None:
+                 decay: float = 0.02, uptake: Optional[np.ndarray] = None, washout: Optional[np.ndarray] = None) -> None:
         self.shape = tuple(int(s) for s in shape)
         self.conc = np.zeros(self.shape, dtype=np.float64)
         self.dose = np.zeros(self.shape, dtype=np.float64)
@@ -34,6 +49,14 @@ class DrugField:
         self.decayed = 0.0
         self.lost_boundary = 0.0
         self.decayed_in_region = 0.0  # decayed mass inside the accounting region (scorer's tumour mask)
+        self.uptake = None if uptake is None else np.asarray(uptake, dtype=np.float64)
+        self.washout = None if washout is None else np.asarray(washout, dtype=np.float64)
+        for name, arr in (("uptake", self.uptake), ("washout", self.washout)):
+            if arr is not None and arr.shape != self.shape:
+                raise ValueError(f"{name} shape {arr.shape} != field shape {self.shape}")
+        if self.washout is not None and (self.washout.min() < 0.0 or self.decay + self.washout.max() >= 1.0):
+            raise ValueError("washout must be >= 0 and decay + washout < 1")
+        self.dose_raw = np.zeros(self.shape, dtype=np.float64) if self.uptake is not None else None  # u = 1 dose (F2 sensor)
         r = max(1, int(math.ceil(3.0 * release_sigma_vox)))
         ax = np.arange(-r, r + 1, dtype=np.float64)
         g = np.exp(-0.5 * (ax / release_sigma_vox) ** 2)
@@ -65,11 +88,23 @@ class DrugField:
             np.maximum(self.conc, 0.0, out=self.conc)
             after = float(self.conc.sum())
             self.lost_boundary += before - after
-            if region is not None:
-                self.decayed_in_region += float(self.conc[region].sum()) * self.decay
-            self.conc *= 1.0 - self.decay
-            self.decayed += after * self.decay
-        self.dose += self.conc
+            if self.washout is None:
+                if region is not None:
+                    self.decayed_in_region += float(self.conc[region].sum()) * self.decay
+                self.conc *= 1.0 - self.decay
+                self.decayed += after * self.decay
+            else:
+                rate = self.decay + self.washout  # per-voxel decay fraction
+                lost = self.conc * rate
+                if region is not None:
+                    self.decayed_in_region += float(lost[region].sum())
+                self.decayed += float(lost.sum())
+                self.conc -= lost
+        if self.uptake is None:
+            self.dose += self.conc
+        else:
+            self.dose += self.uptake * self.conc
+            self.dose_raw += self.conc
 
     def mass_in(self, region: np.ndarray) -> float:
         return float(self.conc[region].sum())
@@ -276,3 +311,55 @@ class PuffResponse:
         if len(self._cache) > self._cache_max:
             self._cache.popitem(last=False)
         return out
+
+
+# --- hidden fact fields (F2, F3), scorer-side ---------------------------------------------------------------------
+
+
+def _smooth_noise(shape: Sequence[int], stream: Sequence, sigma_vox: float) -> np.ndarray:
+    """Seeded Gaussian-smoothed noise (stream = INTERFACES section 1 tuple, e.g. ``("f2_srcB", case_id)``)."""
+    noise = rng(*stream).standard_normal(tuple(shape))
+    return gaussian_filter(noise, sigma_vox, mode="reflect")
+
+
+def _patch_mask(field: np.ndarray, domain: np.ndarray, share: float) -> np.ndarray:
+    """Voxels of ``domain`` where ``field`` is highest, covering ``share`` of the domain (exactly, up to ties)."""
+    out = np.zeros(field.shape, dtype=bool)
+    n = int(domain.sum())
+    k = int(round(share * n))
+    if n == 0 or k <= 0:
+        return out
+    vals = field[domain]
+    thr = np.partition(vals, n - k)[n - k]
+    out[domain] = vals >= thr
+    return out
+
+
+def uptake_source_a(tc: np.ndarray, et: np.ndarray, u_core: float) -> np.ndarray:
+    """F2 Source A: u = ``u_core`` on the non-enhancing core (TC & ~ET), 1 elsewhere."""
+    u = np.ones(np.shape(tc), dtype=np.float64)
+    u[np.asarray(tc, dtype=bool) & ~np.asarray(et, dtype=bool)] = float(u_core)
+    return u
+
+
+def uptake_source_b(truth: np.ndarray, case_id: str, u_core: float, share: float, voxel_mm: float) -> np.ndarray:
+    """F2 Source B (channels missing): seeded smooth field (sigma 4 mm), the top ``share`` of the truth tumour gets ``u_core``."""
+    truth = np.asarray(truth, dtype=bool)
+    field = _smooth_noise(truth.shape, ("f2_srcB", case_id), 4.0 / voxel_mm)
+    u = np.ones(truth.shape, dtype=np.float64)
+    u[_patch_mask(field, truth, share)] = float(u_core)
+    return u
+
+
+def washout_field(truth: np.ndarray, case_id: str, decay: float, share: float, voxel_mm: float) -> np.ndarray:
+    """F3: delta = ``decay`` in seeded patches (Gaussian-smoothed noise, sigma 3 mm) covering ``share`` of the truth tumour
+    plus a 5 mm margin; 0 elsewhere."""
+    from scipy.ndimage import distance_transform_edt
+    truth = np.asarray(truth, dtype=bool)
+    d = np.zeros(truth.shape, dtype=np.float64)
+    if not truth.any():
+        return d
+    domain = distance_transform_edt(~truth) * voxel_mm <= 5.0
+    field = _smooth_noise(truth.shape, ("f3_patch", case_id), 3.0 / voxel_mm)
+    d[_patch_mask(field, domain, share)] = float(decay)
+    return d

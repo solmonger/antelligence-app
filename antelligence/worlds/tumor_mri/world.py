@@ -28,8 +28,8 @@ from __future__ import annotations
 
 import hashlib
 import math
-from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Sequence
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence
 
 import numpy as np
 
@@ -37,7 +37,8 @@ from antelligence.kernel.types import NOOP, Intent, LocalView, Observation, Outc
 from antelligence.worlds.tumor_mri.config import WorldConfig
 from antelligence.worlds.tumor_mri.data import (Candidate, Crop, Region, entry_sites_with_info, perceived_regions,
                                                 select_candidates)
-from antelligence.worlds.tumor_mri.physics import DrugField, Pathfinder, Vox
+from antelligence.worlds.tumor_mri.physics import (DrugField, Pathfinder, Vox, rng, uptake_source_a, uptake_source_b,
+                                                   washout_field)
 from antelligence.worlds.tumor_mri.questions import CANDIDATE_LABELS, EXPLORE, STAY
 
 ACTION_DECIDE = "decide"
@@ -61,8 +62,11 @@ class _Percept:
 class Scorer:
     """Ground truth and scoring. Never passed to the observation builder."""
 
-    def __init__(self, truth: np.ndarray, outside_crop_truth_voxels: int, dose_threshold: float) -> None:
+    def __init__(self, truth: np.ndarray, outside_crop_truth_voxels: int, dose_threshold: float, *,
+                 tc: Optional[np.ndarray] = None, et: Optional[np.ndarray] = None) -> None:
         self.truth = truth
+        self.tc = None if tc is None else np.asarray(tc, dtype=bool)  # scorer-side truth channels (F2 Source A); never observed
+        self.et = None if et is None else np.asarray(et, dtype=bool)
         self.outside_crop_truth_voxels = int(outside_crop_truth_voxels)
         self.dose_threshold = float(dose_threshold)
         self._idx = np.flatnonzero(truth.ravel())
@@ -90,6 +94,7 @@ class _Squad:
     goal: Optional[Vox] = None
     path: Optional[List[Vox]] = None
     last_release: Optional[Dict[str, Any]] = None
+    uptake_pending: List[Dict[str, Any]] = field(default_factory=list)   # F2: releases not yet read by the uptake sensor
 
 
 class TumorMRIWorld:
@@ -97,21 +102,25 @@ class TumorMRIWorld:
 
     def __init__(self, crop: Crop, config: Optional[WorldConfig] = None, seed: int = 0, *,
                  look_fn: Optional[LookFn] = None, queen_hook: Optional[QueenHook] = None,
-                 regions: Optional[Sequence[Region]] = None) -> None:
+                 regions: Optional[Sequence[Region]] = None,
+                 scorer_channels: Optional[Mapping[str, np.ndarray]] = None) -> None:
         self.config = config or WorldConfig()
         self.seed = int(seed)
         self.voxel_mm = crop.voxel_mm
         self.shape = crop.shape
         self.case_id = crop.case_id
         self._percept = _Percept(crop.brain, crop.p_tumour, crop.unc, crop.flair, crop.t1c)
-        self._scorer = Scorer(crop.truth, crop.outside_crop_truth_voxels, self.config.dose_threshold)
+        ch = scorer_channels or {}
+        self._scorer = Scorer(crop.truth, crop.outside_crop_truth_voxels, self.config.dose_threshold,
+                              tc=ch.get("tc"), et=ch.get("et"))
         self.look_fn = look_fn
         self.regions: List[Region] = list(regions) if regions is not None else perceived_regions(
             crop.p_tumour, crop.unc, crop.brain, crop.voxel_mm)
         self.queen_hook = queen_hook
         cfg = self.config
+        uptake, washout = self._hidden_fields(crop)
         self.field = DrugField(self.shape, release_sigma_vox=cfg.release_sigma_mm / crop.voxel_mm,
-                               diffuse_sigma_vox=cfg.diffuse_sigma_vox, decay=cfg.decay)
+                               diffuse_sigma_vox=cfg.diffuse_sigma_vox, decay=cfg.decay, uptake=uptake, washout=washout)
         self._paths = Pathfinder(crop.brain, weight=cfg.path_weight, max_expand=cfg.path_max_expand)
         self.entry_sites, self.entry_shell_widened_mm = entry_sites_with_info(
             crop.brain, crop.p_tumour, self.seed, n=cfg.n_squads, voxel_mm=crop.voxel_mm,
@@ -132,6 +141,26 @@ class TumorMRIWorld:
         self._coverage_at_queen: Dict[int, float] = {}
         self._time_to_half: Optional[int] = None
         self._coverage_trace: List[float] = []
+        self._sensor_cache: Dict[tuple, Dict[str, Optional[Dict[str, Any]]]] = {}
+        self._sensor_counts = {"washout_turns": 0, "washout_available": 0, "washout_fast": 0,
+                               "uptake_readings": 0, "uptake_slow": 0}
+
+    def _hidden_fields(self, crop: Crop):
+        """F2 / F3 fields, scorer-side. (None, None) when both facts are off: the v4.1 arithmetic path."""
+        f = self.config.facts
+        uptake = washout = None
+        if f.f2:
+            if f.f2_source == "A":
+                sc = self._scorer
+                if sc.tc is None or sc.et is None:
+                    raise ValueError("f2_source A needs the store's TC and ET truth channels (scorer_channels); "
+                                     "use f2_source B when they are missing")
+                uptake = uptake_source_a(sc.tc, sc.et, f.u_core)
+            else:
+                uptake = uptake_source_b(crop.truth, crop.case_id, f.u_core, f.f2_share, crop.voxel_mm)
+        if f.f3:
+            washout = washout_field(crop.truth, crop.case_id, f.f3_decay, f.f3_share, crop.voxel_mm)
+        return uptake, washout
 
     # --- World protocol -----------------------------------------------------
 
@@ -275,6 +304,9 @@ class TumorMRIWorld:
             sq.payload -= deposited
             sq.last_release = {"tick": int(tick), "amount_level": amount,
                                "fraction": cfg.amount_fractions[amount - 1], "mass": deposited}
+            if self.field.uptake is not None:
+                sq.uptake_pending.append({"tick": int(tick), "pos": sq.pos, "dose0": float(self.field.dose[sq.pos]),
+                                          "raw0": float(self.field.dose_raw[sq.pos])})
         override = p.get("target_vox")
         if override is not None or target != STAY:  # Stay keeps the current target (and its path)
             sq.target = target
@@ -315,7 +347,71 @@ class TumorMRIWorld:
             "lost_boundary_share": f.lost_boundary / f.released if f.released > 0 else 0.0,
             "mass_residual": f.mass_balance_residual(), "ticks": self._tick,
             "entry_shell_widened_mm": self.entry_shell_widened_mm,
+            **({"facts": self.sensor_stats()} if self.config.facts.any_on else {}),
         }
+
+    # --- hidden-fact sensors (F2, F3) ---------------------------------------------------------------------------
+
+    def sensor_readings(self, agent_id: str, tick: int) -> Dict[str, Optional[Dict[str, Any]]]:
+        """What the ant's sensors read at its decision turn ``tick`` (computed once per squad and tick, then cached).
+
+        * ``uptake`` (F2): about the ant's own last release voxel v, even if it has moved on: (dose gain at v since the
+          release) / (the gain u = 1 would have given) + N(0, 0.1) noise, stream ``uptake_noise``. Words: "as expected"
+          (>= 0.7) or "slow". One reading per release, on the first turn after it.
+        * ``washout`` (F3): delta(v) + N(0, 0.01) noise (stream ``washout_noise``) at the ant's own voxel, only when the local
+          concentration is at least 0.01 x D_t. Words: "normal", or "fast" (>= 0.5 x f3_decay).
+        Each is ``{"pos_vox", "reading", "word"}`` or None (fact off, nothing to read, or no signal). Never in observe()."""
+        i = self._idx(agent_id)
+        key = (i, int(tick))
+        hit = self._sensor_cache.get(key)
+        if hit is not None:
+            return hit
+        sq, f, fl = self._squads[i], self.config.facts, self.field
+        out: Dict[str, Optional[Dict[str, Any]]] = {"uptake": None, "washout": None}
+        if fl.uptake is not None:
+            ready = [p for p in sq.uptake_pending if p["tick"] < tick]
+            sq.uptake_pending = [p for p in sq.uptake_pending if p["tick"] >= tick]
+            if ready:
+                p = ready[-1]
+                v = p["pos"]
+                raw_gain = float(fl.dose_raw[v]) - p["raw0"]
+                if raw_gain > 1e-12:
+                    ratio = (float(fl.dose[v]) - p["dose0"]) / raw_gain
+                    val = ratio + float(rng("uptake_noise", self.case_id, self.seed, i, int(tick)).normal(0.0, 0.1))
+                    word = "as expected" if val >= 0.7 else "slow"
+                    out["uptake"] = {"pos_vox": list(v), "reading": val, "word": word}
+                    self._sensor_counts["uptake_readings"] += 1
+                    self._sensor_counts["uptake_slow"] += word == "slow"
+        if fl.washout is not None:
+            self._sensor_counts["washout_turns"] += 1
+            v = sq.pos
+            if float(fl.conc[v]) >= 0.01 * self.config.dose_threshold:
+                val = float(fl.washout[v]) + float(rng("washout_noise", self.case_id, self.seed, i, int(tick)).normal(0.0, 0.01))
+                word = "fast" if val >= 0.5 * f.f3_decay else "normal"
+                out["washout"] = {"pos_vox": list(v), "reading": val, "word": word}
+                self._sensor_counts["washout_available"] += 1
+                self._sensor_counts["washout_fast"] += word == "fast"
+        self._sensor_cache[key] = out
+        return out
+
+    def pending_sensor_events(self, agent_id: str, tick: int) -> List[Dict[str, Any]]:
+        """Automatic-mark triggers for this squad and tick: a ``slow_uptake`` event when the uptake reading is slow, a
+        ``washout`` event when the washout reading is fast. K1 turns them into marks; the world places none itself.
+        Each event is ``{"kind", "ant", "tick", "pos_vox", "reading"}``."""
+        r = self.sensor_readings(agent_id, tick)
+        ant = self._idx(agent_id)
+        ev: List[Dict[str, Any]] = []
+        if r["uptake"] is not None and r["uptake"]["word"] == "slow":
+            ev.append({"kind": "slow_uptake", "ant": ant, "tick": int(tick), **{k: r["uptake"][k] for k in ("pos_vox", "reading")}})
+        if r["washout"] is not None and r["washout"]["word"] == "fast":
+            ev.append({"kind": "washout", "ant": ant, "tick": int(tick), **{k: r["washout"][k] for k in ("pos_vox", "reading")}})
+        return ev
+
+    def sensor_stats(self) -> Dict[str, Any]:
+        """Sensor counts for the run; ``washout_available_share`` = how often a washout reading was available."""
+        c = dict(self._sensor_counts)
+        c["washout_available_share"] = c["washout_available"] / c["washout_turns"] if c["washout_turns"] else None
+        return c
 
     def off_target_share(self) -> float:
         """(drug in non-tumour voxels + drug that left the crop) / all released drug, "tumour" = truth WT.

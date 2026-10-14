@@ -1,4 +1,4 @@
-"""World configuration (config/v4_1/world.yaml)."""
+"""World configuration (config/v4_1/world.yaml; v4.2 adds the ``facts`` block, config/v4_2/world.yaml)."""
 
 from __future__ import annotations
 
@@ -16,6 +16,40 @@ DRUG_MODES = ("fixed", "per_perceived_volume")
 def perceived_volume_vox(p_tumour: Any) -> float:
     """V_perceived: sum of calibrated p_tumour over the crop, in voxels."""
     return float(np.asarray(p_tumour, dtype=np.float64).sum())
+
+
+@dataclass(frozen=True)
+class FactsConfig:
+    """Hidden local facts F1-F3 (v4.2 goal section 5, INTERFACES 11). Every flag defaults off; all off == v4.1."""
+    f1_simlook: bool = False
+    f1_source: str = "boards"   # boards | local_d1 | log2000 (recorded, never inferred)
+    f2: bool = False
+    f2_source: str = "A"        # A (TC & ~ET from the store) | B (seeded smooth field)
+    u_core: float = 1.0         # {0.3, 0.5, 0.7} when on
+    f2_share: float = 0.0       # {0.2, 0.35}, Source B only
+    f3: bool = False
+    f3_decay: float = 0.0       # {0.04, 0.08}
+    f3_share: float = 0.0       # {0.1, 0.2}
+
+    def __post_init__(self) -> None:
+        if self.f1_source not in ("boards", "local_d1", "log2000"):
+            raise ValueError("f1_source must be boards | local_d1 | log2000")
+        if self.f2_source not in ("A", "B"):
+            raise ValueError("f2_source must be A or B")
+        if not 0.0 < self.u_core <= 1.0:
+            raise ValueError("u_core must be in (0, 1]")
+        if not 0.0 <= self.f2_share <= 1.0 or not 0.0 <= self.f3_share <= 1.0:
+            raise ValueError("shares must be in [0, 1]")
+        if self.f2 and self.f2_source == "B" and self.f2_share <= 0.0:
+            raise ValueError("Source B needs f2_share > 0")
+        if not 0.0 <= self.f3_decay < 1.0:
+            raise ValueError("f3_decay must be in [0, 1)")
+        if self.f3 and (self.f3_decay <= 0.0 or self.f3_share <= 0.0):
+            raise ValueError("f3 on needs f3_decay > 0 and f3_share > 0")
+
+    @property
+    def any_on(self) -> bool:
+        return bool(self.f1_simlook or self.f2 or self.f3)
 
 
 @dataclass(frozen=True)
@@ -38,6 +72,7 @@ class WorldConfig:
     path_weight: float = 1.5  # weighted A*: path cost <= weight * optimal
     path_max_expand: int = 40000
     amount_fractions: Tuple[float, ...] = AMOUNT_FRACTIONS
+    facts: FactsConfig = FactsConfig()
 
     def __post_init__(self) -> None:
         if self.n_squads < 1 or self.ticks < 1 or self.decision_every < 1 or self.queen_every < 1:
@@ -68,6 +103,10 @@ class WorldConfig:
     def to_dict(self) -> Dict[str, Any]:
         d = asdict(self)
         d["amount_fractions"] = list(self.amount_fractions)
+        if self.facts.any_on:  # the v4.1 config (and its hash) is unchanged when every fact is off
+            d["facts"] = asdict(self.facts)
+        else:
+            d.pop("facts", None)
         if self.drug_mode == "per_perceived_volume":
             del d["total_drug"]  # the budget is per case (k x V_perceived); a fixed total would mislead
         return d
@@ -80,7 +119,14 @@ class WorldConfig:
             raise ValueError(f"unknown world config keys: {sorted(extra)}")
         if d.get("drug_mode") == "per_perceived_volume" and "total_drug" in d:
             raise ValueError("total_drug must not be set when drug_mode is per_perceived_volume (the budget is k x V_perceived)")
-        return cls(**{k: (tuple(v) if k == "amount_fractions" else v) for k, v in d.items()})
+        def conv(k: str, v: Any) -> Any:
+            if k == "amount_fractions":
+                return tuple(v)
+            if k == "facts":
+                return v if isinstance(v, FactsConfig) else FactsConfig(**(v or {}))
+            return v
+
+        return cls(**{k: conv(k, v) for k, v in d.items()})
 
     @classmethod
     def from_yaml(cls, path: Union[str, Path]) -> "WorldConfig":

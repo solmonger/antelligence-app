@@ -116,6 +116,11 @@ def _response_kernels(cfg: WorldConfig, voxel_mm: float) -> Dict[int, np.ndarray
     return _KCACHE[key]
 
 
+def _geo_sum(r: float, n: int) -> float:
+    """sum_{t=1..n} r^t."""
+    return float(n) if r == 1.0 else r * (1.0 - r ** n) / (1.0 - r)
+
+
 @dataclass(frozen=True)
 class _Option:
     """A release point for one squad: where, when it would arrive and release, the amount level, and its value."""
@@ -195,30 +200,41 @@ class OracleSPrime:
         hi = np.minimum(idx.max(axis=0) + 1 + pad, proj.shape)
         sl = tuple(slice(int(a), int(b)) for a, b in zip(lo, hi))
         box = f.conc[sl].astype(np.float32)
-        if box.size * n > _EXACT_BUDGET:
-            acc = self._expose(box, n, coarse=True)
-        else:
-            acc = self._expose(box, n, coarse=False)
+        u = None if f.uptake is None else f.uptake[sl].astype(np.float32)
+        keep = None if f.washout is None else (1.0 - cfg.decay - f.washout[sl]).astype(np.float32)
+        acc = self._expose(box, n, coarse=box.size * n > _EXACT_BUDGET, u=u, keep=keep)
         proj[sl] += acc
         return proj
 
-    def _expose(self, conc: np.ndarray, n: int, *, coarse: bool) -> np.ndarray:
+    def _expose(self, conc: np.ndarray, n: int, *, coarse: bool, u: Optional[np.ndarray] = None,
+                keep: Optional[np.ndarray] = None) -> np.ndarray:
         """Cumulative dose over the next ``n`` ticks from concentration ``conc`` under the world's diffusion and decay.
-        ``coarse`` runs it on a 2x down-sampled grid (about 8x cheaper) for big boxes; the dose is a smooth field."""
+        ``coarse`` runs it on a 2x down-sampled grid (about 8x cheaper) for big boxes; the dose is a smooth field.
+        v4.2: ``u`` (F2) is the exact per-voxel uptake, ``dose += u * conc``; ``keep`` (F3) is the per-voxel survival
+        ``1 - decay - delta(v)`` (both block-averaged on the coarse grid). None, None is the v4.1 arithmetic."""
         cfg = self.cfg
-        sigma, keep = cfg.diffuse_sigma_vox, np.float32(1.0 - cfg.decay)
+        sigma = cfg.diffuse_sigma_vox
+        kv = np.float32(1.0 - cfg.decay) if keep is None else keep
         shape = conc.shape
         if coarse:
             even = [s + (s % 2) for s in shape]
-            conc = np.pad(conc, [(0, e - s) for e, s in zip(even, shape)])
-            conc = conc.reshape(even[0] // 2, 2, even[1] // 2, 2, even[2] // 2, 2).sum(axis=(1, 3, 5))
+            pad = [(0, e - s) for e, s in zip(even, shape)]
+
+            def blocks(a):
+                return a.reshape(even[0] // 2, 2, even[1] // 2, 2, even[2] // 2, 2)
+
+            conc = blocks(np.pad(conc, pad)).sum(axis=(1, 3, 5))
+            if u is not None:
+                u = blocks(np.pad(u, pad, constant_values=1.0)).mean(axis=(1, 3, 5))
+            if keep is not None:
+                kv = blocks(np.pad(keep, pad, constant_values=1.0 - cfg.decay)).mean(axis=(1, 3, 5))
             sigma *= 0.5
         box, acc = conc, np.zeros(conc.shape, dtype=np.float32)
         for _ in range(n):
             box = ndimage.gaussian_filter(box, sigma, mode="constant", cval=0.0, truncate=3.0)
             np.maximum(box, 0.0, out=box)
-            box *= keep
-            acc += box
+            box *= kv
+            acc += box if u is None else u * box
         if coarse:
             acc = np.repeat(np.repeat(np.repeat(acc, 2, axis=0), 2, axis=1), 2, axis=2)[tuple(slice(0, s) for s in shape)] / 8.0
         return acc
@@ -236,7 +252,17 @@ class OracleSPrime:
         release or by diffusion) is lost, so a puff near an edge delivers less than the free-space kernel says."""
         if n < 1:
             return None
-        return self._puff.window(self._shape, v, n)
+        win = self._puff.window(self._shape, v, n)
+        wo = self._dose.washout
+        if wo is None or wo[v] == 0.0:
+            return win
+        # F3 approximation: the cached window assumes the uniform decay. A puff released at v is scaled by the ratio of
+        # its decay-weighted exposure with the extra delta(v) to that without it, sum_t (1-d-delta)^t / sum_t (1-d)^t over the
+        # n ticks left. Exact for drug that stays at v; the plume spreads, so drug that wanders into other patches or out
+        # of the patch is not re-weighted.
+        a, b = 1.0 - self.cfg.decay, 1.0 - self.cfg.decay - float(wo[v])
+        scale = _geo_sum(b, n) / _geo_sum(a, n)
+        return win * np.float32(scale)
 
     @staticmethod
     def _window(shape, v):
@@ -255,6 +281,9 @@ class OracleSPrime:
         if not m.any():
             return np.zeros(len(masses)), np.zeros(len(masses))
         k = kern[ks][m].astype(np.float64)
+        u = self._dose.uptake
+        if u is not None:
+            k = k * u[sl][m]  # F2: the dose a puff adds at w is u(w) x its concentration exposure, exactly
         d = d_t - pw[m]
         counts = (d[None, :] <= masses[:, None] * k[None, :]).sum(axis=1).astype(np.float64)
         x0 = np.clip(pw[m], 0.0, None) / d_t
@@ -264,7 +293,8 @@ class OracleSPrime:
 
     def _commit(self, proj: np.ndarray, v: Vox, kern: np.ndarray, mass: float) -> None:
         sl, ks = self._window(proj.shape, v)
-        proj[sl] += mass * kern[ks]
+        u = self._dose.uptake
+        proj[sl] += mass * (kern[ks] if u is None else kern[ks] * u[sl])
 
     def _option(self, proj, v: Vox, steps: int, tick: int, payload: float) -> Optional[_Option]:
         cfg = self.cfg
@@ -298,7 +328,10 @@ class OracleSPrime:
         kern = self._kernel(max(self.cfg.ticks - tick - 25, 1))
         if kern is None or not need.any():
             return
-        cost = _WASTE * (d_t - proj[box][need]) / (float(kern.sum()) * np.maximum(self._rho[box][need], 0.05))
+        yield_ = float(kern.sum()) * np.maximum(self._rho[box][need], 0.05)
+        if self._dose.uptake is not None:
+            yield_ = yield_ * self._dose.uptake[box][need]  # poor-uptake voxels cost proportionally more drug
+        cost = _WASTE * (d_t - proj[box][need]) / yield_
         order = np.argsort(cost, kind="stable")
         keep = order[np.cumsum(cost[order]) <= budget]
         flat = np.zeros(int(need.sum()), dtype=bool)
