@@ -1,0 +1,62 @@
+{
+ "S-1": {
+  "coverage": 0.6909340659340659,
+  "decayed": 492.39901538491466,
+  "dose_sum": 24127.55175386083,
+  "lost_boundary": 61.21413213607487,
+  "mass_residual": 1.0231815394945443e-12,
+  "off_target_share": 0.7783049550798917,
+  "released_total": 599.9998301267624,
+  "time_to_50_coverage": 43
+ },
+ "S-2": {
+  "coverage": 0.3543956043956044,
+  "decayed": 472.54445690200794,
+  "dose_sum": 23154.678388198387,
+  "lost_boundary": 85.93357639019794,
+  "mass_residual": 1.1368683772161603e-13,
+  "off_target_share": 0.852744586525726,
+  "released_total": 599.999749660492,
+  "time_to_50_coverage": null
+ },
+ "S-3": {
+  "coverage": 0.4024725274725275,
+  "decayed": 474.36783582427273,
+  "dose_sum": 23244.02395538935,
+  "lost_boundary": 84.0931261284922,
+  "mass_residual": 6.821210263296962e-13,
+  "off_target_share": 0.841042513559679,
+  "released_total": 599.9997675418854,
+  "time_to_50_coverage": null
+ },
+ "Sprime-1": {
+  "coverage": 0.7582417582417582,
+  "decayed": 481.5125757139051,
+  "dose_sum": 23594.116209981352,
+  "lost_boundary": 54.35022029034998,
+  "mass_residual": 7.958078640513122e-13,
+  "off_target_share": 0.7739295562363548,
+  "released_total": 600.0,
+  "time_to_50_coverage": 47
+ },
+ "Sprime-2": {
+  "coverage": 0.7582417582417582,
+  "decayed": 485.9208042804499,
+  "dose_sum": 23810.11940974203,
+  "lost_boundary": 56.64782145614848,
+  "mass_residual": -1.1368683772161603e-13,
+  "off_target_share": 0.767845150005023,
+  "released_total": 600.0,
+  "time_to_50_coverage": 45
+ },
+ "Sprime-3": {
+  "coverage": 0.7513736263736264,
+  "decayed": 487.85230006748645,
+  "dose_sum": 23904.762703306835,
+  "lost_boundary": 58.123633176957256,
+  "mass_residual": 7.958078640513122e-13,
+  "off_target_share": 0.7665597854040271,
+  "released_total": 600.0,
+  "time_to_50_coverage": 46
+ }
+}

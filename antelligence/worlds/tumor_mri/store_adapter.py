@@ -16,7 +16,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 
@@ -40,6 +40,9 @@ class LoadedCase:
     crop: Crop
     regions: List[Region]
     split: str  # "dev" or "eval"
+    # Scorer-side truth channels {"tc", "et"} (bool, crop grid) for F2 Source A; None when the store holds WT only.
+    # Never part of ``crop`` (observations) and never in ``crop.truth``: hand them to ``TumorMRIWorld(scorer_channels=...)``.
+    scorer_channels: Optional[Dict[str, np.ndarray]] = None
 
     @property
     def v_perceived(self) -> float:
@@ -81,8 +84,10 @@ def load_case(case: str, *, root: Union[str, Path, None] = None, repo_root: Unio
         raise AdapterError(f"{case}: metrics.json missing at {metrics_path}")
     metrics = json.loads(metrics_path.read_text())
     truth = np.asarray(arrays["truth"])
-    if truth.ndim != 4 or truth.shape[0] != 3:
-        raise AdapterError(f"{case}: truth must be (3, X, Y, Z) in WT, TC, ET order; got {truth.shape}")
+    if truth.ndim == 3:   # WT only: F2 falls back to Source B
+        truth = truth[None]
+    if truth.ndim != 4 or truth.shape[0] not in (1, 3):
+        raise AdapterError(f"{case}: truth must be (3, X, Y, Z) in WT, TC, ET order (or WT only); got {truth.shape}")
     spacing = arrays.get("spacing_mm")
     voxel_mm = float(np.asarray(spacing).ravel()[0]) if spacing is not None else 2.0
     if abs(voxel_mm - 2.0) > 1e-6:
@@ -92,7 +97,13 @@ def load_case(case: str, *, root: Union[str, Path, None] = None, repo_root: Unio
                 flair=arrays["flair"], t1c=arrays["t1c"], outside_crop_truth_voxels=outside, voxel_mm=voxel_mm,
                 case_id=case)
     regions = [Region.from_knowledge(p, voxel_mm) for p in metrics["regions"]]
-    return LoadedCase(crop=crop, regions=regions, split=split)
+    channels = ({"tc": truth[1].astype(bool), "et": truth[2].astype(bool)} if truth.shape[0] == 3 else None)
+    return LoadedCase(crop=crop, regions=regions, split=split, scorer_channels=channels)
+
+
+def load_scorer_channels(case: str, **kw) -> Optional[Dict[str, np.ndarray]]:
+    """Scorer-side TC / ET channels of a case (same gate and arguments as :func:`load_case`), or None if the store has WT only."""
+    return load_case(case, **kw).scorer_channels
 
 
 MISSING_FLAIR_SUFFIX = "_missing_flair"   # scripts/v41_perception.py --missing-flair writes <cases>_missing_flair / raw_missing_flair
