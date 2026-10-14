@@ -321,9 +321,15 @@ def pod_status(client: RunPod, pod_id: str) -> Optional[str]:
     return r.json().get("desiredStatus") if r.status_code == 200 else None
 
 
+class PodGone(RuntimeError):
+    """The pod disappeared while we were waiting for it to serve."""
+
+
 def wait_ready(state: Mapping[str, Any], timeout_s: float, transport: Optional[httpx.BaseTransport] = None,
-               sleep: Callable[[float], None] = time.sleep, interval_s: float = 15.0) -> bool:
-    """Poll the pod's /v1/models until it lists the expected served name."""
+               sleep: Callable[[float], None] = time.sleep, interval_s: float = 15.0,
+               abort: Optional[Callable[[], Optional[str]]] = None) -> bool:
+    """Poll the pod's /v1/models until it lists the expected served name. ``abort`` returns a message once waiting is
+    pointless (pod gone); it is raised as PodGone."""
     deadline = time.monotonic() + timeout_s
     with httpx.Client(headers={"Authorization": f"Bearer {state['api_secret']}"}, timeout=15.0, trust_env=False,
                       transport=transport) as http:
@@ -336,6 +342,9 @@ def wait_ready(state: Mapping[str, Any], timeout_s: float, transport: Optional[h
                 pass
             if time.monotonic() >= deadline:
                 return False
+            reason = abort() if abort else None
+            if reason:
+                raise PodGone(reason)
             sleep(interval_s)
 
 
@@ -413,12 +422,17 @@ def cmd_status(client: RunPod, paths: Paths, echo: Echo = print) -> int:
 
 
 def cmd_wait(paths: Paths, echo: Echo = print, transport: Optional[httpx.BaseTransport] = None,
-             sleep: Callable[[float], None] = time.sleep, timeout_s: float = MAX_WALL_HOURS * 3600) -> int:
+             sleep: Callable[[float], None] = time.sleep, timeout_s: float = MAX_WALL_HOURS * 3600,
+             abort: Optional[Callable[[], Optional[str]]] = None) -> int:
     state = load_state(paths.state)
     if not state:
         echo("no pod recorded")
         return 1
-    ok = wait_ready(state, timeout_s, transport, sleep)
+    try:
+        ok = wait_ready(state, timeout_s, transport, sleep, abort=abort)
+    except PodGone as exc:
+        echo(f"ABORTED: stopped waiting, {exc}; the pod will never become ready")
+        return 1
     echo(("ready: serving " + state["served"]) if ok else "NOT READY within the wall-clock cap; run `down`")
     echo(elapsed_line(state))
     return 0 if ok else 1

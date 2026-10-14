@@ -361,14 +361,108 @@ def test_watcher_does_not_fire_while_requests_flow(tmp_path):
     assert paths.state.exists() and not any(m == "DELETE" for m, _ in log)
 
 
-def test_watcher_ignores_boot_then_enforces_boot_timeout(tmp_path):
+def test_booting_pod_with_old_ledger_row_is_not_killed_during_grace_then_is_after(tmp_path):
+    """Live incident 2026-10-13: a row from a session 230 min earlier plus unreachable metrics killed a booting pod."""
     transport, paths, log, state, _, _ = started(tmp_path)
-    state["up"] = False  # metrics unreachable while booting
-    c = Clock()
-    rc, out = run_watch(transport, paths, c, max_polls=40)  # 40 min: not idle (never ready), under 45 min boot limit
+    state["up"] = False  # /metrics unreachable while booting
+    c, base = Clock(), datetime.now(timezone.utc)
+    now = lambda: base + timedelta(seconds=c.t - 1000.0)  # noqa: E731
+    usage = paths.state.parent / "v4.1-usage.jsonl"
+    old = (base - timedelta(minutes=230)).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+    usage.write_text(json.dumps({"utc": old, "backend": "vllm", "model": "m", "role": "worker"}) + "\n")
+    out: list = []
+    client = v4_pod.RunPod(FAKE_KEY, transport)
+    kw = dict(transport=transport, clock=c, sleep=c.sleep, now=now, ready_timeout=900.0)
+    v41_pod.watch_loop(client, paths, "pod1", 15.0, out.append, max_polls=29, **kw)  # 29 min < 15 + 15 grace
     assert paths.state.exists() and not any(m == "DELETE" for m, _ in log)
-    rc, out = run_watch(transport, paths, c)
-    assert not paths.state.exists() and any("usage ledger only" in m and "idle" in m for m in out)
+    assert not any("taking the pod down" in m for m in out)
+    v41_pod.watch_loop(client, paths, "pod1", 15.0, out.append, **kw)  # no activity ever: down after the grace
+    assert not paths.state.exists() and ("DELETE", "https://rest.runpod.io/v1/pods/pod1") in log
+    assert any("usage ledger only" in m and "boot grace" in m for m in out)
+    assert (c.t - 1000.0) / 60 < 40  # measured from this pod's creation, not from the 230-minute-old row
+
+
+def test_idle_is_measured_from_pod_creation_never_before(tmp_path):
+    transport, paths, log, state, _, _ = started(tmp_path)
+    state["up"] = False  # nothing answers: the baseline is the creation time
+    s = v4_pod.load_state(paths.state)
+    c, base = Clock(), datetime.now(timezone.utc)
+    s["created_utc"] = (base - timedelta(minutes=5)).isoformat()  # created 5 min before the watcher started
+    v4_pod.save_state(paths.state, s)
+    out: list = []
+    v41_pod.watch_loop(v4_pod.RunPod(FAKE_KEY, transport), paths, "pod1", 15.0, out.append, transport=transport, clock=c,
+                       sleep=c.sleep, now=lambda: base + timedelta(seconds=c.t - 1000.0), ready_timeout=0.001)
+    # idle counted from creation (t=-300 s): down ~10 min into the watcher's life, not 15
+    assert any("idle 16.0 min" in m for m in out), out  # 15 min grace end + one 60 s poll
+    assert (c.t - 1000.0) <= 11 * 60
+
+
+def test_active_pod_with_fresh_ledger_rows_is_never_taken_down(tmp_path):
+    transport, paths, log, state, _, _ = started(tmp_path)
+    state["up"] = False  # metrics never reachable: only the ledger can keep it up
+    c, base = Clock(), datetime.now(timezone.utc)
+    now = lambda: base + timedelta(seconds=c.t - 1000.0)  # noqa: E731
+    usage = paths.state.parent / "v4.1-usage.jsonl"
+
+    def sleep(s):
+        stamp = now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+        usage.write_text(json.dumps({"utc": stamp, "backend": "d1", "model": "m", "role": "worker"}) + "\n")
+        c.sleep(s)
+
+    out: list = []
+    v41_pod.watch_loop(v4_pod.RunPod(FAKE_KEY, transport), paths, "pod1", 15.0, out.append, transport=transport, clock=c,
+                       sleep=sleep, now=now, ready_timeout=900.0, max_polls=180)
+    assert paths.state.exists() and not any(m == "DELETE" for m, _ in log)
+
+
+def test_ready_timeout_env_knob():
+    assert v41_pod.ready_timeout_s({}) == 900.0
+    assert v41_pod.ready_timeout_s({"V41_READY_TIMEOUT_S": "120"}) == 120.0
+    assert v41_pod.ready_timeout_s({"V41_READY_TIMEOUT_S": "junk"}) == 900.0
+
+
+def test_up_wait_stops_when_the_pod_disappears(tmp_path):
+    log: list = []
+    gone = {"v": False}
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        log.append((req.method, str(req.url)))
+        if req.url.host == "api.runpod.io":
+            return httpx.Response(200, json={"data": {"gpuTypes": [{"securePrice": 1.0}]}})
+        if req.method == "POST":
+            return httpx.Response(201, json={"id": "pod1", "costPerHr": 1.0})
+        if req.url.host == "rest.runpod.io":
+            return httpx.Response(404) if gone["v"] else httpx.Response(200, json={"desiredStatus": "RUNNING"})
+        raise httpx.ConnectError("booting")
+
+    paths = v4_pod.Paths(state=tmp_path / "ledger" / "st.json", costs=tmp_path / "ledger" / "c.jsonl")
+    sleeps: list = []
+
+    def sleep(s):
+        sleeps.append(s)
+        gone["v"] = len(sleeps) >= 3  # the pod vanishes while we wait
+
+    commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=REPO, capture_output=True, text=True).stdout.strip()
+    out: list = []
+    rc = v41_pod.main(["up", "v41-workers", "--scripts-commit", commit, "--idle-down-min", "0", "--wait"], paths=paths,
+                      transport=httpx.MockTransport(handler), api_key=FAKE_KEY, echo=out.append, sleep=sleep)
+    assert rc == 1 and len(sleeps) <= 4 and any("ABORTED" in m and "gone" in m for m in out)
+    assert FAKE_KEY not in json.dumps(out)
+
+
+def test_up_wait_stops_when_state_is_removed(tmp_path):
+    transport, paths, *_ = started(tmp_path)
+    calls = {"n": 0}
+
+    def sleep(s):
+        calls["n"] += 1
+        paths.state.unlink(missing_ok=True)  # someone ran `down`
+
+    s = v4_pod.load_state(paths.state)
+    out: list = []
+    rc = v4_pod.cmd_wait(paths, out.append, httpx.MockTransport(lambda r: httpx.Response(502)), sleep,
+                         abort=lambda: None if paths.state.exists() else "the pod was taken down (no pod recorded)")
+    assert rc == 1 and calls["n"] == 1 and "ABORTED" in out[0] and s
 
 
 def test_watcher_enforces_auto_down_deadline(tmp_path):
