@@ -42,6 +42,54 @@ OPS = ("replace", "add")
 _FENCE = re.compile(r"^```(?:json)?\s*(.*?)\s*```$", re.DOTALL)
 
 
+# What each allowed key does today, per arm, derived from the code (mistake-2041: the proposer must not be told to tune a
+# no-op). Each entry: (changes behaviour?, why). Pinned to the code paths by tests/v4_1/queen/test_sandbox_proposer.py.
+#   router.slm_conf_min      antelligence/experiments/v41_harness.py: escalates a Qwen3.5-4B answer below the threshold; the
+#                            router runs in every non-calibration, non-FW swarm arm, so SW-B and SW-noBoard both use it.
+#   router.fw_conf_min / cost_penalty   read nowhere (v41_harness.py docstring): no second FW model, kNN router.
+#   briefs.count             caps the entries of a brief in build_brief (board on) and build_brief_board_off (board off).
+#   briefs.entry_types       passed to build_brief only; build_brief_board_off has no such parameter.
+#   briefs.objective_template  the queen writes it into the task entry; every brief and the worker text carry the task.
+#   queen.cadence            ticks between queen steps; both arms use the queen.
+#   playbook_notes           part of the queen's prompt body in both arms.
+KEY_EFFECTS: Dict[str, Dict[str, Tuple[bool, str]]] = {
+    "/router/slm_conf_min": {
+        "SW-B": (True, "escalates a Qwen3.5-4B answer below this top-target probability to the deferral target; matters only when the router picks that model"),
+        "SW-noBoard": (True, "same router path as SW-B; matters only when the router picks that model")},
+    "/router/fw_conf_min": {
+        "SW-B": (False, "no effect: read nowhere in the v4.1 harness (no second FW model)"),
+        "SW-noBoard": (False, "no effect: read nowhere in the v4.1 harness (no second FW model)")},
+    "/router/cost_penalty": {
+        "SW-B": (False, "no effect: read nowhere in the v4.1 harness (the kNN router already prefers the cheaper model on ties)"),
+        "SW-noBoard": (False, "no effect: read nowhere in the v4.1 harness (the kNN router already prefers the cheaper model on ties)")},
+    "/briefs/count": {
+        "SW-B": (True, "caps how many entries a squad brief holds (task and route first); bites only when the board has more entries than the cap"),
+        "SW-noBoard": (True, "caps the entries of the board-off brief (task, own route, perception signals); bites only when there are more signals than the cap")},
+    "/briefs/entry_types": {
+        "SW-B": (True, "chooses which entry types may fill a brief after the task and the squad's route"),
+        "SW-noBoard": (False, "no effect: the board-off brief never reads this list")},
+    "/briefs/objective_template": {
+        "SW-B": (True, "the queen's task text, seen in every brief; the worker prompt keeps only its first 70 characters"),
+        "SW-noBoard": (True, "the queen's task text, seen in every brief; the worker prompt keeps only its first 70 characters")},
+    "/queen/cadence": {
+        "SW-B": (True, "ticks between queen steps (re-plans, routes, briefs)"),
+        "SW-noBoard": (True, "ticks between queen steps (re-plans, routes, briefs)")},
+    "/playbook_notes": {
+        "SW-B": (True, "text in the queen's prompt; changes behaviour only through what the queen model writes"),
+        "SW-noBoard": (True, "text in the queen's prompt; changes behaviour only through what the queen model writes")},
+}
+
+
+def key_effects(allowed_keys: Sequence[str]) -> Dict[str, Dict[str, Dict[str, Any]]]:
+    """The proposer-facing view: per allowed key and arm, whether it changes behaviour now, and why."""
+    out: Dict[str, Dict[str, Dict[str, Any]]] = {}
+    for key in allowed_keys:
+        table = KEY_EFFECTS.get(key)
+        out[key] = {arm: ({"changes_behaviour": table[arm][0], "why": table[arm][1]} if table else
+                          {"changes_behaviour": None, "why": "not verified against the code"}) for arm in ARMS}
+    return out
+
+
 class PatchError(ValueError):
     """The proposed edit is malformed or touches a key it may not."""
 
@@ -298,22 +346,31 @@ def run_sandbox(
     base = copy.deepcopy(dict(harness))
     current = copy.deepcopy(base)
     history: List[Dict[str, Any]] = []
+    seen_patches: Dict[str, int] = {}              # canonical patch -> first round that proposed it (kept or not)
+    effects = key_effects(allowed_keys)
     records: List[RoundRecord] = []
     states: Dict[int, Tuple[Dict[str, Any], Dict[str, Any]]] = {}   # kept round -> (before, after)
     for rnd in range(1, min(max_rounds, MAX_ROUNDS) + 1):
         ctx = {"round": rnd, "harness": copy.deepcopy(current), "allowed_keys": list(allowed_keys),
-               "aggregates": aggregates(cache, current, dev_a), "previous_edits": copy.deepcopy(history)}
+               "aggregates": aggregates(cache, current, dev_a), "previous_edits": copy.deepcopy(history),
+               "key_effects": copy.deepcopy(effects)}
         raw = propose(ctx)
         if raw is None:
             break
         rejected = ""
         score: Optional[PairedScore] = None
         kept = False
+        seen_patch: Optional[List[Dict[str, Any]]] = None
         try:
             proposal = parse_proposal(raw, allowed_keys)
+            seen_patch = [dict(op) for op in proposal.patch]
+            canon = canonical_json(seen_patch)
+            if canon in seen_patches:          # no episodes run for a repeat, whatever happened to it the first time
+                raise PatchError(f"duplicate of round {seen_patches[canon]}")
+            seen_patches[canon] = rnd
             candidate = apply_patch(current, proposal, allowed_keys)
             if harness_sha256(candidate) == harness_sha256(current):
-                raise PatchError("the edit changes nothing")
+                raise PatchError("the edit changes nothing (no-op: the value already is the current one)")
         except PatchError as exc:
             rejected = str(exc)[:140]
             proposal = None
@@ -337,7 +394,7 @@ def run_sandbox(
             wins=score.wins if score else 0, losses=score.losses if score else 0, ties=score.ties if score else 0))
         if on_round is not None:
             on_round(records[-1])          # partial results survive a later abort
-        history.append({"round": rnd, "keys": keys, "prediction": pred, "kept": kept, "rejected": rejected,
+        history.append({"round": rnd, "keys": keys, "patch": seen_patch, "prediction": pred, "kept": kept, "rejected": rejected,
                         "score_points": None if score is None else round(score.score_points, 3)})
         if kept and candidate is not None:
             states[rnd] = (current, candidate)
@@ -396,10 +453,16 @@ def _salvage_prediction(raw: Any) -> Dict[str, Any]:
 # --------------------------------------------------------------------------------------------------
 
 PROPOSER_SYSTEM = (
-    "You tune a swarm harness. You see aggregate dev results only. Propose ONE edit as JSON and nothing else: "
-    '{"patch": [{"op": "replace", "path": "/router/cost_penalty", "value": 0.2}], '
-    '"prediction": {"metric": "coverage", "delta_ppm": 15000}}. Only paths in allowed_keys may change; '
-    "delta_ppm is your expected change in mean coverage (10000 = 1 point), signed and non-zero."
+    "You tune a swarm harness. You see aggregate dev results only. Reply with ONE edit as JSON and nothing else, in this "
+    'shape: {"patch": [{"op": "replace", "path": "<one path from allowed_keys>", "value": <new value>}], '
+    '"prediction": {"metric": "coverage", "delta_ppm": <signed non-zero integer>}}. '
+    "Rules: propose exactly one edit. The path must be one of allowed_keys and the value must differ from the current value in harness. "
+    "previous_edits lists every earlier round with its patch and whether it was kept, reverted or rejected; never propose a patch "
+    "(same path and same value) that already appears there, because it is rejected without a run. "
+    "key_effects says, for each key and each arm (SW-B and SW-noBoard), whether it changes behaviour today; a key that changes nothing "
+    "in either arm cannot move the score, so prefer a key that does. The score is the mean change over both arms. "
+    "delta_ppm is your own estimate of the change in mean coverage (10000 = 1 point); sign it by what you expect and make it "
+    "reflect your reasoning from the aggregates, not a stock number."
 )
 
 

@@ -136,7 +136,7 @@ def test_queen_prompt_has_no_per_case_truth():
         assert req.extra_body == {"reasoning": {"enabled": False}} and req.max_tokens <= 800
         prompt = " ".join(m["content"] for m in req.messages)
         body = json.loads(req.messages[1]["content"])
-        assert set(body) == {"round", "harness", "allowed_keys", "aggregates", "previous_edits"}
+        assert set(body) == {"round", "harness", "allowed_keys", "aggregates", "previous_edits", "key_effects"}
         assert all(c not in prompt for c in [*DEV_A, *DEV_B]), "a case id reached the queen"
         assert not any(c in prompt for c in covs), "a per-case coverage value reached the queen"
         assert set(body["aggregates"]) == set(ARMS) and "n_cases" in body["aggregates"]["SW-B"]
