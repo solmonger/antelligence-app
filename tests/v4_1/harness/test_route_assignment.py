@@ -84,17 +84,48 @@ def test_adoption_only_when_target_is_none_and_never_overrides():
     assert w.assign_route(0, 10 ** 6) is False                           # unknown region: no-op
 
 
-def test_assignment_does_not_read_truth():
-    a, b = _world(), _world(truth_flip=True)
-    rid = a.candidates_for(0)[0].region_id
-    a.assign_route(0, rid)
-    b.assign_route(0, rid)
-    oa, ob = a.observe("squad-0", 0).data, b.observe("squad-0", 0).data
-    assert oa == ob
-    for _ in range(10):
-        a.step_environment(0)
-        b.step_environment(0)
-    assert a.squad_positions() == b.squad_positions()
+def _perturbed(kind):
+    """A world over the same scan whose truth mask is flipped / shifted / emptied. Nothing else differs."""
+    crop = make_phantom()
+    truth = {"flip": ~crop.truth, "shift": np.roll(crop.truth, 7, axis=0), "empty": np.zeros_like(crop.truth)}[kind]
+    w = TumorMRIWorld(type(crop)(**{**crop.__dict__, "truth": truth}), small_cfg(), seed=1)
+    from antelligence.worlds.tumor_mri.data import select_candidates
+    w.set_candidates(select_candidates(w.regions))
+    return w
+
+
+@pytest.mark.parametrize("kind", ["flip", "shift", "empty"])
+def test_no_model_visible_thing_depends_on_truth(kind):
+    """Observations, rendered prompts (state + question text), candidates and routes stay byte-identical across several
+    ticks and every squad when the truth mask changes; the scorer's output is the only thing that moves."""
+    import json
+    from antelligence.worlds.tumor_mri import build_request
+    a, b = _world(), _perturbed(kind)
+    assert a.candidates_for(0) == b.candidates_for(0)
+    n = len(a.agents())
+    assert n > 1
+    cands = a.candidates_for(0)
+    for i in range(n):                       # the queen's route and the squads' own choices are the same in both worlds
+        assert a.assign_route(i, cands[i % len(cands)].region_id) == b.assign_route(i, cands[i % len(cands)].region_id)
+    seen = 0
+    for tick in range(0, 30):
+        if tick % a.config.decision_every == 0:
+            for i, ag in enumerate(a.agents()):
+                oa, ob = a.observe(ag, tick).data, b.observe(ag, tick).data
+                assert json.dumps(oa, sort_keys=True, default=str) == json.dumps(ob, sort_keys=True, default=str)
+                ra, rb = build_request("m", oa, "brief text", seed=3), build_request("m", ob, "brief text", seed=3)
+                assert ra.state == rb.state and ra.questions == rb.questions
+                seen += 1
+                dec = {"target": "S" if tick else "A", "release": int(i % 2 == 0 and tick > 0), "amount": 3}
+                assert a.apply(ag, Intent(ACTION_DECIDE, dec), tick).accepted == b.apply(ag, Intent(ACTION_DECIDE, dec), tick).accepted
+        a.step_environment(tick)
+        b.step_environment(tick)
+        assert a.squad_positions() == b.squad_positions()
+    assert seen >= n * 3
+    assert np.array_equal(a.field.dose, b.field.dose)          # identical drug, because decisions never saw truth
+    ma, mb = a.metrics(), b.metrics()
+    assert ma["released_total"] > 0
+    assert (ma["coverage"], ma["off_target_share"]) != (mb["coverage"], mb["off_target_share"])   # the scorer does see it
 
 
 def test_own_route_entry_in_brief_and_caps_hold(tmp_path):
@@ -103,7 +134,84 @@ def test_own_route_entry_in_brief_and_caps_hold(tmp_path):
     res = asyncio.run(rig.harness.run("SW-B", CASE_DEV, 1))
     import json
     rows = [json.loads(l) for l in (tmp_path / "out" / "runs" / res.cell["run_id"] / "decisions.jsonl").read_text().splitlines()]
-    assert rows and all(6 <= len(r["brief_ids"]) <= 12 or len(r["brief_ids"]) >= 1 for r in rows)
+    assert rows and all(1 <= len(r["brief_ids"]) <= 12 for r in rows)
     assert all(len(r["brief_ids"]) <= 12 for r in rows)
     assert all(len(s) <= 1200 for _, s in states)
     assert any("route: squad" in s for _, s in states)
+
+
+# --- briefs: caps at the exact boundary, and the squad's own route under mode D --------------------------------------
+
+def _brief_board(n_extra):
+    """A board with a task, perception knowledge, ``n_extra`` evidence entries and squad 0's own route."""
+    from antelligence.kernel.board import Board
+    from tests.v4_1.vectors import generate_vectors as gv
+    board = Board(gv.test_header(), mode="A")
+    board.append("task", "queen", {"objective": "Treat the tumour core", "squads": [0, 1], "until_tick": 50}, 0)
+    for r in range(3):
+        board.append("knowledge", "perception", {"region_id": r, "centroid_dmm": [r, 2, 3], "cls": "ET", "p_tumour_ppm": 500000 + r,
+                                                 "volume_mm3": 10, "unc_ppm": 1000, "source": "perception", "prov": "u@1"}, 1)
+    own = board.append("route", "queen", {"squad": 0, "region_ids": [1], "priority": 1, "brief_ids": []}, 2)
+    for i in range(n_extra):
+        board.append("evidence", "squad-1", {"squad": 1, "pos_vox": [1, 2, 3], "look_p_ppm": 100 + i, "p_tumour_ppm": 200,
+                                             "dose_ug": i, "released_ug": 0}, 3 + i)
+    return board, own
+
+
+DRAFT = {"squad": 0, "region_ids": [1], "priority": 1, "brief_ids": []}
+
+
+def test_brief_entry_cap_exact_boundary_and_own_route_survives():
+    from antelligence.kernel import briefs as B
+    for hi in (6, 12):
+        sizes = {}
+        for n_extra in range(0, 20):
+            board, own = _brief_board(n_extra)
+            ids = B.build_brief(board, 0, DRAFT, cap=(6, hi), own_route=own).brief_ids
+            sizes[n_extra] = len(ids)
+            assert own.id in ids and len(ids) <= hi
+        available = 1 + 3 + 1   # task, knowledge x3, own route
+        assert sizes[hi - available - 1] == hi - 1      # one under the cap
+        assert sizes[hi - available] == hi              # exactly at the cap
+        assert sizes[hi - available + 1] == hi          # one over: trimmed, not rejected
+        assert sizes[19] == hi
+    board, own = _brief_board(0)
+    assert len(B.build_brief(board, 0, DRAFT, cap=(6, 12), own_route=own).brief_ids) == 5   # fewer than 6 exist: all of them
+    # the own route is dropped last of the optional entries: a cap of 2 keeps task + own route
+    board, own = _brief_board(10)
+    assert B.build_brief(board, 0, DRAFT, cap=(1, 2), own_route=own).brief_ids[:2] == (board.by_type("task")[0].id, own.id)
+    off = B.build_brief_board_off(board, 0, DRAFT, cap=(6, 4), own_route=own)   # board-off: task, own route, signals
+    assert len(off.brief_ids) == 4 and own.id in off.brief_ids
+
+
+def test_brief_token_cap_exact_boundary_and_no_carry_over():
+    from antelligence.kernel import briefs as B
+    board, own = _brief_board(10)
+    full = B.build_brief(board, 0, DRAFT, cap=(6, 12), own_route=own)
+    at = B.build_brief(board, 0, DRAFT, cap=(6, 12), own_route=own, max_tokens=full.tokens)
+    assert at.brief_ids == full.brief_ids and at.tokens == full.tokens           # at the cap: nothing dropped
+    over = B.build_brief(board, 0, DRAFT, cap=(6, 12), own_route=own, max_tokens=full.tokens - 1)
+    assert len(over.brief_ids) < len(full.brief_ids) and over.tokens <= full.tokens - 1   # one token over: tail dropped
+    assert own.id in over.brief_ids
+    again = B.build_brief(board, 0, DRAFT, cap=(6, 12), own_route=own)          # reset: a later brief is not shrunk by the earlier one
+    assert again.brief_ids == full.brief_ids and again.text == full.text
+
+
+@pytest.mark.parametrize("board_on", [True, False])
+def test_mode_d_own_route_appears_only_once_included(board_on):
+    from types import SimpleNamespace
+    from antelligence.experiments.v41_harness import V41Harness
+    board, own = _brief_board(4)
+    ctx = SimpleNamespace(board=board, harness={"briefs": {"count": 12, "entry_types": ["evidence", "knowledge", "decision", "alarm", "route", "task"]}},
+                          routes={0: dict(DRAFT)}, route_entries={0: own}, visible=None, reputation=None,
+                          spec=SimpleNamespace(board_on=board_on))
+    brief = lambda: V41Harness._brief(SimpleNamespace(_view=lambda c: V41Harness._view(None, c)), ctx, 0)
+    everything = {e.seq for e in board.entries()}
+    ctx.visible = everything - {own.seq}                  # mode D: the chain has not included the route yet
+    assert own.id not in brief().brief_ids
+    ctx.visible = everything                              # included: now it is in the brief
+    assert own.id in brief().brief_ids
+    ctx.visible = None                                    # modes without a chain: always readable
+    assert own.id in brief().brief_ids
+    ctx.visible = everything - {own.seq}                  # and it is withdrawn again if not visible
+    assert own.id not in brief().brief_ids

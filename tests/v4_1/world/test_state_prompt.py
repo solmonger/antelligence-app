@@ -47,3 +47,15 @@ def test_state_reports_target_after_a_route_is_chosen_and_stay_keeps_walking():
     before = w.squad_positions()[0]
     w.step_environment(5)
     assert w.squad_positions()[0] != before   # S kept the target: the squad still walks
+
+
+# Goal 4.2 wording, verbatim (the prompt text is hashed into config/cache keys; see questions.py).
+SPEC_STAY = "keep the current target"
+SPEC_EXPLORE = ("go to the nearest perceived region no squad has visited. If there is none, "
+                "go to the nearest highest-uncertainty voxel cluster")
+
+
+def test_s_and_x_criteria_match_goal_4_2_verbatim():
+    crit = build_request("m", _world().observe("squad-0", 0).data).questions["target"].criteria
+    assert crit["S"] == SPEC_STAY
+    assert crit["X"] == SPEC_EXPLORE
