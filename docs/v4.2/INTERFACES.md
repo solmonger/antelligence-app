@@ -318,3 +318,11 @@ Replay: `run_colony_episode(replay=bundle)` reproduces `metrics` exactly; a remo
 - Judgement marks must lie within 6 mm of the placing ant, else refused.
 - Approximation (logged): a zone is the equal-volume sphere around the centroid plus 6 mm (`Region` has no voxel set). Affects `dose_ok` placement and the `not_tumour` quorum.
 - Queen: the colony queen is passed as `queen=` (key-checked inputs: board marks of kinds dosed, dose_ok, tumour_here, not_tumour with tick < t, plus quorum events); returns `{zone_need, colony_note, need_rows}`. In S-solo it runs at tick 0 only. The v4.1 `world.queen_hook` path is outside the barrier and MUST stay unset in every colony arm (Q1 test asserts this).
+
+## 15. W1 clarifications (accepted after review, 2026-10-14)
+- Section 11: `facts:` sits INSIDE the `world:` block (WorldConfig reads only that block; `to_dict()` omits it when all facts are off, so the v4.1 config hash is unchanged); `colony:` stays top-level.
+- Section 13: `TumorMRIWorld(scorer_channels=...)`; sensor API `sensor_readings(agent, tick)`, `pending_sensor_events(agent, tick)` (dicts `slow_uptake` / `washout` with ant, tick, pos_vox, reading), `sensor_stats()`. `run_episode` does not poll them, so the colony driver (K1) must. `metrics()["facts"]` appears only when a fact is on. OBS_KEYS unchanged.
+- Section 1: `seed64` and `rng` also live in `worlds/tumor_mri/physics.py`.
+- `f1_simlook` is a flag only: the HARNESS builds SimLook (it needs scorer-side WT mask and scan p) and injects it as `look_fn`.
+- SimLook labels: inside depth = mm to nearest non-tumour voxel (boundary voxel = 2 mm). AUROC is reported for in/out pairs per zone; calibration gaps per distance band (label is constant within a band).
+- S-prime approximation (documented): each puff's kernel is scaled by the geometric ratio of (1-d-delta(release voxel))^t to (1-d)^t; drug spreading into other patches is not re-weighted (test bound 10% in a uniform patch).
