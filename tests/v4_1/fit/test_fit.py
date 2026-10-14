@@ -75,7 +75,8 @@ def make_run(root: Path, case, arm="SW-B", *, seed=1, rows=40, rng_seed=0, drive
 
 def make_set(root: Path, cases=None, rows=40, **kw):
     for c in cases or DEV:
-        for arm in ("SW-B", "SW-noBoard"):
+        arms = ("SW-Bonsai",) if kw.get("driver") == "bonsai-8b" else ("SW-B", "SW-noBoard")
+        for arm in arms:
             make_run(root, c, arm, rows=rows, **kw)
     return root
 

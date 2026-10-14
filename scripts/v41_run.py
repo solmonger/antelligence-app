@@ -8,6 +8,10 @@
 from the environment variables the config names, nowhere else. The gate (``v41_gate``) runs before every episode; an
 evaluation case needs the committed preregistration, its confirmed anchor receipt and the G1 approval file.
 ``--calibration`` is Phase 0 step 7 (Qwen3.5-9B drives, d1 and Qwen3.5-4B answer counterfactually, development only).
+Bonsai calibration (goal 4.5, step 9): ``--calibration --run SW-Bonsai:<dev case>:1 --bonsai-url ...`` has Bonsai 8B drive
+every decision (the 9B is not called) while d1 and Qwen3.5-4B answer counterfactually; fit it with
+``scripts/v41_fit.py --bonsai`` into conformal_bonsai.json / router_bonsai.json, then run SW-Bonsai with
+``--bonsai-router`` / ``--bonsai-thresholds``.
 ``--log-counterfactuals all`` is Phase 0 step 9: the live router and deferral policy drive, and d1, Qwen3.5-4B and
 Qwen3.5-9B (Bonsai 8B in the Bonsai arm) all answer every decision counterfactually (logged, never used), so the one
 allowed refit fits on step-9 logs. Development cases, worker arms, not together with --calibration.
