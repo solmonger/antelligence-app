@@ -20,7 +20,7 @@ from scripts import v41_pod_watchdog as wd
 REPO = Path(__file__).resolve().parents[3]
 FAKE_KEY = "rpa_FAKEKEY_do_not_print_123456"
 POD_KEY = "rpa_PODSCOPED_do_not_print_987"
-SECRET = "sk-vllm-secret-abc123"
+SECRET = "sk-vllm-secret-abc123"  # gitleaks:allow (fake test fixture)
 
 
 class Clock:

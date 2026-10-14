@@ -15,7 +15,7 @@ from antelligence.providers.redact import redact_body
 from tests.v4_1.workers.helpers import BRIEF, Recorder, chat_reply, default_tops, make_request
 
 KEY = "nk-FAKE-secret-value-123456"
-JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+JWT = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk"  # gitleaks:allow (public jwt.io sample token)
 
 
 def run(coro):
