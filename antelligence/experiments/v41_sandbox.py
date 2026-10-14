@@ -25,7 +25,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequ
 from antelligence.kernel.board import Board
 from antelligence.kernel.canonical import canonical_json
 from antelligence.kernel.policies.v41_harness import HarnessError, harness_sha256, load_allowed_keys, validate_harness
-from antelligence.providers.base import ChatRequest, Provider
+from antelligence.providers.base import ChatRequest, Provider, ProviderTruncated
 from antelligence.providers.outage import OutagePolicy, complete_with_outage_retry
 
 ARMS = ("SW-B", "SW-noBoard")
@@ -417,7 +417,10 @@ def llm_proposer(provider: Provider, model: str, *, thinking_params: Optional[Ma
                                                      {"role": "user", "content": canonical_json(dict(ctx))}),
                               max_tokens=800, temperature=0.0, seed=ctx["round"], response_format={"type": "json_object"},
                               extra_body=thinking_params)
-        response = run(_complete(provider, request, policy))
+        try:
+            response = run(_complete(provider, request, policy))
+        except ProviderTruncated:
+            return {"unparseable": "reply cut off at the output cap (length)"}   # an invalid proposal, like unparseable JSON
         text = response.content.strip()
         fenced = _FENCE.match(text)
         try:

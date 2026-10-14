@@ -15,8 +15,14 @@ from typing import Any, Iterator, Mapping, Optional
 PROVIDER_FALLBACK_PREFIXES = ("queen fallback: ProviderError", "queen fallback: ProviderUnavailable")
 
 
+# Before ProviderTruncated existed, a length cut-off was written as "queen fallback: ProviderError: ... (length)". It is an
+# invalid reply, not a provider failure, so those old alarms are not provider-tainted either.
+LEGACY_LENGTH_MARKER = "did not finish normally (length)"
+
+
 def is_provider_fallback_note(note: Any) -> bool:
-    return isinstance(note, str) and note.startswith(PROVIDER_FALLBACK_PREFIXES)
+    """True for an alarm note that records a provider failure. ProviderTruncated (a length cut-off) is an invalid reply."""
+    return isinstance(note, str) and note.startswith(PROVIDER_FALLBACK_PREFIXES) and LEGACY_LENGTH_MARKER not in note
 
 
 def export_files(run_dir: Path) -> Iterator[Path]:

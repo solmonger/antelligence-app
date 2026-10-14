@@ -15,7 +15,7 @@ from typing import Any, Dict, FrozenSet, Iterable, Optional
 
 import httpx
 
-from antelligence.providers.base import ChatRequest, ChatResponse, ProviderError, ProviderUnavailable
+from antelligence.providers.base import ChatRequest, ChatResponse, ProviderError, ProviderTruncated, ProviderUnavailable
 from antelligence.providers.redact import redact_body, register_secret, scrub
 
 MAX_RESPONSE_BYTES = 2_000_000
@@ -93,6 +93,8 @@ class OpenAICompatProvider:
             raise ProviderError(f"served model {served!r} differs from requested {request.model!r}")
         finish = choice.get("finish_reason") or "unknown"
         if self.require_stop and finish != "stop":
+            if finish == "length":
+                raise ProviderTruncated(f"generation did not finish normally ({finish})", http_status=response.status_code)
             raise ProviderError(f"generation did not finish normally ({finish})")
         if not isinstance(content, str):
             raise ProviderError("missing message content")
