@@ -36,7 +36,8 @@ IMAGE = v4_pod.VLLM_IMAGE  # pinned by v4_pod (vLLM >= 0.17)
 MODEL = v4_pod.WORKERS_KEY
 DEFAULT_IDLE_DOWN_MIN = 15.0
 WATCH_POLL_S = 60.0
-BOOT_TIMEOUT_MIN = 45.0  # boot allowance: a pod that answers nothing is judged on the usage ledger only after this
+READY_TIMEOUT_ENV = "V41_READY_TIMEOUT_S"  # the launcher's own ready timeout (scripts/v41_pod_serve.sh), default 900 s
+DEFAULT_READY_TIMEOUT_S = 900.0
 # Usage-ledger ``backend`` values that are NOT served by the pod (Nous queen/FW, Bonsai on the Mac). Any other named
 # backend counts as pod activity: an unknown name keeps the pod up (bounded by the deadline) rather than killing a
 # working pod. Rows without a backend name (e.g. Nous preflight probes) are not pod activity.
@@ -146,7 +147,17 @@ def cmd_up(client: v4_pod.RunPod, paths: v4_pod.Paths, image: str, auto_down_min
             v4_pod.save_state(paths.state, state)
             echo(f"idle watcher pid {state['watcher_pid']}: pod goes down after {idle_down_min:g} idle min")
         if wait:
-            return v4_pod.cmd_wait(paths, echo, transport, sleep)
+            def gone() -> Optional[str]:
+                if not v4_pod.load_state(paths.state):
+                    return "the pod was taken down (no pod recorded)"
+                try:
+                    if v4_pod.pod_status(client, state["pod_id"]) == "GONE":
+                        return f"pod {state['pod_id']} is gone"
+                except (httpx.HTTPError, ValueError):
+                    pass
+                return None
+
+            return v4_pod.cmd_wait(paths, echo, transport, sleep, abort=gone)
     return rc
 
 
@@ -259,6 +270,16 @@ def last_pod_row_utc(rows: List[Dict[str, Any]]) -> Optional[datetime]:
     return best
 
 
+def ready_timeout_s(environ: Optional[Dict[str, str]] = None) -> float:
+    """The launcher's ready timeout (``V41_READY_TIMEOUT_S``, default 900 s); the watcher's boot grace is built on it."""
+    raw = (os.environ if environ is None else environ).get(READY_TIMEOUT_ENV, "")
+    try:
+        value = float(raw)
+    except ValueError:
+        return DEFAULT_READY_TIMEOUT_S
+    return value if value > 0 else DEFAULT_READY_TIMEOUT_S
+
+
 def usage_ledger_path(paths: v4_pod.Paths) -> Path:
     return paths.state.parent / "v4.1-usage.jsonl"
 
@@ -266,20 +287,26 @@ def usage_ledger_path(paths: v4_pod.Paths) -> Path:
 def watch_loop(client: v4_pod.RunPod, paths: v4_pod.Paths, pod_id: str, idle_min: float, echo: Echo, *,
                transport: Optional[httpx.BaseTransport] = None, clock: Callable[[], float] = time.monotonic,
                sleep: Callable[[float], None] = time.sleep, now: Callable[[], datetime] = lambda: datetime.now(timezone.utc),
-               poll_s: float = WATCH_POLL_S, boot_timeout_min: float = BOOT_TIMEOUT_MIN,
+               poll_s: float = WATCH_POLL_S, ready_timeout: Optional[float] = None,
                max_polls: Optional[int] = None, usage: Optional[Path] = None) -> int:
     """Poll status, /metrics and the usage ledger every ``poll_s``; `down` after ``idle_min`` idle minutes, once the
     auto-down deadline passes, or if the pod is gone. Exits quietly when the state file is gone or now belongs to
     another pod (someone ran `down`).
 
-    A pod is ACTIVE if its metrics show activity OR the usage ledger has a pod-backend row (vLLM or d1) inside the idle
-    window. If the proxy does not forward /metrics (or exports no known names) the ledger alone decides, and the log
-    says so: this watcher must never kill a working pod just because it cannot read metrics. The idle baseline is the
-    first moment the pod answered anything (metrics or /v1/models); a pod that answers nothing for ``boot_timeout_min``
-    is judged on the ledger from the watcher's start."""
+    Idle time is measured from the newest of: the pod's creation time (state ``created_utc``; the watcher's start if that
+    is missing), the last metrics-observed activity, the first moment the pod answered, and the last pod-backend usage
+    ledger row. It is never measured from before this pod existed (a ledger row from a previous session is irrelevant).
+
+    Boot grace: until the first scrape that shows every server up through /metrics, no idle action is taken for
+    ``ready_timeout`` (the launcher's V41_READY_TIMEOUT_S, default 900 s) plus the idle window after the pod's creation.
+    Past that, if metrics never became reachable, the usage ledger alone decides (a proxy that does not forward /metrics
+    must not get a working pod killed) and the log says why. The deadline and GONE rules apply even during the grace."""
     usage = usage or usage_ledger_path(paths)
+    ready_s = ready_timeout_s() if ready_timeout is None else ready_timeout
+    grace_s = ready_s + idle_min * 60
     tracker, started, polls = IdleTracker(clock), clock(), 0
     first_ready: Optional[float] = None
+    all_up_seen, grace_over_said = False, False
     mode = ""
     with httpx.Client(timeout=20.0, trust_env=False, follow_redirects=False, transport=transport) as http:
         while max_polls is None or polls < max_polls:
@@ -293,8 +320,13 @@ def watch_loop(client: v4_pod.RunPod, paths: v4_pod.Paths, pod_id: str, idle_min
                 status = v4_pod.pod_status(client, pod_id)
             except (httpx.HTTPError, ValueError):
                 status = None
+            baseline = started
+            created = parse_utc(state.get("created_utc"))
+            if created is not None:
+                baseline = min(started, clock() - max((now() - created).total_seconds(), 0.0))
             activity = fetch_activity(state, http)
             metrics_ok = any(v is not None for v in activity.values())
+            all_up_seen = all_up_seen or all(activity.get(str(p)) is not None for p in WATCH_PORTS)
             tracker.observe(activity)
             ready = metrics_ok or models_reachable(state, http)
             if ready and first_ready is None:
@@ -305,23 +337,37 @@ def watch_loop(client: v4_pod.RunPod, paths: v4_pod.Paths, pod_id: str, idle_min
                 if not metrics_ok:
                     echo("watcher: /metrics is not readable through the proxy; judging idleness on the usage ledger alone")
             ledger_dt = last_pod_row_utc(read_ledger_rows(usage))
-            candidates = [t for t in (tracker.last_active, first_ready,
+            candidates = [t for t in (baseline, tracker.last_active, first_ready,
                                       clock() - (now() - ledger_dt).total_seconds() if ledger_dt else None) if t is not None]
-            if not candidates and (clock() - started) >= boot_timeout_min * 60:
-                candidates = [started]  # nothing ever answered: count from the watcher's start
-            idle = clock() - max(candidates) if candidates else 0.0
+            idle = clock() - max(candidates)
+            in_grace = not all_up_seen and (clock() - baseline) < grace_s
             if status == "GONE":
                 reason = "pod is gone"
             elif deadline_passed(state, now()):
                 reason = "auto-down deadline passed"
-            elif idle >= idle_min * 60:
+            elif idle >= idle_min * 60 and not in_grace:
                 how = "metrics and usage ledger" if metrics_ok else "usage ledger only (metrics unreachable)"
                 reason = f"idle {idle / 60:.1f} min by {how}"
+                if not all_up_seen:
+                    reason += (f"; metrics never showed every server up within the {grace_s / 60:.0f} min boot grace "
+                               f"({ready_s:.0f} s ready timeout + {idle_min:g} min idle window), so the usage ledger decided")
+            if not all_up_seen and not in_grace and not grace_over_said and not reason:
+                grace_over_said = True
+                echo(f"watcher: boot grace of {grace_s / 60:.0f} min is over and /metrics never showed every server up; "
+                     "the usage-ledger idle rule now applies")
             if reason:
                 echo(f"watcher: {reason}; taking the pod down")
                 return cmd_down(client, paths, echo)
             sleep(poll_s)
     return 0
+
+
+def parse_utc(raw: Any) -> Optional[datetime]:
+    try:
+        when = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
 
 
 DIAG_TAIL_DEFAULT = 40
