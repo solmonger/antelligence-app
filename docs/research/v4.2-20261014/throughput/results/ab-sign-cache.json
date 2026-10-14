@@ -1,0 +1,87 @@
+{
+ "case": "BRATS_016",
+ "identical": true,
+ "median_saving_cpu_s": 0.1494279999999999,
+ "meta": {
+  "cpu_count": 14,
+  "label": null,
+  "machine": "arm64",
+  "python": "3.12.13",
+  "started_unix": 1792013776.685753,
+  "swap": "vm.swapusage: total = 12288.00M  used = 10779.50M  free = 1508.50M  (encrypted)"
+ },
+ "pairs": [
+  {
+   "cached": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 1.6071649999999997,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   },
+   "legacy": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 2.021464,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   }
+  },
+  {
+   "cached": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 1.4456430000000005,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   },
+   "legacy": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 1.5861270000000003,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   }
+  },
+  {
+   "cached": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 1.554276999999999,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   },
+   "legacy": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 1.5639719999999997,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   }
+  },
+  {
+   "cached": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 1.6025720000000003,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   },
+   "legacy": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 1.7620210000000007,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   }
+  },
+  {
+   "cached": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 1.6274240000000013,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   },
+   "legacy": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 1.6804750000000013,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   }
+  },
+  {
+   "cached": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 1.5049810000000008,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   },
+   "legacy": {
+    "board_root": "3afd58252cd4a1689d4d5d88e3aa81d1af1a1035d21905e675c44e7c3aae7088",
+    "cpu_s": 1.6633530000000007,
+    "trace_hash": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   }
+  }
+ ]
+}

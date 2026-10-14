@@ -1,0 +1,110 @@
+{
+ "attempts": [],
+ "inprocess": {
+  "1": {
+   "cpu_s": 7.080801999999999,
+   "episodes_ok": 1,
+   "episodes_per_hour": 3.0485088843496544,
+   "failed": [],
+   "fingerprints": {
+    "BRATS_016:1": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee"
+   },
+   "lag": {
+    "interval_ms": 20.0,
+    "max_ms": 45.60562492813914,
+    "mean_ms": 1.5691452661587295,
+    "p50_ms": 1.9167090253904457,
+    "p95_ms": 2.158041014336049,
+    "p99_ms": 2.2170000197365876,
+    "samples": 54742
+   },
+   "mode": "inprocess",
+   "n": 1,
+   "peak_rss_mb": 157.703125,
+   "swap_after": "vm.swapusage: total = 12288.00M  used = 10771.50M  free = 1516.50M  (encrypted)",
+   "swap_before": "vm.swapusage: total = 12288.00M  used = 10771.50M  free = 1516.50M  (encrypted)",
+   "time_scale": 1.0,
+   "wall_s": 1180.9052020420786
+  },
+  "16": {
+   "cpu_s": 33.856375,
+   "episodes_ok": 16,
+   "episodes_per_hour": 43.88765232822731,
+   "failed": [],
+   "fingerprints": {
+    "BRATS_016:1": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee",
+    "BRATS_056:1": "69da6409f0ab6460fab68eed78a06feead3a9a9d3291c52f1eed19951c726133",
+    "BRATS_113:1": "c0b72910fe49ccea8f5d9eeadf7141fbd0754e9839e42dfb06e6388743309466",
+    "BRATS_183:1": "380842d1d2e6d5bc7f762d0d0fceac3527970da1cfd875c19b9d3dadd3884317",
+    "BRATS_193:1": "dce573ab1244a210d3c1311d96bc8c3b1f1ed5b463113492631e870d6720415d",
+    "BRATS_238:1": "62b66586fe28c37a03a5defd1473136fa6163ee7dc238cf9966bdeb170f2510f",
+    "BRATS_303:1": "8208b61c45d5560318328edf62f0a5191bf6215aad62b76c4a4b12cdb1990d6c",
+    "BRATS_337:1": "14097b46ac4e5bb5b0c4d4c6bcf27e6fa560ac7c4c3caca1f55ad8ede68d7beb",
+    "BRATS_373:1": "a31ab519b035f9055a70820bc8dafd3dc3aca7027cce8209e68efdbe0a1e3316",
+    "BRATS_375:1": "0d1577388bdbe3e1f813c783331ab53ca8fc9553585f8fdd3ff5c27595f191ae",
+    "BRATS_406:1": "eca9f1dc46247599f1a6b2a28da10662b6519edb665403cbbd3b4d39a6798055",
+    "BRATS_420:1": "52a211e6d937a5d80812c9f57d88fd886df961cabdd29dfa4a9f80c75411d41d",
+    "BRATS_441:1": "2f9cb913cda9a2150d2d2440976b501c4cec6b8a5c3e720695fbb8a39615410c",
+    "BRATS_462:1": "74fb81a7ddc218d663f8a0c66947917ff16c2f058f84b6fff2aed01bb7351e48",
+    "BRATS_464:1": "1f5cd05fd2ba4a7029f9394d347bef8fdadf8ff4637f40f15a54ae96076c368c",
+    "BRATS_479:1": "09f333b60b5d56d628b9ab0f2be1bdaffd7faaffe538f09731d0e1c26edc7cd0"
+   },
+   "lag": {
+    "interval_ms": 20.0,
+    "max_ms": 599.9424170190468,
+    "mean_ms": 1.6066944282067208,
+    "p50_ms": 1.556375082582235,
+    "p95_ms": 2.158458014018833,
+    "p99_ms": 4.15754203684628,
+    "samples": 60735
+   },
+   "mode": "inprocess",
+   "n": 16,
+   "peak_rss_mb": 313.453125,
+   "swap_after": "vm.swapusage: total = 12288.00M  used = 10771.50M  free = 1516.50M  (encrypted)",
+   "swap_before": "vm.swapusage: total = 12288.00M  used = 10771.50M  free = 1516.50M  (encrypted)",
+   "time_scale": 1.0,
+   "wall_s": 1312.4420410830062
+  }
+ },
+ "meta": {
+  "cpu_count": 14,
+  "label": null,
+  "machine": "arm64",
+  "python": "3.12.13",
+  "started_unix": 1792015049.236301,
+  "swap": "vm.swapusage: total = 12288.00M  used = 10771.50M  free = 1516.50M  (encrypted)"
+ },
+ "pool": {
+  "8": {
+   "cpu_s_sum": 50.205608999999995,
+   "distinct_pids": 6,
+   "episodes_ok": 8,
+   "episodes_per_hour": 24.381361018568803,
+   "fingerprints": {
+    "BRATS_016:1": "46970c71adb99ca2c5076dea578170dbc5e78ffb3484ea2ff4dae310ed0163ee",
+    "BRATS_183:1": "380842d1d2e6d5bc7f762d0d0fceac3527970da1cfd875c19b9d3dadd3884317",
+    "BRATS_193:1": "dce573ab1244a210d3c1311d96bc8c3b1f1ed5b463113492631e870d6720415d",
+    "BRATS_238:1": "62b66586fe28c37a03a5defd1473136fa6163ee7dc238cf9966bdeb170f2510f",
+    "BRATS_303:1": "8208b61c45d5560318328edf62f0a5191bf6215aad62b76c4a4b12cdb1990d6c",
+    "BRATS_406:1": "eca9f1dc46247599f1a6b2a28da10662b6519edb665403cbbd3b4d39a6798055",
+    "BRATS_464:1": "1f5cd05fd2ba4a7029f9394d347bef8fdadf8ff4637f40f15a54ae96076c368c",
+    "BRATS_479:1": "09f333b60b5d56d628b9ab0f2be1bdaffd7faaffe538f09731d0e1c26edc7cd0"
+   },
+   "lag": {
+    "max_ms_worst_process": 55.30024996958672,
+    "p50_ms_median_process": 1.560354565735906,
+    "p95_ms_worst_process": 2.1503750653937455
+   },
+   "mode": "pool",
+   "n": 8,
+   "peak_rss_mb_child_max": 169.953125,
+   "startup_s": 0.5016250830376521,
+   "swap_after": "vm.swapusage: total = 12288.00M  used = 10771.50M  free = 1516.50M  (encrypted)",
+   "swap_before": "vm.swapusage: total = 12288.00M  used = 10771.50M  free = 1516.50M  (encrypted)",
+   "time_scale": 1.0,
+   "wall_s": 1181.230201959028
+  }
+ },
+ "time_scale": 1.0
+}

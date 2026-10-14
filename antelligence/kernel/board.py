@@ -15,6 +15,7 @@ Contract: ``docs/v4.1/INTERFACES.md`` (sections 1-4, 6, 7). Vectors:
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import os
@@ -255,8 +256,15 @@ def pubkey_hex(seed: bytes) -> str:
     return Ed25519PrivateKey.from_private_bytes(seed).public_key().public_bytes(Encoding.Raw, PublicFormat.Raw).hex()
 
 
+@functools.lru_cache(maxsize=64)
+def _private_key(seed: bytes) -> Ed25519PrivateKey:
+    """The parsed key for ``seed``: one board signs hundreds of entries with the same few keys, and parsing each time
+    was a visible share of ``append`` (C0 profile). The key object stays inside this process, like the seed it came from."""
+    return Ed25519PrivateKey.from_private_bytes(seed)
+
+
 def sign_id(seed: bytes, entry_id: str) -> str:
-    return Ed25519PrivateKey.from_private_bytes(seed).sign(bytes.fromhex(entry_id)).hex()
+    return _private_key(bytes(seed)).sign(bytes.fromhex(entry_id)).hex()
 
 
 def verify_sig(pubkey: str, entry_id: str, sig: str) -> bool:

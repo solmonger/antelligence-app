@@ -1,0 +1,111 @@
+{
+ "arms": {
+  "S": {
+   "episodes": [
+    {
+     "arm": "S",
+     "case": "BRATS_016",
+     "coverage": 0.6191950464396285,
+     "cpu_s": 0.18053500000000006,
+     "ticks": 120,
+     "wall_s": 0.18055054207798094
+    },
+    {
+     "arm": "S",
+     "case": "BRATS_406",
+     "coverage": 0.18571896495250573,
+     "cpu_s": 0.11096400000000006,
+     "ticks": 120,
+     "wall_s": 0.11096337507478893
+    },
+    {
+     "arm": "S",
+     "case": "BRATS_183",
+     "coverage": 0.5593869731800766,
+     "cpu_s": 0.16094999999999993,
+     "ticks": 120,
+     "wall_s": 0.16095708298962563
+    },
+    {
+     "arm": "S",
+     "case": "BRATS_238",
+     "coverage": 0.4520214320506576,
+     "cpu_s": 0.08369999999999989,
+     "ticks": 120,
+     "wall_s": 0.08372475008945912
+    },
+    {
+     "arm": "S",
+     "case": "BRATS_193",
+     "coverage": 0.63550060713103,
+     "cpu_s": 0.167918,
+     "ticks": 120,
+     "wall_s": 0.16928391705732793
+    }
+   ],
+   "mean_cpu_s": 0.14081339999999998,
+   "mean_wall_s": 0.1410959334578365
+  },
+  "S-prime": {
+   "episodes": [
+    {
+     "arm": "S-prime",
+     "case": "BRATS_016",
+     "coverage": 0.7285216718266254,
+     "cpu_s": 2.200556,
+     "ticks": 120,
+     "wall_s": 2.20198800007347
+    },
+    {
+     "arm": "S-prime",
+     "case": "BRATS_406",
+     "coverage": 0.5404520144120537,
+     "cpu_s": 1.0839279999999998,
+     "ticks": 120,
+     "wall_s": 1.084005624987185
+    },
+    {
+     "arm": "S-prime",
+     "case": "BRATS_183",
+     "coverage": 1.0,
+     "cpu_s": 1.713806,
+     "ticks": 120,
+     "wall_s": 1.713975541992113
+    },
+    {
+     "arm": "S-prime",
+     "case": "BRATS_238",
+     "coverage": 0.6147101802240623,
+     "cpu_s": 1.0130439999999998,
+     "ticks": 120,
+     "wall_s": 1.013114041998051
+    },
+    {
+     "arm": "S-prime",
+     "case": "BRATS_193",
+     "coverage": 0.8415939949221768,
+     "cpu_s": 2.0202180000000007,
+     "ticks": 120,
+     "wall_s": 2.0211981249740347
+    }
+   ],
+   "mean_cpu_s": 1.6063104000000001,
+   "mean_wall_s": 1.6068562668049708
+  }
+ },
+ "cases": [
+  "BRATS_016",
+  "BRATS_406",
+  "BRATS_183",
+  "BRATS_238",
+  "BRATS_193"
+ ],
+ "meta": {
+  "cpu_count": 14,
+  "label": "before",
+  "machine": "arm64",
+  "python": "3.12.13",
+  "started_unix": 1792013404.8478441,
+  "swap": "vm.swapusage: total = 12288.00M  used = 10787.50M  free = 1500.50M  (encrypted)"
+ }
+}
