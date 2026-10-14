@@ -509,3 +509,78 @@ def test_down_kills_watcher_only_if_it_is_ours(tmp_path):
 def test_watcher_does_not_kill_itself(tmp_path):
     assert not v41_pod.kill_watcher({"watcher_pid": os.getpid()}, killer=lambda *a: pytest.fail("self-kill"),
                                     cmdline=lambda p: "v41_pod.py watch")
+
+
+# --- mistake-2043: argparse exits must not take the pod down -----------------------------------------------------
+
+from scripts import v41_latency, v41_run, v41_sandbox  # noqa: E402
+
+_SCRIPTS = {
+    "v41_run": (v41_run, ["--run", "a:b:1", "--out-dir", "x"], ["--out-dir", "x"]),
+    "v41_sandbox": (v41_sandbox, ["--router", "r", "--thresholds", "t"], ["--router", "r"]),
+    "v41_latency": (v41_latency, [], None),  # latency has no required argument
+}
+
+
+@pytest.fixture
+def downs(monkeypatch):
+    calls: list = []
+    orig = v41_pod.run_with_pod_down
+    monkeypatch.setattr(v41_pod, "run_with_pod_down", lambda fn, **kw: orig(fn, **kw, down=lambda p: calls.append(1)))
+    return calls
+
+
+def _fake_main(module, started: list, exc=None):
+    def main(argv=None):
+        started.append(argv)
+        if exc is not None:
+            raise exc
+        return 0
+    main.__module__ = module.__name__  # parser is resolved from the main's module, as in the real __main__
+    return main
+
+
+@pytest.mark.parametrize("name", list(_SCRIPTS))
+def test_argparse_exits_do_not_bring_the_pod_down(name, downs):
+    module, valid, missing = _SCRIPTS[name]
+    bad = [["--help"], ["-h"], ["--no-such-flag"]]
+    if missing is not None:
+        bad.append(missing)  # missing required argument
+    else:
+        bad.append(["--anchors", "bogus"])  # invalid choice is a usage error too
+    for argv in bad:
+        started: list = []
+        with pytest.raises(SystemExit):
+            v41_pod.run_main_with_pod_down(_fake_main(module, started), argv)
+        assert started == [] and downs == [], (name, argv)
+        with pytest.raises(SystemExit):  # also with --keep-pod and with an explicit parser=
+            v41_pod.run_main_with_pod_down(_fake_main(module, started), argv + ["--keep-pod"], parser=module.parser)
+        assert started == [] and downs == [], (name, argv)
+
+
+@pytest.mark.parametrize("name", list(_SCRIPTS))
+def test_started_run_brings_the_pod_down_however_it_ends(name, downs):
+    module, valid, _ = _SCRIPTS[name]
+    for how, exc in (("ok", None), ("error", RuntimeError("boom")), ("interrupt", KeyboardInterrupt()),
+                     ("exit75", SystemExit(75))):
+        downs.clear()
+        started: list = []
+        if exc is None:
+            assert v41_pod.run_main_with_pod_down(_fake_main(module, started), valid) == 0
+        else:
+            with pytest.raises((RuntimeError, KeyboardInterrupt, SystemExit)):
+                v41_pod.run_main_with_pod_down(_fake_main(module, started, exc), valid)
+        assert started == [valid] and downs == [1], (name, how)
+
+
+@pytest.mark.parametrize("name", list(_SCRIPTS))
+def test_keep_pod_on_a_started_run_skips_down(name, downs):
+    module, valid, _ = _SCRIPTS[name]
+    for exc in (None, RuntimeError("boom")):
+        started: list = []
+        if exc is None:
+            assert v41_pod.run_main_with_pod_down(_fake_main(module, started), valid + ["--keep-pod"]) == 0
+        else:
+            with pytest.raises(RuntimeError):
+                v41_pod.run_main_with_pod_down(_fake_main(module, started, exc), valid + ["--keep-pod"])
+        assert started == [valid] and downs == []  # --keep-pod is stripped before main sees it

@@ -28,8 +28,7 @@ from antelligence.worlds.tumor_mri import WorldConfig  # noqa: E402
 RESULTS = REPO / "docs/research/v4.1-20261013/latency/results.json"
 
 
-def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optional[str]] = os.environ.get,
-         workers: Optional[Mapping] = None, loader: Optional[Callable] = None) -> int:
+def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--config", help="live backends JSON (v41_live); not needed when called with workers=")
     ap.add_argument("--loader", default=v41_live.DEFAULT_LOADER)
@@ -39,7 +38,12 @@ def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optio
     ap.add_argument("--world-yaml", default=str(REPO / "config/v4_1/world.yaml"))
     ap.add_argument("--anchors", choices=("none", "mock"), default="none")
     ap.add_argument("--out", default=str(RESULTS))
-    args = ap.parse_args(argv)
+    return ap
+
+
+def main(argv: Optional[Sequence[str]] = None, *, get_env: Callable[[str], Optional[str]] = os.environ.get,
+         workers: Optional[Mapping] = None, loader: Optional[Callable] = None) -> int:
+    args = parser().parse_args(argv)
     dev = load_split(Path(args.split))["dev_a"][: args.n_cases]
     load_case = loader or v41_live.resolve_loader(args.loader)
     if workers is None:
