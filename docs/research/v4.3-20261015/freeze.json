@@ -1,0 +1,25 @@
+{
+ "allowed_world_cfg_sha": {
+  "high": "5171488382578ec3e4ce7b296b94e2c4904f6766f533854b5f1d6532d6c2bef1",
+  "low": "f543ccdd5a4874f5505b06bcfe4740eea59b28f230a7003166528f4716f626dc",
+  "mid": "94879e0f58f748c340d331cfda870cca4274804f2d64b6fe7de23194a00f72f1"
+ },
+ "cell_table_sha256": "86d8386a3c3747203bb4905d5d051b75733a30b400a8dc717a044584a9412d76",
+ "colony_cfg_sha": "815245faf9934824e92dffafefc4c1bfe7674590a7d4ff786ef074a89fa0c9f7",
+ "commit": "e212d7e6cf874965bcbe82aa637e7488cd771db1",
+ "config_sha256": {
+  "combined": "496cb6cf25334d2c8b8c87b97c66af061a9d4a3fb80a404a56d8d66699aaa036",
+  "files": {
+   "config/v4_3/world.yaml": "1040e9f5d8c7e0fc573c3836ba9dbdedd582f59c0b70fea7a3439c0bf8a70bb2",
+   "config/v4_3/world_gateA.yaml": "8d981f345bf43ef59972b480665cd52f181765058a747a10ca6a6af251f7286f"
+  }
+ },
+ "date": "2026-10-15T13:58:34Z",
+ "dirty": false,
+ "estimate_sha": "6c55f52bf0c9011b409406cae508a9c6c459f7ebd9d7410813cbdc10561e84f8",
+ "freeze_hash": "bac6746fe045144731788490558b0eb1dfabe44c4bdf1d116afde66335f7c69d",
+ "n_files": 191,
+ "rules_sha": "957a0b3c51244eda82b90b080c43fc5c692e58260b83ca01086719147905a17f",
+ "schema": "freeze_v4_3",
+ "uncommitted": []
+}
