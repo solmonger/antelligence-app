@@ -6,6 +6,11 @@ resolved on ``est`` when the rules use it, and each record carries the rules and
 estimate the episodes are byte-identical to ``V42Harness`` (the legacy golden test pins it).
 
 It registers no arm. The default SimLook cell table stays the committed, read-only v4.2 one.
+
+Freeze guard: ``run_episode`` is the one place every v4.3 episode goes through. For any arm that needs the freeze
+(``v43_arms.needs_freeze``: all but S, S-solo, S') on a development case it calls ``v43_freeze.require_frozen_run(self)`` BEFORE
+the world is built; a synthetic phantom is exempt. ``self.freeze_file`` (set by the drivers; default the module constant
+``v43_freeze.FREEZE_FILE``, which a test may monkeypatch) names the freeze file.
 """
 
 from __future__ import annotations
@@ -17,8 +22,9 @@ from typing import Any, Callable, Dict, Mapping, Optional, Sequence
 
 import numpy as np
 
-from antelligence.experiments import v43_arms
-from antelligence.experiments.v42_harness import (CaseData, ColonyKit, HarnessWorld, V42Harness, bundle_of as v42_bundle_of)
+from antelligence.experiments import v43_arms, v43_freeze
+from antelligence.experiments.v42_harness import (CaseData, ColonyKit, EvalRefused, HarnessWorld, V42Harness, assert_dev_case,
+                                                   bundle_of as v42_bundle_of)
 from antelligence.kernel.colony.cards import Card
 from antelligence.kernel.colony.episode import ColonyConfig
 from antelligence.worlds.tumor_mri import WorldConfig
@@ -84,6 +90,18 @@ class V43Kit(ColonyKit):
         return float(o["look"])
 
 
+def _is_dev_case(case: CaseData) -> bool:
+    """True for a case labelled ``dev`` AND for any case whose id is in the development split (a ``synthetic`` label on a real
+    development id is no way round the freeze). The phantom ('phantom' is no split id) is exempt."""
+    if case.split == "dev":
+        return True
+    try:
+        assert_dev_case(case.case_id)
+    except (EvalRefused, KeyError):
+        return False
+    return True
+
+
 class V43Harness(V42Harness):
     def __init__(self, world_cfg: WorldConfig, colony_cfg: Optional[ColonyConfig] = None, rules: Optional[AntRules] = None,
                  estimate: Optional[CombinedEstimate] = None, *, cell_table: Optional[Mapping[str, Any]] = None,
@@ -91,6 +109,7 @@ class V43Harness(V42Harness):
                  with_board: bool = True) -> None:
         self.rules = rules if rules is not None else AntRules.v42()
         self.estimate = estimate
+        self.freeze_file: Optional[Path] = None             # None: v43_freeze.FREEZE_FILE
         if self.rules.use_combined and estimate is None:
             raise ValueError("AntRules.use_combined needs a CombinedEstimate (pass the coefficient file)")
         base = colony_cfg or ColonyConfig()
@@ -136,6 +155,8 @@ class V43Harness(V42Harness):
         return v43_arms.controls_for(name)
 
     def run_episode(self, arm_name: str, case: CaseData, seed: int, **kw: Any) -> Dict[str, Any]:
+        if v43_arms.needs_freeze(arm_name) and _is_dev_case(case):
+            v43_freeze.require_frozen_run(self)             # before anything is built; raises FreezeError
         rec = super().run_episode(arm_name, case, seed, **kw)
         rec["ant_rules"] = {"rules": self.rules.to_dict(), "sha": self.rules.sha()}
         rec["estimate"] = None if self.estimate is None else {"coef": list(self.estimate.coef), "sha": self.estimate.sha()}

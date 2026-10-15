@@ -12,8 +12,7 @@ from pathlib import Path
 import pytest
 
 from antelligence.experiments import v43_drive as drive
-from antelligence.experiments.v43_freeze import write_freeze
-from tests.v4_3.c.helpers import REPO, dev_ids, script
+from tests.v4_3.c.helpers import REPO, dev_ids, script, write_test_freeze
 
 verdict = script("v43_verdict")
 replicate = script("v43_replicate")
@@ -24,7 +23,8 @@ diagnose = script("v43_diagnose")
 report = script("v43_report")
 
 ALL_ARMS = "S,S-solo,S-marks,S-talk,S-marks-displaced,S-talk-shuffled,S',S-marks-perfect,S-marks-quiet"
-COMMON = ["--workers", "1", "--ticks", "30", "--resamples", "200"]
+# no --ticks: a shortened run on a (phantom labelled) development case is refused by the harness freeze check, as it must be
+COMMON = ["--workers", "1", "--resamples", "200"]
 
 
 def cases() -> str:
@@ -43,7 +43,7 @@ def world(tmp_path_factory):
     drive._HARNESS.clear()
     tmp = tmp_path_factory.mktemp("c_e2e")
     freeze = tmp / "freeze.json"
-    write_freeze(freeze, REPO, allow_dirty=True)
+    write_test_freeze(freeze)
     out = tmp / "mid"
     rc = verdict.main(["--out", str(out), "--level", "mid", "--cases", cases(), "--seeds", "5,6", "--arms", ALL_ARMS,
                        "--freeze-file", str(freeze), "--cases-root", str(tmp), *COMMON])
@@ -62,7 +62,7 @@ def test_verdict_writes_results_report_stats_and_checks(world):
     assert len(runs) == 9 * 2 * 2 and {r["arm"] for r in runs} == set(ALL_ARMS.split(","))
     assert {r["split"] for r in runs} == {"dev-A", "dev-B"}
     meta = res["meta"]
-    assert meta["level"] == "mid" and meta["seeds"] == [5, 6] and meta["dry_overrides"] == {"ticks": 30}
+    assert meta["level"] == "mid" and meta["seeds"] == [5, 6] and not meta["dry_overrides"]["ticks"]
     assert len(meta["config_sha256"]) == 64 and len(meta["ant_rules_sha"]) == 64 and len(meta["code_sha"]) == 64
     f = meta["freeze"]
     assert f["required"] and f["freeze_hash_recorded"] == f["freeze_hash_now"] and f["freeze_hash_recorded"]
@@ -127,7 +127,7 @@ def test_drive_refuses_a_sharing_arm_on_a_dev_case_without_the_freeze(phantom_lo
 def test_replicate_headroom_curve_effect_and_report_run_on_the_output(world, tmp_path):
     out, tmp = world["out"], world["tmp"]
     # replication: 2 cases x seeds 5 and 6 = 4 pairs here, so ask for 4 (the real run asks for 80 and fails on anything else)
-    assert replicate.main(["--results", str(out), "--arm", "S-marks", "--seeds", "5,6", "--expected-pairs", "4", "--resamples", "200"]) == 0
+    assert replicate.main(["--results", str(out), "--arm", "S-marks", "--seeds", "5,6", "--resamples", "200"], expected_pairs=4) == 0
     rep = json.loads((out / "replication.json").read_text())
     assert rep["n_pairs"] == 4 and rep["verdict"]["pairs_complete"] and rep["holm_p"] == pytest.approx(min(1.0, 2 * rep["raw_p"]))
     assert replicate.main(["--results", str(out), "--arm", "S-talk", "--seeds", "5,6", "--resamples", "200", "--out", str(tmp_path / "r2.json")]) == 0

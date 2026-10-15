@@ -9,8 +9,8 @@ from pathlib import Path
 import pytest
 
 from antelligence.experiments import v43_freeze as fz
-from antelligence.experiments.v43_freeze import (FreezeRefused, check_freeze, config_hashes, freeze_hash, freeze_needed, require_frozen,
-                                                 tracked_files, uncommitted, write_freeze)
+from antelligence.experiments.v43_freeze import (EXPLICIT_FILES, FreezeError, FreezeRefused, check_freeze, config_hashes, freeze_hash,
+                                                 freeze_needed, frozen_files, require_frozen, uncommitted, write_freeze)
 from tests.v4_3.c.helpers import REPO, script
 
 CLI = script("v43_freeze")
@@ -23,10 +23,16 @@ def git(root: Path, *args: str) -> None:
 
 @pytest.fixture
 def repo(tmp_path):
+    """A throwaway git repo: a few code files, the real frozen world config and coefficients, stub cell table and split file."""
     r = tmp_path / "repo"
-    for rel, text in {"antelligence/core.py": "x = 1\n", "antelligence/sub/more.py": "y = 2\n", "config/v4_3/world.yaml": "world: {}\n",
-                      "config/v4_2/world.yaml": "old: true\n", "scripts/v43_run.py": "print('v43')\n", "scripts/v42_run.py": "print('v42')\n",
-                      "scripts/other.py": "print('o')\n", "tests/t.py": "pass\n", "docs/readme.md": "hi\n"}.items():
+    files = {"antelligence/core.py": "x = 1\n", "antelligence/sub/more.py": "y = 2\n",
+             "config/v4_3/world.yaml": (REPO / "config/v4_3/world.yaml").read_text(),
+             "config/v4_2/world.yaml": "old: true\n", "scripts/v43_run.py": "print('v43')\n", "scripts/v42_run.py": "print('v42')\n",
+             "scripts/other.py": "print('o')\n", "tests/t.py": "pass\n", "docs/readme.md": "hi\n",
+             "docs/research/v4.2-20261014/simlook/cells_v4_2.json": '{"schema": "stub"}\n',
+             "docs/research/v4.3-20261015/combined/coefficients.json": (REPO / "docs/research/v4.3-20261015/combined/coefficients.json").read_text(),
+             "config/v4_1/split.json": '{"dev_a": []}\n'}
+    for rel, text in files.items():
         (r / rel).parent.mkdir(parents=True, exist_ok=True)
         (r / rel).write_text(text)
     git(r, "init", "-q")
@@ -41,8 +47,9 @@ def flip_byte(path: Path) -> None:
     path.write_bytes(bytes(b))
 
 
-def test_tracked_set_is_antelligence_config_v4_3_and_v43_scripts_only(repo):
-    assert tracked_files(repo) == ["antelligence/core.py", "antelligence/sub/more.py", "config/v4_3/world.yaml", "scripts/v43_run.py"]
+def test_frozen_set_is_the_code_dirs_v43_scripts_and_the_explicit_files_only(repo):
+    assert frozen_files(repo) == sorted(["antelligence/core.py", "antelligence/sub/more.py", "config/v4_3/world.yaml", "scripts/v43_run.py",
+                                         *EXPLICIT_FILES])
 
 
 def test_freeze_hash_is_stable_and_ignores_files_outside_the_set(repo):
@@ -50,11 +57,11 @@ def test_freeze_hash_is_stable_and_ignores_files_outside_the_set(repo):
     assert len(h) == 64 and freeze_hash(repo) == h
     for rel in ("scripts/other.py", "scripts/v42_run.py", "tests/t.py", "docs/readme.md", "config/v4_2/world.yaml"):
         (repo / rel).write_text("changed\n")
-    (repo / "antelligence" / "untracked.py").write_text("not tracked\n")          # untracked files are not part of the freeze
     assert freeze_hash(repo) == h
 
 
-@pytest.mark.parametrize("rel", ["antelligence/core.py", "antelligence/sub/more.py", "config/v4_3/world.yaml", "scripts/v43_run.py"])
+@pytest.mark.parametrize("rel", ["antelligence/core.py", "antelligence/sub/more.py", "config/v4_3/world.yaml", "scripts/v43_run.py",
+                                 *EXPLICIT_FILES])
 def test_a_one_byte_change_in_any_frozen_file_changes_the_hash(repo, rel):
     h = freeze_hash(repo)
     flip_byte(repo / rel)
@@ -75,7 +82,10 @@ def test_write_records_commit_hash_config_hashes_and_date(repo, tmp_path):
     head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
     assert doc["commit"] == head and doc["freeze_hash"] == freeze_hash(repo)
     assert set(doc["config_sha256"]["files"]) == {"config/v4_3/world.yaml"} and len(doc["config_sha256"]["combined"]) == 64
-    assert doc["config_sha256"] == config_hashes(repo) and doc["date"].endswith("Z") and doc["uncommitted"] == []
+    assert doc["config_sha256"] == config_hashes(repo) and doc["date"].endswith("Z") and doc["uncommitted"] == [] and doc["dirty"] is False
+    for f in ("rules_sha", "estimate_sha", "cell_table_sha256", "colony_cfg_sha"):
+        assert len(doc[f]) == 64, f
+    assert set(doc["allowed_world_cfg_sha"]) == {"low", "mid", "high"} and len(set(doc["allowed_world_cfg_sha"].values())) == 3
 
 
 def test_check_passes_when_unchanged_and_fails_after_a_one_byte_change(repo, tmp_path):
@@ -121,7 +131,11 @@ def test_write_refuses_a_dirty_tree_unless_allowed(repo, tmp_path):
         write_freeze(out, repo)
     assert not out.exists()
     doc = write_freeze(out, repo, allow_dirty=True)
-    assert doc["uncommitted"] == ["antelligence/core.py"]
+    assert doc["uncommitted"] == ["antelligence/core.py"] and doc["dirty"] is True
+    ok, why = check_freeze(out, repo)                             # a dirty-recorded freeze never passes, even though the hash matches
+    assert not ok and "dirty" in why
+    with pytest.raises(FreezeError, match="dirty"):
+        require_frozen(out, repo)
 
 
 def test_which_arms_need_the_freeze():
@@ -142,28 +156,11 @@ def test_the_cli_writes_checks_and_refuses(repo, tmp_path, capsys):
     assert CLI.main(["check", "--freeze-file", str(tmp_path / "none.json"), "--root", str(repo)]) == 1
 
 
-def test_driver_refuses_after_a_one_byte_change_in_antelligence(repo, tmp_path, monkeypatch, phantom_loader):
-    """The drive layer asks ``require_frozen`` before every sharing-arm or control task on a development case. Pointed at the
-    throwaway repo, a one-byte change in ``antelligence/`` flips it from running to refusing; S-solo never asks."""
-    from antelligence.experiments import v43_drive as drive
-    from tests.v4_3.c.helpers import dev_ids
-    freeze = tmp_path / "freeze.json"
-    write_freeze(freeze, repo)
-    monkeypatch.setattr(drive, "require_frozen", lambda path: require_frozen(path, repo))
-    task = {"kind": "episode", "arm": "S-marks", "case_id": dev_ids()["dev_a"][0], "seed": 5, "config": str(drive.DEFAULT_CONFIG),
-            "ticks": 20, "freeze_file": str(freeze), "uptake_level": "mid"}
-    assert drive.run_task(task)["arm"] == "S-marks"
-    flip_byte(repo / "antelligence" / "core.py")
-    with pytest.raises(FreezeRefused, match="changed since the freeze"):
-        drive.run_task(task)
-    assert drive.run_task({**task, "arm": "S-solo"})["arm"] == "S-solo"
-
-
 def test_this_repos_freeze_hash_covers_the_v43_code_and_not_the_v42_scripts():
-    files = tracked_files(REPO)
+    files = frozen_files(REPO)
     assert any(f.startswith("antelligence/experiments/v43_") for f in files)
     assert "scripts/v43_run.py" in files and "config/v4_3/world.yaml" in files
     assert not any(f.startswith("scripts/v42_") or f.startswith("config/v4_2") for f in files)
     h = freeze_hash(REPO)
     assert len(h) == 64 and freeze_hash(REPO) == h
-    assert fz.DEFAULT_FREEZE_FILE == REPO / "docs" / "research" / "v4.3-20261015" / "freeze.json"
+    assert fz.FREEZE_FILE == fz.DEFAULT_FREEZE_FILE == REPO / "docs" / "research" / "v4.3-20261015" / "freeze.json"

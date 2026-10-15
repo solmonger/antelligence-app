@@ -11,6 +11,11 @@ No model, no network, no key: scripts only.
   coefficients.json``). If that file is missing and the rules need it, the script exits with status 2 and says so.
 * Every output goes under ``--out``. Nothing is written into any v4.1 / v4.2 evidence folder.
 
+* Freeze: a sharing arm or control (anything but S, S-solo, S') on a development case runs only if ``--freeze-file`` (default
+  ``docs/research/v4.3-20261015/freeze.json``) matches the code. This script checks it up front (before any case is loaded); the
+  harness checks it again, with the content hashes of the config, coefficients and cell table, for every episode. So
+  ``--config`` / ``--coefficients`` / ``--ticks`` / ``--f2`` / ``--f3`` / ``--no-f1`` cannot smuggle an uncovered input into a
+  sharing-arm run on a development case. Gate-A style runs (S, S-solo, S') need no freeze.
 * Development cases only. An evaluation, reserve or unknown case id exits with status 2 before anything is loaded.
 * Resumable: an episode whose ``record.json`` exists is skipped. ``bundle.json`` is written first and ``record.json`` (the
   completion marker) last, both atomically, so a killed run never leaves a half-written episode that looks finished.
@@ -36,6 +41,8 @@ import yaml  # noqa: E402
 
 from antelligence.experiments.v42_harness import (EvalRefused, assert_dev_case, load_dev_case,  # noqa: E402
                                                   phantom_case, resolve_arm)
+from antelligence.experiments import v43_freeze  # noqa: E402
+from antelligence.experiments.v43_freeze import FreezeError, freeze_needed, require_frozen  # noqa: E402
 from antelligence.experiments.v43_harness import V43Harness, bundle_of  # noqa: E402
 import antelligence.experiments.v42_arms  # noqa: E402,F401  (registers the v4.2 control arms; v4.3 registers none)
 from antelligence.kernel.colony.episode import ColonyConfig  # noqa: E402
@@ -122,6 +129,8 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     ap.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     ap.add_argument("--coefficients", type=Path, default=DEFAULT_COEFFICIENTS_PATH,
                     help="combined-estimate coefficient file (needed when the ant rules use the combined estimate)")
+    ap.add_argument("--freeze-file", type=Path, default=None,
+                    help="freeze file for sharing arms / controls on development cases (default: the module constant FREEZE_FILE)")
     ap.add_argument("--ticks", type=int, default=None, help="override the episode length (smoke runs)")
     ap.add_argument("--no-f1", action="store_true", help="do not inject SimLook (colony arms then refuse to run)")
     ap.add_argument("--f2", type=float, default=None, metavar="U_CORE", help="turn F2 on, u_core in {0.3,0.5,0.7}")
@@ -157,6 +166,13 @@ def main(argv: Optional[List[str]] = None) -> int:
             print("no development case found under the cases root; running the phantom only", file=sys.stderr)
         if args.phantom is None:
             args.phantom = str(DEFAULT_PHANTOM)
+    freeze_file = args.freeze_file or v43_freeze.FREEZE_FILE
+    if freeze_needed(arms, on_dev_case=bool(cases)):         # fail fast, before a case is loaded; the harness is the real guard
+        try:
+            require_frozen(freeze_file)
+        except FreezeError as exc:
+            print(f"refused: {exc}", file=sys.stderr)
+            return 2
     world_cfg, colony_cfg, rules = load_configs(args.config)
     try:
         estimate = load_estimate(rules, args.coefficients)
@@ -174,10 +190,15 @@ def main(argv: Optional[List[str]] = None) -> int:
             cfg = world_cfg.with_(ticks=args.ticks) if args.ticks else world_cfg
         cfg = cfg.with_(facts=facts_for(cfg.facts, args, case.scorer_channels is not None))
         h = V43Harness(cfg, colony_cfg, rules, estimate, with_board=not args.no_board)
+        h.freeze_file = freeze_file
         for arm in arms:
             for seed in seeds:
                 t0 = time.perf_counter()
-                rec = run_one(h, arm, case, seed, args.out)
+                try:
+                    rec = run_one(h, arm, case, seed, args.out)
+                except FreezeError as exc:                   # the harness refused (e.g. a config the freeze did not cover)
+                    print(f"refused: {exc}", file=sys.stderr)
+                    return 2
                 if rec.get("skipped"):
                     print(f"skip   {arm:14s} {case.case_id:10s} seed {seed} (done)")
                     continue

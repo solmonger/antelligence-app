@@ -30,6 +30,43 @@ def script(name: str):
     return mod
 
 
+def write_test_freeze(path: Path, root: Path = REPO) -> Dict[str, Any]:
+    """A freeze file for a TEST, written over the working tree of this repo into a temp path: exactly what ``write_freeze`` would
+    record on a clean tree, without the ``dirty`` flag (the tree under test is, by definition, being edited). Never a real freeze."""
+    import json
+    from antelligence.experiments.v43_freeze import current
+    doc = {**current(root), "uncommitted": [], "dirty": False}
+    Path(path).write_text(json.dumps(doc, indent=1, sort_keys=True))
+    return doc
+
+
+SCRATCH_FILES = ("config/v4_3", "docs/research/v4.2-20261014/simlook/cells_v4_2.json",
+                 "docs/research/v4.3-20261015/combined/coefficients.json", "config/v4_1/split.json")
+
+
+def make_scratch_repo(dest: Path) -> Path:
+    """A clean, committed scratch copy of everything the freeze covers (the code, config, three explicit files), in a temp dir.
+    Tests edit it, never the real worktree; a freeze written over it is a real, clean ``write_freeze`` document."""
+    import shutil
+    import subprocess
+    ignore = shutil.ignore_patterns("__pycache__", "*.pyc")
+    shutil.copytree(REPO / "antelligence", dest / "antelligence", ignore=ignore)
+    (dest / "scripts").mkdir(parents=True)
+    for p in sorted((REPO / "scripts").glob("v43_*.py")):
+        shutil.copy2(p, dest / "scripts" / p.name)
+    for rel in SCRATCH_FILES:
+        src = REPO / rel
+        (dest / rel).parent.mkdir(parents=True, exist_ok=True)
+        if src.is_dir():
+            shutil.copytree(src, dest / rel, ignore=ignore)
+        else:
+            shutil.copy2(src, dest / rel)
+    git = ["git", "-C", str(dest), "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false"]
+    for args in (["init", "-q"], ["add", "-A"], ["commit", "-q", "-m", "scratch"]):
+        subprocess.run([*git, *args], check=True, capture_output=True)
+    return dest
+
+
 def dev_ids() -> Dict[str, List[str]]:
     doc = load_checked_split(REPO)
     return {"dev_a": list(doc["dev_a"]), "dev_b": list(doc["dev_b"])}

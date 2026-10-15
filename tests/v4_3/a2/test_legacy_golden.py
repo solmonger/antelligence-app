@@ -51,8 +51,10 @@ def test_v42_cards_have_no_min_resolved_key():
     assert all(c["rev"] == "v4.2" for c in rec["cards_final"].values())
 
 
+# Only the arms the freeze guard exempts (S, S-solo, S') may run on a real development case before the lead freezes the code. S-marks and
+# S-talk on a real case would be refused by ``V43Harness.run_episode`` (v4.3 C-fix); the phantom tests above pin them byte for byte.
 @pytest.mark.skipif(not (CASES_ROOT / "BRATS_016" / "case.npz").is_file(), reason="development case store not readable here")
-@pytest.mark.parametrize("arm", ARMS)
+@pytest.mark.parametrize("arm", ("S-solo",))
 def test_v42_rules_match_v42_harness_on_a_real_dev_case(arm):
     world = WorldConfig.from_yaml(REPO / "config" / "v4_2" / "world.yaml").with_(ticks=60)
     case = load_dev_case("BRATS_016", root=CASES_ROOT)

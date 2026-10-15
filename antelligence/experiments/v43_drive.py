@@ -7,7 +7,8 @@ A v4.3 copy of ``v42_drive``. It never imports a v4.1 or v4.2 SCRIPT (the on-dis
 * ``guard_dev_cases``  every driver calls it before anything is loaded: evaluation / reserve / unknown ids exit with EvalRefused.
 * ``uptake_level``     task override (``low`` | ``mid`` | ``high``) applied to ``facts.uptake_level`` of the config.
 * the freeze guard     a SHARING ARM or CONTROL (anything but S, S-solo, S') on a development case is refused unless the freeze
-  file matches the current code (``v43_freeze.require_frozen``). It is checked here, per task, so no driver can skip it.
+  file matches the current code (``v43_freeze.require_frozen``). It is checked here, per task, to fail fast; the single
+  enforcement point is ``V43Harness.run_episode`` (``require_frozen_run``), which also checks the harness's content hashes.
 * ``assert_out_allowed``  refuses an output folder inside any v4.1 / v4.2 evidence or config folder.
 
 Cases and harnesses are cached per process. ``CASE_LOADER`` may be replaced in a test (inline mode only).
@@ -28,7 +29,8 @@ import numpy as np
 
 from antelligence.experiments import v43_arms
 from antelligence.experiments.v42_harness import CaseData, assert_dev_case, load_dev_case
-from antelligence.experiments.v43_freeze import DEFAULT_FREEZE_FILE, require_frozen
+from antelligence.experiments import v43_freeze
+from antelligence.experiments.v43_freeze import require_frozen
 from antelligence.experiments.v43_harness import V43Harness
 from antelligence.worlds.tumor_mri.combined import DEFAULT_COEFFICIENTS_PATH
 from antelligence.worlds.tumor_mri.config import UPTAKE_LEVEL_NAMES
@@ -123,8 +125,9 @@ def run_task(task: Mapping[str, Any]) -> Dict[str, Any]:
     v43_arms.register_all()                                  # idempotent; the global arm table may have been edited since import
     case = _case(task["case_id"], task.get("cases_root"))
     if case.split == "dev" and v43_arms.needs_freeze(task["arm"]):
-        require_frozen(Path(task.get("freeze_file") or DEFAULT_FREEZE_FILE))
+        require_frozen(Path(task.get("freeze_file") or v43_freeze.FREEZE_FILE))
     h = _harness(task, case)
+    h.freeze_file = Path(task["freeze_file"]) if task.get("freeze_file") else None     # the harness checks it again (the single guard)
     if task["kind"] == "episode":
         if task.get("out"):
             rec = _v43_run().run_one(h, task["arm"], case, int(task["seed"]), Path(task["out"]))

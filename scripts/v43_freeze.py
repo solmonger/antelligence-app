@@ -5,9 +5,16 @@
     python scripts/v43_freeze.py check [--freeze-file docs/research/v4.3-20261015/freeze.json]
     python scripts/v43_freeze.py show
 
-``write`` hashes every git-tracked file under ``antelligence/``, ``config/v4_3/`` and ``scripts/v43_*.py`` from the working tree
-and writes ``{commit, freeze_hash, config_sha256 (per file and combined), date}``. It refuses a tree with uncommitted changes in
-that set unless ``--allow-dirty``. ``check`` exits 1 when the file is missing or its hash differs from the current code.
+The freeze file is written by the LEAD, once, after the last code change; builders and runners never write it.
+
+``write`` hashes every file under ``antelligence/``, ``config/v4_3/`` and ``scripts/v43_*.py`` (tracked OR untracked-not-ignored;
+no .pyc) plus the SimLook cell table, the combined-estimate coefficients and ``config/v4_1/split.json``, from the working tree. It
+writes ``{commit, date, freeze_hash, config_sha256, rules_sha, estimate_sha, cell_table_sha256, allowed_world_cfg_sha
+{low, mid, high}, colony_cfg_sha, dirty, uncommitted}``. It refuses a tree with uncommitted changes in that set unless
+``--allow-dirty``, which records ``"dirty": true`` in the file. ``check`` exits 1 when the file is missing, differs from the current
+code, or was written dirty. There is NO allow-dirty at check time: the harness refuses a dirty-recorded freeze too, so a freeze
+written with ``--allow-dirty`` is good for tests of the tooling only, never for a verdict run. The harness also checks the content
+hashes of the config, coefficients and cell table it was built from against the recorded ones.
 """
 
 from __future__ import annotations
@@ -21,7 +28,7 @@ from typing import List, Optional
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from antelligence.experiments.v43_freeze import (DEFAULT_FREEZE_FILE, FreezeRefused, check_freeze, current,  # noqa: E402
+from antelligence.experiments.v43_freeze import (DEFAULT_FREEZE_FILE, FreezeError, check_freeze, current,  # noqa: E402
                                                  write_freeze)
 
 
@@ -30,7 +37,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     w = sub.add_parser("write")
     w.add_argument("--out", type=Path, default=DEFAULT_FREEZE_FILE)
-    w.add_argument("--allow-dirty", action="store_true")
+    w.add_argument("--allow-dirty", action="store_true",
+                   help='write from a dirty tree and record "dirty": true; check and the harness then refuse that file')
     w.add_argument("--root", type=Path, default=REPO)
     c = sub.add_parser("check")
     c.add_argument("--freeze-file", type=Path, default=DEFAULT_FREEZE_FILE)
@@ -41,7 +49,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if a.cmd == "write":
         try:
             doc = write_freeze(a.out, a.root, allow_dirty=a.allow_dirty)
-        except FreezeRefused as exc:
+        except FreezeError as exc:
             print(f"refused: {exc}", file=sys.stderr)
             return 2
         print(f"wrote {a.out}\ncommit {doc['commit']}\nfreeze_hash {doc['freeze_hash']}\nconfig_sha256 {doc['config_sha256']['combined']}")

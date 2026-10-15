@@ -52,6 +52,9 @@ REALISED_U = "docs/research/v4.3-20261015/uptake/realised_u.json"
 
 def _load_v42_readers():
     """The v4.2 log readers, as library code (the module defines functions only; nothing runs on import)."""
+    # NOTE: the imported v4.2 script must stay free of import-time side effects (no file written, no network, no main()). It is
+    # loaded by path, so it is not covered by the freeze hash; tests/v4_3/c/test_freeze_fix.py imports this script in a
+    # subprocess from an empty directory and fails if a file appears there or under docs/research/v4.2-20261014.
     spec = importlib.util.spec_from_file_location("v43_diagnose_readers", REPO / "scripts" / "v42_diagnose.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
