@@ -11,6 +11,8 @@ from __future__ import annotations
 from typing import Any, Dict, Mapping, Sequence, Tuple
 
 from antelligence.kernel.decision import MAX_STATE_CHARS, Answer, DecisionRequest, Question
+from antelligence.worlds.tumor_mri.colony_state import (Q_MARK, colony_sentences, fit_colony_text, has_colony_fields,
+                                                         mark_question)
 from antelligence.worlds.tumor_mri.config import AMOUNT_FRACTIONS
 
 CANDIDATE_LABELS = ("A", "B", "C", "D", "E", "F")
@@ -26,8 +28,9 @@ def _pct(f: float) -> str:
     return f"{int(round(f * 100))}%"
 
 
-def build_questions(candidate_labels: Sequence[str]) -> Dict[str, Question]:
-    """The three questions for one squad-round; only candidates present are offered (in A..F order)."""
+def build_questions(candidate_labels: Sequence[str], with_mark: bool = False) -> Dict[str, Question]:
+    """The three questions for one squad-round; only candidates present are offered (in A..F order).
+    ``with_mark`` (v4.2, model ants) adds the fourth question ``mark``; off, the dict and its request hash are exactly v4.1's."""
     present = [l for l in CANDIDATE_LABELS if l in set(candidate_labels)]
     options = tuple(present) + (STAY, EXPLORE)
     criteria = {l: f"head to region {l}" for l in present}
@@ -38,7 +41,7 @@ def build_questions(candidate_labels: Sequence[str]) -> Dict[str, Question]:
     # highest-uncertainty voxel cluster."
     criteria[EXPLORE] = ("go to the nearest perceived region no squad has visited. If there is none, "
                          "go to the nearest highest-uncertainty voxel cluster")
-    return {
+    qs = {
         Q_TARGET: Question("choice", "Where should this squad go next?", options, criteria),
         Q_RELEASE: Question("noul", "Should this squad release drug here and now?",
                             criteria={"true": "release drug", "false": "keep the drug"}),
@@ -46,6 +49,9 @@ def build_questions(candidate_labels: Sequence[str]) -> Dict[str, Question]:
                            + ", ".join(f"{l} = {_pct(f)}" for l, f in zip(AMOUNT_LABELS, AMOUNT_FRACTIONS)) + ".",
                            AMOUNT_LABELS),
     }
+    if with_mark:
+        qs[Q_MARK] = mark_question()
+    return qs
 
 
 def _band(x: float, cuts: Tuple[float, float, float], words: Tuple[str, str, str, str]) -> str:
@@ -69,8 +75,12 @@ def _where(fields: Mapping[str, Any]) -> str:
     return f"{at} {now}".strip()
 
 
-def render_state(fields: Mapping[str, Any], brief: str = "") -> str:
-    """Words, not raw numbers, from the observation fields (never truth). Truncated to MAX_STATE_CHARS."""
+def render_state(fields: Mapping[str, Any], brief: str = "", max_chars: int = MAX_STATE_CHARS) -> str:
+    """Words, not raw numbers, from the observation fields (never truth). Truncated to ``max_chars`` (v4.1: 1,200).
+
+    With no colony key in ``fields`` the output is byte-for-byte v4.1 (golden test). With colony keys the colony sentences
+    (marks near you, zones, messages, readings, colony note, notebook) follow the v4.1 text; over the limit, whole colony
+    sentences are dropped, lowest priority first (``colony_state.DROP_ORDER``)."""
     p, unc, dose = fields["local_p_tumour"], fields["local_unc"], fields["local_dose"]
     look = fields.get("local_look")
     parts = [
@@ -94,16 +104,18 @@ def render_state(fields: Mapping[str, Any], brief: str = "") -> str:
     else:
         parts.append("No regions known.")
     text = " ".join(x for x in parts if x)
+    if has_colony_fields(fields):
+        text = fit_colony_text(text, colony_sentences(fields), max_chars)
     if brief:
-        room = MAX_STATE_CHARS - len(text) - len(" Brief: ")
+        room = max_chars - len(text) - len(" Brief: ")
         if room > 0:
             text += " Brief: " + brief[:room]
-    return text[:MAX_STATE_CHARS]
+    return text[:max_chars]
 
 
-def build_request(model: str, fields: Mapping[str, Any], brief: str = "", seed: int = 0) -> DecisionRequest:
+def build_request(model: str, fields: Mapping[str, Any], brief: str = "", seed: int = 0, with_mark: bool = False) -> DecisionRequest:
     labels = [c["label"] for c in fields.get("candidates", [])]
-    return DecisionRequest(model=model, state=render_state(fields, brief), questions=build_questions(labels), seed=seed)
+    return DecisionRequest(model=model, state=render_state(fields, brief), questions=build_questions(labels, with_mark), seed=seed)
 
 
 def decide_from_answers(answers: Mapping[str, Answer], request: DecisionRequest) -> Dict[str, Any]:
@@ -120,5 +132,14 @@ def decide_from_answers(answers: Mapping[str, Answer], request: DecisionRequest)
     for i in range(len(request.questions[Q_AMOUNT].options)):
         if ap[str(i)] > abest:
             level, abest = i + 1, ap[str(i)]
-    return {"target": target, "release": int(p_yes >= 0.5), "amount": level,
-            "p_target": best, "p_release": p_yes, "p_amount": abest}
+    out = {"target": target, "release": int(p_yes >= 0.5), "amount": level,
+           "p_target": best, "p_release": p_yes, "p_amount": abest}
+    if Q_MARK in request.questions and Q_MARK in answers:  # v4.2: argmax label (ties to the earlier label); keys absent in v4.1
+        mp = answers[Q_MARK].probabilities
+        label, mbest = request.questions[Q_MARK].options[0], -1.0
+        for opt in request.questions[Q_MARK].options:
+            if mp[opt] > mbest:
+                label, mbest = opt, mp[opt]
+        out[Q_MARK] = label
+        out["p_mark"] = mbest
+    return out

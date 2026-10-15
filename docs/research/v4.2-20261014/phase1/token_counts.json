@@ -1,0 +1,258 @@
+{
+ "arms": {
+  "S-marks": {
+   "chars": {
+    "max": 1471,
+    "mean": 819.31,
+    "n": 15360,
+    "p50": 794.0,
+    "p95": 1020.0,
+    "p99": 1169.0
+   },
+   "share_over_1200_chars": 0.0063,
+   "states": 15360,
+   "tokens": {
+    "d1-3b": {
+     "max": 442,
+     "mean": 250.16,
+     "n": 15360,
+     "p50": 245.0,
+     "p95": 308.0,
+     "p99": 349.0
+    },
+    "qwen3.5-4b": {
+     "max": 478,
+     "mean": 265.47,
+     "n": 15360,
+     "p50": 261.0,
+     "p95": 330.0,
+     "p99": 374.0
+    },
+    "qwen3.5-9b": {
+     "max": 478,
+     "mean": 265.47,
+     "n": 15360,
+     "p50": 261.0,
+     "p95": 330.0,
+     "p99": 374.0
+    }
+   },
+   "v41_part_chars": {
+    "max": 510,
+    "mean": 471.52,
+    "n": 15360,
+    "p50": 482.0,
+    "p95": 499.0,
+    "p99": 502.0
+   }
+  },
+  "S-solo": {
+   "chars": {
+    "max": 850,
+    "mean": 754.87,
+    "n": 15360,
+    "p50": 757.0,
+    "p95": 823.0,
+    "p99": 837.0
+   },
+   "share_over_1200_chars": 0.0,
+   "states": 15360,
+   "tokens": {
+    "d1-3b": {
+     "max": 260,
+     "mean": 233.3,
+     "n": 15360,
+     "p50": 234.0,
+     "p95": 253.0,
+     "p99": 259.0
+    },
+    "qwen3.5-4b": {
+     "max": 276,
+     "mean": 246.13,
+     "n": 15360,
+     "p50": 248.0,
+     "p95": 266.0,
+     "p99": 272.0
+    },
+    "qwen3.5-9b": {
+     "max": 276,
+     "mean": 246.13,
+     "n": 15360,
+     "p50": 248.0,
+     "p95": 266.0,
+     "p99": 272.0
+    }
+   },
+   "v41_part_chars": {
+    "max": 510,
+    "mean": 475.73,
+    "n": 15360,
+    "p50": 482.0,
+    "p95": 499.0,
+    "p99": 503.0
+   }
+  },
+  "S-talk": {
+   "chars": {
+    "max": 1478,
+    "mean": 873.62,
+    "n": 15360,
+    "p50": 854.0,
+    "p95": 1091.0,
+    "p99": 1230.8
+   },
+   "share_over_1200_chars": 0.0145,
+   "states": 15360,
+   "tokens": {
+    "d1-3b": {
+     "max": 453,
+     "mean": 267.76,
+     "n": 15360,
+     "p50": 263.0,
+     "p95": 333.0,
+     "p99": 372.4
+    },
+    "qwen3.5-4b": {
+     "max": 490,
+     "mean": 284.01,
+     "n": 15360,
+     "p50": 279.0,
+     "p95": 355.0,
+     "p99": 400.0
+    },
+    "qwen3.5-9b": {
+     "max": 490,
+     "mean": 284.01,
+     "n": 15360,
+     "p50": 279.0,
+     "p95": 355.0,
+     "p99": 400.0
+    }
+   },
+   "v41_part_chars": {
+    "max": 510,
+    "mean": 471.55,
+    "n": 15360,
+    "p50": 482.0,
+    "p95": 499.0,
+    "p99": 502.0
+   }
+  }
+ },
+ "cases": 40,
+ "missing_tokenizers": [],
+ "notebook_300_chars_tokens": {
+  "d1-3b": 64,
+  "qwen3.5-4b": 64,
+  "qwen3.5-9b": 64
+ },
+ "proposal": {
+  "basis": "S-talk natural length p95 + 300 notebook characters, rounded up to 100",
+  "chars": 1400,
+  "share_of_S_talk_states_over_proposal": 0.0004,
+  "tokens_p95_plus_notebook": {
+   "d1-3b": 397,
+   "qwen3.5-4b": 419,
+   "qwen3.5-9b": 419
+  },
+  "v41_chars": 1200
+ },
+ "seeds": [
+  3,
+  4
+ ],
+ "single_token_check": {
+  "d1-3b": {
+   "all_labels_bare_single": true,
+   "all_single": true,
+   "mark_labels": {
+    "M": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    },
+    "N": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    },
+    "R": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    },
+    "T": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    }
+   }
+  },
+  "qwen3.5-4b": {
+   "all_labels_bare_single": true,
+   "all_single": true,
+   "mark_labels": {
+    "M": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    },
+    "N": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    },
+    "R": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    },
+    "T": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    }
+   }
+  },
+  "qwen3.5-9b": {
+   "all_labels_bare_single": true,
+   "all_single": true,
+   "mark_labels": {
+    "M": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    },
+    "N": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    },
+    "R": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    },
+    "T": {
+     "after_json_quote": 1,
+     "bare": 1,
+     "leading_space": 1
+    }
+   }
+  }
+ },
+ "tokenizers": {
+  "d1-3b": {
+   "repo": "LiquidAI/d1-3B",
+   "revision": "051bcc464b01b9f92942b364d9586b0ef5912432"
+  },
+  "qwen3.5-4b": {
+   "repo": "RedHatAI/Qwen3.5-4B-FP8-dynamic",
+   "revision": "397b7ba47a99b3221ebfc0cfc5a279118cb733ad"
+  },
+  "qwen3.5-9b": {
+   "repo": "RedHatAI/Qwen3.5-9B-FP8-dynamic",
+   "revision": "790f0576d2d77dd5322aa0603a470bd9e3a3d1f6"
+  }
+ }
+}

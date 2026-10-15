@@ -1,0 +1,1379 @@
+{
+ "independent_bound": [
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-solo",
+   "asks": 0.0,
+   "calls": {
+    "d1": 192.0
+   },
+   "calls_total": 192.0,
+   "colony": "d1",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "independent",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.5858123116636087,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 0.6385354197133335,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "round_s": 15.74218052805588,
+   "wall_s": 379.51233267334106
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-solo",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-4b": 192.0
+   },
+   "calls_total": 192.0,
+   "colony": "qwen3.5-4b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "independent",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.7281011969706441,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 0.7936303046980021,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "round_s": 19.58302864763893,
+   "wall_s": 471.69268754333433
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-solo",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-9b": 192.0
+   },
+   "calls_total": 192.0,
+   "colony": "qwen3.5-9b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "independent",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.8904636162305154,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 0.9706053416912619,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "round_s": 23.965727910196136,
+   "wall_s": 576.8774698447073
+  },
+  {
+   "answer_s": 262.78417676363347,
+   "answers": 63.3625,
+   "arm": "M-talk (scripted queen)",
+   "asks": 63.525,
+   "calls": {
+    "d1": 255.3625
+   },
+   "calls_total": 255.3625,
+   "colony": "d1",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "independent",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.9914439415348458,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 1.080673896272982,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "round_s": 15.74218052805588,
+   "wall_s": 642.2965094369746
+  },
+  {
+   "answer_s": 357.9570422592887,
+   "answers": 63.3625,
+   "arm": "M-talk (scripted queen)",
+   "asks": 63.525,
+   "calls": {
+    "qwen3.5-4b": 255.3625
+   },
+   "calls_total": 255.3625,
+   "colony": "qwen3.5-4b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "independent",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 1.2806409284862312,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 1.395898612049992,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "round_s": 19.58302864763893,
+   "wall_s": 829.6497298026231
+  },
+  {
+   "answer_s": 429.7910061707728,
+   "answers": 63.3625,
+   "arm": "M-talk (scripted queen)",
+   "asks": 63.525,
+   "calls": {
+    "qwen3.5-9b": 255.3625
+   },
+   "calls_total": 255.3625,
+   "colony": "qwen3.5-9b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "independent",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 1.5538857007872284,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.6937354138580791,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "round_s": 23.965727910196136,
+   "wall_s": 1006.6684760154801
+  }
+ ],
+ "inputs": {
+  "c0": {
+   "efficiency": 0.8997770302051696,
+   "episodes_per_hour_16": 43.88765232822731,
+   "wall_1": 1180.9052020420786,
+   "wall_16": 1312.4420410830062
+  },
+  "episodes_per_arm": 80,
+  "frontier": {
+   "calls": 196,
+   "cost_usd": 0.038986268799999994,
+   "round_s": 15.868100651040246,
+   "tokens_in": 221624,
+   "tokens_out": 38379,
+   "usd_per_call": 0.00019890953469387751,
+   "wall_s": 380.8344156249659
+  },
+  "pod_rate_per_h": 1.09,
+  "skip_share": 0.04296875,
+  "stats": {
+   "S-marks": {
+    "answer_turns": 0.0,
+    "answer_turns_p95": 0.0,
+    "answers_refused": 0.0,
+    "answers_refused_p95": 0.0,
+    "asks_answered": 0.0,
+    "asks_answered_p95": 0.0,
+    "asks_refused": 0.0,
+    "asks_refused_p95": 0.0,
+    "asks_sent": 0.0,
+    "asks_sent_p95": 0.0,
+    "decisions": 192.0,
+    "decisions_p95": 192.0,
+    "episodes": 80,
+    "skipped": 0.0,
+    "skipped_p95": 0.0
+   },
+   "S-marks-quiet": {
+    "answer_turns": 0.0,
+    "answer_turns_p95": 0.0,
+    "answers_refused": 0.0,
+    "answers_refused_p95": 0.0,
+    "asks_answered": 0.0,
+    "asks_answered_p95": 0.0,
+    "asks_refused": 0.0,
+    "asks_refused_p95": 0.0,
+    "asks_sent": 0.0,
+    "asks_sent_p95": 0.0,
+    "decisions": 183.75,
+    "decisions_p95": 190.05,
+    "episodes": 80,
+    "skipped": 8.25,
+    "skipped_p95": 17.099999999999994
+   },
+   "S-solo": {
+    "answer_turns": 0.0,
+    "answer_turns_p95": 0.0,
+    "answers_refused": 0.0,
+    "answers_refused_p95": 0.0,
+    "asks_answered": 0.0,
+    "asks_answered_p95": 0.0,
+    "asks_refused": 0.0,
+    "asks_refused_p95": 0.0,
+    "asks_sent": 0.0,
+    "asks_sent_p95": 0.0,
+    "decisions": 192.0,
+    "decisions_p95": 192.0,
+    "episodes": 80,
+    "skipped": 0.0,
+    "skipped_p95": 0.0
+   },
+   "S-talk": {
+    "answer_turns": 63.3625,
+    "answer_turns_p95": 75.0,
+    "answers_refused": 1.575,
+    "answers_refused_p95": 4.049999999999997,
+    "asks_answered": 63.3625,
+    "asks_answered_p95": 75.0,
+    "asks_refused": 12.175,
+    "asks_refused_p95": 22.049999999999997,
+    "asks_sent": 63.525,
+    "asks_sent_p95": 76.0,
+    "decisions": 192.0,
+    "decisions_p95": 192.0,
+    "episodes": 80,
+    "skipped": 0.0,
+    "skipped_p95": 0.0
+   }
+  },
+  "unsure": 0.330859375
+ },
+ "rows": [
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-solo",
+   "asks": 0.0,
+   "calls": {
+    "d1": 192.0
+   },
+   "calls_total": 192.0,
+   "colony": "d1",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.3090909631943283,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 0.3369091498818179,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 8.27255513445411,
+   "wall_s": 200.24132322689866
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-solo",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-4b": 192.0
+   },
+   "calls_total": 192.0,
+   "colony": "qwen3.5-4b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.45936219012760215,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 0.5007047872390864,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 12.328873083313358,
+   "wall_s": 297.5929539995206
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-solo",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-9b": 192.0
+   },
+   "calls_total": 192.0,
+   "colony": "qwen3.5-9b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.5547237445092673,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 0.6046488815151014,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 14.902997169231861,
+   "wall_s": 359.3719320615647
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-solo",
+   "asks": 0.0,
+   "calls": {
+    "d1": 183.75
+   },
+   "calls_total": 183.75,
+   "colony": "d1",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.3090909631943283,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 0.3369091498818179,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 8.27255513445411,
+   "wall_s": 200.24132322689866
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-solo",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-4b": 183.75
+   },
+   "calls_total": 183.75,
+   "colony": "qwen3.5-4b",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.45936219012760215,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 0.5007047872390864,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 12.328873083313358,
+   "wall_s": 297.5929539995206
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-solo",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-9b": 183.75
+   },
+   "calls_total": 183.75,
+   "colony": "qwen3.5-9b",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.5547237445092673,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 0.6046488815151014,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 14.902997169231861,
+   "wall_s": 359.3719320615647
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-marks",
+   "asks": 0.0,
+   "calls": {
+    "d1": 192.0
+   },
+   "calls_total": 192.0,
+   "colony": "d1",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.3090909631943283,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 0.3369091498818179,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 8.27255513445411,
+   "wall_s": 200.24132322689866
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-marks",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-4b": 192.0
+   },
+   "calls_total": 192.0,
+   "colony": "qwen3.5-4b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.45936219012760215,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 0.5007047872390864,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 12.328873083313358,
+   "wall_s": 297.5929539995206
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-marks",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-9b": 192.0
+   },
+   "calls_total": 192.0,
+   "colony": "qwen3.5-9b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.5547237445092673,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 0.6046488815151014,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 14.902997169231861,
+   "wall_s": 359.3719320615647
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-marks",
+   "asks": 0.0,
+   "calls": {
+    "d1": 183.75
+   },
+   "calls_total": 183.75,
+   "colony": "d1",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.3090909631943283,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 0.3369091498818179,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 8.27255513445411,
+   "wall_s": 200.24132322689866
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-marks",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-4b": 183.75
+   },
+   "calls_total": 183.75,
+   "colony": "qwen3.5-4b",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.45936219012760215,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 0.5007047872390864,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 12.328873083313358,
+   "wall_s": 297.5929539995206
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-marks",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-9b": 183.75
+   },
+   "calls_total": 183.75,
+   "colony": "qwen3.5-9b",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.5547237445092673,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 0.6046488815151014,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 14.902997169231861,
+   "wall_s": 359.3719320615647
+  },
+  {
+   "answer_s": 184.37463811525,
+   "answers": 63.3625,
+   "arm": "M-talk (scripted queen)",
+   "asks": 63.525,
+   "calls": {
+    "d1": 255.3625
+   },
+   "calls_total": 255.3625,
+   "colony": "d1",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.5936902335411046,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 0.647122354559804,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 8.27255513445411,
+   "wall_s": 384.61596134214864
+  },
+  {
+   "answer_s": 274.7798565448602,
+   "answers": 63.3625,
+   "arm": "M-talk (scripted queen)",
+   "asks": 63.525,
+   "calls": {
+    "qwen3.5-4b": 255.3625
+   },
+   "calls_total": 255.3625,
+   "colony": "qwen3.5-4b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.8835102588537141,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 0.9630261821505485,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 12.328873083313358,
+   "wall_s": 572.3728105443809
+  },
+  {
+   "answer_s": 332.15066750849013,
+   "answers": 63.3625,
+   "arm": "M-talk (scripted queen)",
+   "asks": 63.525,
+   "calls": {
+    "qwen3.5-9b": 255.3625
+   },
+   "calls_total": 255.3625,
+   "colony": "qwen3.5-9b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 1.0674289548594116,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.1634975607967588,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 14.902997169231861,
+   "wall_s": 691.5225995700548
+  },
+  {
+   "answer_s": 182.672838253428,
+   "answers": 60.639892578125,
+   "arm": "M-talk (scripted queen)",
+   "asks": 60.79541015625,
+   "calls": {
+    "d1": 244.389892578125
+   },
+   "calls_total": 244.389892578125,
+   "colony": "d1",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.5910633483908376,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 0.6442590497460131,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 8.27255513445411,
+   "wall_s": 382.91416148032664
+  },
+  {
+   "answer_s": 272.24360575310425,
+   "answers": 60.639892578125,
+   "arm": "M-talk (scripted queen)",
+   "asks": 60.79541015625,
+   "calls": {
+    "qwen3.5-4b": 244.389892578125
+   },
+   "calls_total": 244.389892578125,
+   "colony": "qwen3.5-4b",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.879595321679443,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 0.9587589006305929,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 12.328873083313358,
+   "wall_s": 569.8365597526249
+  },
+  {
+   "answer_s": 329.0848773008548,
+   "answers": 60.639892578125,
+   "arm": "M-talk (scripted queen)",
+   "asks": 60.79541015625,
+   "calls": {
+    "qwen3.5-9b": 244.389892578125
+   },
+   "calls_total": 244.389892578125,
+   "colony": "qwen3.5-9b",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 1.062696624724158,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.1583393209493325,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 14.902997169231861,
+   "wall_s": 688.4568093624196
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-escalate",
+   "asks": 0.0,
+   "calls": {
+    "d1": 192.0,
+    "qwen3.5-4b": 63.525000000000006
+   },
+   "calls_total": 255.525,
+   "colony": "d1",
+   "decisions": 192.0,
+   "escalations": 63.525000000000006,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.7474718478333988,
+   "pod_models": [
+    "d1",
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 0.8147443141384048,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 20.105906648831848,
+   "wall_s": 484.24175957196434
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-escalate",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-4b": 192.0,
+    "qwen3.5-9b": 63.525000000000006
+   },
+   "calls_total": 255.525,
+   "colony": "qwen3.5-4b",
+   "decisions": 192.0,
+   "escalations": 63.525000000000006,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.9892718614067917,
+   "pod_models": [
+    "qwen3.5-4b",
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.078306328933403,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 26.632889592330958,
+   "wall_s": 640.8893502159431
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-escalate",
+   "asks": 0.0,
+   "calls": {
+    "frontier": 63.525000000000006,
+    "qwen3.5-9b": 192.0
+   },
+   "calls_total": 255.525,
+   "colony": "qwen3.5-9b",
+   "decisions": 192.0,
+   "escalations": 63.525000000000006,
+   "mode": "batched",
+   "nous_usd": 1.0108582553142855,
+   "nous_usd_per_episode": 0.01263572819142857,
+   "pod_hours": 1.1511433364076076,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.2547462366842923,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 31.002336643865892,
+   "wall_s": 745.7560794527815
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-escalate",
+   "asks": 0.0,
+   "calls": {
+    "d1": 183.75,
+    "qwen3.5-4b": 60.79541015625
+   },
+   "calls_total": 244.54541015625,
+   "colony": "d1",
+   "decisions": 183.75,
+   "escalations": 60.79541015625,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.7474718478333988,
+   "pod_models": [
+    "d1",
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 0.8147443141384048,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 20.105906648831848,
+   "wall_s": 484.24175957196434
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-escalate",
+   "asks": 0.0,
+   "calls": {
+    "qwen3.5-4b": 183.75,
+    "qwen3.5-9b": 60.79541015625
+   },
+   "calls_total": 244.54541015625,
+   "colony": "qwen3.5-4b",
+   "decisions": 183.75,
+   "escalations": 60.79541015625,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.9892718614067917,
+   "pod_models": [
+    "qwen3.5-4b",
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.078306328933403,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 26.632889592330958,
+   "wall_s": 640.8893502159431
+  },
+  {
+   "answer_s": 0.0,
+   "answers": 0.0,
+   "arm": "M-escalate",
+   "asks": 0.0,
+   "calls": {
+    "frontier": 60.79541015625,
+    "qwen3.5-9b": 183.75
+   },
+   "calls_total": 244.54541015625,
+   "colony": "qwen3.5-9b",
+   "decisions": 183.75,
+   "escalations": 60.79541015625,
+   "mode": "batched",
+   "nous_usd": 0.9674229396562497,
+   "nous_usd_per_episode": 0.012092786745703122,
+   "pod_hours": 1.1511433364076076,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.2547462366842923,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 31.002336643865892,
+   "wall_s": 745.7560794527815
+  },
+  {
+   "answer_s": 184.37463811525,
+   "answers": 63.3625,
+   "arm": "M-talk, no queen",
+   "asks": 63.525,
+   "calls": {
+    "d1": 255.3625
+   },
+   "calls_total": 255.3625,
+   "colony": "d1",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.5936902335411046,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 0.647122354559804,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 8.27255513445411,
+   "wall_s": 384.61596134214864
+  },
+  {
+   "answer_s": 274.7798565448602,
+   "answers": 63.3625,
+   "arm": "M-talk, no queen",
+   "asks": 63.525,
+   "calls": {
+    "qwen3.5-4b": 255.3625
+   },
+   "calls_total": 255.3625,
+   "colony": "qwen3.5-4b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.8835102588537141,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 0.9630261821505485,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 12.328873083313358,
+   "wall_s": 572.3728105443809
+  },
+  {
+   "answer_s": 332.15066750849013,
+   "answers": 63.3625,
+   "arm": "M-talk, no queen",
+   "asks": 63.525,
+   "calls": {
+    "qwen3.5-9b": 255.3625
+   },
+   "calls_total": 255.3625,
+   "colony": "qwen3.5-9b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 1.0674289548594116,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.1634975607967588,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 14.902997169231861,
+   "wall_s": 691.5225995700548
+  },
+  {
+   "answer_s": 182.672838253428,
+   "answers": 60.639892578125,
+   "arm": "M-talk, no queen",
+   "asks": 60.79541015625,
+   "calls": {
+    "d1": 244.389892578125
+   },
+   "calls_total": 244.389892578125,
+   "colony": "d1",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.5910633483908376,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 0.6442590497460131,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 8.27255513445411,
+   "wall_s": 382.91416148032664
+  },
+  {
+   "answer_s": 272.24360575310425,
+   "answers": 60.639892578125,
+   "arm": "M-talk, no queen",
+   "asks": 60.79541015625,
+   "calls": {
+    "qwen3.5-4b": 244.389892578125
+   },
+   "calls_total": 244.389892578125,
+   "colony": "qwen3.5-4b",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.879595321679443,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 0.9587589006305929,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 12.328873083313358,
+   "wall_s": 569.8365597526249
+  },
+  {
+   "answer_s": 329.0848773008548,
+   "answers": 60.639892578125,
+   "arm": "M-talk, no queen",
+   "asks": 60.79541015625,
+   "calls": {
+    "qwen3.5-9b": 244.389892578125
+   },
+   "calls_total": 244.389892578125,
+   "colony": "qwen3.5-9b",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 1.062696624724158,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.1583393209493325,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 14.902997169231861,
+   "wall_s": 688.4568093624196
+  },
+  {
+   "answer_s": 184.37463811525,
+   "answers": 63.3625,
+   "arm": "M-talk, LLM queen",
+   "asks": 63.525,
+   "calls": {
+    "d1": 255.3625,
+    "frontier": 4.0
+   },
+   "calls_total": 259.3625,
+   "colony": "d1",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.32,
+   "nous_usd_per_episode": 0.004,
+   "pod_hours": 0.6916657449940918,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 0.7539156620435602,
+   "queen_calls": 4,
+   "queen_s": 63.47240260416098,
+   "quiet": false,
+   "round_s": 8.27255513445411,
+   "wall_s": 448.08836394630964
+  },
+  {
+   "answer_s": 274.7798565448602,
+   "answers": 63.3625,
+   "arm": "M-talk, LLM queen",
+   "asks": 63.525,
+   "calls": {
+    "frontier": 4.0,
+    "qwen3.5-4b": 255.3625
+   },
+   "calls_total": 259.3625,
+   "colony": "qwen3.5-4b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.32,
+   "nous_usd_per_episode": 0.004,
+   "pod_hours": 0.9814857703067014,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 1.0698194896343045,
+   "queen_calls": 4,
+   "queen_s": 63.47240260416098,
+   "quiet": false,
+   "round_s": 12.328873083313358,
+   "wall_s": 635.8452131485418
+  },
+  {
+   "answer_s": 332.15066750849013,
+   "answers": 63.3625,
+   "arm": "M-talk, LLM queen",
+   "asks": 63.525,
+   "calls": {
+    "frontier": 4.0,
+    "qwen3.5-9b": 255.3625
+   },
+   "calls_total": 259.3625,
+   "colony": "qwen3.5-9b",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.32,
+   "nous_usd_per_episode": 0.004,
+   "pod_hours": 1.1654044663123988,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.2702908682805147,
+   "queen_calls": 4,
+   "queen_s": 63.47240260416098,
+   "quiet": false,
+   "round_s": 14.902997169231861,
+   "wall_s": 754.9950021742158
+  },
+  {
+   "answer_s": 182.672838253428,
+   "answers": 60.639892578125,
+   "arm": "M-talk, LLM queen",
+   "asks": 60.79541015625,
+   "calls": {
+    "d1": 244.389892578125,
+    "frontier": 4.0
+   },
+   "calls_total": 248.389892578125,
+   "colony": "d1",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.32,
+   "nous_usd_per_episode": 0.004,
+   "pod_hours": 0.6890388598438247,
+   "pod_models": [
+    "d1"
+   ],
+   "pod_usd": 0.751052357229769,
+   "queen_calls": 4,
+   "queen_s": 63.47240260416098,
+   "quiet": true,
+   "round_s": 8.27255513445411,
+   "wall_s": 446.38656408448765
+  },
+  {
+   "answer_s": 272.24360575310425,
+   "answers": 60.639892578125,
+   "arm": "M-talk, LLM queen",
+   "asks": 60.79541015625,
+   "calls": {
+    "frontier": 4.0,
+    "qwen3.5-4b": 244.389892578125
+   },
+   "calls_total": 248.389892578125,
+   "colony": "qwen3.5-4b",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.32,
+   "nous_usd_per_episode": 0.004,
+   "pod_hours": 0.9775708331324303,
+   "pod_models": [
+    "qwen3.5-4b"
+   ],
+   "pod_usd": 1.0655522081143491,
+   "queen_calls": 4,
+   "queen_s": 63.47240260416098,
+   "quiet": true,
+   "round_s": 12.328873083313358,
+   "wall_s": 633.3089623567859
+  },
+  {
+   "answer_s": 329.0848773008548,
+   "answers": 60.639892578125,
+   "arm": "M-talk, LLM queen",
+   "asks": 60.79541015625,
+   "calls": {
+    "frontier": 4.0,
+    "qwen3.5-9b": 244.389892578125
+   },
+   "calls_total": 248.389892578125,
+   "colony": "qwen3.5-9b",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.32,
+   "nous_usd_per_episode": 0.004,
+   "pod_hours": 1.160672136177145,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.2651326284330882,
+   "queen_calls": 4,
+   "queen_s": 63.47240260416098,
+   "quiet": true,
+   "round_s": 14.902997169231861,
+   "wall_s": 751.9292119665805
+  },
+  {
+   "answer_s": 353.66041900728516,
+   "answers": 63.3625,
+   "arm": "Frontier reference (M-talk shape)",
+   "asks": 63.525,
+   "calls": {
+    "frontier": 255.3625
+   },
+   "calls_total": 255.3625,
+   "colony": "frontier",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "nous_usd": 4.063522884261224,
+   "nous_usd_per_episode": 0.0507940360532653,
+   "pod_hours": 0.0,
+   "pod_models": [],
+   "pod_usd": 0.0,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 15.868100651040246,
+   "wall_s": 736.1948346322511
+  },
+  {
+   "answer_s": 332.15066750849013,
+   "answers": 63.3625,
+   "arm": "Mixed colony 3 d1 + 3 Qwen3.5-4B + 2 Qwen3.5-9B (M-talk)",
+   "asks": 63.525,
+   "calls": {
+    "d1": 95.7609375,
+    "qwen3.5-4b": 95.7609375,
+    "qwen3.5-9b": 63.840625
+   },
+   "calls_total": 255.3625,
+   "colony": "mixed",
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 1.0674289548594116,
+   "pod_models": [
+    "d1",
+    "qwen3.5-4b",
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.1634975607967588,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": false,
+   "round_s": 14.902997169231861,
+   "wall_s": 691.5225995700548
+  },
+  {
+   "answer_s": 350.39609123232134,
+   "answers": 60.639892578125,
+   "arm": "Frontier reference (M-talk shape)",
+   "asks": 60.79541015625,
+   "calls": {
+    "frontier": 244.389892578125
+   },
+   "calls_total": 244.389892578125,
+   "colony": "frontier",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "nous_usd": 3.8889183853281244,
+   "nous_usd_per_episode": 0.048611479816601556,
+   "pod_hours": 0.0,
+   "pod_models": [],
+   "pod_usd": 0.0,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 15.868100651040246,
+   "wall_s": 732.9305068572872
+  },
+  {
+   "answer_s": 329.0848773008548,
+   "answers": 60.639892578125,
+   "arm": "Mixed colony 3 d1 + 3 Qwen3.5-4B + 2 Qwen3.5-9B (M-talk)",
+   "asks": 60.79541015625,
+   "calls": {
+    "d1": 91.64620971679688,
+    "qwen3.5-4b": 91.64620971679688,
+    "qwen3.5-9b": 61.09747314453125
+   },
+   "calls_total": 244.389892578125,
+   "colony": "mixed",
+   "decisions": 183.75,
+   "escalations": 0.0,
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 1.062696624724158,
+   "pod_models": [
+    "d1",
+    "qwen3.5-4b",
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.1583393209493325,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "quiet": true,
+   "round_s": 14.902997169231861,
+   "wall_s": 688.4568093624196
+  }
+ ],
+ "sensitivity": [
+  {
+   "answer_s": 262.13010875180936,
+   "answers": 31.68125,
+   "asks": 31.7625,
+   "calls": {
+    "qwen3.5-9b": 223.68125
+   },
+   "calls_total": 223.68125,
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "label": "asks x0.5 of scripted",
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 0.9593457600386126,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.0456868784420879,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "round_s": 14.902997169231861,
+   "wall_s": 621.5020408133742
+  },
+  {
+   "answer_s": 332.15066750849013,
+   "answers": 63.3625,
+   "asks": 63.525,
+   "calls": {
+    "qwen3.5-9b": 255.3625
+   },
+   "calls_total": 255.3625,
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "label": "scripted asks",
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 1.0674289548594116,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.1634975607967588,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "round_s": 14.902997169231861,
+   "wall_s": 691.5225995700548
+  },
+  {
+   "answer_s": 351.053567016387,
+   "answers": 95.75442739079102,
+   "asks": 96.0,
+   "calls": {
+    "qwen3.5-9b": 287.754427390791
+   },
+   "calls_total": 287.754427390791,
+   "decisions": 192.0,
+   "escalations": 0.0,
+   "label": "ask budget saturated (96, the ceiling)",
+   "mode": "batched",
+   "nous_usd": 0.0,
+   "nous_usd_per_episode": 0.0,
+   "pod_hours": 1.0966073248477126,
+   "pod_models": [
+    "qwen3.5-9b"
+   ],
+   "pod_usd": 1.195301984084007,
+   "queen_calls": 0,
+   "queen_s": 0.0,
+   "round_s": 14.902997169231861,
+   "wall_s": 710.4254990779517
+  }
+ ]
+}
