@@ -334,3 +334,9 @@ Replay: `run_colony_episode(replay=bundle)` reproduces `metrics` exactly; a remo
 - For S-talk-shuffled use K1's `ArmSpec.shuffled` / `shuffled_recipient` (avoids the rule's pick); `shuffled_other` is the plain variant.
 - `drug_on_non_tumour` = off_target_share x released_total (matches world.py), includes drug that left the crop. Honesty is a per-run Pearson correlation (None below 3 usable ants); the report averages per-run values.
 - Open fixups (lead, after Q1 merge): require `fast_delta`; report must fail on a missing `split`; report must count runs that never reached 50% coverage; arm name is S' (not "S-prime") everywhere.
+
+## 17. H1 notes (accepted after review, 2026-10-14)
+- `v42_harness.ARM_CONTROLS` / `register_controls` register `S-marks-displaced`, `S-talk-shuffled`, `S-marks-perfect` (via `v42_arms.py`). Perfect uses `fast_delta = 0.5 * f3_decay`, `slow_u = 0.7`.
+- `results.json` runs[] rows also carry `episode_s`, `n_regions`, `control` (displaced/perfect counters). `look_ms`/`queen_ms` are not recorded by the harness.
+- Tune: 12-point grid (u_core x f3_decay x f3_share), F2 Source B fixed at `f2_share` 0.2, Source A/B chosen per case from TC/ET channels. Verdict default `--seeds 1`: pass `--seeds 3,4` for the verdict. Resume keys are (point, arm, case): do not reuse an output dir after changing --ticks or --config.
+- Known nit: the verdict driver only checks that some fact is on, not that the config is the frozen one (lead freezes `config/v4_2/world.yaml` and records its sha256 in the run log).
