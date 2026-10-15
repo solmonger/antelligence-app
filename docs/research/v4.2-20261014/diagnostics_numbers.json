@@ -1,0 +1,1347 @@
+{
+ "arm_means": {
+  "S": {
+   "coverage": 0.591,
+   "decayed": 4457.8155,
+   "facts_mean": {
+    "uptake_readings": 0,
+    "uptake_slow": 0,
+    "washout_available": 0,
+    "washout_fast": 0,
+    "washout_turns": 0
+   },
+   "lost_boundary": 164.9158,
+   "off_target_share": 0.5065,
+   "on_target_mass": 2804.9264,
+   "released": 5141.8913,
+   "released_share_of_total": 0.9978,
+   "runs": 80,
+   "total_drug": 5153.1739
+  },
+  "S'": {
+   "coverage": 0.7877,
+   "decayed": 3913.4942,
+   "facts_mean": {
+    "uptake_readings": 0,
+    "uptake_slow": 0,
+    "washout_available": 0,
+    "washout_fast": 0,
+    "washout_turns": 0
+   },
+   "lost_boundary": 145.7307,
+   "off_target_share": 0.4576,
+   "on_target_mass": 3073.9652,
+   "released": 5142.2974,
+   "released_share_of_total": 0.9979,
+   "runs": 80,
+   "total_drug": 5153.1739
+  },
+  "S-marks": {
+   "coverage": 0.2755,
+   "decayed": 3174.3189,
+   "facts_mean": {
+    "uptake_readings": 27.725,
+    "uptake_slow": 5.9,
+    "washout_available": 70.825,
+    "washout_available_share": 0.369,
+    "washout_fast": 7.9,
+    "washout_turns": 192
+   },
+   "lost_boundary": 409.8669,
+   "off_target_share": 0.7013,
+   "on_target_mass": 1496.278,
+   "released": 4412.0832,
+   "released_share_of_total": 0.8562,
+   "runs": 80,
+   "total_drug": 5153.1739
+  },
+  "S-marks-displaced": {
+   "coverage": 0.2637,
+   "decayed": 3110.3327,
+   "facts_mean": {
+    "uptake_readings": 26.012,
+    "uptake_slow": 5.138,
+    "washout_available": 70.263,
+    "washout_available_share": 0.366,
+    "washout_fast": 8.15,
+    "washout_turns": 192
+   },
+   "lost_boundary": 407.7297,
+   "off_target_share": 0.7089,
+   "on_target_mass": 1428.2157,
+   "released": 4300.7162,
+   "released_share_of_total": 0.8346,
+   "runs": 80,
+   "total_drug": 5153.1739
+  },
+  "S-marks-perfect": {
+   "coverage": 0.2693,
+   "decayed": 3189.8058,
+   "facts_mean": {
+    "uptake_readings": 27.913,
+    "uptake_slow": 5.987,
+    "washout_available": 69.075,
+    "washout_available_share": 0.36,
+    "washout_fast": 7.25,
+    "washout_turns": 192
+   },
+   "lost_boundary": 427.1861,
+   "off_target_share": 0.7104,
+   "on_target_mass": 1477.506,
+   "released": 4425.5246,
+   "released_share_of_total": 0.8588,
+   "runs": 80,
+   "total_drug": 5153.1739
+  },
+  "S-marks-quiet": {
+   "coverage": 0.2739,
+   "decayed": 3166.325,
+   "facts_mean": {
+    "uptake_readings": 27.387,
+    "uptake_slow": 5.65,
+    "washout_available": 72.35,
+    "washout_available_share": 0.377,
+    "washout_fast": 7.8,
+    "washout_turns": 192
+   },
+   "lost_boundary": 406.4817,
+   "off_target_share": 0.6985,
+   "on_target_mass": 1500.6412,
+   "released": 4362.0557,
+   "released_share_of_total": 0.8465,
+   "runs": 80,
+   "total_drug": 5153.1739
+  },
+  "S-solo": {
+   "coverage": 0.2662,
+   "decayed": 3081.2647,
+   "facts_mean": {
+    "uptake_readings": 25.3,
+    "uptake_slow": 5.162,
+    "washout_available": 72.912,
+    "washout_available_share": 0.38,
+    "washout_fast": 7.875,
+    "washout_turns": 192
+   },
+   "lost_boundary": 402.458,
+   "off_target_share": 0.7016,
+   "on_target_mass": 1402.2835,
+   "released": 4223.1046,
+   "released_share_of_total": 0.8195,
+   "runs": 80,
+   "total_drug": 5153.1739
+  },
+  "S-talk": {
+   "coverage": 0.2759,
+   "decayed": 3179.7851,
+   "facts_mean": {
+    "uptake_readings": 27.825,
+    "uptake_slow": 5.975,
+    "washout_available": 71.125,
+    "washout_available_share": 0.37,
+    "washout_fast": 7.838,
+    "washout_turns": 192
+   },
+   "lost_boundary": 414.3451,
+   "off_target_share": 0.7025,
+   "on_target_mass": 1498.7105,
+   "released": 4418.9002,
+   "released_share_of_total": 0.8575,
+   "runs": 80,
+   "total_drug": 5153.1739
+  },
+  "S-talk-shuffled": {
+   "coverage": 0.2767,
+   "decayed": 3178.3381,
+   "facts_mean": {
+    "uptake_readings": 27.837,
+    "uptake_slow": 5.938,
+    "washout_available": 71.188,
+    "washout_available_share": 0.371,
+    "washout_fast": 7.95,
+    "washout_turns": 192
+   },
+   "lost_boundary": 410.113,
+   "off_target_share": 0.7018,
+   "on_target_mass": 1497.2333,
+   "released": 4414.7066,
+   "released_share_of_total": 0.8567,
+   "runs": 80,
+   "total_drug": 5153.1739
+  }
+ },
+ "beliefs_and_overlap": {
+  "S-marks": {
+   "beliefs_per_run": {
+    "zones_ants_differ_by_0.2": 3.15,
+    "zones_ants_disagree": 2.263,
+    "zones_by_ants_1": 3.812,
+    "zones_by_ants_2": 2.663,
+    "zones_by_ants_3": 4.562,
+    "zones_looked_at": 11.037,
+    "zones_total": 17.3,
+    "zones_two_plus_ants": 7.225
+   },
+   "mark_overlap_per_run": {
+    "nearest_foreign_mark_median_mm": 11.974,
+    "turns": 192.0,
+    "turns_nearest_foreign_mark_le20mm_any_age": 120.763,
+    "turns_nearest_foreign_mark_le6mm_any_age": 61.575
+   }
+  },
+  "S-solo": {
+   "beliefs_per_run": {
+    "zones_ants_differ_by_0.2": 2.65,
+    "zones_ants_disagree": 1.988,
+    "zones_by_ants_1": 3.95,
+    "zones_by_ants_2": 2.513,
+    "zones_by_ants_3": 4.1,
+    "zones_looked_at": 10.562,
+    "zones_total": 17.3,
+    "zones_two_plus_ants": 6.612
+   },
+   "mark_overlap_per_run": {
+    "nearest_foreign_mark_median_mm": 10.735,
+    "turns": 192.0,
+    "turns_nearest_foreign_mark_le20mm_any_age": 123.037,
+    "turns_nearest_foreign_mark_le6mm_any_age": 72.862
+   }
+  }
+ },
+ "divergence_from_solo": {
+  "S-marks": {
+   "coverage_delta_abs_mean": 0.04049,
+   "coverage_delta_mean": 0.00931,
+   "coverage_delta_sd": 0.05375,
+   "field_diff_share": {
+    "amount": 0.0121,
+    "release": 0.0792,
+    "target": 0.2348,
+    "target_vox": 0.3789
+   },
+   "first_divergence_tick_mean": 40.56,
+   "first_divergence_tick_median": 40.0,
+   "first_divergence_tick_min": 25,
+   "pairs": 80,
+   "pairs_identical_all_turns": 0,
+   "pairs_same_coverage": 1,
+   "share_pairs_diverge_by_tick30": 0.25,
+   "share_turns_differ": 0.4624,
+   "share_turns_differ_by_tick_bin": {
+    "0": 0.0034,
+    "30": 0.2237,
+    "60": 0.7198,
+    "90": 0.9029
+   },
+   "turns": 15360,
+   "turns_differ": 7103
+  },
+  "S-marks-displaced": {
+   "coverage_delta_abs_mean": 0.0366,
+   "coverage_delta_mean": -0.00257,
+   "coverage_delta_sd": 0.0487,
+   "field_diff_share": {
+    "amount": 0.0076,
+    "release": 0.0614,
+    "target": 0.1854,
+    "target_vox": 0.2954
+   },
+   "first_divergence_tick_mean": 42,
+   "first_divergence_tick_median": 40.0,
+   "first_divergence_tick_min": 15,
+   "pairs": 80,
+   "pairs_identical_all_turns": 0,
+   "pairs_same_coverage": 1,
+   "share_pairs_diverge_by_tick30": 0.263,
+   "share_turns_differ": 0.3744,
+   "share_turns_differ_by_tick_bin": {
+    "0": 0.0078,
+    "30": 0.1828,
+    "60": 0.5503,
+    "90": 0.7568
+   },
+   "turns": 15360,
+   "turns_differ": 5751
+  },
+  "S-marks-perfect": {
+   "coverage_delta_abs_mean": 0.04467,
+   "coverage_delta_mean": 0.00307,
+   "coverage_delta_sd": 0.06827,
+   "field_diff_share": {
+    "amount": 0.0132,
+    "release": 0.0896,
+    "target": 0.2508,
+    "target_vox": 0.4137
+   },
+   "first_divergence_tick_mean": 38.38,
+   "first_divergence_tick_median": 35.0,
+   "first_divergence_tick_min": 20,
+   "pairs": 80,
+   "pairs_identical_all_turns": 0,
+   "pairs_same_coverage": 1,
+   "share_pairs_diverge_by_tick30": 0.35,
+   "share_turns_differ": 0.4964,
+   "share_turns_differ_by_tick_bin": {
+    "0": 0.0174,
+    "30": 0.3195,
+    "60": 0.7479,
+    "90": 0.9008
+   },
+   "turns": 15360,
+   "turns_differ": 7625
+  },
+  "S-marks-quiet": {
+   "coverage_delta_abs_mean": 0.05313,
+   "coverage_delta_mean": 0.00767,
+   "coverage_delta_sd": 0.07023,
+   "field_diff_share": {
+    "amount": 0.0128,
+    "release": 0.1029,
+    "target": 0.2582,
+    "target_vox": 0.4276
+   },
+   "first_divergence_tick_mean": 26.75,
+   "first_divergence_tick_median": 25.0,
+   "first_divergence_tick_min": 15,
+   "pairs": 80,
+   "pairs_identical_all_turns": 0,
+   "pairs_same_coverage": 1,
+   "share_pairs_diverge_by_tick30": 0.738,
+   "share_turns_differ": 0.5262,
+   "share_turns_differ_by_tick_bin": {
+    "0": 0.0304,
+    "30": 0.3513,
+    "60": 0.8035,
+    "90": 0.9346
+   },
+   "turns": 14700,
+   "turns_differ": 7735
+  },
+  "S-talk": {
+   "coverage_delta_abs_mean": 0.04343,
+   "coverage_delta_mean": 0.00967,
+   "coverage_delta_sd": 0.05509,
+   "field_diff_share": {
+    "amount": 0.0124,
+    "release": 0.0814,
+    "target": 0.2341,
+    "target_vox": 0.3794
+   },
+   "first_divergence_tick_mean": 38.44,
+   "first_divergence_tick_median": 37.5,
+   "first_divergence_tick_min": 5,
+   "pairs": 80,
+   "pairs_identical_all_turns": 0,
+   "pairs_same_coverage": 1,
+   "share_pairs_diverge_by_tick30": 0.312,
+   "share_turns_differ": 0.4635,
+   "share_turns_differ_by_tick_bin": {
+    "0": 0.0065,
+    "30": 0.2266,
+    "60": 0.725,
+    "90": 0.8958
+   },
+   "turns": 15360,
+   "turns_differ": 7119
+  },
+  "S-talk-shuffled": {
+   "coverage_delta_abs_mean": 0.04161,
+   "coverage_delta_mean": 0.0105,
+   "coverage_delta_sd": 0.05608,
+   "field_diff_share": {
+    "amount": 0.0124,
+    "release": 0.0799,
+    "target": 0.2343,
+    "target_vox": 0.3788
+   },
+   "first_divergence_tick_mean": 40.56,
+   "first_divergence_tick_median": 40.0,
+   "first_divergence_tick_min": 25,
+   "pairs": 80,
+   "pairs_identical_all_turns": 0,
+   "pairs_same_coverage": 1,
+   "share_pairs_diverge_by_tick30": 0.25,
+   "share_turns_differ": 0.4626,
+   "share_turns_differ_by_tick_bin": {
+    "0": 0.0034,
+    "30": 0.2242,
+    "60": 0.7203,
+    "90": 0.9023
+   },
+   "turns": 15360,
+   "turns_differ": 7105
+  }
+ },
+ "divergence_other_pairs": {
+  "S-marks-perfect_vs_S-marks": {
+   "coverage_delta_abs_mean": 0.03315,
+   "coverage_delta_mean": -0.00624,
+   "coverage_delta_sd": 0.05619,
+   "field_diff_share": {
+    "amount": 0.0103,
+    "release": 0.0627,
+    "target": 0.1404,
+    "target_vox": 0.2857
+   },
+   "first_divergence_tick_mean": 46.84,
+   "first_divergence_tick_median": 40.0,
+   "first_divergence_tick_min": 20,
+   "pairs": 80,
+   "pairs_identical_all_turns": 12,
+   "pairs_same_coverage": 22,
+   "share_pairs_diverge_by_tick30": 0.2,
+   "share_turns_differ": 0.3167,
+   "share_turns_differ_by_tick_bin": {
+    "0": 0.0154,
+    "30": 0.2247,
+    "60": 0.4365,
+    "90": 0.5904
+   },
+   "turns": 15360,
+   "turns_differ": 4865
+  },
+  "S-talk-shuffled_vs_S-marks": {
+   "coverage_delta_abs_mean": 0.00144,
+   "coverage_delta_mean": 0.00119,
+   "coverage_delta_sd": 0.00593,
+   "field_diff_share": {
+    "amount": 0.0005,
+    "release": 0.0018,
+    "target": 0.0027,
+    "target_vox": 0.0066
+   },
+   "first_divergence_tick_mean": 81.15,
+   "first_divergence_tick_median": 80,
+   "first_divergence_tick_min": 50,
+   "pairs": 80,
+   "pairs_identical_all_turns": 67,
+   "pairs_same_coverage": 68,
+   "share_pairs_diverge_by_tick30": 0.0,
+   "share_turns_differ": 0.0081,
+   "share_turns_differ_by_tick_bin": {
+    "0": 0.0,
+    "30": 0.0008,
+    "60": 0.0078,
+    "90": 0.0237
+   },
+   "turns": 15360,
+   "turns_differ": 124
+  },
+  "S-talk_vs_S-marks": {
+   "coverage_delta_abs_mean": 0.01304,
+   "coverage_delta_mean": 0.00036,
+   "coverage_delta_sd": 0.02546,
+   "field_diff_share": {
+    "amount": 0.0033,
+    "release": 0.0205,
+    "target": 0.0359,
+    "target_vox": 0.0676
+   },
+   "first_divergence_tick_mean": 58.3,
+   "first_divergence_tick_median": 60.0,
+   "first_divergence_tick_min": 5,
+   "pairs": 80,
+   "pairs_identical_all_turns": 30,
+   "pairs_same_coverage": 33,
+   "share_pairs_diverge_by_tick30": 0.1,
+   "share_turns_differ": 0.0817,
+   "share_turns_differ_by_tick_bin": {
+    "0": 0.0031,
+    "30": 0.0174,
+    "60": 0.1018,
+    "90": 0.2044
+   },
+   "turns": 15360,
+   "turns_differ": 1255
+  }
+ },
+ "frozen_facts": {
+  "f1_simlook": true,
+  "f1_source": "boards",
+  "f2": true,
+  "f2_share": 0.0,
+  "f2_source": "A",
+  "f3": true,
+  "f3_decay": 0.04,
+  "f3_share": 0.1,
+  "u_core": 0.5
+ },
+ "judgement_mark_accuracy_per_run": {
+  "S-marks": {
+   "n_need_more": 21.27,
+   "n_not_tumour": 5.04,
+   "n_tumour_here": 44.4,
+   "on_tumour_need_more": 19.69,
+   "on_tumour_not_tumour": 3.62,
+   "on_tumour_tumour_here": 33.05,
+   "scan_at_least_half_off_tumour_need_more": 0.47,
+   "scan_at_least_half_off_tumour_not_tumour": 1.41,
+   "scan_at_least_half_off_tumour_tumour_here": 1.01,
+   "scan_below_half_need_more": 1.24,
+   "scan_below_half_not_tumour": 0.0,
+   "scan_below_half_on_tumour_need_more": 0.12,
+   "scan_below_half_on_tumour_not_tumour": 0.0,
+   "scan_below_half_on_tumour_tumour_here": 0.23,
+   "scan_below_half_tumour_here": 10.56
+  },
+  "S-marks-perfect": {
+   "n_need_more": 23.14,
+   "n_not_tumour": 11.78,
+   "n_tumour_here": 37.55,
+   "on_tumour_need_more": 21.7,
+   "on_tumour_not_tumour": 0.0,
+   "on_tumour_tumour_here": 37.55,
+   "scan_at_least_half_off_tumour_need_more": 0.39,
+   "scan_at_least_half_off_tumour_not_tumour": 2.04,
+   "scan_at_least_half_off_tumour_tumour_here": 0.0,
+   "scan_below_half_need_more": 1.21,
+   "scan_below_half_not_tumour": 9.74,
+   "scan_below_half_on_tumour_need_more": 0.16,
+   "scan_below_half_on_tumour_not_tumour": 0.0,
+   "scan_below_half_on_tumour_tumour_here": 0.26,
+   "scan_below_half_tumour_here": 0.26
+  },
+  "S-solo": {
+   "n_need_more": 16.9,
+   "n_not_tumour": 5.88,
+   "n_tumour_here": 43.38,
+   "on_tumour_need_more": 15.3,
+   "on_tumour_not_tumour": 4.53,
+   "on_tumour_tumour_here": 33.83,
+   "scan_at_least_half_off_tumour_need_more": 0.82,
+   "scan_at_least_half_off_tumour_not_tumour": 1.35,
+   "scan_at_least_half_off_tumour_tumour_here": 0.86,
+   "scan_below_half_need_more": 0.9,
+   "scan_below_half_not_tumour": 0.0,
+   "scan_below_half_on_tumour_need_more": 0.12,
+   "scan_below_half_on_tumour_not_tumour": 0.0,
+   "scan_below_half_on_tumour_tumour_here": 0.21,
+   "scan_below_half_tumour_here": 8.9
+  }
+ },
+ "look_quality_totals": {
+  "S-marks": {
+   "look_ge_half_inside": 7158,
+   "look_ge_half_out_0_4": 493,
+   "look_ge_half_out_4_10": 651,
+   "look_ge_half_out_gt10": 1576,
+   "look_grey_inside": 4438,
+   "look_grey_out_0_4": 452,
+   "look_grey_out_4_10": 466,
+   "look_grey_out_gt10": 3334,
+   "look_lt_half_inside": 1563,
+   "look_lt_half_out_0_4": 586,
+   "look_lt_half_out_4_10": 376,
+   "look_lt_half_out_gt10": 2957,
+   "look_pos": 9878,
+   "look_pos_true": 7158,
+   "look_scan_disagree": 4136,
+   "looks": 15360,
+   "n_inside": 8721,
+   "n_out_0_4": 1079,
+   "n_out_4_10": 1027,
+   "n_out_gt10": 4533,
+   "scan_ge_half_inside": 8534,
+   "scan_ge_half_out_0_4": 288,
+   "scan_ge_half_out_4_10": 75,
+   "scan_ge_half_out_gt10": 97,
+   "scan_pos": 8994,
+   "scan_pos_true": 8534,
+   "truth": 8721
+  },
+  "S-marks-perfect": {
+   "look_ge_half_inside": 7050,
+   "look_ge_half_out_0_4": 457,
+   "look_ge_half_out_4_10": 604,
+   "look_ge_half_out_gt10": 1562,
+   "look_grey_inside": 4498,
+   "look_grey_out_0_4": 436,
+   "look_grey_out_4_10": 443,
+   "look_grey_out_gt10": 3363,
+   "look_lt_half_inside": 1786,
+   "look_lt_half_out_0_4": 570,
+   "look_lt_half_out_4_10": 349,
+   "look_lt_half_out_gt10": 2982,
+   "look_pos": 9673,
+   "look_pos_true": 7050,
+   "look_scan_disagree": 4267,
+   "looks": 15360,
+   "n_inside": 8836,
+   "n_out_0_4": 1027,
+   "n_out_4_10": 953,
+   "n_out_gt10": 4544,
+   "scan_ge_half_inside": 8641,
+   "scan_ge_half_out_0_4": 263,
+   "scan_ge_half_out_4_10": 52,
+   "scan_ge_half_out_gt10": 96,
+   "scan_pos": 9052,
+   "scan_pos_true": 8641,
+   "truth": 8836
+  },
+  "S-solo": {
+   "look_ge_half_inside": 7590,
+   "look_ge_half_out_0_4": 462,
+   "look_ge_half_out_4_10": 522,
+   "look_ge_half_out_gt10": 1459,
+   "look_grey_inside": 4703,
+   "look_grey_out_0_4": 404,
+   "look_grey_out_4_10": 393,
+   "look_grey_out_gt10": 3123,
+   "look_lt_half_inside": 1697,
+   "look_lt_half_out_0_4": 473,
+   "look_lt_half_out_4_10": 334,
+   "look_lt_half_out_gt10": 2823,
+   "look_pos": 10033,
+   "look_pos_true": 7590,
+   "look_scan_disagree": 3992,
+   "looks": 15360,
+   "n_inside": 9287,
+   "n_out_0_4": 935,
+   "n_out_4_10": 856,
+   "n_out_gt10": 4282,
+   "scan_ge_half_inside": 9123,
+   "scan_ge_half_out_0_4": 288,
+   "scan_ge_half_out_4_10": 47,
+   "scan_ge_half_out_gt10": 95,
+   "scan_pos": 9553,
+   "scan_pos_true": 9123,
+   "truth": 9287
+  },
+  "S-talk": {
+   "look_ge_half_inside": 7157,
+   "look_ge_half_out_0_4": 487,
+   "look_ge_half_out_4_10": 643,
+   "look_ge_half_out_gt10": 1576,
+   "look_grey_inside": 4455,
+   "look_grey_out_0_4": 449,
+   "look_grey_out_4_10": 473,
+   "look_grey_out_gt10": 3337,
+   "look_lt_half_inside": 1557,
+   "look_lt_half_out_0_4": 588,
+   "look_lt_half_out_4_10": 393,
+   "look_lt_half_out_gt10": 2959,
+   "look_pos": 9863,
+   "look_pos_true": 7157,
+   "look_scan_disagree": 4140,
+   "looks": 15360,
+   "n_inside": 8714,
+   "n_out_0_4": 1075,
+   "n_out_4_10": 1036,
+   "n_out_gt10": 4535,
+   "scan_ge_half_inside": 8527,
+   "scan_ge_half_out_0_4": 276,
+   "scan_ge_half_out_4_10": 79,
+   "scan_ge_half_out_gt10": 97,
+   "scan_pos": 8979,
+   "scan_pos_true": 8527,
+   "truth": 8714
+  }
+ },
+ "pairs": 80,
+ "release_anatomy_per_run": {
+  "S-marks": {
+   "decision_turns_by_job": {
+    "dose": 42.19,
+    "explore": 50.96,
+    "verify": 98.85
+   },
+   "decision_turns_by_reason": {
+    "dose_ok": 14.24,
+    "look_low": 40.54,
+    "ok": 28.14,
+    "payload_empty": 8.84,
+    "shared_dose_high": 0.24,
+    "verify": 98.85,
+    "washout": 1.16
+   },
+   "first_release_tick_mean_over_ants_and_runs": 31.48,
+   "mass_by_class_per_run": {
+    "far_from_tumour": 1730.8,
+    "fp_job_dose": 435.4,
+    "fp_job_explore": 1713.8,
+    "fp_tick_0": 278.1,
+    "fp_tick_1_29": 911.7,
+    "fp_tick_30_plus": 959.4,
+    "inside_tumour": 2262.9,
+    "look_false_positive": 2149.2,
+    "look_false_positive_far": 1730.8,
+    "on_fast_washout_f3": 305.2,
+    "on_slow_tissue_f2": 689.5,
+    "released_at_tick0": 278.1,
+    "scan_below_half": 2102.8,
+    "scan_false_positive": 101.7,
+    "within_4mm": 418.4
+   },
+   "mass_by_tick_bin_per_run": {
+    "0": 1491.2,
+    "30": 1821.4,
+    "60": 794.5,
+    "90": 304.9
+   },
+   "max_abs_release_accounting_error_vs_released_total": 3.637978807091713e-12,
+   "per_run": {
+    "ants_never_released": 0.562,
+    "mass_unreleased": 741.091,
+    "released_mass": 4412.083,
+    "releases": 28.137,
+    "releases_fp_far": 6.4,
+    "releases_look_false_positive": 8.488,
+    "releases_on_fast_washout": 1.988,
+    "releases_on_slow_tissue": 6.125,
+    "releases_scan_below_half": 7.912,
+    "releases_tick0": 0.975
+   },
+   "turns_inside_tumour_per_run": {
+    "inside_job_dose": 33.2,
+    "inside_job_explore": 18.9,
+    "inside_job_verify": 56.91,
+    "inside_reason_dose_ok": 12.55,
+    "inside_reason_look_low": 10.18,
+    "inside_reason_ok": 19.65,
+    "inside_reason_payload_empty": 8.38,
+    "inside_reason_shared_dose_high": 0.23,
+    "inside_reason_verify": 56.91,
+    "inside_reason_washout": 1.12,
+    "inside_released": 19.65,
+    "turns_inside_tumour": 109.01
+   }
+  },
+  "S-marks-perfect": {
+   "decision_turns_by_job": {
+    "dose": 42.95,
+    "explore": 50.84,
+    "verify": 98.21
+   },
+   "decision_turns_by_reason": {
+    "dose_ok": 12.81,
+    "look_low": 41.71,
+    "ok": 28.18,
+    "payload_empty": 9.74,
+    "shared_dose_high": 0.12,
+    "verify": 98.21,
+    "washout": 1.23
+   },
+   "first_release_tick_mean_over_ants_and_runs": 31.59,
+   "mass_by_class_per_run": {
+    "far_from_tumour": 1768.3,
+    "fp_job_dose": 466.1,
+    "fp_job_explore": 1714.7,
+    "fp_tick_0": 278.1,
+    "fp_tick_1_29": 908.1,
+    "fp_tick_30_plus": 994.7,
+    "inside_tumour": 2244.7,
+    "look_false_positive": 2180.8,
+    "look_false_positive_far": 1768.3,
+    "on_fast_washout_f3": 307.6,
+    "on_slow_tissue_f2": 672.5,
+    "released_at_tick0": 278.1,
+    "scan_below_half": 2125.9,
+    "scan_false_positive": 102.4,
+    "within_4mm": 412.5
+   },
+   "mass_by_tick_bin_per_run": {
+    "0": 1487.5,
+    "30": 1856.5,
+    "60": 824.6,
+    "90": 257.0
+   },
+   "max_abs_release_accounting_error_vs_released_total": 1.8189894035458565e-12,
+   "per_run": {
+    "ants_never_released": 0.525,
+    "mass_unreleased": 727.649,
+    "released_mass": 4425.525,
+    "releases": 28.175,
+    "releases_fp_far": 6.65,
+    "releases_look_false_positive": 8.7,
+    "releases_on_fast_washout": 1.95,
+    "releases_on_slow_tissue": 6.162,
+    "releases_scan_below_half": 8.15,
+    "releases_tick0": 0.975
+   },
+   "turns_inside_tumour_per_run": {
+    "inside_job_dose": 34.55,
+    "inside_job_explore": 19.24,
+    "inside_job_verify": 56.66,
+    "inside_reason_dose_ok": 11.88,
+    "inside_reason_look_low": 11.96,
+    "inside_reason_ok": 19.48,
+    "inside_reason_payload_empty": 9.18,
+    "inside_reason_shared_dose_high": 0.11,
+    "inside_reason_verify": 56.66,
+    "inside_reason_washout": 1.19,
+    "inside_released": 19.48,
+    "turns_inside_tumour": 110.45
+   }
+  },
+  "S-solo": {
+   "decision_turns_by_job": {
+    "dose": 45.41,
+    "explore": 59.24,
+    "verify": 87.35
+   },
+   "decision_turns_by_reason": {
+    "dose_ok": 24.1,
+    "look_low": 44.84,
+    "ok": 25.62,
+    "payload_empty": 9.21,
+    "verify": 87.35,
+    "washout": 0.88
+   },
+   "first_release_tick_mean_over_ants_and_runs": 33.07,
+   "mass_by_class_per_run": {
+    "far_from_tumour": 1669.0,
+    "fp_job_dose": 311.0,
+    "fp_job_explore": 1740.4,
+    "fp_tick_0": 278.1,
+    "fp_tick_1_29": 908.4,
+    "fp_tick_30_plus": 864.9,
+    "inside_tumour": 2171.7,
+    "look_false_positive": 2051.4,
+    "look_false_positive_far": 1669.0,
+    "on_fast_washout_f3": 263.4,
+    "on_slow_tissue_f2": 570.6,
+    "released_at_tick0": 278.1,
+    "scan_below_half": 1994.5,
+    "scan_false_positive": 98.5,
+    "within_4mm": 382.4
+   },
+   "mass_by_tick_bin_per_run": {
+    "0": 1488.0,
+    "30": 1812.1,
+    "60": 721.0,
+    "90": 202.0
+   },
+   "max_abs_release_accounting_error_vs_released_total": 3.637978807091713e-12,
+   "per_run": {
+    "ants_never_released": 0.35,
+    "mass_unreleased": 930.069,
+    "released_mass": 4223.105,
+    "releases": 25.625,
+    "releases_fp_far": 6.213,
+    "releases_look_false_positive": 8.062,
+    "releases_on_fast_washout": 1.85,
+    "releases_on_slow_tissue": 5.388,
+    "releases_scan_below_half": 7.55,
+    "releases_tick0": 0.975
+   },
+   "turns_inside_tumour_per_run": {
+    "inside_job_dose": 38.54,
+    "inside_job_explore": 24.94,
+    "inside_job_verify": 52.61,
+    "inside_reason_dose_ok": 22.84,
+    "inside_reason_look_low": 13.75,
+    "inside_reason_ok": 17.56,
+    "inside_reason_payload_empty": 8.49,
+    "inside_reason_verify": 52.61,
+    "inside_reason_washout": 0.84,
+    "inside_released": 17.56,
+    "turns_inside_tumour": 116.09
+   }
+  },
+  "S-talk": {
+   "decision_turns_by_job": {
+    "dose": 41.41,
+    "explore": 51.09,
+    "verify": 99.5
+   },
+   "decision_turns_by_reason": {
+    "dose_ok": 14.34,
+    "look_low": 39.91,
+    "ok": 28.18,
+    "payload_empty": 9.1,
+    "shared_dose_high": 0.17,
+    "verify": 99.5,
+    "washout": 0.8
+   },
+   "first_release_tick_mean_over_ants_and_runs": 31.69,
+   "mass_by_class_per_run": {
+    "far_from_tumour": 1739.3,
+    "fp_job_dose": 410.9,
+    "fp_job_explore": 1725.8,
+    "fp_tick_0": 278.1,
+    "fp_tick_1_29": 920.3,
+    "fp_tick_30_plus": 938.3,
+    "inside_tumour": 2273.4,
+    "look_false_positive": 2136.7,
+    "look_false_positive_far": 1732.1,
+    "on_fast_washout_f3": 303.5,
+    "on_slow_tissue_f2": 690.7,
+    "released_at_tick0": 278.1,
+    "scan_below_half": 2104.6,
+    "scan_false_positive": 94.4,
+    "within_4mm": 406.1
+   },
+   "mass_by_tick_bin_per_run": {
+    "0": 1501.9,
+    "30": 1827.1,
+    "60": 799.4,
+    "90": 290.5
+   },
+   "max_abs_release_accounting_error_vs_released_total": 3.637978807091713e-12,
+   "per_run": {
+    "ants_never_released": 0.5,
+    "mass_unreleased": 734.274,
+    "released_mass": 4418.9,
+    "releases": 28.175,
+    "releases_fp_far": 6.425,
+    "releases_look_false_positive": 8.425,
+    "releases_on_fast_washout": 2.087,
+    "releases_on_slow_tissue": 6.188,
+    "releases_scan_below_half": 7.963,
+    "releases_tick0": 0.975
+   },
+   "turns_inside_tumour_per_run": {
+    "inside_job_dose": 32.33,
+    "inside_job_explore": 19.05,
+    "inside_job_verify": 57.55,
+    "inside_reason_dose_ok": 12.65,
+    "inside_reason_look_low": 9.47,
+    "inside_reason_ok": 19.65,
+    "inside_reason_payload_empty": 8.69,
+    "inside_reason_shared_dose_high": 0.16,
+    "inside_reason_verify": 57.55,
+    "inside_reason_washout": 0.75,
+    "inside_released": 19.65,
+    "turns_inside_tumour": 108.92
+   }
+  }
+ },
+ "robustness_arm_means": {
+  "verdict-R1": {
+   "S": {
+    "coverage": 0.4413,
+    "decayed": 4729.6171,
+    "facts_mean": {
+     "uptake_readings": 0,
+     "uptake_slow": 0,
+     "washout_available": 0,
+     "washout_fast": 0,
+     "washout_turns": 0
+    },
+    "lost_boundary": 126.3512,
+    "off_target_share": 0.4441,
+    "on_target_mass": 3109.6494,
+    "released": 5141.8913,
+    "released_share_of_total": 0.9978,
+    "runs": 80,
+    "total_drug": 5153.1739
+   },
+   "S'": {
+    "coverage": 0.5854,
+    "decayed": 4463.3149,
+    "facts_mean": {
+     "uptake_readings": 0,
+     "uptake_slow": 0,
+     "washout_available": 0,
+     "washout_fast": 0,
+     "washout_turns": 0
+    },
+    "lost_boundary": 105.6169,
+    "off_target_share": 0.3673,
+    "on_target_mass": 3529.1704,
+    "released": 5153.1739,
+    "released_share_of_total": 1.0,
+    "runs": 80,
+    "total_drug": 5153.1739
+   },
+   "S-marks": {
+    "coverage": 0.2002,
+    "decayed": 3461.5482,
+    "facts_mean": {
+     "uptake_readings": 28.137,
+     "uptake_slow": 6.412,
+     "washout_available": 62.075,
+     "washout_available_share": 0.323,
+     "washout_fast": 10.488,
+     "washout_turns": 192
+    },
+    "lost_boundary": 397.049,
+    "off_target_share": 0.6702,
+    "on_target_mass": 1660.2404,
+    "released": 4481.2151,
+    "released_share_of_total": 0.8696,
+    "runs": 80,
+    "total_drug": 5153.1739
+   },
+   "S-marks-perfect": {
+    "coverage": 0.1993,
+    "decayed": 3475.1578,
+    "facts_mean": {
+     "uptake_readings": 28.488,
+     "uptake_slow": 6.425,
+     "washout_available": 60.913,
+     "washout_available_share": 0.317,
+     "washout_fast": 9.688,
+     "washout_turns": 192
+    },
+    "lost_boundary": 413.8337,
+    "off_target_share": 0.6773,
+    "on_target_mass": 1646.2263,
+    "released": 4495.9671,
+    "released_share_of_total": 0.8725,
+    "runs": 80,
+    "total_drug": 5153.1739
+   },
+   "S-solo": {
+    "coverage": 0.1976,
+    "decayed": 3385.4048,
+    "facts_mean": {
+     "uptake_readings": 26.625,
+     "uptake_slow": 6.162,
+     "washout_available": 62.575,
+     "washout_available_share": 0.326,
+     "washout_fast": 9.125,
+     "washout_turns": 192
+    },
+    "lost_boundary": 389.5668,
+    "off_target_share": 0.6668,
+    "on_target_mass": 1597.0636,
+    "released": 4343.0151,
+    "released_share_of_total": 0.8428,
+    "runs": 80,
+    "total_drug": 5153.1739
+   }
+  },
+  "verdict-R2": {
+   "S": {
+    "coverage": 0.3405,
+    "decayed": 3547.2128,
+    "facts_mean": {
+     "uptake_readings": 0,
+     "uptake_slow": 0,
+     "washout_available": 0,
+     "washout_fast": 0,
+     "washout_turns": 0
+    },
+    "lost_boundary": 94.7634,
+    "off_target_share": 0.4441,
+    "on_target_mass": 2332.237,
+    "released": 3856.4185,
+    "released_share_of_total": 0.9978,
+    "runs": 80,
+    "total_drug": 3864.8804
+   },
+   "S'": {
+    "coverage": 0.4465,
+    "decayed": 3474.2738,
+    "facts_mean": {
+     "uptake_readings": 0,
+     "uptake_slow": 0,
+     "washout_available": 0,
+     "washout_fast": 0,
+     "washout_turns": 0
+    },
+    "lost_boundary": 75.9314,
+    "off_target_share": 0.3512,
+    "on_target_mass": 2712.1536,
+    "released": 3864.8804,
+    "released_share_of_total": 1.0,
+    "runs": 80,
+    "total_drug": 3864.8804
+   },
+   "S-marks": {
+    "coverage": 0.1376,
+    "decayed": 2661.5781,
+    "facts_mean": {
+     "uptake_readings": 29.75,
+     "uptake_slow": 6.662,
+     "washout_available": 54.5,
+     "washout_available_share": 0.284,
+     "washout_fast": 8.35,
+     "washout_turns": 192
+    },
+    "lost_boundary": 299.8069,
+    "off_target_share": 0.6653,
+    "on_target_mass": 1297.0581,
+    "released": 3447.1116,
+    "released_share_of_total": 0.8919,
+    "runs": 80,
+    "total_drug": 3864.8804
+   },
+   "S-marks-perfect": {
+    "coverage": 0.1366,
+    "decayed": 2657.3689,
+    "facts_mean": {
+     "uptake_readings": 29.65,
+     "uptake_slow": 6.425,
+     "washout_available": 52.425,
+     "washout_available_share": 0.273,
+     "washout_fast": 8.012,
+     "washout_turns": 192
+    },
+    "lost_boundary": 312.5464,
+    "off_target_share": 0.6746,
+    "on_target_mass": 1277.2773,
+    "released": 3452.6241,
+    "released_share_of_total": 0.8933,
+    "runs": 80,
+    "total_drug": 3864.8804
+   },
+   "S-solo": {
+    "coverage": 0.1358,
+    "decayed": 2607.0515,
+    "facts_mean": {
+     "uptake_readings": 28.075,
+     "uptake_slow": 6.5,
+     "washout_available": 54.763,
+     "washout_available_share": 0.285,
+     "washout_fast": 8.15,
+     "washout_turns": 192
+    },
+    "lost_boundary": 293.7203,
+    "off_target_share": 0.6637,
+    "on_target_mass": 1236.1914,
+    "released": 3339.6158,
+    "released_share_of_total": 0.8641,
+    "runs": 80,
+    "total_drug": 3864.8804
+   }
+  }
+ },
+ "run_dir": "/Volumes/WD_BLACK/antelligence-v4.2/runs/verdict1",
+ "saved_counters_per_run": {
+  "S-marks": {
+   "colony_answers_refused": 0.0,
+   "colony_asks_answered": 0.0,
+   "colony_asks_lapsed": 0.0,
+   "colony_asks_refused": 0.0,
+   "colony_asks_sent": 0.0,
+   "colony_marks_refused": 0.0,
+   "colony_quorum_events": 4.638,
+   "marks_dose_ok": 37.087,
+   "marks_dosed": 28.137,
+   "marks_need_more": 21.275,
+   "marks_not_tumour": 5.037,
+   "marks_slow_uptake": 5.9,
+   "marks_tumour_here": 44.4,
+   "marks_washout": 7.9,
+   "moved_on_washout": 0.625
+  },
+  "S-marks-perfect": {
+   "colony_answers_refused": 0.0,
+   "colony_asks_answered": 0.0,
+   "colony_asks_lapsed": 0.0,
+   "colony_asks_refused": 0.0,
+   "colony_asks_sent": 0.0,
+   "colony_marks_refused": 0.0,
+   "colony_quorum_events": 4.025,
+   "marks_dose_ok": 33.825,
+   "marks_dosed": 28.175,
+   "marks_need_more": 23.137,
+   "marks_not_tumour": 11.775,
+   "marks_slow_uptake": 5.95,
+   "marks_tumour_here": 37.55,
+   "marks_washout": 5.9,
+   "moved_on_washout": 0.7
+  },
+  "S-solo": {
+   "colony_answers_refused": 0.0,
+   "colony_asks_answered": 0.0,
+   "colony_asks_lapsed": 0.0,
+   "colony_asks_refused": 0.0,
+   "colony_asks_sent": 0.0,
+   "colony_marks_refused": 0.0,
+   "colony_quorum_events": 4.388,
+   "marks_dose_ok": 52.688,
+   "marks_dosed": 25.625,
+   "marks_need_more": 16.9,
+   "marks_not_tumour": 5.875,
+   "marks_slow_uptake": 5.162,
+   "marks_tumour_here": 43.375,
+   "marks_washout": 7.875,
+   "moved_on_washout": 0.4
+  },
+  "S-talk": {
+   "answers_used": 24.938,
+   "asks": 75.7,
+   "asks_on_current_look": 12.175,
+   "colony_answers_refused": 1.575,
+   "colony_asks_answered": 63.362,
+   "colony_asks_lapsed": 0.163,
+   "colony_asks_refused": 12.175,
+   "colony_asks_sent": 63.525,
+   "colony_marks_refused": 0.0,
+   "colony_quorum_events": 4.537,
+   "marks_dose_ok": 37.575,
+   "marks_dosed": 28.175,
+   "marks_need_more": 21.625,
+   "marks_not_tumour": 5.15,
+   "marks_slow_uptake": 5.975,
+   "marks_tumour_here": 43.812,
+   "marks_washout": 7.838,
+   "moved_on_washout": 0.512,
+   "release_changed_by_answer": 1.075,
+   "targets_dropped_by_answer": 1.825
+  }
+ },
+ "shared_inputs": {
+  "S-marks": {
+   "first_divergence_cause_counts": {
+    "explore_aim": 16,
+    "foreign_slow_uptake": 1,
+    "need_band": 12,
+    "queen_need_ranking": 17,
+    "shared_dose_high": 1,
+    "spot_target": 25,
+    "spot_target+foreign_slow_uptake": 1,
+    "spot_target+foreign_washout": 1,
+    "state": 4,
+    "status_skip": 2
+   },
+   "first_region_closed_tick_mean": 53.7,
+   "first_region_closed_tick_median": 51.0,
+   "per_run_mean": {
+    "decisions_with_cause": 28.55,
+    "dose_target_changed_by_queen_need": 5.275,
+    "dose_target_changed_by_status": 4.237,
+    "dose_zone_pred_match": 32.075,
+    "dose_zone_turns": 32.487,
+    "explore_aimed_by_mark": 9.662,
+    "foreign_rows_dose_ok": 63.75,
+    "foreign_rows_dosed": 61.175,
+    "foreign_rows_need_more": 61.562,
+    "foreign_rows_not_tumour": 8.025,
+    "foreign_rows_slow_uptake": 15.975,
+    "foreign_rows_tumour_here": 48.062,
+    "foreign_rows_washout": 22.7,
+    "quorum_done": 3.013,
+    "quorum_events": 4.638,
+    "quorum_not_tumour": 1.625,
+    "released_75pct": 2.125,
+    "released_75pct_from_foreign_mark": 1.137,
+    "releases_far_from_tumour": 6.4,
+    "releases_far_with_any_foreign_mark_visible": 0.212,
+    "releases_far_with_foreign_not_tumour_visible": 0.013,
+    "releases_far_with_foreign_tumour_here_visible": 0.188,
+    "replay_marks_ok": 1.0,
+    "replay_status_ok": 1.0,
+    "shared_dose_high": 0.237,
+    "spot_targets_from_marks": 8.8,
+    "spot_targets_on_tumour": 7.875,
+    "spot_targets_within_4mm_of_tumour": 8.3,
+    "turns": 192.0,
+    "turns_any_mark_visible": 86.938,
+    "turns_foreign_mark_visible": 62.45,
+    "turns_need_differs_from_solo": 129.6,
+    "turns_region_closed": 99.7,
+    "washout_blocked_by_foreign_mark": 0.212,
+    "washout_blocked_release": 1.163
+   },
+   "runs_with_any_region_closed": 80,
+   "runs_with_divergence": 80
+  },
+  "S-marks-perfect": {
+   "first_divergence_cause_counts": {
+    "explore_aim": 21,
+    "foreign_slow_uptake": 1,
+    "need_band": 11,
+    "queen_need_ranking": 14,
+    "spot_target": 20,
+    "spot_target+foreign_slow_uptake": 1,
+    "spot_target+foreign_washout": 1,
+    "state": 10,
+    "status_skip": 1
+   },
+   "first_region_closed_tick_mean": 45.6,
+   "first_region_closed_tick_median": 41.0,
+   "per_run_mean": {
+    "decisions_with_cause": 31.712,
+    "dose_target_changed_by_queen_need": 4.65,
+    "dose_target_changed_by_status": 3.85,
+    "dose_zone_pred_match": 32.25,
+    "dose_zone_turns": 32.825,
+    "explore_aimed_by_mark": 13.25,
+    "foreign_rows_dose_ok": 55.513,
+    "foreign_rows_dosed": 57.987,
+    "foreign_rows_need_more": 66.987,
+    "foreign_rows_not_tumour": 5.225,
+    "foreign_rows_slow_uptake": 15.938,
+    "foreign_rows_tumour_here": 50.663,
+    "foreign_rows_washout": 15.0,
+    "quorum_done": 2.688,
+    "quorum_events": 4.025,
+    "quorum_not_tumour": 1.337,
+    "released_75pct": 2.25,
+    "released_75pct_from_foreign_mark": 1.2,
+    "releases_far_from_tumour": 6.65,
+    "releases_far_with_any_foreign_mark_visible": 0.138,
+    "releases_far_with_foreign_not_tumour_visible": 0.1,
+    "releases_far_with_foreign_tumour_here_visible": 0.0,
+    "replay_marks_ok": 1.0,
+    "replay_status_ok": 1.0,
+    "shared_dose_high": 0.125,
+    "spot_targets_from_marks": 9.5,
+    "spot_targets_on_tumour": 9.45,
+    "spot_targets_within_4mm_of_tumour": 9.5,
+    "turns": 192.0,
+    "turns_any_mark_visible": 86.2,
+    "turns_foreign_mark_visible": 63.475,
+    "turns_need_differs_from_solo": 129.6,
+    "turns_region_closed": 112.7,
+    "washout_blocked_by_foreign_mark": 0.163,
+    "washout_blocked_release": 1.225
+   },
+   "runs_with_any_region_closed": 80,
+   "runs_with_divergence": 80
+  },
+  "S-talk": {
+   "first_divergence_cause_counts": {
+    "explore_aim": 15,
+    "foreign_slow_uptake": 1,
+    "need_band": 15,
+    "queen_need_ranking": 14,
+    "shared_dose_high": 1,
+    "spot_target": 20,
+    "spot_target+foreign_slow_uptake": 1,
+    "state": 12,
+    "status_skip": 1
+   },
+   "first_region_closed_tick_mean": 53.9,
+   "first_region_closed_tick_median": 51.0,
+   "per_run_mean": {
+    "decisions_with_cause": 27.613,
+    "dose_target_changed_by_queen_need": 5.138,
+    "dose_target_changed_by_status": 4.05,
+    "dose_zone_pred_match": 31.488,
+    "dose_zone_turns": 32.075,
+    "explore_aimed_by_mark": 9.537,
+    "foreign_rows_dose_ok": 67.3,
+    "foreign_rows_dosed": 62.938,
+    "foreign_rows_need_more": 59.587,
+    "foreign_rows_not_tumour": 8.15,
+    "foreign_rows_slow_uptake": 16.312,
+    "foreign_rows_tumour_here": 47.625,
+    "foreign_rows_washout": 21.788,
+    "quorum_done": 2.875,
+    "quorum_events": 4.537,
+    "quorum_not_tumour": 1.663,
+    "released_75pct": 2.212,
+    "released_75pct_from_foreign_mark": 1.15,
+    "releases_far_from_tumour": 6.475,
+    "releases_far_with_any_foreign_mark_visible": 0.2,
+    "releases_far_with_foreign_not_tumour_visible": 0.013,
+    "releases_far_with_foreign_tumour_here_visible": 0.175,
+    "replay_marks_ok": 1.0,
+    "replay_status_ok": 1.0,
+    "shared_dose_high": 0.175,
+    "spot_targets_from_marks": 8.45,
+    "spot_targets_on_tumour": 7.638,
+    "spot_targets_within_4mm_of_tumour": 8.037,
+    "turns": 192.0,
+    "turns_any_mark_visible": 87.075,
+    "turns_foreign_mark_visible": 62.45,
+    "turns_need_differs_from_solo": 129.6,
+    "turns_region_closed": 99.4,
+    "washout_blocked_by_foreign_mark": 0.125,
+    "washout_blocked_release": 0.8
+   },
+   "runs_with_any_region_closed": 80,
+   "runs_with_divergence": 80
+  }
+ },
+ "world_fact_shares_over_pairs": {
+  "share_tumour_fast_washout": 0.0984,
+  "share_tumour_slow": 0.1883,
+  "tumour_voxels": 9630.575
+ }
+}
