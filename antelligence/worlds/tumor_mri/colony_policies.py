@@ -40,6 +40,14 @@ of its own look at this tick, else the raw look), releases only at ``c >= 0.6`` 
 fold-in only lower ``c``, bounds the verify job, and moves a job threshold only on a turn whose outcome was resolved. There is
 still ONE decision function for every arm; no branch reads an arm's name.
 
+A2r1 (``rules.dose_move_on``). A dose-job ant that still has payload but stands where its own dose reading is already >= D_t
+(release reason ``dose_ok``) moves on inside the zone of its target: to the nearest voxel with scan p >= 0.5 that is >= 6 mm
+from every spot it knows is dosed (:meth:`ScanInfo.zone_voxels`, ``move_on.nearest_new_spot``). That spot is a persistent dose
+goal (``AntState.dose_goal``) that replaces the zone centroid as the dose target until the ant is within 1 voxel of it, 6
+decision turns have passed, or the zone is skipped. With no spot left the zone is skipped. Known spots are the ant's own
+release voxels, its own dose readings >= 1, its voxel, and, through ``marks`` (absent in S-solo), visible ``dosed`` /
+``dose_ok`` marks. It needs the scan map (``ScanInfo.p_tumour``); without it the switch has no effect.
+
 Judgement calls and defaults chosen where the goal text is silent are listed in ``DEFAULTS_CHOSEN`` and in the Q1 report.
 Every random draw in the colony is seeded per INTERFACES 1; this module draws none.
 """
@@ -51,11 +59,14 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Dict, FrozenSet, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
 
+import numpy as np
+
 from antelligence.kernel.colony.thresholds import Thresholds
 from antelligence.kernel.signal import SignalDraft
 from antelligence.kernel.types import Intent, LocalView
 from antelligence.worlds.tumor_mri.ant_rules import AntRules
 from antelligence.worlds.tumor_mri.data import Region
+from antelligence.worlds.tumor_mri.move_on import nearest_new_spot, zone_candidates
 from antelligence.worlds.tumor_mri.questions import EXPLORE, STAY
 from antelligence.worlds.tumor_mri.world import ACTION_DECIDE
 
@@ -73,6 +84,9 @@ LEVEL_HALF, LEVEL_THREE_QUARTERS = 3, 4          # amount levels 3 and 4 are 50%
 ASK_EVERY_ROUNDS = 2                              # INTERFACES 3.2 budget; the script stays inside it
 ANSWER_VALUE = {"yes": 0.8, "no": 0.2}
 ZONE_MARGIN_MM = 6.0
+MOVE_ON_P_MIN = 0.5           # A2r1: a move-on spot needs scan p >= this
+MOVE_ON_TURNS = 6             # A2r1: a dose goal lapses after this many decision turns
+MOVE_ON_ARRIVE_VOX = 1.0      # A2r1: ... and is reached within this many voxels
 
 # --- defaults the goal text did not give (see the Q1 report) -----------------------------------------------------------
 EMPTY_FRACTION = 0.05         # "payload empty": payload_fraction below this (a squad never reaches exactly 0)
@@ -93,6 +107,22 @@ class ScanInfo:
 
     regions: Tuple[Region, ...]
     voxel_mm: float
+    # The scan's own p map (perception, every ant sees it; no truth). Only the dose move-on reads it; None switches that rule off.
+    p_tumour: Optional[np.ndarray] = field(default=None, compare=False, repr=False)
+    _zone_cache: Dict[Tuple[int, float], np.ndarray] = field(default_factory=dict, compare=False, repr=False)
+
+    def zone_voxels(self, region_id: int, p_min: float = MOVE_ON_P_MIN) -> np.ndarray:
+        """(n, 3) voxels of the zone of ``region_id`` with scan p >= ``p_min`` (cached: a pure function of the scan)."""
+        key = (region_id, p_min)
+        hit = self._zone_cache.get(key)
+        if hit is None:
+            r = self.region(region_id)
+            if self.p_tumour is None or r is None:
+                hit = np.zeros((0, 3), dtype=np.int64)
+            else:
+                hit = zone_candidates(self.p_tumour, r.centroid_vox, self.zone_radius_mm(r), self.voxel_mm, p_min)
+            self._zone_cache[key] = hit
+        return hit
 
     def zone_radius_mm(self, r: Region) -> float:
         """Equal-volume sphere radius plus 6 mm: the same approximation the kernel uses for a zone (INTERFACES 14)."""
@@ -173,6 +203,8 @@ class AntState:
     decision_turns: int = 0                                 # this ant's own previous decision turns (v4.3 verify share)
     verify_turns: int = 0                                   # ... of which verify turns with a target spot
     verify_by_spot: Counter = field(default_factory=Counter)   # verify turns taken per spot (v4.3 per-spot cap)
+    released_at: List[Vox] = field(default_factory=list)       # A2r1: voxels where this ant released (its own previous decisions)
+    dose_goal: Optional[Dict[str, Any]] = None                 # A2r1: {"spot", "zone", "age"}, the persistent dose goal
 
 
 @dataclass(frozen=True)
@@ -390,6 +422,71 @@ def _verify_target(inp: TurnInputs, st: AntState) -> Optional[Tuple[Vox, Vox]]:
     return None if best is None else (best[1], best[2])
 
 
+# --- A2r1: the dose job moves on when its spot is already dosed ----------------------------------------------------------
+
+def known_dosed_spots(inp: TurnInputs, st: AntState) -> List[Vox]:
+    """Spots this ant knows are dosed: its own release voxels, its own logged dose readings >= 1 (a voxel at D_t), the voxel it
+    stands on and, ONLY when the ``marks`` input exists (sharing arms), the visible ``dosed`` / ``dose_ok`` marks. In S-solo
+    ``inp.marks`` is None, so the set is own-only. Nothing else enters."""
+    out: Set[Vox] = set(st.released_at)
+    out.update(_vox(e["pos_vox"]) for e in inp.reading_log if e["kind"] == "dose" and e["value"] >= 1.0)
+    out.add(_vox(inp.pos))
+    if inp.marks is not None:
+        out.update(_vox(m["pos_vox"]) for m in inp.marks if m["kind"] in ("dosed", "dose_ok"))
+    return sorted(out)
+
+
+def find_move_on_spot(inp: TurnInputs, st: AntState, scan: ScanInfo, region_id: int) -> Optional[Vox]:
+    """The nearest voxel of the zone ``region_id`` with scan p >= 0.5 that is >= ``rules.move_on_mm`` from every known dosed spot
+    (ties to the lexicographically smallest voxel), or None when the zone has none left."""
+    return nearest_new_spot(scan.zone_voxels(region_id), inp.pos, known_dosed_spots(inp, st), inp.voxel_mm, st.rules.move_on_mm)
+
+
+def _dose_move_on(inp: TurnInputs, st: AntState, scan: ScanInfo, job: str, reason: str, target: Optional[_Target],
+                  targets: List[_Target]) -> Optional[_Target]:
+    """The A2r1 rule, applied to the dose target the turn would otherwise take (``target``). Returns the dose target to use.
+
+    1. A standing goal ages one decision turn and lapses on arrival (within 1 voxel), after 6 turns, or when its zone is skipped
+       or closed. 2. With no goal, a dose-job ant that has payload and reads its own dose >= D_t (reason ``dose_ok``) looks for
+       a new spot in its target's zone; none left skips the zone and takes the next-best target. 3. A standing goal replaces the
+       zone centroid as the dose target (kind ``spot``, label STAY) while the job is dose. A goal is never replaced while it
+       stands: on the way, the ordinary release rule applies at every turn."""
+    c, rules, vm = st.counters, st.rules, inp.voxel_mm
+    g = st.dose_goal
+    if g is not None:
+        g["age"] += 1
+        status = inp.region_status or {}
+        if g["zone"] in st.skip_zones or status.get(g["zone"], "open") != "open":
+            st.dose_goal, g = None, None
+            c["dose_goal_zone_dropped"] += 1
+        elif math.dist(inp.pos, g["spot"]) <= MOVE_ON_ARRIVE_VOX * (1 + 1e-9):
+            st.dose_goal, g = None, None
+            c["dose_goal_reached"] += 1
+        elif g["age"] >= MOVE_ON_TURNS:
+            st.dose_goal, g = None, None
+            c["dose_goal_timeout"] += 1
+    if job != "dose" or target is None:
+        return target
+    if g is None and reason == "dose_ok":
+        if scan.p_tumour is None:
+            c["move_on_no_scan_map"] += 1                 # no scan map given: the switch has no effect
+            return target
+        rid = target.region_id if target.kind == "zone" else scan.zone_at(inp.pos)
+        if rid is None:
+            return target
+        spot = find_move_on_spot(inp, st, scan, rid)
+        if spot is None:
+            st.skip_zones.add(rid)
+            c["zone_skipped_no_spot"] += 1
+            rest = [t for t in targets if not (t.kind == "zone" and t.region_id == rid)]
+            return rest[0] if rest else None
+        st.dose_goal = g = {"spot": spot, "zone": rid, "age": 0}
+        c["moved_on_dose_ok"] += 1
+    if g is not None and any(t.kind == "zone" and t.region_id == g["zone"] for t in targets):
+        return _Target("spot", STAY, g["zone"], g["spot"], target.value, _mm(vm, inp.pos, g["spot"]))
+    return target
+
+
 # --- the one decision function ------------------------------------------------------------------------------------------
 
 def _settle_resolved(inp: TurnInputs, st: AntState, c: float) -> None:
@@ -530,6 +627,8 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
         st.counters["moved_on_" + reason] += 1
         rest = [t for t in targets if t is not target and not (t.kind == "zone" and t.region_id == target.region_id)]
         target = rest[0] if rest else None
+    if rules.dose_move_on:
+        target = _dose_move_on(inp, st, scan, job, reason, target, targets)
 
     label, goal = STAY, None
     spot = None
@@ -569,6 +668,8 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
 
     marks = tuple((k, pos) for k in judgement_marks(inp, look, rules))
     st.decision_turns += 1
+    if release:
+        st.released_at.append(_vox(pos))
     st.prev = {"job": job, "released": release, "look": release_look, "pos": pos if release else None, "spot": spot}
     return Decision(job, label, goal, release, level, marks, ask,
                     {"job": job, "reason": reason, "stimuli": {k: round(v, 6) for k, v in stimuli.items()},

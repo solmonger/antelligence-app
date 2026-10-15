@@ -49,6 +49,9 @@ class AntRules:
     fold_can_permit: bool = True          # v4.3: False, the folded estimate can only lower c
     answer_rule: str = "v42"              # message answers (see ``kernel.colony.messages.answer_question``)
     card_min_resolved: int = 1            # a card says "usually right" only with at least this many resolved claims
+    # --- dose move-on (A2r1) -----------------------------------------------------------------------------------------
+    dose_move_on: bool = False            # dose job at a dose-OK spot with payload left: go to the nearest unprobed spot (v4.3: True)
+    move_on_mm: float = 6.0               # a new spot is at least this far from every spot the ant knows is dosed
 
     def __post_init__(self) -> None:
         if self.version not in VERSIONS:
@@ -66,6 +69,8 @@ class AntRules:
             raise ValueError("verify_share_max must be in (0, 1] or None")
         if self.card_min_resolved < 1:
             raise ValueError("card_min_resolved must be >= 1")
+        if not self.move_on_mm > 0.0:
+            raise ValueError("move_on_mm must be > 0")
 
     # --- the two presets ---------------------------------------------------------------------------------------------
     @classmethod
@@ -80,7 +85,8 @@ class AntRules:
                    washout_release_c=0.65, tumour_here_c=0.8, tumour_here_scan_max=0.5, tumour_here_any_c=None,
                    not_tumour_c=0.2, not_tumour_scan_min=0.5, grey=(0.35, 0.65), verify_per_spot_max=2,
                    verify_share_max=0.25, theta_step_up=0.05, theta_step_down=0.05, theta_floor=0.1, theta_ceil=1.0,
-                   resolved_only=True, fold_drop_c=0.6, fold_can_permit=False, answer_rule="v43", card_min_resolved=3)
+                   resolved_only=True, fold_drop_c=0.6, fold_can_permit=False, answer_rule="v43", card_min_resolved=3,
+                   dose_move_on=True, move_on_mm=6.0)
 
     # --- (de)serialisation -------------------------------------------------------------------------------------------
     def to_dict(self) -> Dict[str, Any]:
