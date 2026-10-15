@@ -211,18 +211,33 @@ class ColonyKit:
 
     def __init__(self, arm: str, n: int, scan: ScanInfo, *, sharing: bool, notebook_cap: int = 1500) -> None:
         self.arm, self.n, self.scan, self.sharing = arm, int(n), scan, bool(sharing)
-        self.cards = [Card(f"ant-{i:02d}", arm) for i in range(n)]
+        self.cards = [self._new_card(i) for i in range(n)]
         for c in self.cards:
             c.begin_run()                                        # cards reset at the start of every run (goal 6.4)
         self.notebooks = [Notebook(f"ant-{i:02d}", notebook_cap) for i in range(n)]
         for nb in self.notebooks:
             nb.freeze()                                          # frozen: required for any evaluation (goal 6.7)
-        self.scripts = [ColonyScript(scan, i) for i in range(n)]
+        self.scripts = [self._new_script(i) for i in range(n)]
         self._claims: List[Claim] = []
         self._resolved: Dict[int, bool] = {}
         self._looks: List[Tuple[int, Tuple[int, int, int], int, float]] = []
         self.providers: Dict[str, Callable[[int, int], Any]] = {
             "card_self": self._card_self, "cards_public": self._cards_public, "notebook_self": self._notebook_self}
+
+    # construction hooks and the look value claims are resolved on (v4.3 overrides these; here they are the v4.2 ones)
+    def _new_card(self, i: int) -> Card:
+        return Card(f"ant-{i:02d}", self.arm)
+
+    def _new_script(self, i: int) -> ColonyScript:
+        return ColonyScript(self.scan, i)
+
+    def claim_look_value(self, entry: Mapping[str, Any]) -> float:
+        """The value a logged look counts as when a claim is resolved: the raw look."""
+        return float(entry["value"])
+
+    def view_look_value(self, view: Any) -> float:
+        """The value of the look an ant is shown this turn, as the claim ledger records it: the raw look."""
+        return float(view.observation["look"])
 
     # observation providers (called by the driver per ant and tick)
     def _sync(self, tick: int) -> None:
@@ -272,7 +287,7 @@ class ColonyKit:
                 pos = tuple(a["pos_vox"]) if a["pos_vox"] is not None else centroid.get(a["region_id"])
                 if pos is not None:
                     claims.append(Claim(m["from_ant"], f"answer_{m['answer']}", pos, m["tick"]))
-        looks = [(int(ant), tuple(e["pos_vox"]), int(e["tick"]), float(e["value"]))
+        looks = [(int(ant), tuple(e["pos_vox"]), int(e["tick"]), self.claim_look_value(e))
                  for ant, log in bundle["reading_logs"].items() for e in log if e["kind"] == "look"]
         res = resolve_claims(claims, looks, vmm)
         for c in self.cards:
@@ -306,7 +321,7 @@ class _AntPolicy:
         o = view.observation
         look = o.get("look")
         if look is not None:
-            kit._looks.append((i, tuple(int(c) for c in o["position_vox"]), int(view.tick), float(look)))
+            kit._looks.append((i, tuple(int(c) for c in o["position_vox"]), int(view.tick), kit.view_look_value(view)))
         intent = kit.scripts[i].decide(view)
         card = kit.cards[i]
         for d in intent.emit:
@@ -390,6 +405,9 @@ class V42Harness:
             raise RuntimeError("world.queen_hook must stay unset in every colony arm")
         return w
 
+    def make_kit(self, arm: str, n: int, scan: ScanInfo, sharing: bool) -> ColonyKit:
+        return ColonyKit(arm, n, scan, sharing=sharing)
+
     # episode ----------------------------------------------------------------------------------------------------------
     def run_episode(self, arm_name: str, case: CaseData, seed: int, *,
                     mark_pos_fn: Optional[Callable[[int, int, str, Sequence[int]], Sequence[int]]] = None,
@@ -422,7 +440,7 @@ class V42Harness:
         else:
             spec = arm_spec(arm.driver_arm)
             scan = ScanInfo(tuple(world.regions), world.voxel_mm)
-            kit = ColonyKit(arm.name, self.world_cfg.n_squads, scan, sharing=spec.reads_marks)
+            kit = self.make_kit(arm.name, self.world_cfg.n_squads, scan, spec.reads_marks)
             queen = ScriptedQueen(world.regions, world.total_drug, self.world_cfg.n_squads, world.voxel_mm, board=board,
                                   half_life=ccfg.half_life)
             providers = {**kit.providers, **(obs_providers or {})}

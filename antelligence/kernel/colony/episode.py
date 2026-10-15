@@ -118,15 +118,23 @@ class ColonyConfig:
     answers_per_tick: int = 2
     ask_lapse_ticks: int = 2
     queen_every_ticks: int = 30
+    answer_rule: str = "v42"            # "v42" | "v43" (see ``messages.answer_question``); omitted from ``to_dict`` at "v42"
 
-    _IGNORED = ("enabled", "arm", "notebook")
+    _IGNORED = ("enabled", "arm", "notebook", "ant_rules")
+
+    def __post_init__(self) -> None:
+        if self.answer_rule not in ("v42", "v43"):
+            raise ValueError(f"answer_rule must be 'v42' or 'v43', got {self.answer_rule!r}")
 
     def to_dict(self) -> Dict[str, Any]:
-        return {"quiet_rule": self.quiet_rule, "heartbeat_rounds": self.heartbeat_rounds, "quorum_k": self.quorum_k,
-                "read_radius_mm": self.read_radius_mm, "confirm_radius_mm": self.confirm_radius_mm,
-                "half_life": dict(self.half_life), "ask_every_rounds": self.ask_every_rounds,
-                "answers_per_tick": self.answers_per_tick, "ask_lapse_ticks": self.ask_lapse_ticks,
-                "queen_every_ticks": self.queen_every_ticks}
+        d = {"quiet_rule": self.quiet_rule, "heartbeat_rounds": self.heartbeat_rounds, "quorum_k": self.quorum_k,
+             "read_radius_mm": self.read_radius_mm, "confirm_radius_mm": self.confirm_radius_mm,
+             "half_life": dict(self.half_life), "ask_every_rounds": self.ask_every_rounds,
+             "answers_per_tick": self.answers_per_tick, "ask_lapse_ticks": self.ask_lapse_ticks,
+             "queen_every_ticks": self.queen_every_ticks}
+        if self.answer_rule != "v42":                   # omitted at the legacy value: v4.2 board headers and hashes stay identical
+            d["answer_rule"] = self.answer_rule
+        return d
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "ColonyConfig":
@@ -326,7 +334,8 @@ class _Run:
                     pos = self._about_pos(ask.about)
                     ans, reading = answer_question(
                         ask.question, pos, self.logs[ant], voxel_mm=self.vmm, radius_mm=self.cfg.read_radius_mm,
-                        has_own_need_more=self.marks.has_own(ant, "need_more", pos, tick))
+                        has_own_need_more=self.marks.has_own(ant, "need_more", pos, tick),
+                        answer_rule=self.cfg.answer_rule)
                     msg = self.office.answer(ask, tick, ans, reading)
                     if msg is None:
                         continue
@@ -345,6 +354,9 @@ class _Run:
         for r in self.world.read_sensors(i, tick):
             e = {"tick": tick, "pos_vox": list(r.get("pos_vox") or pos), "kind": r["kind"], "value": float(r["value"]),
                  "band": r.get("band"), "word": r.get("word")}
+            for extra in ("scan_p", "est"):             # optional look fields (v4.3 combined estimate); absent -> logs unchanged
+                if r.get(extra) is not None:
+                    e[extra] = float(r[extra])
             out.append(e)
             self.logs[i].append(e)
         return out
@@ -371,7 +383,7 @@ class _Run:
         if question == "dosed_enough":
             d = [e for e in near if e["kind"] == "dose"]
             return None if not d else min(1.0, max(0.0, float(max(d, key=lambda e: e["tick"])["value"])))
-        v = [float(e["value"]) for e in near if e["kind"] == "look"]
+        v = [float(e.get("est", e["value"])) for e in near if e["kind"] == "look"]
         return None if not v else sum(v) / len(v)
 
     def _colony_obs(self, i: int, tick: int, readings: Sequence[Mapping[str, Any]]) -> Dict[str, Any]:

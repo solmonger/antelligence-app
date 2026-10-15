@@ -18,8 +18,9 @@ USUALLY_RIGHT = 0.7
 
 
 class Card:
-    def __init__(self, ant_id: str, policy: str, model: str = "script", rev: str = "v4.2") -> None:
+    def __init__(self, ant_id: str, policy: str, model: str = "script", rev: str = "v4.2", min_resolved: int = 1) -> None:
         self.ant_id, self.policy, self.model, self.rev = ant_id, policy, model, rev
+        self.min_resolved = int(min_resolved)           # "usually right" needs at least this many resolved claims (v4.3: 3)
         self.thresholds = {"dose": 0.5, "explore": 0.5, "verify": 0.5}
         self.in_run = {"claims": 0, "confirmed": 0, "contradicted": 0}
         self.cross_run = {"claims": 0, "correct": 0, "checked": 0, "runs": 0}
@@ -50,7 +51,7 @@ class Card:
         if c["claims"] < NEW_BELOW:
             return "new"
         resolved = c["confirmed"] + c["contradicted"]
-        if resolved and c["confirmed"] / resolved >= USUALLY_RIGHT:
+        if resolved and resolved >= self.min_resolved and c["confirmed"] / resolved >= USUALLY_RIGHT:
             return "usually right"
         return "mixed"
 
@@ -59,13 +60,16 @@ class Card:
                 "in_run": dict(self.in_run), "band": self.band()}
 
     def to_dict(self) -> dict:
-        return {"ant_id": self.ant_id, "policy": self.policy, "model": self.model, "rev": self.rev,
-                "thresholds": dict(self.thresholds), "in_run": dict(self.in_run),
-                "cross_run": dict(self.cross_run)}
+        d = {"ant_id": self.ant_id, "policy": self.policy, "model": self.model, "rev": self.rev,
+             "thresholds": dict(self.thresholds), "in_run": dict(self.in_run),
+             "cross_run": dict(self.cross_run)}
+        if self.min_resolved != 1:                      # omitted at the legacy default, so v4.2 cards are byte-identical
+            d["min_resolved"] = self.min_resolved
+        return d
 
     @classmethod
     def from_dict(cls, d: dict) -> "Card":
-        c = cls(d["ant_id"], d["policy"], d.get("model", "script"), d.get("rev", "v4.2"))
+        c = cls(d["ant_id"], d["policy"], d.get("model", "script"), d.get("rev", "v4.2"), d.get("min_resolved", 1))
         c.thresholds, c.in_run, c.cross_run = dict(d["thresholds"]), dict(d["in_run"]), dict(d["cross_run"])
         return c
 

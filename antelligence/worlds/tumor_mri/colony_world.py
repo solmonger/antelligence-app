@@ -35,12 +35,14 @@ class ColonyTumorWorld(TumorMRIWorld):
     def __init__(self, crop: Crop, config: Optional[WorldConfig] = None, seed: int = 0, *, arm: str = "S",
                  look_fn: Optional[LookFn] = None, queen_hook: Optional[QueenHook] = None,
                  regions: Optional[Sequence[Region]] = None, uptake_fn: Optional[SensorFn] = None,
-                 washout_fn: Optional[SensorFn] = None, scorer_channels: Optional[Mapping[str, np.ndarray]] = None) -> None:
+                 washout_fn: Optional[SensorFn] = None, scorer_channels: Optional[Mapping[str, np.ndarray]] = None,
+                 estimate: Optional[Callable[[float, float], float]] = None) -> None:
         super().__init__(crop, config, seed, look_fn=look_fn, queen_hook=queen_hook, regions=regions,
                          scorer_channels=scorer_channels)
         self.arm = arm
         self.per_ant_visits = arm != "S"
         self.uptake_fn, self.washout_fn = uptake_fn, washout_fn
+        self.estimate = estimate        # v4.3 ``CombinedEstimate``: when set, each look reading also carries scan_p and est
         self.decision_every = self.config.decision_every
         self.queen_every = self.config.queen_every
         if self.per_ant_visits:
@@ -125,7 +127,12 @@ class ColonyTumorWorld(TumorMRIWorld):
         if self.look_fn is not None:
             look = self.look_fn(i, sq.pos, tick)
             if look is not None:
-                out.append({"kind": "look", "value": float(look), "band": scan_band(float(self._percept.p_tumour[sq.pos]))})
+                scan_p = float(self._percept.p_tumour[sq.pos])
+                reading = {"kind": "look", "value": float(look), "band": scan_band(scan_p)}
+                if self.estimate is not None:       # the estimate sees the scan p and the look at the ant's own voxel, nothing else
+                    reading["scan_p"] = scan_p
+                    reading["est"] = float(self.estimate(scan_p, float(look)))
+                out.append(reading)
         out.append({"kind": "dose", "value": float(self.field.dose[sq.pos]) / self.config.dose_threshold})
         if self.uptake_fn is not None and sq.last_release is not None:
             r = self.uptake_fn(i, tick, dict(sq.last_release))

@@ -34,6 +34,12 @@ a strong ``dosed`` or ``dose_ok`` at the spot means "dose already high here"; ``
 other ants are extra dose targets; others' ``slow_uptake`` and ``washout`` marks count exactly as own readings; a region
 counts as visited if its status is not open or a visible mark lies in it.
 
+v4.3. Every constant above is read from an :class:`AntRules` carried by ``AntState`` (``AntRules.v42()`` by default, which
+reproduces everything described here exactly). With ``AntRules.v43()`` the ant works on the combined estimate ``c`` (the ``est``
+of its own look at this tick, else the raw look), releases only at ``c >= 0.6`` (explore also needs scan p >= 0.5), lets a
+fold-in only lower ``c``, bounds the verify job, and moves a job threshold only on a turn whose outcome was resolved. There is
+still ONE decision function for every arm; no branch reads an arm's name.
+
 Judgement calls and defaults chosen where the goal text is silent are listed in ``DEFAULTS_CHOSEN`` and in the Q1 report.
 Every random draw in the colony is seeded per INTERFACES 1; this module draws none.
 """
@@ -48,6 +54,7 @@ from typing import Any, Dict, FrozenSet, Iterable, List, Mapping, Optional, Sequ
 from antelligence.kernel.colony.thresholds import Thresholds
 from antelligence.kernel.signal import SignalDraft
 from antelligence.kernel.types import Intent, LocalView
+from antelligence.worlds.tumor_mri.ant_rules import AntRules
 from antelligence.worlds.tumor_mri.data import Region
 from antelligence.worlds.tumor_mri.questions import EXPLORE, STAY
 from antelligence.worlds.tumor_mri.world import ACTION_DECIDE
@@ -123,11 +130,23 @@ class TurnInputs:
     marks: Optional[Sequence[Mapping[str, Any]]] = None            # obs key marks_near       (sharing arms)
     region_status: Optional[Mapping[int, str]] = None              # obs key region_status    (sharing arms)
     messages: Optional[Sequence[Mapping[str, Any]]] = None         # obs key messages_in      (S-talk)
+    est: Optional[float] = None                                    # v4.3: ``est`` of the own look logged at this tick
+
+
+def _est_at_tick(log: Sequence[Mapping[str, Any]], tick: int) -> Optional[float]:
+    """The ``est`` of the own look logged at ``tick`` (the log is in tick order), or None when there is none."""
+    for e in reversed(log):
+        if e["tick"] < tick:
+            break
+        if e["kind"] == "look" and e["tick"] == tick and e.get("est") is not None:
+            return float(e["est"])
+    return None
 
 
 def inputs_from_observation(obs: Mapping[str, Any], voxel_mm: float) -> TurnInputs:
     """Read a colony observation into the named inputs. A key the arm may not see is absent and becomes ``None``."""
     status = obs.get("region_status")
+    est = _est_at_tick(obs.get("reading_log", ()), int(obs["tick"]))
     return TurnInputs(
         tick=int(obs["tick"]), round=int(obs["round"]), pos=tuple(int(c) for c in obs["position_vox"]),  # type: ignore[arg-type]
         voxel_mm=float(voxel_mm), payload_fraction=float(obs["payload_fraction"]), scan_p=float(obs["local_p_tumour"]),
@@ -136,7 +155,7 @@ def inputs_from_observation(obs: Mapping[str, Any], voxel_mm: float) -> TurnInpu
         visited_regions=frozenset((obs.get("visited_self") or {}).get("regions", ())),
         zone_need={int(k): v for k, v in (obs.get("zone_need") or {}).items()},
         marks=obs.get("marks_near"), region_status=None if status is None else {int(k): v for k, v in status.items()},
-        messages=obs.get("messages_in"))
+        messages=obs.get("messages_in"), est=est)
 
 
 @dataclass
@@ -144,12 +163,16 @@ class AntState:
     """Per-ant script memory. Reset by building a new one; never shared between ants."""
 
     thresholds: Thresholds = field(default_factory=Thresholds)
+    rules: AntRules = field(default_factory=AntRules.v42)
     skip_zones: Set[int] = field(default_factory=set)
     skip_spots: Set[Vox] = field(default_factory=set)
     pending: Optional[Dict[str, Any]] = None              # S-talk: {"pos", "region_id", "estimate", "round"}
     last_ask_round: Optional[int] = None
     prev: Optional[Dict[str, Any]] = None                  # the plan of the previous turn, settled at this turn
     counters: Counter = field(default_factory=Counter)
+    decision_turns: int = 0                                 # this ant's own previous decision turns (v4.3 verify share)
+    verify_turns: int = 0                                   # ... of which verify turns with a target spot
+    verify_by_spot: Counter = field(default_factory=Counter)   # verify turns taken per spot (v4.3 per-spot cap)
 
 
 @dataclass(frozen=True)
@@ -174,18 +197,38 @@ def _vox(p: Sequence[float]) -> Vox:
     return tuple(int(round(c)) for c in p)  # type: ignore[return-value]
 
 
-def _looks_near(log: Iterable[Mapping[str, Any]], pos: Sequence[float], radius_mm: float, vm: float) -> List[float]:
-    return [float(e["value"]) for e in log if e["kind"] == "look" and _mm(vm, e["pos_vox"], pos) <= radius_mm * (1 + 1e-9)]
+_V42 = AntRules.v42()
 
 
-def _grey(x: float) -> bool:
-    return GREY[0] <= x <= GREY[1]
+def _lv(e: Mapping[str, Any], rules: AntRules) -> float:
+    """The value of a logged look under ``rules``: its combined estimate ``est`` when the rules use it, else the raw look."""
+    return float(e["est"]) if rules.use_combined and e.get("est") is not None else float(e["value"])
 
 
-def _estimate(inp: TurnInputs, target: Sequence[float], look: float) -> Tuple[float, bool]:
-    """The target estimate: mean of its own logged looks within 6 mm of the target, else the current look.
-    Returns (estimate, own_looks_exist)."""
-    near = _looks_near(inp.reading_log, target, READ_MM, inp.voxel_mm)
+def _looks_near(log: Iterable[Mapping[str, Any]], pos: Sequence[float], radius_mm: float, vm: float,
+                rules: AntRules = _V42) -> List[float]:
+    return [_lv(e, rules) for e in log if e["kind"] == "look" and _mm(vm, e["pos_vox"], pos) <= radius_mm * (1 + 1e-9)]
+
+
+def _grey(x: float, grey: Tuple[float, float] = GREY) -> bool:
+    return grey[0] <= x <= grey[1]
+
+
+def _current_c(inp: TurnInputs, rules: AntRules, look: float) -> float:
+    """The estimate ``c`` this turn acts on: under the combined rules the ``est`` of the own look logged at this tick (given
+    directly, or found in the reading log); otherwise, and as the fallback, the raw look."""
+    if not rules.use_combined:
+        return look
+    if inp.est is not None:
+        return float(inp.est)
+    est = _est_at_tick(inp.reading_log, inp.tick)
+    return look if est is None else est
+
+
+def _estimate(inp: TurnInputs, target: Sequence[float], look: float, rules: AntRules = _V42) -> Tuple[float, bool]:
+    """The target estimate: mean of its own logged looks (their ``est`` under the combined rules) within 6 mm of the target,
+    else the current ``c``. Returns (estimate, own_looks_exist)."""
+    near = _looks_near(inp.reading_log, target, READ_MM, inp.voxel_mm, rules)
     return (sum(near) / len(near), True) if near else (look, False)
 
 
@@ -213,32 +256,38 @@ def _shared_dose_high(inp: TurnInputs, pos: Sequence[float]) -> bool:
                for m in (inp.marks or ()))
 
 
-def release_rule(inp: TurnInputs, job: str, look: float, pos: Sequence[float]) -> Tuple[bool, int, str]:
+def release_rule(inp: TurnInputs, job: str, look: float, pos: Sequence[float],
+                 rules: AntRules = _V42) -> Tuple[bool, int, str]:
     """(release?, amount level, reason). Goal 7: look >= 0.5 and own dose below D_t; 50% of the payload, 75% if slow uptake;
-    skip if own washout here is fast and the look is below 0.65. The explore job needs a look >= 0.65; verify never releases."""
+    skip if own washout here is fast and the look is below 0.65. The explore job needs a look >= 0.65; verify never releases.
+    ``look`` is the estimate the release test sees (v4.3: ``c``, possibly lowered by a fold-in); the thresholds are the
+    rules' (v4.3: 0.6 for dose and explore, and the explore job also needs scan p >= 0.5)."""
     if job == "verify":
         return False, LEVEL_HALF, "verify"
     if inp.payload_fraction < EMPTY_FRACTION:
         return False, LEVEL_HALF, "payload_empty"
-    if look < (EXPLORE_RELEASE_LOOK if job == "explore" else RELEASE_LOOK):
+    if look < (rules.explore_release_c if job == "explore" else rules.release_c):
         return False, LEVEL_HALF, "look_low"
+    if job == "explore" and inp.scan_p < rules.explore_scan_min:
+        return False, LEVEL_HALF, "scan_low"
     if inp.dose_rel >= 1.0:
         return False, LEVEL_HALF, "dose_ok"
     if _shared_dose_high(inp, pos):
         return False, LEVEL_HALF, "shared_dose_high"
-    if _washout_fast_here(inp, pos) and look < WASHOUT_RELEASE_LOOK:
+    if _washout_fast_here(inp, pos) and look < rules.washout_release_c:
         return False, LEVEL_HALF, "washout"
     return True, (LEVEL_THREE_QUARTERS if _slow_uptake_near(inp, pos) else LEVEL_HALF), "ok"
 
 
-def judgement_marks(inp: TurnInputs, look: float) -> List[str]:
-    """Judgement marks placed at the ant's own voxel, in every arm (goal 7)."""
+def judgement_marks(inp: TurnInputs, look: float, rules: AntRules = _V42) -> List[str]:
+    """Judgement marks placed at the ant's own voxel, in every arm (goal 7). ``look`` is the ant's own estimate ``c``."""
     out: List[str] = []
-    if (look >= TUMOUR_NEW_LOOK and inp.scan_p < SCAN_HALF) or look >= TUMOUR_ANY_LOOK:
+    if ((look >= rules.tumour_here_c and inp.scan_p < rules.tumour_here_scan_max)
+            or (rules.tumour_here_any_c is not None and look >= rules.tumour_here_any_c)):
         out.append("tumour_here")
-    if look <= NOT_TUMOUR_LOOK and inp.scan_p >= SCAN_HALF:
+    if look <= rules.not_tumour_c and inp.scan_p >= rules.not_tumour_scan_min:
         out.append("not_tumour")
-    if inp.dose_rel < 1.0 and look >= RELEASE_LOOK and inp.payload_fraction < EMPTY_FRACTION:
+    if inp.dose_rel < 1.0 and look >= rules.release_c and inp.payload_fraction < EMPTY_FRACTION:
         out.append("need_more")
     return out
 
@@ -310,16 +359,21 @@ def _shared_visited(inp: TurnInputs, scan: ScanInfo) -> Set[int]:
 
 def _verify_target(inp: TurnInputs, st: AntState) -> Optional[Tuple[Vox, Vox]]:
     """(spot, voxel to look at). A spot is a logged look whose local mean (4 mm) is grey and that still has an unlooked
-    voxel within 4 mm, or (sharing arms) a disputed mark spot. Nearest within 20 mm, ties by position."""
-    vm = inp.voxel_mm
+    voxel within 4 mm, or (sharing arms) a disputed mark spot. Nearest within 20 mm, ties by position.
+    Under the combined rules the grey test reads ``est`` and a spot this ant has already verified ``verify_per_spot_max`` times
+    is skipped."""
+    vm, rules = inp.voxel_mm, st.rules
     looked = {tuple(e["pos_vox"]) for e in inp.reading_log if e["kind"] == "look"}
     spots: Set[Vox] = set()
     for e in inp.reading_log:
-        if e["kind"] == "look" and _grey(float(e["value"])):
-            near = _looks_near(inp.reading_log, e["pos_vox"], CONFIRM_MM, vm)
-            if _grey(sum(near) / len(near)):
+        if e["kind"] == "look" and _grey(_lv(e, rules), rules.grey):
+            near = _looks_near(inp.reading_log, e["pos_vox"], CONFIRM_MM, vm, rules)
+            if _grey(sum(near) / len(near), rules.grey):
                 spots.add(_vox(e["pos_vox"]))
     spots |= {_vox(m["pos_vox"]) for m in (inp.marks or ()) if m["disputed"]}
+    cap = rules.verify_per_spot_max
+    if cap is not None:
+        spots = {s for s in spots if st.verify_by_spot[s] < cap}
     r = int(math.ceil(CONFIRM_MM / vm))
     best: Optional[Tuple[Tuple[float, Vox], Vox, Vox]] = None
     for s in sorted(spots):
@@ -338,11 +392,56 @@ def _verify_target(inp: TurnInputs, st: AntState) -> Optional[Tuple[Vox, Vox]]:
 
 # --- the one decision function ------------------------------------------------------------------------------------------
 
+def _settle_resolved(inp: TurnInputs, st: AntState, c: float) -> None:
+    """Step 1 under ``resolved_only`` (v4.3): the previous turn moves its job's threshold only if its outcome is RESOLVED.
+
+    dose     the turn released and this turn has an uptake reading about a voxel within 6 mm of the release: ``good`` or
+             ``middling`` succeeds, ``poor`` (legacy ``slow``) fails; anything else is unresolved;
+    explore  this turn's position is not covered by an own look from an earlier tick within 4 mm: success if
+             c >= release_c and scan p >= explore_scan_min, failure if c < grey low, else unresolved (a covered spot too);
+    verify   the mean ``est`` of the own looks within 4 mm of the verified spot (this turn's included) is out of the grey band:
+             success; still grey after ``verify_per_spot_max`` verify turns at that spot: failure; else unresolved.
+    Success moves theta down, failure up (step sizes and bounds are the rules')."""
+    prev = st.prev
+    if prev is None:
+        return
+    rules, vm, job = st.rules, inp.voxel_mm, prev["job"]
+    ok: Optional[bool] = None
+    if job == "dose":
+        u = inp.uptake
+        if (prev["released"] and prev["pos"] is not None and u is not None
+                and _mm(vm, u["about_vox"], prev["pos"]) <= READ_MM * (1 + 1e-9)):
+            word = u.get("word")
+            ok = True if word in ("good", "middling") else False if word in ("poor", "slow") else None
+    elif job == "explore":
+        covered = any(e["kind"] == "look" and e["tick"] < inp.tick and _mm(vm, e["pos_vox"], inp.pos) <= CONFIRM_MM * (1 + 1e-9)
+                      for e in inp.reading_log)
+        if not covered:
+            if c >= rules.release_c and inp.scan_p >= rules.explore_scan_min:
+                ok = True
+            elif c < rules.grey[0]:
+                ok = False
+    else:
+        spot = prev["spot"]
+        near = [] if spot is None else _looks_near(inp.reading_log, spot, CONFIRM_MM, vm, rules)
+        if near:
+            if not _grey(sum(near) / len(near), rules.grey):
+                ok = True
+            elif rules.verify_per_spot_max is not None and st.verify_by_spot[spot] >= rules.verify_per_spot_max:
+                ok = False
+    if ok is None:
+        st.counters["theta_unresolved"] += 1
+        return
+    st.thresholds.update(job, ok)
+
+
 def _settle_previous(inp: TurnInputs, st: AntState, look: float) -> None:
     """Step 1: the plan chosen at the previous turn gets its success test, then its job's threshold moves."""
     prev = st.prev
     if prev is None:
         return
+    if st.rules.resolved_only:
+        return _settle_resolved(inp, st, look)
     vm, job = inp.voxel_mm, prev["job"]
     if job == "dose":
         slow = (inp.uptake is not None and inp.uptake.get("word") == "slow" and prev["pos"] is not None
@@ -380,8 +479,9 @@ def _fold_in_answer(inp: TurnInputs, st: AntState) -> Optional[Tuple[Dict[str, A
 
 def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Decision:
     """One decision turn. See the module docstring."""
-    vm, pos = inp.voxel_mm, inp.pos
-    look = float(inp.look) if inp.look is not None else inp.scan_p
+    vm, pos, rules = inp.voxel_mm, inp.pos, st.rules
+    raw_look = float(inp.look) if inp.look is not None else inp.scan_p
+    look = _current_c(inp, rules, raw_look)              # the estimate this turn acts on: c (combined rules) or the raw look
     _settle_previous(inp, st, look)
     folded = _fold_in_answer(inp, st)
 
@@ -395,8 +495,8 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
         here = ((p["region_id"] is not None and scan.zone_at(pos) == p["region_id"])
                 or _mm(vm, pos, p["pos"]) <= READ_MM * (1 + 1e-9))
         if here:
-            release_look = est
-        if est < RELEASE_LOOK:                           # not eligible as a dose target on this turn (no permanent skip)
+            release_look = est if rules.fold_can_permit else min(look, est)     # v4.3: a fold-in can only LOWER the estimate
+        if est < rules.fold_drop_c:                      # not eligible as a dose target on this turn (no permanent skip)
             kept = [t for t in targets if not is_pending(t)]
             if len(kept) != len(targets):
                 st.counters["targets_dropped_by_answer"] += 1
@@ -406,14 +506,18 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
     seen = set(inp.visited_regions) | shared_seen
     unvisited = [r for r in scan.regions if r.region_id not in seen]
     verify = _verify_target(inp, st)
+    if verify is not None and rules.verify_share_max is not None and not (
+            (st.verify_turns + 1) <= rules.verify_share_max * (st.decision_turns + 1)):
+        verify = None                                    # v4.3: verify is at most ~25% of this ant's decision turns
+        st.counters["verify_blocked_by_share"] += 1
     payload_ok = inp.payload_fraction >= EMPTY_FRACTION
     stimuli = {"dose": max((t.value for t in targets), default=0.0) if payload_ok else 0.0,
                "explore": (len(unvisited) / n_regions) if n_regions else 0.0,
                "verify": 1.0 if verify is not None else 0.0}
     job = st.thresholds.choose(stimuli)
 
-    release, level, reason = release_rule(inp, job, release_look, pos)
-    if release_look != look and release != release_rule(inp, job, look, pos)[0]:
+    release, level, reason = release_rule(inp, job, release_look, pos, rules)
+    if release_look != look and release != release_rule(inp, job, look, pos, rules)[0]:
         st.counters["release_changed_by_answer"] += 1
     target: Optional[_Target] = targets[0] if (job == "dose" and targets) else None
     if (target is not None and not release and reason == "washout"
@@ -445,13 +549,15 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
     elif job == "verify" and verify is not None:
         spot, goal = verify[0], verify[1]
         label, ask_pos = EXPLORE, spot
+        st.verify_turns += 1
+        st.verify_by_spot[spot] += 1
 
     ask = None
     if inp.messages is not None and ask_pos is not None and st.pending is None and (
             st.last_ask_round is None or inp.round - st.last_ask_round >= ASK_EVERY_ROUNDS):
-        est, own = _estimate(inp, ask_pos, look)
+        est, own = _estimate(inp, ask_pos, look, rules)
         disputed = any(m["disputed"] and _mm(vm, m["pos_vox"], ask_pos) <= CONFIRM_MM * (1 + 1e-9) for m in (inp.marks or ()))
-        if _grey(est) or disputed:
+        if _grey(est, rules.grey) or disputed:
             # goal 7: with no own look near the target the estimate is the current look and the ask is still sent; the kernel
             # decides whether it has a reading to quote and counts a refusal (asks_refused) itself.
             ask = {"question": "is_tumour", **({"region_id": ask_region} if ask_region is not None else {"pos_vox": list(ask_pos)})}
@@ -461,7 +567,8 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
             if not own:
                 st.counters["asks_on_current_look"] += 1
 
-    marks = tuple((k, pos) for k in judgement_marks(inp, look))
+    marks = tuple((k, pos) for k in judgement_marks(inp, look, rules))
+    st.decision_turns += 1
     st.prev = {"job": job, "released": release, "look": release_look, "pos": pos if release else None, "spot": spot}
     return Decision(job, label, goal, release, level, marks, ask,
                     {"job": job, "reason": reason, "stimuli": {k: round(v, 6) for k, v in stimuli.items()},
@@ -472,9 +579,10 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
 class ColonyScript:
     """The per-ant policy (kernel ``Policy`` protocol: ``decide(LocalView) -> Intent``)."""
 
-    def __init__(self, scan: ScanInfo, ant: int) -> None:
+    def __init__(self, scan: ScanInfo, ant: int, rules: Optional[AntRules] = None) -> None:
         self.scan, self.ant = scan, int(ant)
-        self.state = AntState()
+        self.rules = rules if rules is not None else AntRules.v42()      # None means the v4.2 ant
+        self.state = AntState(thresholds=Thresholds(**self.rules.threshold_kwargs()), rules=self.rules)
 
     def decide(self, view: LocalView) -> Intent:
         inp = inputs_from_observation(view.observation, self.scan.voxel_mm)
