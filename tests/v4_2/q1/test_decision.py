@@ -231,25 +231,27 @@ def answer(ans, region=0, pos=None):
             "msg_id": 2, "from_ant": 3, "to_ant": 0, "tick": 1, "note": ""}
 
 
-def test_answer_folds_into_the_estimate_and_a_no_drops_the_target():
+def test_answer_folds_into_the_estimate_and_replaces_the_look_for_that_target_that_turn():
     unsure = dict(look=0.5, scan_p=0.6, reading_log=[log_look((10, 10, 10), 0.5)], marks=[])
     st = no_verify()
     decide(inputs(**unsure, messages=[]), st)
     assert st.pending is not None
     d, _ = decide(inputs(**unsure, round=1, tick=5, messages=[answer("no")]), st)
-    assert st.pending is None and 0 in st.skip_zones and d.target_label != "A"         # (0.5 + 0.2) / 2 = 0.35 -> dropped
+    assert st.pending is None and st.counters["answers_used"] == 1 and d.target_label != "A"   # (0.5 + 0.2) / 2 = 0.35 < 0.5: ineligible now
+    assert not st.skip_zones and not st.skip_spots                                              # ... but nothing is dropped for good
+    assert not d.release                                                                        # raw look 0.5 would have released
     st = no_verify()
     decide(inputs(**unsure, messages=[]), st)
-    decide(inputs(**unsure, round=1, tick=5, messages=[answer("yes")]), st)
-    assert 0 not in st.skip_zones                                                       # (0.5 + 0.8) / 2 = 0.65 keeps it
+    d, _ = decide(inputs(**unsure, round=1, tick=5, messages=[answer("yes")]), st)
+    assert d.target_label == "A" and d.release                                                  # (0.5 + 0.8) / 2 = 0.65 keeps it
     st = no_verify()
     decide(inputs(**unsure, messages=[]), st)
     decide(inputs(**unsure, round=1, tick=5, messages=[answer("unknown")]), st)
-    assert 0 not in st.skip_zones and st.counters["answers_used"] == 0                  # unknown is ignored
+    assert not st.skip_zones and st.counters["answers_used"] == 0                               # unknown is ignored
     st = no_verify()
     decide(inputs(**unsure, messages=[]), st)
     decide(inputs(**unsure, round=1, tick=5, messages=[]), st)
-    assert st.pending is None                                                           # unanswered: settled at the next turn anyway
+    assert st.pending is None                                                                   # unanswered: settled at the next turn anyway
 
 
 # --- the wrapper ----------------------------------------------------------------------------------------------------------
