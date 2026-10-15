@@ -421,12 +421,20 @@ class V42Harness:
         """The automatic-mark placement rule. A hook so a later harness can add the v4.3 uptake words."""
         return automatic_marks
 
+    def arm_def(self, name: str) -> ArmDef:
+        """The arm named ``name``. A hook so a later harness can resolve arms from its own table, not the global registry."""
+        return resolve_arm(name)
+
+    def arm_controls(self, name: str) -> Optional[ArmControls]:
+        """The control hooks of an arm (or None). A hook so a later harness can resolve them explicitly, not from the global dict."""
+        return ARM_CONTROLS.get(name)
+
     # episode ----------------------------------------------------------------------------------------------------------
     def run_episode(self, arm_name: str, case: CaseData, seed: int, *,
                     mark_pos_fn: Optional[Callable[[int, int, str, Sequence[int]], Sequence[int]]] = None,
                     obs_providers: Optional[Mapping[str, Callable[..., Any]]] = None,
                     replay: Optional[Mapping[str, Any]] = None, drop: Optional[Mapping[str, Any]] = None) -> Dict[str, Any]:
-        arm = resolve_arm(arm_name)
+        arm = self.arm_def(arm_name)
         if case.split not in ALLOWED_SPLITS:
             raise EvalRefused(f"split {case.split!r} is refused; development cases and synthetic phantoms only")
         if case.split == "dev":
@@ -456,7 +464,8 @@ class V42Harness:
             kit = self.make_kit(arm.name, self.world_cfg.n_squads, scan, spec.reads_marks)
             queen = self.make_queen(world, board, ccfg, spec.reads_marks)
             providers = {**kit.providers, **(obs_providers or {})}
-            hooks = ARM_CONTROLS[arm.name](world, case, seed, self.world_cfg, ccfg) if arm.name in ARM_CONTROLS else {}
+            ctl = self.arm_controls(arm.name)
+            hooks = ctl(world, case, seed, self.world_cfg, ccfg) if ctl is not None else {}
             policy_for = None if (replay is not None and not drop) else hooks.get("wrap_policy_for", lambda f: f)(kit.policy_for)
             auto_rule = hooks.get("wrap_auto_rule", lambda r: r)(self.auto_mark_rule())
             res = run_colony_episode(world, policy_for, arm=spec, config=ccfg, queen=queen, obs_providers=providers,
