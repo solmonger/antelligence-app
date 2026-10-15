@@ -35,6 +35,7 @@ import numpy as np
 
 from antelligence.kernel.types import NOOP, Intent, LocalView, Observation, Outcome
 from antelligence.worlds.tumor_mri.config import WorldConfig
+from antelligence.worlds.tumor_mri.foraging import foraging_uptake, uptake_word
 from antelligence.worlds.tumor_mri.data import (Candidate, Crop, Region, entry_sites_with_info, perceived_regions,
                                                 select_candidates)
 from antelligence.worlds.tumor_mri.physics import (DrugField, Pathfinder, Vox, rng, uptake_source_a, uptake_source_b,
@@ -144,12 +145,17 @@ class TumorMRIWorld:
         self._sensor_cache: Dict[tuple, Dict[str, Optional[Dict[str, Any]]]] = {}
         self._sensor_counts = {"washout_turns": 0, "washout_available": 0, "washout_fast": 0,
                                "uptake_readings": 0, "uptake_slow": 0}
+        if self.config.facts.foraging:      # v4.3 word counts; the v4.2 stats keep exactly their keys
+            self._sensor_counts.update({"uptake_good": 0, "uptake_middling": 0, "uptake_poor": 0})
 
     def _hidden_fields(self, crop: Crop):
         """F2 / F3 fields, scorer-side. (None, None) when both facts are off: the v4.1 arithmetic path."""
         f = self.config.facts
         uptake = washout = None
-        if f.f2:
+        if f.f2 and f.f2_model == "foraging":
+            sc = self._scorer     # the v4.3 field: base from the case's own sub-regions, scorer-side, never observed
+            uptake = foraging_uptake(sc.truth, sc.tc, sc.et, crop.case_id, f.uptake_level)
+        elif f.f2:
             if f.f2_source == "A":
                 sc = self._scorer
                 if sc.tc is None or sc.et is None:
@@ -357,7 +363,7 @@ class TumorMRIWorld:
 
         * ``uptake`` (F2): about the ant's own last release voxel v, even if it has moved on: (dose gain at v since the
           release) / (the gain u = 1 would have given) + N(0, 0.1) noise, stream ``uptake_noise``. Words: "as expected"
-          (>= 0.7) or "slow". One reading per release, on the first turn after it.
+          (>= 0.7) or "slow"; v4.3 foraging: "good" (>= 0.7), "middling" (0.4 to 0.7) or "poor" (< 0.4). One reading per release, on the first turn after it.
         * ``washout`` (F3): delta(v) + N(0, 0.01) noise (stream ``washout_noise``) at the ant's own voxel, only when the local
           concentration is at least 0.01 x D_t. Words: "normal", or "fast" (>= 0.5 x f3_decay).
         Each is ``{"pos_vox", "reading", "word"}`` or None (fact off, nothing to read, or no signal). Never in observe()."""
@@ -378,7 +384,11 @@ class TumorMRIWorld:
                 if raw_gain > 1e-12:
                     ratio = (float(fl.dose[v]) - p["dose0"]) / raw_gain
                     val = ratio + float(rng("uptake_noise", self.case_id, self.seed, i, int(tick)).normal(0.0, 0.1))
-                    word = "as expected" if val >= 0.7 else "slow"
+                    if f.foraging:
+                        word = uptake_word(val)
+                        self._sensor_counts["uptake_" + word] += 1
+                    else:
+                        word = "as expected" if val >= 0.7 else "slow"
                     out["uptake"] = {"pos_vox": list(v), "reading": val, "word": word}
                     self._sensor_counts["uptake_readings"] += 1
                     self._sensor_counts["uptake_slow"] += word == "slow"
@@ -395,13 +405,16 @@ class TumorMRIWorld:
         return out
 
     def pending_sensor_events(self, agent_id: str, tick: int) -> List[Dict[str, Any]]:
-        """Automatic-mark triggers for this squad and tick: a ``slow_uptake`` event when the uptake reading is slow, a
+        """Automatic-mark triggers for this squad and tick: a ``slow_uptake`` event when the uptake reading is slow (v4.3
+        foraging: poor), a ``good_uptake`` event when it is good (foraging only; middling gives none), a
         ``washout`` event when the washout reading is fast. K1 turns them into marks; the world places none itself.
         Each event is ``{"kind", "ant", "tick", "pos_vox", "reading"}``."""
         r = self.sensor_readings(agent_id, tick)
         ant = self._idx(agent_id)
         ev: List[Dict[str, Any]] = []
-        if r["uptake"] is not None and r["uptake"]["word"] == "slow":
+        if r["uptake"] is not None and r["uptake"]["word"] == "good":      # v4.3 foraging model only
+            ev.append({"kind": "good_uptake", "ant": ant, "tick": int(tick), **{k: r["uptake"][k] for k in ("pos_vox", "reading")}})
+        if r["uptake"] is not None and r["uptake"]["word"] in ("slow", "poor"):
             ev.append({"kind": "slow_uptake", "ant": ant, "tick": int(tick), **{k: r["uptake"][k] for k in ("pos_vox", "reading")}})
         if r["washout"] is not None and r["washout"]["word"] == "fast":
             ev.append({"kind": "washout", "ant": ant, "tick": int(tick), **{k: r["washout"][k] for k in ("pos_vox", "reading")}})

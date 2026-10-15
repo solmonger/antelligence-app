@@ -11,6 +11,8 @@ import yaml
 
 AMOUNT_FRACTIONS = (0.10, 0.25, 0.50, 0.75, 1.00)  # levels 1..5, share of the squad's remaining payload
 DRUG_MODES = ("fixed", "per_perceived_volume")
+F2_MODELS = ("v42", "foraging")
+UPTAKE_LEVEL_NAMES = ("low", "mid", "high")     # the preset values live in ``foraging.UPTAKE_LEVELS`` (named assumptions, never tuned)
 
 
 def perceived_volume_vox(p_tumour: Any) -> float:
@@ -30,8 +32,15 @@ class FactsConfig:
     f3: bool = False
     f3_decay: float = 0.0       # {0.04, 0.08}
     f3_share: float = 0.0       # {0.1, 0.2}
+    # v4.3 (B1). Both are omitted from ``to_dict`` at their defaults, so a v4.2 config keeps its dict, hash and record.
+    f2_model: str = "v42"       # v42 (the two-level F2 above) | foraging (the v4.3 uptake field, ``foraging.py``)
+    uptake_level: str = "mid"   # low | mid | high; read only when f2 is on and f2_model is foraging
 
     def __post_init__(self) -> None:
+        if self.f2_model not in F2_MODELS:
+            raise ValueError(f"f2_model must be one of {F2_MODELS}, got {self.f2_model!r}")
+        if self.uptake_level not in UPTAKE_LEVEL_NAMES:
+            raise ValueError(f"uptake_level must be one of {UPTAKE_LEVEL_NAMES}, got {self.uptake_level!r}")
         if self.f1_source not in ("boards", "local_d1", "log2000"):
             raise ValueError("f1_source must be boards | local_d1 | log2000")
         if self.f2_source not in ("A", "B"):
@@ -50,6 +59,21 @@ class FactsConfig:
     @property
     def any_on(self) -> bool:
         return bool(self.f1_simlook or self.f2 or self.f3)
+
+    @property
+    def foraging(self) -> bool:
+        """True when F2 is on and uses the v4.3 foraging uptake field."""
+        return bool(self.f2 and self.f2_model == "foraging")
+
+    def to_dict(self) -> Dict[str, Any]:
+        """All fields, except that ``f2_model`` / ``uptake_level`` are left out at their defaults (v4.2 dict unchanged).
+        A foraging config always states its level, so a header names the field it ran."""
+        d = asdict(self)
+        if self.f2_model == "v42":
+            del d["f2_model"]
+            if self.uptake_level == "mid":
+                del d["uptake_level"]
+        return d
 
 
 @dataclass(frozen=True)
@@ -104,7 +128,7 @@ class WorldConfig:
         d = asdict(self)
         d["amount_fractions"] = list(self.amount_fractions)
         if self.facts.any_on:  # the v4.1 config (and its hash) is unchanged when every fact is off
-            d["facts"] = asdict(self.facts)
+            d["facts"] = self.facts.to_dict()
         else:
             d.pop("facts", None)
         if self.drug_mode == "per_perceived_volume":

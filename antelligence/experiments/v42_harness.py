@@ -412,6 +412,15 @@ class V42Harness:
     def make_kit(self, arm: str, n: int, scan: ScanInfo, sharing: bool) -> ColonyKit:
         return ColonyKit(arm, n, scan, sharing=sharing)
 
+    def make_queen(self, world: HarnessWorld, board: Optional[Board], ccfg: ColonyConfig, sharing: bool) -> ScriptedQueen:
+        """The scripted queen. A hook so a later harness can switch on her v4.3 uptake scaling (sharing arms only)."""
+        return ScriptedQueen(world.regions, world.total_drug, self.world_cfg.n_squads, world.voxel_mm, board=board,
+                             half_life=ccfg.half_life)
+
+    def auto_mark_rule(self) -> Callable:
+        """The automatic-mark placement rule. A hook so a later harness can add the v4.3 uptake words."""
+        return automatic_marks
+
     # episode ----------------------------------------------------------------------------------------------------------
     def run_episode(self, arm_name: str, case: CaseData, seed: int, *,
                     mark_pos_fn: Optional[Callable[[int, int, str, Sequence[int]], Sequence[int]]] = None,
@@ -445,12 +454,11 @@ class V42Harness:
             spec = arm_spec(arm.driver_arm)
             scan = self.build_scan(world, case)
             kit = self.make_kit(arm.name, self.world_cfg.n_squads, scan, spec.reads_marks)
-            queen = ScriptedQueen(world.regions, world.total_drug, self.world_cfg.n_squads, world.voxel_mm, board=board,
-                                  half_life=ccfg.half_life)
+            queen = self.make_queen(world, board, ccfg, spec.reads_marks)
             providers = {**kit.providers, **(obs_providers or {})}
             hooks = ARM_CONTROLS[arm.name](world, case, seed, self.world_cfg, ccfg) if arm.name in ARM_CONTROLS else {}
             policy_for = None if (replay is not None and not drop) else hooks.get("wrap_policy_for", lambda f: f)(kit.policy_for)
-            auto_rule = hooks.get("wrap_auto_rule", lambda r: r)(automatic_marks)
+            auto_rule = hooks.get("wrap_auto_rule", lambda r: r)(self.auto_mark_rule())
             res = run_colony_episode(world, policy_for, arm=spec, config=ccfg, queen=queen, obs_providers=providers,
                                      auto_mark_rule=auto_rule, board=board, base_keys=OBS_KEYS, cards_fn=kit.cards_fn,
                                      mark_pos_fn=mark_pos_fn or hooks.get("mark_pos_fn"), replay=replay, drop=drop)
@@ -462,7 +470,7 @@ class V42Harness:
             "arm": arm.name, "case_id": case.case_id, "seed": int(seed), "split": case.split, "metrics": res.metrics,
             "timing_s": {"build": round(t_built - t_start, 4), "simlook": round(look_build_s, 4),
                          "run": round(t_run - t_built, 4), "wall": round(t_run - t_start, 4)},
-            "sensor": look_desc, "facts": self.world_cfg.facts.__dict__ if self.world_cfg.facts.any_on else None,
+            "sensor": look_desc, "facts": self.world_cfg.facts.to_dict() if self.world_cfg.facts.any_on else None,
             "total_drug": world.total_drug, "n_regions": len(world.regions), "quiet_rule": bool(ccfg.quiet_rule and arm.kind == "ant"),
             "queen_hook_unset": world.queen_hook is None,
         }

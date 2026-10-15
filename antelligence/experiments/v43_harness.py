@@ -25,11 +25,12 @@ from antelligence.worlds.tumor_mri.ant_rules import AntRules
 from antelligence.worlds.tumor_mri.colony_policies import ColonyScript, ScanInfo, _est_at_tick
 from antelligence.worlds.tumor_mri.combined import CombinedEstimate
 from antelligence.worlds.tumor_mri.data import Region
+from antelligence.worlds.tumor_mri.foraging import queen_uptake_scaling, select_auto_mark_rule
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CELL_TABLE = REPO_ROOT / "docs" / "research" / "v4.2-20261014" / "simlook" / "cells_v4_2.json"   # read-only
 CODE_FILES = ("worlds/tumor_mri/colony_policies.py", "worlds/tumor_mri/move_on.py", "worlds/tumor_mri/ant_rules.py", "worlds/tumor_mri/combined.py",
-              "worlds/tumor_mri/colony_world.py", "worlds/tumor_mri/colony_queen.py", "kernel/colony/episode.py",
+              "worlds/tumor_mri/colony_world.py", "worlds/tumor_mri/colony_queen.py", "worlds/tumor_mri/foraging.py", "kernel/colony/episode.py",
               "kernel/colony/messages.py", "kernel/colony/thresholds.py", "kernel/colony/cards.py",
               "experiments/v42_harness.py", "experiments/v43_harness.py")
 
@@ -114,6 +115,16 @@ class V43Harness(V42Harness):
 
     def make_kit(self, arm: str, n: int, scan: ScanInfo, sharing: bool) -> V43Kit:
         return V43Kit(arm, n, scan, sharing=sharing, rules=self.rules)
+
+    def make_queen(self, world: Any, board: Any, ccfg: ColonyConfig, sharing: bool) -> Any:
+        """B3: the queen scales the zone need by the uptake marks only in the foraging model and only in sharing arms."""
+        queen = super().make_queen(world, board, ccfg, sharing)
+        queen.uptake_scaling = queen_uptake_scaling(self.world_cfg, sharing)
+        return queen
+
+    def auto_mark_rule(self) -> Any:
+        """B1: the foraging model adds ``good_uptake`` and fires ``slow_uptake`` on the word ``poor``; otherwise the v4.2 rule."""
+        return select_auto_mark_rule(self.world_cfg)
 
     def run_episode(self, arm_name: str, case: CaseData, seed: int, **kw: Any) -> Dict[str, Any]:
         rec = super().run_episode(arm_name, case, seed, **kw)
