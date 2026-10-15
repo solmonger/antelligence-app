@@ -30,6 +30,7 @@ import yaml  # noqa: E402
 
 from antelligence.experiments.v42_harness import (EvalRefused, V42Harness, assert_dev_case, bundle_of,  # noqa: E402
                                                   load_dev_case, phantom_case, resolve_arm)
+import antelligence.experiments.v42_arms  # noqa: E402,F401  (registers the control arms)
 from antelligence.kernel.colony.episode import ColonyConfig  # noqa: E402
 from antelligence.worlds.tumor_mri import WorldConfig  # noqa: E402
 from antelligence.worlds.tumor_mri.config import FactsConfig  # noqa: E402

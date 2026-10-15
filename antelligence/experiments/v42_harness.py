@@ -91,6 +91,16 @@ ARMS: Dict[str, ArmDef] = {a.name: a for a in (
 VERDICT_ARMS = ("S", "S-solo", "S-marks", "S-talk", "S'")
 
 
+# Per-arm control hooks (M1's controls, registered by ``v42_arms``): ``fn(world, case, seed, world_cfg, colony_cfg)`` returns a
+# dict with optional ``mark_pos_fn``, ``wrap_policy_for``, ``wrap_auto_rule`` and ``describe`` (a callable for the record).
+ArmControls = Callable[[Any, "CaseData", int, WorldConfig, ColonyConfig], Dict[str, Any]]
+ARM_CONTROLS: Dict[str, ArmControls] = {}
+
+
+def register_controls(name: str, fn: ArmControls) -> None:
+    ARM_CONTROLS[name] = fn
+
+
 def register_arm(arm: ArmDef) -> None:
     """Add an arm (M1's controls). The script of an ``ant`` arm is the shared decision function; only the inputs differ."""
     ARMS[arm.name] = arm
@@ -416,10 +426,12 @@ class V42Harness:
             queen = ScriptedQueen(world.regions, world.total_drug, self.world_cfg.n_squads, world.voxel_mm, board=board,
                                   half_life=ccfg.half_life)
             providers = {**kit.providers, **(obs_providers or {})}
-            policy_for = None if (replay is not None and not drop) else kit.policy_for
+            hooks = ARM_CONTROLS[arm.name](world, case, seed, self.world_cfg, ccfg) if arm.name in ARM_CONTROLS else {}
+            policy_for = None if (replay is not None and not drop) else hooks.get("wrap_policy_for", lambda f: f)(kit.policy_for)
+            auto_rule = hooks.get("wrap_auto_rule", lambda r: r)(automatic_marks)
             res = run_colony_episode(world, policy_for, arm=spec, config=ccfg, queen=queen, obs_providers=providers,
-                                     auto_mark_rule=automatic_marks, board=board, base_keys=OBS_KEYS, cards_fn=kit.cards_fn,
-                                     mark_pos_fn=mark_pos_fn, replay=replay, drop=drop)
+                                     auto_mark_rule=auto_rule, board=board, base_keys=OBS_KEYS, cards_fn=kit.cards_fn,
+                                     mark_pos_fn=mark_pos_fn or hooks.get("mark_pos_fn"), replay=replay, drop=drop)
             if world.queen_hook is not None:
                 raise RuntimeError("world.queen_hook was set during a colony episode")
         t_run = time.perf_counter()
@@ -438,6 +450,8 @@ class V42Harness:
             record["cards_final"] = kit.finalize(res.colony, world.scorer_truth().truth, world.regions)
             record["queen_alarms"] = list(queen.alarms)
             record["board_entries"] = 0 if board is None else len(board)
+            if hooks.get("describe") is not None:
+                record["control"] = hooks["describe"]()
         else:
             record["colony"] = res.colony if arm.kind != "ant" else None
         if res.effect is not None:
