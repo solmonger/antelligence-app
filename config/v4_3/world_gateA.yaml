@@ -1,0 +1,70 @@
+# v4.3 GATE-A config: the world.yaml of config/v4_3 with facts.f2 and facts.f3 OFF. F1 (SimLook) stays on and the drug budget
+# is the frozen v4.2 value. Used only by scripts/v43_gate_a.py (arms S and S-solo). The same ant rules as config/v4_3/world.yaml.
+# v4.3 world config (Step A). Copy of the frozen config/v4_2/world.yaml (never edited): same world constants, same facts
+# (F2 stays the v4.2 field here; Step B replaces it), plus colony.ant_rules {version: v43} = the fixed ant (AntRules.v43()).
+# Frozen v4.2 provenance follows, unchanged.
+# [v4.2] FROZEN 2026-10-14 (v4.2 step 6 tuning): facts ON, drug_scale_k 0.5338512801630682 = v4.1 k 0.3559008534420454 x 1.5.
+# Tuning: dev-A (30 cases), seed 1, S-solo and S' only, no sharing arm run. Stage 1 (12 points, k=0.3559) had no qualifying point
+# (runs/tune1/tune_results.json); stage 2 (12 points, k x {1.5,2,2.5,3}) had 3 qualifying points and picked point 4:
+# u_core 0.5, f3_decay 0.04, f3_share 0.1, k x1.5: median S-solo 0.277, median S' 0.797, S'-S-solo >= 0.15 on 100% of cases.
+# Result files: /Volumes/WD_BLACK/antelligence-v4.2/runs/tune2/tune_results.json (copied to docs/research/v4.2-20261014/tuning/).
+# v4.2 world: the v4.1 constants below, plus the hidden-fact flags (all OFF) and the colony block (K1/K2 own it). Derived from v4.1 tumor_mri world constants (world_tuning_v2: drug scales with perceived volume).
+# Per case: total_drug = drug_scale_k x V_perceived, V_perceived = sum of calibrated p_tumour over the crop (voxels);
+# perception only, never truth. Decision: vault antelligence/v4.1/decisions/2026-10-13-drug-budget-scales-with-perceived-volume.md
+# k and D_t tuned by scripts/v41_tune_world_v2.py on the 40 DEV cases (dev_a + dev_b), scripts S and S' only, seeds 1,2,
+# through the L1 store adapter. Status: fallback_gap_unmet (widened_medians_only band). Result file: docs/research/v4.1-20261013/world_tuning_v2.json
+#   median S' coverage 0.674, median S coverage 0.539, S' - S >= 0.15 on 48% of cases.
+# NEITHER BAND MET on the gap criterion; medians are in the widened band and this point maximises the share of cases with S' - S >= 0.15. Raise at G1.
+# Only D_t / drug_scale_k matters (dose and budget are both linear in k); D_t is pinned at 5 and k carries the tuning.
+# No `total_drug` here: the loader rejects it in per_perceived_volume mode (the budget is per case).
+world:
+  n_squads: 8
+  ticks: 120
+  decision_every: 5
+  queen_every: 30
+  drug_mode: per_perceived_volume
+  drug_scale_k: 0.5338512801630682
+  dose_threshold: 5.0
+  release_sigma_mm: 2.0
+  diffuse_sigma_vox: 1.0
+  decay: 0.02
+  entry_shell_mm: 4.0
+  entry_min_dist_mm: 10.0
+  visit_radius_mm: 6.0
+  explore_unc_quantile: 0.95
+  path_weight: 1.5
+  path_max_expand: 40000
+  amount_fractions:
+  - 0.1
+  - 0.25
+  - 0.5
+  - 0.75
+  - 1.0
+  # Hidden local facts F1-F3 (goal 5, INTERFACES 11). Defaults are the off values: with all off the world is v4.1 exactly.
+  facts:
+    f1_simlook: true          # SimLook injected through look_fn (the harness builds it; the world only reads look_fn)
+    f1_source: boards         # boards | local_d1 | log2000 (recorded, never inferred)
+    f2: false                 # GATE A: off
+    f2_source: A              # A | B
+    u_core: 0.5               # {0.3, 0.5, 0.7} when on
+    f2_share: 0.0             # {0.2, 0.35}, Source B only
+    f3: false                 # GATE A: off
+    f3_decay: 0.04            # {0.04, 0.08}
+    f3_share: 0.1             # {0.1, 0.2}
+
+# Colony keys (INTERFACES 11), all OFF. Read by K1/K2, not by WorldConfig (which reads only the `world:` block).
+colony:
+  enabled: false
+  arm: S
+  quiet_rule: false
+  heartbeat_rounds: 3
+  quorum_k: 2
+  read_radius_mm: 6.0
+  confirm_radius_mm: 4.0
+  half_life: {dosed: 30, dose_ok: 40, slow_uptake: 60, washout: 60, tumour_here: 40, not_tumour: 80, need_more: 15}
+  ask_every_rounds: 2
+  answers_per_tick: 2
+  ask_lapse_ticks: 2
+  queen_every_ticks: 30
+  notebook: {cap_chars: 1500, stale_runs: 10, frozen: true}
+  ant_rules: {version: v43}   # v4.3: the fixed ant (AntRules.v43()); absent = the v4.2 ant. Read by the harness, ignored by ColonyConfig.
