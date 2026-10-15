@@ -459,7 +459,7 @@ def test_v43_configs_load():
         doc = yaml.safe_load(path.read_text())
         c = ColonyConfig.from_dict({**doc["colony"], "quiet_rule": False})
         assert c.answer_rule == "v42"                                 # the harness sets it from the ant rules
-        assert AntRules.from_dict(doc["colony"]["ant_rules"]) == R43
+        assert AntRules.from_dict(doc["colony"]["ant_rules"]) == (AntRules.v43_foraging() if f2 else R43)   # B2 is on in the Step B world only
         assert (w.facts.f1_simlook, w.facts.f2, w.facts.f3) == (True, f2, f3)
         assert w.drug_scale_k == frozen.drug_scale_k and w.dose_threshold == frozen.dose_threshold
         assert w.with_(facts=frozen.facts) == frozen                  # nothing else differs from the frozen v4.2 world

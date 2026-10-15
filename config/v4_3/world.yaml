@@ -4,7 +4,8 @@
 # tumor_mri/foraging.py): u = clip(base * exp(sigma*z - sigma^2/2), 0.05, 1) inside the tumour, base from the case's own
 # rim / core / edema. mid = base 1.0 / 0.4 / 0.8, sigma 0.4 (named assumption, never tuned). u_core is NOT used by the
 # foraging model (left at 1.0, f2_source/f2_share are unused too). New mark kind good_uptake (half-life 60).
-# Step A (gate A) used config/v4_3/world_gateA.yaml (F2 and F3 off); this file is for Step B.
+# B2: colony.ant_rules adds foraging: true (the probe-and-hold rule; AntRules.v43_foraging()).
+# Step A (gate A) used config/v4_3/world_gateA.yaml (F2 and F3 off, ant_rules {version: v43}, B2 off); this file is for Step B.
 # Frozen v4.2 provenance follows, unchanged.
 # [v4.2] FROZEN 2026-10-14 (v4.2 step 6 tuning): facts ON, drug_scale_k 0.5338512801630682 = v4.1 k 0.3559008534420454 x 1.5.
 # Tuning: dev-A (30 cases), seed 1, S-solo and S' only, no sharing arm run. Stage 1 (12 points, k=0.3559) had no qualifying point
@@ -72,4 +73,4 @@ colony:
   ask_lapse_ticks: 2
   queen_every_ticks: 30
   notebook: {cap_chars: 1500, stale_runs: 10, frozen: true}
-  ant_rules: {version: v43}   # v4.3: the fixed ant (AntRules.v43()); absent = the v4.2 ant. Read by the harness, ignored by ColonyConfig.
+  ant_rules: {version: v43, foraging: true}   # v4.3 Step B: the fixed ant plus the B2 probe-and-hold rule (AntRules.v43_foraging()); absent = the v4.2 ant. Read by the harness, ignored by ColonyConfig.
