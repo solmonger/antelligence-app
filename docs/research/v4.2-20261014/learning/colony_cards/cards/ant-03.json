@@ -1,0 +1,1 @@
+{"ant_id":"ant-03","cross_run":{"checked":3,"claims":3,"correct":2,"runs":1},"in_run":{"claims":3,"confirmed":0,"contradicted":0},"model":"script","policy":"S-marks","rev":"v4.2","thresholds":{"dose":0.8500000000000002,"explore":1.0,"verify":0.9500000000000001}}

@@ -1,0 +1,2470 @@
+{
+ "arm": "S-marks",
+ "carried_state": "job thresholds only (via Card.save/Card.load); cards otherwise reset every run (INTERFACES 8)",
+ "config": "config/v4_2/world.yaml",
+ "dev_a_cases_in_split_order": [
+  "BRATS_016",
+  "BRATS_406",
+  "BRATS_183",
+  "BRATS_238",
+  "BRATS_193",
+  "BRATS_464",
+  "BRATS_479",
+  "BRATS_303",
+  "BRATS_420",
+  "BRATS_337",
+  "BRATS_056",
+  "BRATS_441",
+  "BRATS_373",
+  "BRATS_462",
+  "BRATS_113",
+  "BRATS_375",
+  "BRATS_205",
+  "BRATS_246",
+  "BRATS_468",
+  "BRATS_368",
+  "BRATS_034",
+  "BRATS_356",
+  "BRATS_120",
+  "BRATS_389",
+  "BRATS_343",
+  "BRATS_483",
+  "BRATS_287",
+  "BRATS_328",
+  "BRATS_286",
+  "BRATS_069"
+ ],
+ "dev_b_cases": [
+  "BRATS_167",
+  "BRATS_067",
+  "BRATS_355",
+  "BRATS_297",
+  "BRATS_149",
+  "BRATS_161",
+  "BRATS_290",
+  "BRATS_423",
+  "BRATS_374",
+  "BRATS_101"
+ ],
+ "facts": {
+  "f1_simlook": true,
+  "f1_source": "boards",
+  "f2": true,
+  "f2_share": 0.0,
+  "f2_source": "A",
+  "f3": true,
+  "f3_decay": 0.04,
+  "f3_share": 0.1,
+  "u_core": 0.5
+ },
+ "final_cards": {
+  "ant-00": {
+   "ant_id": "ant-00",
+   "cross_run": {
+    "checked": 21,
+    "claims": 21,
+    "correct": 16,
+    "runs": 1
+   },
+   "in_run": {
+    "claims": 21,
+    "confirmed": 1,
+    "contradicted": 0
+   },
+   "model": "script",
+   "policy": "S-marks",
+   "rev": "v4.2",
+   "thresholds": {
+    "dose": 0.9000000000000002,
+    "explore": 1.0,
+    "verify": 1.0
+   }
+  },
+  "ant-01": {
+   "ant_id": "ant-01",
+   "cross_run": {
+    "checked": 0,
+    "claims": 0,
+    "correct": 0,
+    "runs": 1
+   },
+   "in_run": {
+    "claims": 0,
+    "confirmed": 0,
+    "contradicted": 0
+   },
+   "model": "script",
+   "policy": "S-marks",
+   "rev": "v4.2",
+   "thresholds": {
+    "dose": 0.9000000000000006,
+    "explore": 1.0,
+    "verify": 1.0
+   }
+  },
+  "ant-02": {
+   "ant_id": "ant-02",
+   "cross_run": {
+    "checked": 0,
+    "claims": 0,
+    "correct": 0,
+    "runs": 1
+   },
+   "in_run": {
+    "claims": 0,
+    "confirmed": 0,
+    "contradicted": 0
+   },
+   "model": "script",
+   "policy": "S-marks",
+   "rev": "v4.2",
+   "thresholds": {
+    "dose": 0.7000000000000006,
+    "explore": 1.0,
+    "verify": 1.0
+   }
+  },
+  "ant-03": {
+   "ant_id": "ant-03",
+   "cross_run": {
+    "checked": 3,
+    "claims": 3,
+    "correct": 2,
+    "runs": 1
+   },
+   "in_run": {
+    "claims": 3,
+    "confirmed": 0,
+    "contradicted": 0
+   },
+   "model": "script",
+   "policy": "S-marks",
+   "rev": "v4.2",
+   "thresholds": {
+    "dose": 0.8500000000000002,
+    "explore": 1.0,
+    "verify": 0.9500000000000001
+   }
+  },
+  "ant-04": {
+   "ant_id": "ant-04",
+   "cross_run": {
+    "checked": 0,
+    "claims": 0,
+    "correct": 0,
+    "runs": 1
+   },
+   "in_run": {
+    "claims": 0,
+    "confirmed": 0,
+    "contradicted": 0
+   },
+   "model": "script",
+   "policy": "S-marks",
+   "rev": "v4.2",
+   "thresholds": {
+    "dose": 0.8000000000000006,
+    "explore": 1.0,
+    "verify": 1.0
+   }
+  },
+  "ant-05": {
+   "ant_id": "ant-05",
+   "cross_run": {
+    "checked": 0,
+    "claims": 0,
+    "correct": 0,
+    "runs": 1
+   },
+   "in_run": {
+    "claims": 0,
+    "confirmed": 0,
+    "contradicted": 0
+   },
+   "model": "script",
+   "policy": "S-marks",
+   "rev": "v4.2",
+   "thresholds": {
+    "dose": 1.0,
+    "explore": 1.0,
+    "verify": 0.9000000000000001
+   }
+  },
+  "ant-06": {
+   "ant_id": "ant-06",
+   "cross_run": {
+    "checked": 0,
+    "claims": 0,
+    "correct": 0,
+    "runs": 1
+   },
+   "in_run": {
+    "claims": 0,
+    "confirmed": 0,
+    "contradicted": 0
+   },
+   "model": "script",
+   "policy": "S-marks",
+   "rev": "v4.2",
+   "thresholds": {
+    "dose": 0.8000000000000012,
+    "explore": 1.0,
+    "verify": 0.9500000000000001
+   }
+  },
+  "ant-07": {
+   "ant_id": "ant-07",
+   "cross_run": {
+    "checked": 0,
+    "claims": 0,
+    "correct": 0,
+    "runs": 1
+   },
+   "in_run": {
+    "claims": 0,
+    "confirmed": 0,
+    "contradicted": 0
+   },
+   "model": "script",
+   "policy": "S-marks",
+   "rev": "v4.2",
+   "thresholds": {
+    "dose": 0.8000000000000004,
+    "explore": 1.0,
+    "verify": 1.0
+   }
+  }
+ },
+ "kind": "plumbing_check_not_a_finding",
+ "measure": {
+  "bootstrap": {
+   "ci_high": -0.20515775824809104,
+   "ci_low": -0.3227357734437617,
+   "mean": -0.24996591406434626,
+   "median": -0.24846380005490254,
+   "n_cases": 10,
+   "n_pairs": 20,
+   "n_resamples": 10000,
+   "p": 0.00019998000199980003
+  },
+  "median_paired_difference": -0.24846380005490254,
+  "note": "descriptive only; not a verdict; not part of Holm",
+  "paired_differences": [
+   {
+    "carried_minus_fresh": -0.20515775824809104,
+    "case_id": "BRATS_067",
+    "seed": 3
+   },
+   {
+    "carried_minus_fresh": -0.20270854343754502,
+    "case_id": "BRATS_067",
+    "seed": 4
+   },
+   {
+    "carried_minus_fresh": -0.3334289264888634,
+    "case_id": "BRATS_101",
+    "seed": 3
+   },
+   {
+    "carried_minus_fresh": -0.35226077812828605,
+    "case_id": "BRATS_101",
+    "seed": 4
+   },
+   {
+    "carried_minus_fresh": -0.14049904030710175,
+    "case_id": "BRATS_149",
+    "seed": 3
+   },
+   {
+    "carried_minus_fresh": -0.13806781829814457,
+    "case_id": "BRATS_149",
+    "seed": 4
+   },
+   {
+    "carried_minus_fresh": -0.37211374266834957,
+    "case_id": "BRATS_161",
+    "seed": 3
+   },
+   {
+    "carried_minus_fresh": -0.2767094810305145,
+    "case_id": "BRATS_161",
+    "seed": 4
+   },
+   {
+    "carried_minus_fresh": -0.10313269975360788,
+    "case_id": "BRATS_167",
+    "seed": 3
+   },
+   {
+    "carried_minus_fresh": -0.39422738472368885,
+    "case_id": "BRATS_167",
+    "seed": 4
+   },
+   {
+    "carried_minus_fresh": -0.21005762179151388,
+    "case_id": "BRATS_290",
+    "seed": 3
+   },
+   {
+    "carried_minus_fresh": -0.2691199580932425,
+    "case_id": "BRATS_290",
+    "seed": 4
+   },
+   {
+    "carried_minus_fresh": -0.38204648677531394,
+    "case_id": "BRATS_297",
+    "seed": 3
+   },
+   {
+    "carried_minus_fresh": -0.3227357734437617,
+    "case_id": "BRATS_297",
+    "seed": 4
+   },
+   {
+    "carried_minus_fresh": -0.028287461773700305,
+    "case_id": "BRATS_355",
+    "seed": 3
+   },
+   {
+    "carried_minus_fresh": -0.22744648318042812,
+    "case_id": "BRATS_355",
+    "seed": 4
+   },
+   {
+    "carried_minus_fresh": -0.3189671187070407,
+    "case_id": "BRATS_374",
+    "seed": 3
+   },
+   {
+    "carried_minus_fresh": -0.22329556009660043,
+    "case_id": "BRATS_374",
+    "seed": 4
+   },
+   {
+    "carried_minus_fresh": -0.2712480023245678,
+    "case_id": "BRATS_423",
+    "seed": 3
+   },
+   {
+    "carried_minus_fresh": -0.22780764201656253,
+    "case_id": "BRATS_423",
+    "seed": 4
+   }
+  ],
+  "runs": [
+   {
+    "case_id": "BRATS_167",
+    "colony": "fresh",
+    "coverage": 0.10313269975360788,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_167",
+    "colony": "carried",
+    "coverage": 0.0,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_167",
+    "colony": "fresh",
+    "coverage": 0.39422738472368885,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_167",
+    "colony": "carried",
+    "coverage": 0.0,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "colony": "fresh",
+    "coverage": 0.20674254430197378,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_067",
+    "colony": "carried",
+    "coverage": 0.001584786053882726,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_067",
+    "colony": "fresh",
+    "coverage": 0.20270854343754502,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "colony": "carried",
+    "coverage": 0.0,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_355",
+    "colony": "fresh",
+    "coverage": 0.028287461773700305,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_355",
+    "colony": "carried",
+    "coverage": 0.0,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_355",
+    "colony": "fresh",
+    "coverage": 0.22744648318042812,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_355",
+    "colony": "carried",
+    "coverage": 0.0,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_297",
+    "colony": "fresh",
+    "coverage": 0.38204648677531394,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_297",
+    "colony": "carried",
+    "coverage": 0.0,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_297",
+    "colony": "fresh",
+    "coverage": 0.35720010686615017,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_297",
+    "colony": "carried",
+    "coverage": 0.03446433342238846,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_149",
+    "colony": "fresh",
+    "coverage": 0.19488163787587973,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_149",
+    "colony": "carried",
+    "coverage": 0.05438259756877799,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_149",
+    "colony": "fresh",
+    "coverage": 0.16487523992322456,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_149",
+    "colony": "carried",
+    "coverage": 0.026807421625079975,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "colony": "fresh",
+    "coverage": 0.37211374266834957,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_161",
+    "colony": "carried",
+    "coverage": 0.0,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_161",
+    "colony": "fresh",
+    "coverage": 0.29712673546662705,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "colony": "carried",
+    "coverage": 0.020417254436112555,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_290",
+    "colony": "fresh",
+    "coverage": 0.21005762179151388,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_290",
+    "colony": "carried",
+    "coverage": 0.0,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_290",
+    "colony": "fresh",
+    "coverage": 0.2691199580932425,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_290",
+    "colony": "carried",
+    "coverage": 0.0,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_423",
+    "colony": "fresh",
+    "coverage": 0.30844108673543513,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_423",
+    "colony": "carried",
+    "coverage": 0.037193084410867355,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_423",
+    "colony": "fresh",
+    "coverage": 0.2543948859508935,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_423",
+    "colony": "carried",
+    "coverage": 0.02658724393433096,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "colony": "fresh",
+    "coverage": 0.3189671187070407,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_374",
+    "colony": "carried",
+    "coverage": 0.0,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_374",
+    "colony": "fresh",
+    "coverage": 0.27642578487832065,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "colony": "carried",
+    "coverage": 0.05313022478172023,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "colony": "fresh",
+    "coverage": 0.37405601758914064,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "colony": "carried",
+    "coverage": 0.04062709110027722,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "colony": "fresh",
+    "coverage": 0.3972851543829462,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "colony": "carried",
+    "coverage": 0.045024376254660166,
+    "seed": 4
+   }
+  ]
+ },
+ "measure_seeds": [
+  3,
+  4
+ ],
+ "notebook_round_trip": {
+  "ok": true,
+  "steps": [
+   {
+    "active_chars": 130,
+    "frozen": false,
+    "ids": [
+     "L001",
+     "L002"
+    ],
+    "n_lessons": 2,
+    "snapshot": [
+     "Dose spots where two ants agree before releasing a large amount.",
+     "Check grey spots within 20 mm of a disputed mark before moving on."
+    ],
+    "step": "write"
+   },
+   {
+    "active_chars": 1330,
+    "cap_chars": 1500,
+    "filler_lessons_accepted": 6,
+    "frozen": false,
+    "n_lessons": 8,
+    "refused_with": "cap exceeded",
+    "step": "cap"
+   },
+   {
+    "active_chars": 66,
+    "archived_by_curate": [
+     "L003",
+     "L004",
+     "L005",
+     "L006",
+     "L007",
+     "L008"
+    ],
+    "archived_by_remove": "L001",
+    "frozen": false,
+    "lessons_kept_in_file": 8,
+    "n_lessons": 8,
+    "pinned_kept": "L002",
+    "statuses": {
+     "L001": "archived",
+     "L002": "active",
+     "L003": "archived",
+     "L004": "archived",
+     "L005": "archived",
+     "L006": "archived",
+     "L007": "archived",
+     "L008": "archived"
+    },
+    "step": "archive"
+   },
+   {
+    "active_chars": 66,
+    "frozen": true,
+    "n_lessons": 8,
+    "snapshot": [
+     "Check grey spots within 20 mm of a disputed mark before moving on."
+    ],
+    "step": "freeze",
+    "writes_after_freeze": {
+     "add": "notebook is frozen",
+     "patch": "notebook is frozen",
+     "remove": "notebook is frozen"
+    }
+   },
+   {
+    "active_chars": 66,
+    "archived_still_in_file": [
+     "L001",
+     "L003",
+     "L004",
+     "..."
+    ],
+    "export_skills": [
+     {
+      "body": "# ant-00-l002\n\nCheck grey spots within 20 mm of a disputed mark before moving on.\n\nSource runs: demo-1\n",
+      "description": "Check grey spots within 20 mm of a disputed mark before moving on.",
+      "name": "ant-00-l002"
+     }
+    ],
+    "frozen": true,
+    "frozen_after_reload": true,
+    "identical_to_saved": true,
+    "n_lessons": 8,
+    "path": "notebook_ant-00.json",
+    "snapshot": [
+     "Check grey spots within 20 mm of a disputed mark before moving on."
+    ],
+    "step": "reload"
+   }
+  ]
+ },
+ "ticks_override": null,
+ "train_seed": 1,
+ "training": [
+  {
+   "case_id": "BRATS_016",
+   "coverage": 0.55843653250774,
+   "end_mean_theta": {
+    "dose": 0.5313,
+    "explore": 0.7063,
+    "verify": 0.825
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.2500000000000001,
+     "explore": 0.8500000000000004,
+     "verify": 0.20000000000000004
+    },
+    "ant-01": {
+     "dose": 0.30000000000000016,
+     "explore": 0.7500000000000002,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.6500000000000004,
+     "explore": 0.7000000000000002,
+     "verify": 0.8500000000000003
+    },
+    "ant-03": {
+     "dose": 0.3500000000000001,
+     "explore": 0.6500000000000002,
+     "verify": 0.7500000000000006
+    },
+    "ant-04": {
+     "dose": 0.6500000000000002,
+     "explore": 0.6500000000000001,
+     "verify": 0.9000000000000004
+    },
+    "ant-05": {
+     "dose": 0.7000000000000003,
+     "explore": 0.7500000000000002,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.7000000000000003,
+     "explore": 0.6500000000000002,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.6500000000000002,
+     "explore": 0.6500000000000001,
+     "verify": 0.9000000000000004
+    }
+   },
+   "run": 1,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.5,
+    "explore": 0.5,
+    "verify": 0.5
+   },
+   "wall_s": 0.76
+  },
+  {
+   "case_id": "BRATS_406",
+   "coverage": 0.1467409105797576,
+   "end_mean_theta": {
+    "dose": 0.5438,
+    "explore": 0.775,
+    "verify": 0.9688
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.5000000000000001,
+     "explore": 0.8500000000000004,
+     "verify": 0.8000000000000003
+    },
+    "ant-01": {
+     "dose": 0.1,
+     "explore": 0.8000000000000003,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.7500000000000004,
+     "explore": 0.8500000000000003,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.2500000000000001,
+     "explore": 0.6500000000000002,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 0.8000000000000003,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 0.40000000000000036,
+     "explore": 0.8000000000000004,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.7500000000000003,
+     "explore": 0.8500000000000004,
+     "verify": 0.9500000000000001
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 0.6000000000000003,
+     "verify": 1.0
+    }
+   },
+   "run": 2,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.5313,
+    "explore": 0.7063,
+    "verify": 0.825
+   },
+   "wall_s": 0.58
+  },
+  {
+   "case_id": "BRATS_183",
+   "coverage": 0.32375478927203066,
+   "end_mean_theta": {
+    "dose": 0.6375,
+    "explore": 0.8625,
+    "verify": 0.9938
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.40000000000000013,
+     "explore": 0.8500000000000004,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.7000000000000001,
+     "explore": 0.8000000000000003,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.7500000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.19999999999999998,
+     "explore": 0.7000000000000003,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 0.9500000000000004,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 0.7000000000000005,
+     "explore": 0.8000000000000004,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.7500000000000003,
+     "explore": 0.9000000000000006,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 0.9000000000000006,
+     "verify": 0.9500000000000001
+    }
+   },
+   "run": 3,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.5438,
+    "explore": 0.775,
+    "verify": 0.9688
+   },
+   "wall_s": 0.62
+  },
+  {
+   "case_id": "BRATS_238",
+   "coverage": 0.016561130053580127,
+   "end_mean_theta": {
+    "dose": 0.7125,
+    "explore": 0.925,
+    "verify": 0.9437
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.25000000000000006,
+     "explore": 0.8500000000000004,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 0.8500000000000004,
+     "verify": 0.8500000000000001
+    },
+    "ant-02": {
+     "dose": 0.7500000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.44999999999999996,
+     "explore": 0.7000000000000003,
+     "verify": 0.8
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 0.9
+    },
+    "ant-06": {
+     "dose": 0.7500000000000003,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 4,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.6375,
+    "explore": 0.8625,
+    "verify": 0.9938
+   },
+   "wall_s": 0.42
+  },
+  {
+   "case_id": "BRATS_193",
+   "coverage": 0.10806932332487029,
+   "end_mean_theta": {
+    "dose": 0.8188,
+    "explore": 0.975,
+    "verify": 0.9875
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.7500000000000001,
+     "explore": 0.9000000000000005,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.7000000000000002,
+     "explore": 0.9000000000000007,
+     "verify": 0.9000000000000002
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 5,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.7125,
+    "explore": 0.925,
+    "verify": 0.9437
+   },
+   "wall_s": 0.74
+  },
+  {
+   "case_id": "BRATS_464",
+   "coverage": 0.09693744001396039,
+   "end_mean_theta": {
+    "dose": 0.825,
+    "explore": 0.9938,
+    "verify": 0.9875
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 0.9500000000000007,
+     "verify": 0.9
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.6000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 6,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8188,
+    "explore": 0.975,
+    "verify": 0.9875
+   },
+   "wall_s": 0.67
+  },
+  {
+   "case_id": "BRATS_479",
+   "coverage": 0.06570812365204888,
+   "end_mean_theta": {
+    "dose": 0.8188,
+    "explore": 0.9938,
+    "verify": 0.9875
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 0.9500000000000001,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 0.9
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.5500000000000007,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 7,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.825,
+    "explore": 0.9938,
+    "verify": 0.9875
+   },
+   "wall_s": 0.68
+  },
+  {
+   "case_id": "BRATS_303",
+   "coverage": 0.04857592171937795,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9688
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 0.8000000000000003
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.850000000000001,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 8,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8188,
+    "explore": 0.9938,
+    "verify": 0.9875
+   },
+   "wall_s": 0.7
+  },
+  {
+   "case_id": "BRATS_420",
+   "coverage": 0.0,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.850000000000001,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 9,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9688
+   },
+   "wall_s": 0.61
+  },
+  {
+   "case_id": "BRATS_337",
+   "coverage": 0.0,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.850000000000001,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 10,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "wall_s": 0.48
+  },
+  {
+   "case_id": "BRATS_056",
+   "coverage": 0.0,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9563
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 0.8500000000000002
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 0.9
+    },
+    "ant-06": {
+     "dose": 0.850000000000001,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 0.9
+    }
+   },
+   "run": 11,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "wall_s": 0.48
+  },
+  {
+   "case_id": "BRATS_441",
+   "coverage": 0.046060164463412094,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9938
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.850000000000001,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 12,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9563
+   },
+   "wall_s": 0.85
+  },
+  {
+   "case_id": "BRATS_373",
+   "coverage": 0.0,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9563
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 0.9000000000000001
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 0.8
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.850000000000001,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 13,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9938
+   },
+   "wall_s": 0.32
+  },
+  {
+   "case_id": "BRATS_462",
+   "coverage": 0.0014656616415410384,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9688
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 0.8500000000000002
+    },
+    "ant-06": {
+     "dose": 0.850000000000001,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 0.9
+    }
+   },
+   "run": 14,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9563
+   },
+   "wall_s": 0.48
+  },
+  {
+   "case_id": "BRATS_113",
+   "coverage": 0.0,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.850000000000001,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 15,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9688
+   },
+   "wall_s": 0.47
+  },
+  {
+   "case_id": "BRATS_375",
+   "coverage": 0.0,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9938
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.850000000000001,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 16,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "wall_s": 0.51
+  },
+  {
+   "case_id": "BRATS_205",
+   "coverage": 0.0,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9438
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 0.8500000000000002
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 0.9000000000000001
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 0.8000000000000004
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.850000000000001,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 17,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9938
+   },
+   "wall_s": 0.51
+  },
+  {
+   "case_id": "BRATS_246",
+   "coverage": 0.014180929095354523,
+   "end_mean_theta": {
+    "dose": 0.8375,
+    "explore": 1.0,
+    "verify": 0.9688
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.7000000000000011,
+     "explore": 1.0,
+     "verify": 0.9000000000000004
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 18,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9438
+   },
+   "wall_s": 0.92
+  },
+  {
+   "case_id": "BRATS_468",
+   "coverage": 0.0,
+   "end_mean_theta": {
+    "dose": 0.85,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 19,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8375,
+    "explore": 1.0,
+    "verify": 0.9688
+   },
+   "wall_s": 0.65
+  },
+  {
+   "case_id": "BRATS_368",
+   "coverage": 0.0035291675316587085,
+   "end_mean_theta": {
+    "dose": 0.825,
+    "explore": 0.9875,
+    "verify": 0.9812
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 0.9000000000000002,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.6000000000000005,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 0.9
+    }
+   },
+   "run": 20,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.85,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "wall_s": 0.69
+  },
+  {
+   "case_id": "BRATS_034",
+   "coverage": 0.07481443374733593,
+   "end_mean_theta": {
+    "dose": 0.825,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.6000000000000008,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 21,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.825,
+    "explore": 0.9875,
+    "verify": 0.9812
+   },
+   "wall_s": 0.85
+  },
+  {
+   "case_id": "BRATS_356",
+   "coverage": 0.06271501889346343,
+   "end_mean_theta": {
+    "dose": 0.7688,
+    "explore": 1.0,
+    "verify": 0.9938
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 0.9500000000000002
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.15000000000000088,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 22,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.825,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "wall_s": 0.88
+  },
+  {
+   "case_id": "BRATS_120",
+   "coverage": 0.02524752475247525,
+   "end_mean_theta": {
+    "dose": 0.775,
+    "explore": 1.0,
+    "verify": 0.9812
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.2,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 0.9
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 23,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.7688,
+    "explore": 1.0,
+    "verify": 0.9938
+   },
+   "wall_s": 0.58
+  },
+  {
+   "case_id": "BRATS_389",
+   "coverage": 0.014517147065011572,
+   "end_mean_theta": {
+    "dose": 0.8438,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.7500000000000001,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 24,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.775,
+    "explore": 1.0,
+    "verify": 0.9812
+   },
+   "wall_s": 0.49
+  },
+  {
+   "case_id": "BRATS_343",
+   "coverage": 0.0,
+   "end_mean_theta": {
+    "dose": 0.8438,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.7500000000000001,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 25,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8438,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "wall_s": 0.46
+  },
+  {
+   "case_id": "BRATS_483",
+   "coverage": 0.0028475919276959266,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8500000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 26,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8438,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "wall_s": 0.67
+  },
+  {
+   "case_id": "BRATS_287",
+   "coverage": 0.0,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9813
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8500000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 0.9000000000000001
+    }
+   },
+   "run": 27,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 1.0
+   },
+   "wall_s": 0.32
+  },
+  {
+   "case_id": "BRATS_328",
+   "coverage": 0.0005252560623303861,
+   "end_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9938
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.8000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8500000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 28,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9813
+   },
+   "wall_s": 0.56
+  },
+  {
+   "case_id": "BRATS_286",
+   "coverage": 0.031746890210924826,
+   "end_mean_theta": {
+    "dose": 0.8313,
+    "explore": 1.0,
+    "verify": 0.9938
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.6000000000000005,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8500000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 0.9500000000000002
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 29,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8563,
+    "explore": 1.0,
+    "verify": 0.9938
+   },
+   "wall_s": 0.93
+  },
+  {
+   "case_id": "BRATS_069",
+   "coverage": 0.05955926146515783,
+   "end_mean_theta": {
+    "dose": 0.8438,
+    "explore": 1.0,
+    "verify": 0.975
+   },
+   "end_thresholds": {
+    "ant-00": {
+     "dose": 0.9000000000000002,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-01": {
+     "dose": 0.9000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-02": {
+     "dose": 0.7000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-03": {
+     "dose": 0.8500000000000002,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-04": {
+     "dose": 0.8000000000000006,
+     "explore": 1.0,
+     "verify": 1.0
+    },
+    "ant-05": {
+     "dose": 1.0,
+     "explore": 1.0,
+     "verify": 0.9000000000000001
+    },
+    "ant-06": {
+     "dose": 0.8000000000000012,
+     "explore": 1.0,
+     "verify": 0.9500000000000001
+    },
+    "ant-07": {
+     "dose": 0.8000000000000004,
+     "explore": 1.0,
+     "verify": 1.0
+    }
+   },
+   "run": 30,
+   "seed": 1,
+   "start_mean_theta": {
+    "dose": 0.8313,
+    "explore": 1.0,
+    "verify": 0.9938
+   },
+   "wall_s": 0.54
+  }
+ ],
+ "wall_s": 43.1
+}
