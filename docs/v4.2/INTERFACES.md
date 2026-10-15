@@ -326,3 +326,11 @@ Replay: `run_colony_episode(replay=bundle)` reproduces `metrics` exactly; a remo
 - `f1_simlook` is a flag only: the HARNESS builds SimLook (it needs scorer-side WT mask and scan p) and injects it as `look_fn`.
 - SimLook labels: inside depth = mm to nearest non-tumour voxel (boundary voxel = 2 mm). AUROC is reported for in/out pairs per zone; calibration gaps per distance band (label is constant within a band).
 - S-prime approximation (documented): each puff's kernel is scaled by the geometric ratio of (1-d-delta(release voxel))^t to (1-d)^t; drug spreading into other patches is not re-weighted (test bound 10% in a uniform patch).
+
+## 16. M1 notes (accepted after review, 2026-10-14)
+- `results.json` schema: `runs[]` with `arm`, `case_id`, `seed`, `split` ("dev-A" | "dev-B"), `coverage` and the `run_metrics` fields (see `scripts/v42_report.py` docstring). The harness (Q1) writes it.
+- S-marks-perfect wiring: the harness builds the `run_colony_episode` call with `policy_for=PerfectMarks.wrap_policy_for(...)` and `auto_mark_rule=PerfectMarks.wrap_auto_rule(...)`. LIMIT (report in FINDINGS): a judgement mark's `reading_ppm` stays the author's own look; kind is rewritten from truth. The diagnostic is therefore partly, not fully, perfect.
+- `PerfectMarks.fast_delta` MUST be passed as `0.5 * f3_decay` (goal 5.3); the 0.02 default is wrong for f3_decay != 0.04. `slow_u` = 0.7.
+- For S-talk-shuffled use K1's `ArmSpec.shuffled` / `shuffled_recipient` (avoids the rule's pick); `shuffled_other` is the plain variant.
+- `drug_on_non_tumour` = off_target_share x released_total (matches world.py), includes drug that left the crop. Honesty is a per-run Pearson correlation (None below 3 usable ants); the report averages per-run values.
+- Open fixups (lead, after Q1 merge): require `fast_delta`; report must fail on a missing `split`; report must count runs that never reached 50% coverage; arm name is S' (not "S-prime") everywhere.
