@@ -17,8 +17,17 @@ HAVE_DATA = drive.DEFAULT_CASES_ROOT.is_dir() and (drive.DEFAULT_CASES_ROOT / "B
 K = 0.3559008534420454
 
 
-def test_baseline_k_read_from_config():
-    assert tune.baseline_k(CFG) == K
+def _v41_k_config(tmp_path):
+    """The repo config is frozen at 1.5 x the v4.1 k after step 6; tests that need the stage-2 baseline use this copy."""
+    text = CFG.read_text().replace("drug_scale_k: 0.5338512801630682", f"drug_scale_k: {K!r}")
+    p = tmp_path / "world_v41k.yaml"
+    p.write_text(text)
+    return p
+
+
+def test_baseline_k_read_from_config(tmp_path):
+    assert tune.baseline_k(_v41_k_config(tmp_path)) == K
+    assert tune.baseline_k(CFG) == pytest.approx(1.5 * K)      # frozen config (step 6, point 4 of stage 2)
 
 
 def test_stage2_grid_pairs_and_k():
@@ -85,12 +94,13 @@ def test_selection_same_rule_on_stage2_rows():
 
 @pytest.mark.skipif(not HAVE_DATA, reason="dev case data not mounted")
 def test_dry_run_does_not_write_config_and_reuses_nothing_from_stage1(tmp_path):
-    before = hashlib.sha256(CFG.read_bytes()).hexdigest()
-    base = ["--out", str(tmp_path / "o"), "--cases", "BRATS_016", "--ticks", "10", "--workers", "1"]
+    cfg = _v41_k_config(tmp_path)
+    before = hashlib.sha256(cfg.read_bytes()).hexdigest()
+    base = ["--out", str(tmp_path / "o"), "--cases", "BRATS_016", "--ticks", "10", "--workers", "1", "--config", str(cfg)]
     assert tune.main(base) == 0                                # stage 1 episodes (grid of 12)
     assert tune.main(base + ["--stage", "2", "--k-mults", "2.0", "--facts-points", "0"]) == 0
     doc = json.loads((tmp_path / "o" / "tune_results.json").read_text())
     assert doc["stage"] == 2 and doc["points"][0]["k"] == pytest.approx(2 * K) and doc["points"][0]["n_cases"] == 1
     n = sum(1 for _ in (tmp_path / "o" / "episodes.jsonl").open())
     assert n == 24 + 2
-    assert hashlib.sha256(CFG.read_bytes()).hexdigest() == before
+    assert hashlib.sha256(cfg.read_bytes()).hexdigest() == before

@@ -111,7 +111,12 @@ def test_verdict_refuses_eval_workers_and_unfrozen_config(tmp_path):
     assert verdict.main(["--out", str(tmp_path / "v"), "--cases", doc["eval"][0]]) == 2
     assert verdict.main(["--out", str(tmp_path / "v"), "--cases", doc["reserve"][0]]) == 2
     assert verdict.main(["--out", str(tmp_path / "v"), "--cases", "BRATS_016", "--workers", "7"]) == 2
-    assert verdict.main(["--out", str(tmp_path / "v"), "--cases", "BRATS_016"]) == 2       # facts all off in the repo config
+    off = tmp_path / "world_off.yaml"                            # the repo config is frozen (facts on) after step 6
+    text = (REPO / "config" / "v4_2" / "world.yaml").read_text()
+    for k, v in (("f1_simlook: true", "f1_simlook: false"), ("f2: true", "f2: false"), ("f3: true", "f3: false")):
+        text = text.replace(k, v)
+    off.write_text(text)
+    assert verdict.main(["--out", str(tmp_path / "v"), "--cases", "BRATS_016", "--config", str(off)]) == 2   # facts all off
     assert not (tmp_path / "v").exists()
 
 
