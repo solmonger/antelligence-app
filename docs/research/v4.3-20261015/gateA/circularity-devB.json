@@ -1,0 +1,51 @@
+{
+ "schema": "circularity_v4_3",
+ "run_dir_bundles": 10,
+ "dropped": {},
+ "coefficients_fit": {
+  "split": "dev_a",
+  "n_looks": 5760,
+  "n_cases": 30,
+  "ridge": false,
+  "inputs_sha256": "89ffa0281f0e772b91777556e53e9467add2f84aec352d6358c565e958dbc8c8"
+ },
+ "note": "dev-A looks are in the sample the coefficients were fit on; dev-B is held out.",
+ "overall": {
+  "n": 1920,
+  "positive_rate": 0.7458333333333333,
+  "combined": {
+   "ece": 0.04263348598124932,
+   "auroc": 0.9836487716365968
+  },
+  "scan": {
+   "ece": 0.03205335641811568,
+   "auroc": 0.9823129407454895
+  },
+  "look": {
+   "ece": 0.14849260779408086,
+   "auroc": 0.7492401433281436
+  },
+  "n_unique_voxels": 993
+ },
+ "dev_a": {
+  "n": 0,
+  "n_unique_voxels": 0
+ },
+ "dev_b": {
+  "n": 1920,
+  "positive_rate": 0.7458333333333333,
+  "combined": {
+   "ece": 0.04263348598124932,
+   "auroc": 0.9836487716365968
+  },
+  "scan": {
+   "ece": 0.03205335641811568,
+   "auroc": 0.9823129407454895
+  },
+  "look": {
+   "ece": 0.14849260779408086,
+   "auroc": 0.7492401433281436
+  },
+  "n_unique_voxels": 993
+ }
+}

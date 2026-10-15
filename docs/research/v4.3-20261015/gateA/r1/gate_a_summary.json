@@ -1,0 +1,211 @@
+{
+ "S_solo_minus_S": 0.003776190444935157,
+ "ant_rules": {
+  "answer_rule": "v43",
+  "card_min_resolved": 3,
+  "dose_move_on": true,
+  "explore_release_c": 0.6,
+  "explore_scan_min": 0.5,
+  "fold_can_permit": false,
+  "fold_drop_c": 0.6,
+  "grey": [
+   0.35,
+   0.65
+  ],
+  "move_on_mm": 6.0,
+  "not_tumour_c": 0.2,
+  "not_tumour_scan_min": 0.5,
+  "release_c": 0.6,
+  "resolved_only": true,
+  "theta_ceil": 1.0,
+  "theta_floor": 0.1,
+  "theta_step_down": 0.05,
+  "theta_step_up": 0.05,
+  "tumour_here_any_c": null,
+  "tumour_here_c": 0.8,
+  "tumour_here_scan_max": 0.5,
+  "use_combined": true,
+  "verify_per_spot_max": 2,
+  "verify_share_max": 0.25,
+  "version": "v43",
+  "washout_release_c": 0.65
+ },
+ "ant_rules_sha": "ddf0cd1fe7229f97db4f7747f221d7892fdf40b69af5d1b6a7677578ef617855",
+ "arms": [
+  "S",
+  "S-solo"
+ ],
+ "cases": [
+  "BRATS_016",
+  "BRATS_406",
+  "BRATS_183",
+  "BRATS_238",
+  "BRATS_193",
+  "BRATS_464",
+  "BRATS_479",
+  "BRATS_303",
+  "BRATS_420",
+  "BRATS_337",
+  "BRATS_056",
+  "BRATS_441",
+  "BRATS_373",
+  "BRATS_462",
+  "BRATS_113",
+  "BRATS_375",
+  "BRATS_205",
+  "BRATS_246",
+  "BRATS_468",
+  "BRATS_368",
+  "BRATS_034",
+  "BRATS_356",
+  "BRATS_120",
+  "BRATS_389",
+  "BRATS_343",
+  "BRATS_483",
+  "BRATS_287",
+  "BRATS_328",
+  "BRATS_286",
+  "BRATS_069"
+ ],
+ "code_sha": "b5640f020874732034767ce67f0f4f8e3cb0b67c12a0ccf1327b6544d50e0797",
+ "coefficients": "/Volumes/WD_BLACK/antelligence-v4.3/worktrees/v43-integration/docs/research/v4.3-20261015/combined/coefficients.json",
+ "coefficients_sha256": "6b124dc9ebb5187bc9de2ada489841a5a61e6225b51fc7882873e8292126f353",
+ "config": "/Volumes/WD_BLACK/antelligence-v4.3/worktrees/v43-integration/config/v4_3/world_gateA.yaml",
+ "config_sha256": "8d981f345bf43ef59972b480665cd52f181765058a747a10ca6a6af251f7286f",
+ "coverage": {
+  "BRATS_016": {
+   "S": 0.7836687306501547,
+   "S-solo": 0.7677051083591331
+  },
+  "BRATS_034": {
+   "S": 0.6178070110972294,
+   "S-solo": 0.39564194899683985
+  },
+  "BRATS_056": {
+   "S": 0.6429381582500675,
+   "S-solo": 0.7237375101269241
+  },
+  "BRATS_069": {
+   "S": 0.6009529481834425,
+   "S-solo": 0.658129839189994
+  },
+  "BRATS_113": {
+   "S": 0.6308583991206156,
+   "S-solo": 0.7016088737883481
+  },
+  "BRATS_120": {
+   "S": 0.7707920792079208,
+   "S-solo": 0.8344059405940594
+  },
+  "BRATS_183": {
+   "S": 0.7327586206896551,
+   "S-solo": 0.6930076628352491
+  },
+  "BRATS_193": {
+   "S": 0.7476542664753284,
+   "S-solo": 0.7802185671707694
+  },
+  "BRATS_205": {
+   "S": 0.6236887384137204,
+   "S-solo": 0.6622634178831104
+  },
+  "BRATS_238": {
+   "S": 0.6371164150024354,
+   "S-solo": 0.6356551388212373
+  },
+  "BRATS_246": {
+   "S": 0.7006356968215159,
+   "S-solo": 0.6010757946210269
+  },
+  "BRATS_286": {
+   "S": 0.6999459167117361,
+   "S-solo": 0.6542996214169822
+  },
+  "BRATS_287": {
+   "S": 0.7944899478778853,
+   "S-solo": 0.7244973938942666
+  },
+  "BRATS_303": {
+   "S": 0.626943910536432,
+   "S-solo": 0.5747859514240783
+  },
+  "BRATS_328": {
+   "S": 0.7665236802941434,
+   "S-solo": 0.7430622428433862
+  },
+  "BRATS_337": {
+   "S": 0.6452028332260141,
+   "S-solo": 0.6110753380553767
+  },
+  "BRATS_343": {
+   "S": 0.6602502406159769,
+   "S-solo": 0.7871992300288739
+  },
+  "BRATS_356": {
+   "S": 0.6924031357509447,
+   "S-solo": 0.6337488015340365
+  },
+  "BRATS_368": {
+   "S": 0.7419555740087191,
+   "S-solo": 0.733755449449865
+  },
+  "BRATS_373": {
+   "S": 0.5958605664488017,
+   "S-solo": 0.4760348583877996
+  },
+  "BRATS_375": {
+   "S": 0.8144199035288144,
+   "S-solo": 0.8794110180248794
+  },
+  "BRATS_389": {
+   "S": 0.6621081422259626,
+   "S-solo": 0.6526404376183463
+  },
+  "BRATS_406": {
+   "S": 0.4742875859810023,
+   "S-solo": 0.5375040943334425
+  },
+  "BRATS_420": {
+   "S": 0.7532923617208077,
+   "S-solo": 0.7324163496244269
+  },
+  "BRATS_441": {
+   "S": 0.5675028624960966,
+   "S-solo": 0.6251171021130426
+  },
+  "BRATS_462": {
+   "S": 0.7317839195979899,
+   "S-solo": 0.7077051926298158
+  },
+  "BRATS_464": {
+   "S": 0.7689555885175814,
+   "S-solo": 0.8324753511909956
+  },
+  "BRATS_468": {
+   "S": 0.7581653926337735,
+   "S-solo": 0.711506006155068
+  },
+  "BRATS_479": {
+   "S": 0.7074047447879224,
+   "S-solo": 0.9271028037383178
+  },
+  "BRATS_483": {
+   "S": 0.6980314473195494,
+   "S-solo": 0.763897486690603
+  }
+ },
+ "gate": "A",
+ "limit": null,
+ "mean": {
+  "S": 0.688279960606408,
+  "S-solo": 0.6920561510513431
+ },
+ "missing_cases": [],
+ "n_cases": 30,
+ "pass": true,
+ "seed": 1,
+ "split": "dev_a",
+ "step": "A",
+ "study": "v4.3",
+ "tolerance": 0.05
+}

@@ -1,0 +1,111 @@
+{
+ "S_solo_minus_S": 0.024675385432872954,
+ "ant_rules": {
+  "answer_rule": "v43",
+  "card_min_resolved": 3,
+  "dose_move_on": true,
+  "explore_release_c": 0.6,
+  "explore_scan_min": 0.5,
+  "fold_can_permit": false,
+  "fold_drop_c": 0.6,
+  "grey": [
+   0.35,
+   0.65
+  ],
+  "move_on_mm": 6.0,
+  "not_tumour_c": 0.2,
+  "not_tumour_scan_min": 0.5,
+  "release_c": 0.6,
+  "resolved_only": true,
+  "theta_ceil": 1.0,
+  "theta_floor": 0.1,
+  "theta_step_down": 0.05,
+  "theta_step_up": 0.05,
+  "tumour_here_any_c": null,
+  "tumour_here_c": 0.8,
+  "tumour_here_scan_max": 0.5,
+  "use_combined": true,
+  "verify_per_spot_max": 2,
+  "verify_share_max": 0.25,
+  "version": "v43",
+  "washout_release_c": 0.65
+ },
+ "ant_rules_sha": "ddf0cd1fe7229f97db4f7747f221d7892fdf40b69af5d1b6a7677578ef617855",
+ "arms": [
+  "S",
+  "S-solo"
+ ],
+ "cases": [
+  "BRATS_167",
+  "BRATS_067",
+  "BRATS_355",
+  "BRATS_297",
+  "BRATS_149",
+  "BRATS_161",
+  "BRATS_290",
+  "BRATS_423",
+  "BRATS_374",
+  "BRATS_101"
+ ],
+ "code_sha": "b5640f020874732034767ce67f0f4f8e3cb0b67c12a0ccf1327b6544d50e0797",
+ "coefficients": "/Volumes/WD_BLACK/antelligence-v4.3/worktrees/v43-integration/docs/research/v4.3-20261015/combined/coefficients.json",
+ "coefficients_sha256": "6b124dc9ebb5187bc9de2ada489841a5a61e6225b51fc7882873e8292126f353",
+ "config": "/Volumes/WD_BLACK/antelligence-v4.3/worktrees/v43-integration/config/v4_3/world_gateA.yaml",
+ "config_sha256": "8d981f345bf43ef59972b480665cd52f181765058a747a10ca6a6af251f7286f",
+ "coverage": {
+  "BRATS_067": {
+   "S": 0.7107045094366806,
+   "S-solo": 0.7356288719204725
+  },
+  "BRATS_101": {
+   "S": 0.6138036516585412,
+   "S-solo": 0.7187649364305516
+  },
+  "BRATS_149": {
+   "S": 0.6323096609085093,
+   "S-solo": 0.5671785028790787
+  },
+  "BRATS_161": {
+   "S": 0.6960427648674734,
+   "S-solo": 0.7065112480510802
+  },
+  "BRATS_167": {
+   "S": 0.7641675466385076,
+   "S-solo": 0.789510735656459
+  },
+  "BRATS_290": {
+   "S": 0.6295180722891566,
+   "S-solo": 0.7269512833944474
+  },
+  "BRATS_297": {
+   "S": 0.6505476890195031,
+   "S-solo": 0.6419983970077477
+  },
+  "BRATS_355": {
+   "S": 0.724388379204893,
+   "S-solo": 0.7102446483180428
+  },
+  "BRATS_374": {
+   "S": 0.5731005015790451,
+   "S-solo": 0.8309492847854356
+  },
+  "BRATS_423": {
+   "S": 0.8579107947116084,
+   "S-solo": 0.6715095161993316
+  }
+ },
+ "gate": "A",
+ "limit": null,
+ "mean": {
+  "S": 0.6852493570313918,
+  "S-solo": 0.7099247424642647
+ },
+ "missing_cases": [],
+ "n_cases": 10,
+ "pass": true,
+ "seed": 1,
+ "split": "dev_b",
+ "step": "A",
+ "study": "v4.3",
+ "tolerance": 0.05
+}
