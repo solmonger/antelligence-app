@@ -1,0 +1,7273 @@
+{
+ "S-marks": {
+  "arm": "S-marks",
+  "by_group": {
+   "all": {
+    "effect_rate": 0.10666666666666667,
+    "mean_abs_delta": 0.0002303773510411793,
+    "mean_delta": 0.0001520064483109689,
+    "median_delta": 0.0,
+    "n_items": 300,
+    "spam_rate": 0.8933333333333333
+   },
+   "messages": {
+    "effect_rate": null,
+    "mean_abs_delta": null,
+    "mean_delta": null,
+    "median_delta": null,
+    "n_items": 0,
+    "spam_rate": null
+   },
+   "other_marks": {
+    "effect_rate": 0.12121212121212122,
+    "mean_abs_delta": 0.0001971046908667186,
+    "mean_delta": 9.532429771060116e-05,
+    "median_delta": 0.0,
+    "n_items": 231,
+    "spam_rate": 0.8787878787878788
+   },
+   "uptake_marks": {
+    "effect_rate": 0.057971014492753624,
+    "mean_abs_delta": 0.00034176843075567825,
+    "mean_delta": 0.00034176843075567825,
+    "median_delta": 0.0,
+    "n_items": 69,
+    "spam_rate": 0.9420289855072463
+   }
+  },
+  "effect_rate": 0.10666666666666667,
+  "level": "mid",
+  "mean_abs_delta": 0.0002303773510411793,
+  "mean_delta": 0.0001520064483109689,
+  "median_delta": 0.0,
+  "n_items": 300,
+  "rows": [
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 7,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 24,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 25,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 26,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 32,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 44,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 47,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 48,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 55,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 63,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 74,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 77,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 82,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 95,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 97,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 105,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 115,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 116,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 118,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 121,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 129,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 130,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 132,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 144,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 149,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 150,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 156,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 161,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_167",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 171,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 0,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 3,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 12,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 18,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 20,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 21,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 31,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 34,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 40,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 46,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 51,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 60,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 63,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 65,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 67,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 76,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 84,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 89,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 91,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 97,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 113,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 120,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 121,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 126,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 131,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 135,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 138,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 142,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_120",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 143,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 4,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 11,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 17,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 41,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 45,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 58,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 64,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 75,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 78,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 85,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 93,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 97,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 100,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": true,
+    "coverage_delta": -0.00043221437833168563,
+    "item": {
+     "id": 101,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 105,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 129,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 130,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 136,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 142,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 148,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 150,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 154,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 165,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 170,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 171,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 174,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 175,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 178,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 11,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 16,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 23,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 27,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 31,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 46,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 47,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 52,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 61,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 76,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 79,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 85,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 87,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 99,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 109,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 112,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 125,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 127,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": true,
+    "coverage_delta": -0.0001919385796545492,
+    "item": {
+     "id": 130,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 131,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 135,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 153,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 155,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 156,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 163,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 170,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 172,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 174,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_149",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 186,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 5,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 13,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 14,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 19,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 23,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 27,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 28,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 36,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 59,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 70,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 89,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 90,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 99,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 105,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 110,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 117,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 143,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 149,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 150,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 152,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 159,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 163,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 169,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 171,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 173,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 174,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 175,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 177,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_183",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 184,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": true,
+    "coverage_delta": 0.0023610216784717697,
+    "item": {
+     "id": 2,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 3,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 6,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 7,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 13,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 15,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 37,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 39,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 46,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 48,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 51,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 55,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 60,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 66,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 73,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 85,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 90,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 91,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 95,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 97,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 99,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 104,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 123,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 127,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 133,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 134,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 156,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 161,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 166,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 169,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 18,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 20,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": true,
+    "coverage_delta": 0.002226296490309032,
+    "item": {
+     "id": 24,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 30,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 33,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 35,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 38,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 50,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 54,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 65,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 67,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 78,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 83,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 105,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 114,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 116,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 117,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": true,
+    "coverage_delta": -0.011131482451545327,
+    "item": {
+     "id": 130,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 137,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 143,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 165,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 167,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 182,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 187,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 189,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 194,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 195,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 197,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_290",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 205,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 7,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 16,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 17,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 29,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 32,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 33,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 38,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 42,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 46,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 64,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 69,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 71,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 84,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 85,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 89,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 93,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 100,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 128,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 132,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 137,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 143,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 147,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 155,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 163,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 170,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 181,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 183,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 185,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 196,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": true,
+    "coverage_delta": 0.007901668129938533,
+    "item": {
+     "id": 8,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 23,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 28,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 36,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 41,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 48,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 56,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 60,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 73,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 76,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 95,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": true,
+    "coverage_delta": 0.0030240952102233987,
+    "item": {
+     "id": 96,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 116,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 123,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 125,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 129,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 130,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 131,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 136,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 137,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 138,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 142,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 151,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 159,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 161,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 171,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 172,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 181,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_420",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 186,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 11,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 14,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 20,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 33,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 35,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 45,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 58,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 69,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 70,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 73,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": true,
+    "coverage_delta": 0.0205579265119184,
+    "item": {
+     "id": 78,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 80,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 89,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 96,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 97,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 108,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 109,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 112,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 126,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": true,
+    "coverage_delta": 0.021286561881961097,
+    "item": {
+     "id": 127,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 153,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 158,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 162,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 171,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 176,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 177,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 178,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 183,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 189,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   }
+  ],
+  "runs": 10,
+  "spam_rate": 0.8933333333333333,
+  "unapplied": 0
+ },
+ "S-talk": {
+  "arm": "S-talk",
+  "by_group": {
+   "all": {
+    "effect_rate": 0.15666666666666668,
+    "mean_abs_delta": 0.0013288999106163236,
+    "mean_delta": 0.0006120294233679395,
+    "median_delta": 0.0,
+    "n_items": 300,
+    "spam_rate": 0.7966666666666666
+   },
+   "messages": {
+    "effect_rate": 0.04,
+    "mean_abs_delta": 0.0003040363445745253,
+    "mean_delta": 0.0003040363445745253,
+    "median_delta": 0.0,
+    "n_items": 25,
+    "spam_rate": 0.4
+   },
+   "other_marks": {
+    "effect_rate": 0.18867924528301888,
+    "mean_abs_delta": 0.001639107734789148,
+    "mean_delta": 0.0009230444084721107,
+    "median_delta": 0.0,
+    "n_items": 212,
+    "spam_rate": 0.8113207547169812
+   },
+   "uptake_marks": {
+    "effect_rate": 0.09523809523809523,
+    "mean_abs_delta": 0.0006917178538926118,
+    "mean_delta": -0.0003123412095249009,
+    "median_delta": 0.0,
+    "n_items": 63,
+    "spam_rate": 0.9047619047619048
+   }
+  },
+  "effect_rate": 0.15666666666666668,
+  "level": "mid",
+  "mean_abs_delta": 0.0013288999106163236,
+  "mean_delta": 0.0006120294233679395,
+  "median_delta": 0.0,
+  "n_items": 300,
+  "rows": [
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 11,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 13,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 32,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": true,
+    "coverage_delta": 0.025058049535603644,
+    "item": {
+     "id": 40,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 42,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 44,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 47,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 51,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 55,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 62,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 66,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 71,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 73,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 77,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 82,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": true,
+    "coverage_delta": 0.02631578947368418,
+    "item": {
+     "id": 83,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 104,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 116,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 121,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 135,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 138,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 140,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 142,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 145,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 153,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 167,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 169,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 170,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 208,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_016",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 209,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": true,
+    "coverage_delta": -0.03162786049765165,
+    "item": {
+     "id": 6,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 11,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 25,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 60,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 62,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 63,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 68,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 70,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 74,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 75,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 77,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": true,
+    "coverage_delta": 0.0002997901468971831,
+    "item": {
+     "id": 88,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 105,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 129,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 130,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 144,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 157,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 169,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": true,
+    "coverage_delta": 0.0002997901468971831,
+    "item": {
+     "id": 173,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 186,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 193,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 197,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 201,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 202,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 211,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 219,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 2,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 5,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 6,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 0,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 24,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 25,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 26,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 29,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 33,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 34,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 41,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 52,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 71,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 81,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 87,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 92,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 96,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 102,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 112,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": true,
+    "coverage_delta": 0.0014330859116631345,
+    "item": {
+     "id": 113,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 114,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 124,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": true,
+    "coverage_delta": -7.349158521346988e-05,
+    "item": {
+     "id": 125,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 133,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 134,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 143,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 149,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 163,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 164,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 166,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 167,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_034",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 172,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 0,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": true,
+    "coverage_delta": 0.0011169024571854314,
+    "item": {
+     "id": 20,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 26,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 44,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 60,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": true,
+    "coverage_delta": 0.005956813104988856,
+    "item": {
+     "id": 65,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 75,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 77,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 108,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 114,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 122,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 130,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 138,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 140,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 145,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 157,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 159,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 163,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 164,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 167,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 179,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 182,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 185,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 192,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 193,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 196,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 198,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 204,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 207,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_287",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 209,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 3,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 17,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 28,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 53,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 56,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": true,
+    "coverage_delta": 0.009051771718732726,
+    "item": {
+     "id": 63,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 70,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": true,
+    "coverage_delta": 0.009051771718732726,
+    "item": {
+     "id": 77,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 83,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 94,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 105,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 106,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": true,
+    "coverage_delta": 0.009934871398609046,
+    "item": {
+     "id": 107,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 111,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": true,
+    "coverage_delta": -0.0015454244397836714,
+    "item": {
+     "id": 112,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 114,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 118,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 132,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 134,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 153,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 160,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 162,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 163,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 173,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 183,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 184,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 189,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 190,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_193",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 206,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 2,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": true,
+    "coverage_delta": 0.06759283996794013,
+    "item": {
+     "id": 4,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 8,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 9,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": true,
+    "coverage_delta": 0.06759283996794013,
+    "item": {
+     "id": 11,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 19,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 23,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 28,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": true,
+    "coverage_delta": 0.04568527918781723,
+    "item": {
+     "id": 37,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 45,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 59,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 69,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 78,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 83,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 86,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 96,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 110,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 113,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 124,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 136,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 143,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 157,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 2,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 5,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 8,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 9,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 13,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 14,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_297",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 17,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": true,
+    "coverage_delta": 0.0021463833440652502,
+    "item": {
+     "id": 3,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 11,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 22,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": true,
+    "coverage_delta": 0.00021463833440654723,
+    "item": {
+     "id": 24,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 27,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 30,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 43,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": true,
+    "coverage_delta": 0.010302640051513212,
+    "item": {
+     "id": 49,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 67,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 68,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 82,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 84,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 88,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 95,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 104,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 116,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 124,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 127,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 130,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 153,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 157,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 158,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 161,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 163,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 5,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 9,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 12,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_337",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 15,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 3,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 18,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 26,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 29,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 33,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 44,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 51,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 53,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 54,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 60,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 74,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 94,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 97,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 99,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 118,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 124,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 125,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 132,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 133,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 149,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 154,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": true,
+    "coverage_delta": -0.00041519618019514315,
+    "item": {
+     "id": 159,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 168,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 175,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 185,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 2,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 19,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 28,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 31,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 32,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 4,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 7,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 35,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 37,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": true,
+    "coverage_delta": 0.0007426175082998476,
+    "item": {
+     "id": 39,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 43,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": true,
+    "coverage_delta": -0.012362397344050313,
+    "item": {
+     "id": 46,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 50,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": true,
+    "coverage_delta": -0.02542372881355931,
+    "item": {
+     "id": 55,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": true,
+    "coverage_delta": -0.027433164424252976,
+    "item": {
+     "id": 66,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": true,
+    "coverage_delta": 0.0007426175082998476,
+    "item": {
+     "id": 71,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 74,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 75,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 87,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 89,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 96,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 109,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 135,
+     "kind": "mark"
+    },
+    "mark_kind": "slow_uptake",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 140,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 141,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": true,
+    "coverage_delta": -0.008649309802551075,
+    "item": {
+     "id": 145,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 146,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 155,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 180,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 196,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 14,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 19,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": false,
+    "coverage_delta": 0.0038004543071815666,
+    "item": {
+     "id": 21,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_303",
+    "changed": true,
+    "coverage_delta": 0.0038004543071815666,
+    "item": {
+     "id": 22,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 6
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 0,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 3,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 7,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 9,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 15,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 22,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 42,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 45,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 49,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 50,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 58,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 67,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 78,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": false,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 80,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 83,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 86,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 110,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 131,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 144,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 145,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 146,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 155,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 163,
+     "kind": "mark"
+    },
+    "mark_kind": "dosed",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 167,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 170,
+     "kind": "mark"
+    },
+    "mark_kind": "good_uptake",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 185,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 186,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 201,
+     "kind": "mark"
+    },
+    "mark_kind": "need_more",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 210,
+     "kind": "mark"
+    },
+    "mark_kind": "dose_ok",
+    "no_ant_changed": true,
+    "seed": 5
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 215,
+     "kind": "mark"
+    },
+    "mark_kind": "washout",
+    "no_ant_changed": true,
+    "seed": 5
+   }
+  ],
+  "runs": 10,
+  "spam_rate": 0.7966666666666666,
+  "unapplied": 0
+ }
+}

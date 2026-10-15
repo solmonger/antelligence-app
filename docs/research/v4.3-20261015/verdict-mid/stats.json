@@ -1,0 +1,92 @@
+{
+ "primary": {
+  "a": {
+   "boot": {
+    "ci_high": 0.04541393686718287,
+    "ci_low": 0.015236643065228705,
+    "mean": 0.03378658716773893,
+    "median": 0.02930738816019804,
+    "n_cases": 40,
+    "n_pairs": 80,
+    "n_resamples": 10000,
+    "p": 0.00019998000199980003
+   },
+   "by_split": {
+    "dev-A": 0.029248753656907434,
+    "dev-B": 0.030714153355253293
+   },
+   "comparison": "S-marks - S-solo",
+   "control": "S-marks - S-marks-displaced",
+   "control_boot": {
+    "ci_high": 0.015503347693019148,
+    "ci_low": 0.00017739047123013774,
+    "mean": 0.009013250701348447,
+    "median": 0.010358910952238176,
+    "n_cases": 40,
+    "n_pairs": 80,
+    "n_resamples": 10000,
+    "p": 0.0471952804719528
+   },
+   "holm_p": 0.00039996000399960006,
+   "verdict": {
+    "beats_control": true,
+    "dev_sign_positive": true,
+    "holm_p_lt_0.05": true,
+    "median_ge_0.03": false,
+    "pass": false,
+    "same_sign_dev_a_b": true
+   }
+  },
+  "b": {
+   "boot": {
+    "ci_high": 0.045219156560921514,
+    "ci_low": 0.015065774968766044,
+    "mean": 0.03393869364411069,
+    "median": 0.02930738816019804,
+    "n_cases": 40,
+    "n_pairs": 80,
+    "n_resamples": 10000,
+    "p": 0.00019998000199980003
+   },
+   "by_split": {
+    "dev-A": 0.029248753656907434,
+    "dev-B": 0.030714153355253293
+   },
+   "comparison": "S-talk - S-solo",
+   "control": "S-talk - S-talk-shuffled",
+   "control_boot": {
+    "ci_high": 0.0,
+    "ci_low": 0.0,
+    "mean": 0.0001521064763717578,
+    "median": 0.0,
+    "n_cases": 40,
+    "n_pairs": 80,
+    "n_resamples": 10000,
+    "p": 1.0
+   },
+   "holm_p": 0.00039996000399960006,
+   "verdict": {
+    "beats_control": false,
+    "dev_sign_positive": true,
+    "holm_p_lt_0.05": true,
+    "median_ge_0.03": false,
+    "pass": false,
+    "same_sign_dev_a_b": true
+   }
+  }
+ },
+ "secondary": {
+  "boot": {
+   "ci_high": 0.0,
+   "ci_low": 0.0,
+   "mean": 0.0001521064763717578,
+   "median": 0.0,
+   "n_cases": 40,
+   "n_pairs": 80,
+   "n_resamples": 10000,
+   "p": 1.0
+  },
+  "comparison": "S-talk - S-marks"
+ },
+ "sharing_helps_scripts": false
+}

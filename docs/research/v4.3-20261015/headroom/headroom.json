@@ -1,0 +1,17 @@
+{
+ "mean_gap": 0.24520830679783517,
+ "mean_s_prime": 0.6348968549535,
+ "mean_s_solo": 0.38968854815566484,
+ "median_gap": 0.2245139410927249,
+ "n_cases": 30,
+ "n_pairs": 30,
+ "note": "report only; nothing is tuned from this number",
+ "seeds": [
+  1
+ ],
+ "share_cases_ge_threshold": 0.9666666666666667,
+ "share_pairs_ge_threshold": 0.9666666666666667,
+ "source": "/Volumes/WD_BLACK/antelligence-v4.3/runs/headroom/results.json",
+ "split": null,
+ "threshold": 0.1
+}
