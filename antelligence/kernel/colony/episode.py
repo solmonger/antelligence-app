@@ -32,7 +32,8 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, FrozenSet, Iterable, List, Mapping, Optional, Protocol, Sequence, Tuple
 
 from antelligence.kernel.board import Board
-from antelligence.kernel.colony.marks import DEFAULT_HALF_LIFE, JUDGEMENT_KINDS, MarkField, MarkParams
+from antelligence.kernel.colony.marks import (DEFAULT_HALF_LIFE, JUDGEMENT_KINDS, MarkField, MarkParams,
+                                              complete_half_life)
 from antelligence.kernel.colony.messages import (QUESTIONS, Message, PostOffice, answer_question, choose_recipient,
                                                   message_payload, shuffled_recipient)
 from antelligence.kernel.colony.quorum import Quorum, ZoneSpec, need_payload
@@ -41,7 +42,8 @@ from antelligence.kernel.types import Intent, LocalView
 
 QUEEN_INPUT_KEYS = ("tick", "regions")
 QUEEN_BOARD_KEYS = ("marks", "quorum_events")         # sharing arms only; S-solo's queen sees no board
-QUEEN_MARK_KINDS = ("dosed", "dose_ok", "tumour_here", "not_tumour")
+# v4.3: the two uptake kinds join (the queen's B3 scaling reads them; with scaling off she ignores them, as before)
+QUEEN_MARK_KINDS = ("dosed", "dose_ok", "tumour_here", "not_tumour", "good_uptake", "slow_uptake")
 COLONY_KEY_NAMES = ("look", "uptake_reading", "washout_reading", "reading_log", "marks_near", "messages_in", "zone_need",
                     "colony_note", "region_status", "visited_self", "card_self", "cards_public", "notebook_self")
 _EPS = 1e-9
@@ -125,16 +127,24 @@ class ColonyConfig:
     def __post_init__(self) -> None:
         if self.answer_rule not in ("v42", "v43"):
             raise ValueError(f"answer_rule must be 'v42' or 'v43', got {self.answer_rule!r}")
+        object.__setattr__(self, "half_life", complete_half_life(self.half_life))      # a seven-kind (v4.2) dict gains good_uptake
 
     def to_dict(self) -> Dict[str, Any]:
         d = {"quiet_rule": self.quiet_rule, "heartbeat_rounds": self.heartbeat_rounds, "quorum_k": self.quorum_k,
              "read_radius_mm": self.read_radius_mm, "confirm_radius_mm": self.confirm_radius_mm,
-             "half_life": dict(self.half_life), "ask_every_rounds": self.ask_every_rounds,
+             "half_life": self._half_life_dict(), "ask_every_rounds": self.ask_every_rounds,
              "answers_per_tick": self.answers_per_tick, "ask_lapse_ticks": self.ask_lapse_ticks,
              "queen_every_ticks": self.queen_every_ticks}
         if self.answer_rule != "v42":                   # omitted at the legacy value: v4.2 board headers and hashes stay identical
             d["answer_rule"] = self.answer_rule
         return d
+
+    def _half_life_dict(self) -> Dict[str, float]:
+        """``good_uptake`` is omitted at its default so the v4.2 header (and its hash) stays identical."""
+        hl = dict(self.half_life)
+        if hl.get("good_uptake") == DEFAULT_HALF_LIFE["good_uptake"]:
+            del hl["good_uptake"]
+        return hl
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "ColonyConfig":
@@ -315,7 +325,8 @@ class _Run:
         for row in out.get("need_rows", ()):
             payload = need_payload(row["region_id"], row["need"], row["need_milli"], row["delivered_milli"])
             self.need_per_zone.append({"tick": tick, "region_id": payload["region_id"], "need": payload["need"],
-                                       "need_milli": payload["need_milli"], "delivered_milli": payload["delivered_milli"]})
+                                       "need_milli": payload["need_milli"], "delivered_milli": payload["delivered_milli"],
+                                       **({"uptake_factor_milli": int(row["uptake_factor_milli"])} if "uptake_factor_milli" in row else {})})
             self._post("queen", payload, tick)
 
     # --- tick start -----------------------------------------------------------------------------------------------

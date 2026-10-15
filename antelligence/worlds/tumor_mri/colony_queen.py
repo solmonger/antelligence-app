@@ -15,6 +15,11 @@ What she computes, per zone (a perceived region):
   fraction of one squad's share, so drug = amount x total_drug / n_squads);
 * need = scan mass x (1 - delivered share), normalised by the maximum over zones. Bands: none < 0.05, low < 0.25,
   medium < 0.6, high >= 0.6.
+* v4.3 B3 (``uptake_scaling=True``, sharing arms only; the harness sets it): the RAW need (before the normalisation) is
+  multiplied by 1.25 when more than half of the zone's uptake-mark strength is ``good_uptake``, by 0.5 when more than half
+  is ``slow_uptake``, else by 1 (also 1 with no uptake marks). Strength = sum over the live marks inside the zone of
+  amount x 0.5 ** ((tick - mark tick) / half_life[kind]). She still reads board marks only. The factor is returned per zone
+  in ``need_rows`` (``uptake_factor_milli``) and only when the scaling is on.
 
 Alarms (board ``alarm`` type, ``kind: "other"``): ``stall`` when the summed delivered share is unchanged over 2 queen steps (fires when a stall begins; again only after the
 delivered share has changed),
@@ -27,7 +32,7 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
-from antelligence.kernel.colony.marks import DEFAULT_HALF_LIFE
+from antelligence.kernel.colony.marks import DEFAULT_HALF_LIFE, complete_half_life
 from antelligence.worlds.tumor_mri.colony_policies import ScanInfo
 from antelligence.worlds.tumor_mri.data import Region
 
@@ -37,6 +42,8 @@ STALL_STEPS = 2
 CONFIRM_MM = 4.0
 QUEEN_KINDS = ("dosed", "tumour_here", "not_tumour")             # of the four mark kinds she may read, the ones she uses
 NOTE_MAX = 200
+UPTAKE_KINDS = ("good_uptake", "slow_uptake")                    # read only when the B3 scaling is on
+UPTAKE_GOOD_FACTOR, UPTAKE_POOR_FACTOR = 1.25, 0.5
 
 
 def need_band(x: float) -> str:
@@ -53,13 +60,15 @@ class ScriptedQueen:
     alarms (the driver posts the need rows itself)."""
 
     def __init__(self, regions: Sequence[Region], total_drug: float, n_squads: int, voxel_mm: float, *,
-                 board: Any = None, half_life: Optional[Mapping[str, float]] = None) -> None:
+                 board: Any = None, half_life: Optional[Mapping[str, float]] = None,
+                 uptake_scaling: bool = False) -> None:
         if total_drug <= 0 or n_squads < 1:
             raise ValueError("total_drug and n_squads must be positive")
         self.scan = ScanInfo(tuple(regions), float(voxel_mm))
         self.total_drug, self.n_squads, self.vmm = float(total_drug), int(n_squads), float(voxel_mm)
         self.board = board
-        self.half_life = dict(half_life or DEFAULT_HALF_LIFE)
+        self.half_life = complete_half_life(half_life or DEFAULT_HALF_LIFE)
+        self.uptake_scaling = bool(uptake_scaling)
         self.mass = {r.region_id: float(r.p_tumour) * float(r.volume_mm3) for r in self.scan.regions}
         self.total_mass = sum(self.mass.values())
         self.alarms: List[Dict[str, Any]] = []
@@ -87,6 +96,23 @@ class ScriptedQueen:
         for rid, d in drug.items():
             a = self.allotment(rid)
             out[rid] = 1.0 if a <= 0 else min(1.0, d / a)
+        return out
+
+    def uptake_factors(self, marks: Sequence[Mapping[str, Any]], tick: int) -> Dict[int, float]:
+        """B3: per zone, 1.25 / 0.5 / 1 from the strength of the live uptake marks inside it (see the module docstring)."""
+        strength: Dict[int, Dict[str, float]] = {rid: {k: 0.0 for k in UPTAKE_KINDS} for rid in self.mass}
+        for m in marks:
+            k = m["mark_kind"]
+            if k not in UPTAKE_KINDS or m["tick"] >= tick or tick - m["tick"] > math.ceil(8 * self.half_life[k]):
+                continue
+            rid = self.scan.zone_at(m["pos_vox"])
+            if rid is not None:
+                strength[rid][k] += m["amount_milli"] / 1000.0 * 0.5 ** ((tick - m["tick"]) / self.half_life[k])
+        out: Dict[int, float] = {}
+        for rid, s in strength.items():
+            total = s["good_uptake"] + s["slow_uptake"]
+            out[rid] = (UPTAKE_GOOD_FACTOR if s["good_uptake"] > total / 2 else
+                        UPTAKE_POOR_FACTOR if s["slow_uptake"] > total / 2 else 1.0) if total > 0 else 1.0
         return out
 
     def _disputed_zones(self, marks: Sequence[Mapping[str, Any]], tick: int) -> Dict[int, int]:
@@ -119,10 +145,17 @@ class ScriptedQueen:
         events = list(inputs.get("quorum_events", ()))
         share = self.delivered_share(marks)
         raw = {rid: self.mass[rid] * (1.0 - share[rid]) for rid in self.mass}
+        factor: Dict[int, float] = {}
+        if self.uptake_scaling:
+            factor = self.uptake_factors([m for m in inputs.get("marks", ()) if m["mark_kind"] in UPTAKE_KINDS], tick)
+            raw = {rid: v * factor[rid] for rid, v in raw.items()}
         top = max(raw.values(), default=0.0)
         norm = {rid: (v / top if top > 0 else 0.0) for rid, v in raw.items()}
         rows = [{"region_id": rid, "need": need_band(norm[rid]), "need_milli": int(round(norm[rid] * 1000)),
                  "delivered_milli": int(round(share[rid] * 1000))} for rid in sorted(self.mass)]
+        if self.uptake_scaling:
+            for r in rows:
+                r["uptake_factor_milli"] = int(round(factor[r["region_id"]] * 1000))
         zone_need = {r["region_id"]: r["need"] for r in rows}
 
         summed = int(round(sum(share.values()) * 1000))

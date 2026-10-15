@@ -28,10 +28,11 @@ MAX_AUTHORS_SHOWN = 3
 MAX_MESSAGES_SHOWN = 4
 NOTE_SHOWN_CHARS = 80
 
-# plain words for the seven mark kinds, judgement kinds first (they carry an author's claim)
-KIND_ORDER = ("tumour_here", "not_tumour", "need_more", "dosed", "dose_ok", "slow_uptake", "washout")
+# plain words for the mark kinds (v4.3 appends good_uptake), judgement kinds first (they carry an author's claim)
+KIND_ORDER = ("tumour_here", "not_tumour", "need_more", "dosed", "dose_ok", "slow_uptake", "washout", "good_uptake")
 KIND_WORDS = {"tumour_here": "tumour here", "not_tumour": "not tumour", "need_more": "needs more drug",
-              "dosed": "drug given", "dose_ok": "enough drug", "slow_uptake": "slow uptake", "washout": "fast washout"}
+              "dosed": "drug given", "dose_ok": "enough drug", "slow_uptake": "slow uptake", "washout": "fast washout",
+              "good_uptake": "good uptake"}
 JUDGEMENT = ("tumour_here", "not_tumour", "need_more")
 ASK_WORDS = {"is_tumour": "is there tumour at {where}?", "dosed_enough": "has {where} had enough drug?",
              "should_i_come": "should it come to {where}?"}

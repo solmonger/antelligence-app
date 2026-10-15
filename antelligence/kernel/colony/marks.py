@@ -24,7 +24,17 @@ JUDGEMENT_KINDS = ("tumour_here", "not_tumour", "need_more")
 AUTOMATIC_KINDS = ("dosed", "dose_ok", "slow_uptake", "washout")
 DEFAULT_HALF_LIFE: Dict[str, float] = {
     "dosed": 30, "dose_ok": 40, "slow_uptake": 60, "washout": 60, "tumour_here": 40, "not_tumour": 80, "need_more": 15,
+    "good_uptake": 60,
 }
+V42_KINDS = tuple(k for k in MARK_KINDS if k != "good_uptake")   # the seven kinds a v4.2 config lists
+
+
+def complete_half_life(half_life: Mapping[str, float]) -> Dict[str, float]:
+    """A half-life dict for every kind. A v4.2 dict (the seven old kinds) loads: ``good_uptake`` is filled from the default."""
+    hl = dict(half_life)
+    if "good_uptake" not in hl and set(hl) == set(V42_KINDS):
+        hl["good_uptake"] = DEFAULT_HALF_LIFE["good_uptake"]
+    return hl
 HALF_LIVES_TO_TTL = 8          # strength is negligible after 8 half-lives
 MAX_RESULTS = 1 << 16          # explicit SenseQuery.max_results; a truncated pull raises instead of undercounting
 STRONG_AUTHORS = 2
@@ -57,7 +67,7 @@ class MarkParams:
     def __post_init__(self) -> None:
         if not (self.voxel_mm > 0 and self.read_radius_mm > 0 and self.confirm_radius_mm > 0):
             raise MarkError("voxel size and radii must be positive")
-        hl = dict(self.half_life)
+        hl = complete_half_life(self.half_life)
         if set(hl) != set(MARK_KINDS) or not all(v > 0 and math.isfinite(v) for v in hl.values()):
             raise MarkError(f"half_life needs a positive entry for exactly {MARK_KINDS}")
         object.__setattr__(self, "half_life", hl)
