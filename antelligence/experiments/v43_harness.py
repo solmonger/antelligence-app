@@ -17,6 +17,7 @@ from typing import Any, Callable, Dict, Mapping, Optional, Sequence
 
 import numpy as np
 
+from antelligence.experiments import v43_arms
 from antelligence.experiments.v42_harness import (CaseData, ColonyKit, HarnessWorld, V42Harness, bundle_of as v42_bundle_of)
 from antelligence.kernel.colony.cards import Card
 from antelligence.kernel.colony.episode import ColonyConfig
@@ -32,7 +33,7 @@ DEFAULT_CELL_TABLE = REPO_ROOT / "docs" / "research" / "v4.2-20261014" / "simloo
 CODE_FILES = ("worlds/tumor_mri/colony_policies.py", "worlds/tumor_mri/move_on.py", "worlds/tumor_mri/ant_rules.py", "worlds/tumor_mri/combined.py",
               "worlds/tumor_mri/colony_world.py", "worlds/tumor_mri/colony_queen.py", "worlds/tumor_mri/foraging.py", "kernel/colony/episode.py",
               "kernel/colony/messages.py", "kernel/colony/thresholds.py", "kernel/colony/cards.py",
-              "experiments/v42_harness.py", "experiments/v43_harness.py")
+              "experiments/v42_harness.py", "experiments/v43_harness.py", "experiments/v43_arms.py", "experiments/v43_controls.py")
 
 
 def code_sha_v43() -> str:
@@ -125,6 +126,14 @@ class V43Harness(V42Harness):
     def auto_mark_rule(self) -> Any:
         """B1: the foraging model adds ``good_uptake`` and fires ``slow_uptake`` on the word ``poor``; otherwise the v4.2 rule."""
         return select_auto_mark_rule(self.world_cfg)
+
+    def arm_def(self, name: str) -> Any:
+        """Arms come from ``v43_arms`` (its own table), not from the shared registry another test may have edited."""
+        return v43_arms.resolve_arm(name)
+
+    def arm_controls(self, name: str) -> Any:
+        """Control hooks come from ``v43_arms``, not from the global ``ARM_CONTROLS`` (v4.2 registers the same names there)."""
+        return v43_arms.controls_for(name)
 
     def run_episode(self, arm_name: str, case: CaseData, seed: int, **kw: Any) -> Dict[str, Any]:
         rec = super().run_episode(arm_name, case, seed, **kw)
