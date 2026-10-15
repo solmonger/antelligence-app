@@ -27,7 +27,7 @@ def sensor_surprise(readings: Sequence[Mapping[str, Any]]) -> bool:
     for r in readings:
         if r["kind"] == "look" and r.get("band") is not None and scan_band(float(r["value"])) != r["band"]:
             return True
-        if (r["kind"] == "uptake" and r.get("word") == "slow") or (r["kind"] == "washout" and r.get("word") == "fast"):
+        if (r["kind"] == "uptake" and r.get("word") in ("slow", "poor")) or (r["kind"] == "washout" and r.get("word") == "fast"):
             return True
     return False
 

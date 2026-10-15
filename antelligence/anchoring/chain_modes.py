@@ -89,7 +89,7 @@ KEPT_NULL = 2   # `kept` is 0/1/null; null is posted as 2 (INTERFACES is silent,
 
 # v4.2 colony evidence subtypes (INTERFACES v4.2 sections 2.4, 3.3, 4). Integer-only; the message ``note`` is free text and is
 # never posted (the entry id commits to it). Keyed ``("evidence", subtype)``; chosen when the payload carries a ``subtype``.
-MARK_KIND_CODES = {"dosed": 1, "dose_ok": 2, "slow_uptake": 3, "washout": 4, "tumour_here": 5, "not_tumour": 6, "need_more": 7}
+MARK_KIND_CODES = {"dosed": 1, "dose_ok": 2, "slow_uptake": 3, "washout": 4, "tumour_here": 5, "not_tumour": 6, "need_more": 7, "good_uptake": 8}
 MSG_TYPE_CODES = {"ask": 1, "answer": 2}
 STATUS_CODES = {"done": 1, "not_tumour": 2}
 NEED_CODES = {"none": 0, "low": 1, "medium": 2, "high": 3}

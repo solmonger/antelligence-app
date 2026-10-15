@@ -133,7 +133,8 @@ _PAYLOADS: Dict[str, Dict[str, Callable[[Any], bool]]] = {
 
 # v4.2 colony evidence subtypes (INTERFACES v4.2 sections 2.4, 3.3, 4). An ``evidence`` payload WITHOUT ``subtype`` keeps the
 # six-key v4.1 spec above, byte for byte; one WITH ``subtype`` is checked against that subtype's exact key set.
-MARK_KINDS = ("dosed", "dose_ok", "slow_uptake", "washout", "tumour_here", "not_tumour", "need_more")
+# v4.3 appends ``good_uptake`` (code 8): codes 1 to 7 and every v4.2 encoding stay where they were.
+MARK_KINDS = ("dosed", "dose_ok", "slow_uptake", "washout", "tumour_here", "not_tumour", "need_more", "good_uptake")
 
 _EVIDENCE_SUBTYPES: Dict[str, Dict[str, Callable[[Any], bool]]] = {
     "mark": {
