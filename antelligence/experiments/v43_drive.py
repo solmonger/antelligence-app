@@ -22,12 +22,12 @@ from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import Any, Callable, Dict, Iterable, Mapping, Optional, Sequence
 
 import numpy as np
 
 from antelligence.experiments import v43_arms
-from antelligence.experiments.v42_harness import CaseData, EvalRefused, assert_dev_case, load_dev_case
+from antelligence.experiments.v42_harness import CaseData, assert_dev_case, load_dev_case
 from antelligence.experiments.v43_freeze import DEFAULT_FREEZE_FILE, require_frozen
 from antelligence.experiments.v43_harness import V43Harness
 from antelligence.worlds.tumor_mri.combined import DEFAULT_COEFFICIENTS_PATH

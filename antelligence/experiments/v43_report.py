@@ -18,10 +18,9 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence
 
-import numpy as np
 
-from antelligence.experiments.v42_report import ARM_ORDER, _arms, _f, _mean, _table
-from antelligence.experiments.v42_report import compute_stats, render as render_v42
+from antelligence.experiments.v42_report import _arms, _f, _mean, _table
+from antelligence.experiments.v42_report import render as render_v42
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 REALISED_U = "docs/research/v4.3-20261015/uptake/realised_u.json"

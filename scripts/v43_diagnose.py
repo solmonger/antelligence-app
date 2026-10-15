@@ -32,7 +32,7 @@ import importlib.util
 import json
 import statistics as st
 import sys
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
 
