@@ -1,0 +1,2247 @@
+{
+ "meta": {
+  "arms": [
+   "S-solo",
+   "S'"
+  ],
+  "ceiling_check": {
+   "n_case_seeds": 30,
+   "ok": true,
+   "required": 0.95,
+   "share_s_prime_ge_all": 1.0,
+   "violations": []
+  },
+  "config": "config/v4_2/world_R1.yaml",
+  "dry_overrides": {
+   "f2": null,
+   "f3": null,
+   "ticks": null
+  },
+  "frozen_facts": {
+   "f1_simlook": true,
+   "f1_source": "boards",
+   "f2": true,
+   "f2_share": 0.35,
+   "f2_source": "A",
+   "f3": true,
+   "f3_decay": 0.08,
+   "f3_share": 0.2,
+   "u_core": 0.3
+  },
+  "incomplete": [],
+  "n_runs": 60,
+  "seeds": [
+   1
+  ],
+  "source_dir": "/Volumes/WD_BLACK/antelligence-v4.2/runs/band-R1",
+  "workers": 5
+ },
+ "runs": [
+  {
+   "arm": "S'",
+   "case_id": "BRATS_016",
+   "coverage": 0.7096555727554179,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.7096555727554179,
+    "30": 0.04711687306501548,
+    "60": 0.3743227554179567,
+    "90": 0.6314821981424149
+   },
+   "drug_on_non_tumour": 1788.6832695033472,
+   "episode_s": {
+    "build": 0.0688,
+    "run": 2.4369,
+    "simlook": 0.0388,
+    "wall": 2.5057
+   },
+   "n_regions": 18,
+   "off_target_share": 0.3256963865853808,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 73
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_034",
+   "coverage": 0.36547365326670095,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.36547365326670095,
+    "30": 0.025869037995149554,
+    "60": 0.12412728742558977,
+    "90": 0.26177702653046225
+   },
+   "drug_on_non_tumour": 2174.2750101397237,
+   "episode_s": {
+    "build": 0.0439,
+    "run": 5.3335,
+    "simlook": 0.0,
+    "wall": 5.3774
+   },
+   "n_regions": 43,
+   "off_target_share": 0.1651904115088818,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_056",
+   "coverage": 0.5760194436943019,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.5760194436943019,
+    "30": 0.021442073994058872,
+    "60": 0.29624628679449094,
+    "90": 0.45530650823656493
+   },
+   "drug_on_non_tumour": 1783.6256713653852,
+   "episode_s": {
+    "build": 0.0338,
+    "run": 3.701,
+    "simlook": 0.0,
+    "wall": 3.7348
+   },
+   "n_regions": 28,
+   "off_target_share": 0.21640035156816984,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 100
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_069",
+   "coverage": 0.6052709946396665,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.6052709946396665,
+    "30": 0.06596188207266229,
+    "60": 0.36435378201310303,
+    "90": 0.5604526503871352
+   },
+   "drug_on_non_tumour": 2054.5295955565584,
+   "episode_s": {
+    "build": 0.0898,
+    "run": 3.0889,
+    "simlook": 0.0493,
+    "wall": 3.1787
+   },
+   "n_regions": 14,
+   "off_target_share": 0.520573399088323,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 77
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_113",
+   "coverage": 0.6366543419606275,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.6366543419606275,
+    "30": 0.02048566003797342,
+    "60": 0.280953332667133,
+    "90": 0.5139902068552014
+   },
+   "drug_on_non_tumour": 2250.66682363049,
+   "episode_s": {
+    "build": 0.0306,
+    "run": 3.9946,
+    "simlook": 0.0,
+    "wall": 4.0252
+   },
+   "n_regions": 33,
+   "off_target_share": 0.22559010850838612,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 88
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_120",
+   "coverage": 0.5069306930693069,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.5069306930693069,
+    "30": 0.0297029702970297,
+    "60": 0.30866336633663366,
+    "90": 0.4650990099009901
+   },
+   "drug_on_non_tumour": 1130.1905782015187,
+   "episode_s": {
+    "build": 0.0424,
+    "run": 1.4459,
+    "simlook": 0.0238,
+    "wall": 1.4884
+   },
+   "n_regions": 9,
+   "off_target_share": 0.4123115978215559,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 111
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_183",
+   "coverage": 0.9631226053639846,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.9631226053639846,
+    "30": 0.12116858237547892,
+    "60": 0.6733716475095786,
+    "90": 0.8970306513409961
+   },
+   "drug_on_non_tumour": 2833.756325971617,
+   "episode_s": {
+    "build": 0.0608,
+    "run": 1.9004,
+    "simlook": 0.0313,
+    "wall": 1.9612
+   },
+   "n_regions": 19,
+   "off_target_share": 0.6009578589275408,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 50
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_193",
+   "coverage": 0.7111160172204437,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.7111160172204437,
+    "30": 0.02803841483607462,
+    "60": 0.38591456010597197,
+    "90": 0.6165139640136881
+   },
+   "drug_on_non_tumour": 1635.833339348583,
+   "episode_s": {
+    "build": 0.0292,
+    "run": 2.4586,
+    "simlook": 0.0,
+    "wall": 2.4878
+   },
+   "n_regions": 20,
+   "off_target_share": 0.2945178017229899,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 72
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_205",
+   "coverage": 0.5823944052838985,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.5823944052838985,
+    "30": 0.07021146694788255,
+    "60": 0.2510961869345618,
+    "90": 0.4834323139257368
+   },
+   "drug_on_non_tumour": 2269.665181824543,
+   "episode_s": {
+    "build": 0.0405,
+    "run": 4.2209,
+    "simlook": 0.0,
+    "wall": 4.2614
+   },
+   "n_regions": 29,
+   "off_target_share": 0.2572436940929588,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 95
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_238",
+   "coverage": 0.5518753044325377,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.5518753044325377,
+    "30": 0.06137359961032635,
+    "60": 0.4305893813930833,
+    "90": 0.5265465172917682
+   },
+   "drug_on_non_tumour": 639.3682545241262,
+   "episode_s": {
+    "build": 0.0308,
+    "run": 1.1658,
+    "simlook": 0.0161,
+    "wall": 1.1966
+   },
+   "n_regions": 1,
+   "off_target_share": 0.528097218911646,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 76
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_246",
+   "coverage": 0.48528117359413203,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.48528117359413203,
+    "30": 0.03745721271393643,
+    "60": 0.266601466992665,
+    "90": 0.43579462102689487
+   },
+   "drug_on_non_tumour": 1266.1750826182972,
+   "episode_s": {
+    "build": 0.0335,
+    "run": 3.0037,
+    "simlook": 0.0,
+    "wall": 3.0372
+   },
+   "n_regions": 15,
+   "off_target_share": 0.2697109352189526,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_286",
+   "coverage": 0.5055164954029205,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.5055164954029205,
+    "30": 0.013034072471606274,
+    "60": 0.2124391563007031,
+    "90": 0.4349378042184965
+   },
+   "drug_on_non_tumour": 1548.2867802833264,
+   "episode_s": {
+    "build": 0.0808,
+    "run": 3.0654,
+    "simlook": 0.0419,
+    "wall": 3.1462
+   },
+   "n_regions": 32,
+   "off_target_share": 0.15299455205122825,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 116
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_287",
+   "coverage": 0.47319434102755026,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.47319434102755026,
+    "30": 0.010052122114668651,
+    "60": 0.31347728965003724,
+    "90": 0.4437825763216679
+   },
+   "drug_on_non_tumour": 696.0731201324027,
+   "episode_s": {
+    "build": 0.0148,
+    "run": 0.9336,
+    "simlook": 0.0,
+    "wall": 0.9484
+   },
+   "n_regions": 5,
+   "off_target_share": 0.432361578734452,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_303",
+   "coverage": 0.4901712388607374,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.4901712388607374,
+    "30": 0.030927835051546393,
+    "60": 0.1845622925039315,
+    "90": 0.3595579241656474
+   },
+   "drug_on_non_tumour": 2314.4101481244493,
+   "episode_s": {
+    "build": 0.113,
+    "run": 5.9399,
+    "simlook": 0.0571,
+    "wall": 6.0529
+   },
+   "n_regions": 37,
+   "off_target_share": 0.21256048520448478,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_328",
+   "coverage": 0.6029939595552832,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.6029939595552832,
+    "30": 0.02197321194082115,
+    "60": 0.23461437450757244,
+    "90": 0.504683533222446
+   },
+   "drug_on_non_tumour": 1777.3858840228268,
+   "episode_s": {
+    "build": 0.0538,
+    "run": 2.3451,
+    "simlook": 0.0295,
+    "wall": 2.3989
+   },
+   "n_regions": 20,
+   "off_target_share": 0.2898358670040082,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 90
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_337",
+   "coverage": 0.5681476711740717,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.5681476711740717,
+    "30": 0.014810045074050225,
+    "60": 0.3891393002790298,
+    "90": 0.536810474350719
+   },
+   "drug_on_non_tumour": 1257.5446156251746,
+   "episode_s": {
+    "build": 0.0682,
+    "run": 2.297,
+    "simlook": 0.0366,
+    "wall": 2.3652
+   },
+   "n_regions": 8,
+   "off_target_share": 0.5108164677875324,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 78
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_343",
+   "coverage": 0.6276227141482195,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.6276227141482195,
+    "30": 0.04417709335899904,
+    "60": 0.3384985563041386,
+    "90": 0.5537054860442734
+   },
+   "drug_on_non_tumour": 1608.7640893449177,
+   "episode_s": {
+    "build": 0.0229,
+    "run": 2.0612,
+    "simlook": 0.0,
+    "wall": 2.0841
+   },
+   "n_regions": 17,
+   "off_target_share": 0.31408791261273294,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 81
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_356",
+   "coverage": 0.5542834583497829,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.5542834583497829,
+    "30": 0.03203429022615758,
+    "60": 0.2743782076589025,
+    "90": 0.43776436749196324
+   },
+   "drug_on_non_tumour": 2339.1342126360164,
+   "episode_s": {
+    "build": 0.0381,
+    "run": 4.6052,
+    "simlook": 0.0,
+    "wall": 4.6433
+   },
+   "n_regions": 31,
+   "off_target_share": 0.250327478904687,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 107
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_368",
+   "coverage": 0.6140751505086153,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.6140751505086153,
+    "30": 0.008096325513805272,
+    "60": 0.3297695661199917,
+    "90": 0.5467095702719535
+   },
+   "drug_on_non_tumour": 1955.2628698873307,
+   "episode_s": {
+    "build": 0.0371,
+    "run": 3.1568,
+    "simlook": 0.0,
+    "wall": 3.1939
+   },
+   "n_regions": 19,
+   "off_target_share": 0.3483116656073506,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 81
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_373",
+   "coverage": 0.3747276688453159,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.3747276688453159,
+    "30": 0.0,
+    "60": 0.26143790849673204,
+    "90": 0.355119825708061
+   },
+   "drug_on_non_tumour": 316.3702585816268,
+   "episode_s": {
+    "build": 0.0274,
+    "run": 0.937,
+    "simlook": 0.0,
+    "wall": 0.9644
+   },
+   "n_regions": 1,
+   "off_target_share": 0.659126012947085,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_375",
+   "coverage": 0.4945417618684945,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.4945417618684945,
+    "30": 0.022594567149022596,
+    "60": 0.33536430566133535,
+    "90": 0.45950748921045953
+   },
+   "drug_on_non_tumour": 815.2589719116854,
+   "episode_s": {
+    "build": 0.0382,
+    "run": 1.0566,
+    "simlook": 0.0192,
+    "wall": 1.0948
+   },
+   "n_regions": 7,
+   "off_target_share": 0.36709715688680145,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_389",
+   "coverage": 0.6454870608037029,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.6454870608037029,
+    "30": 0.07006101409636019,
+    "60": 0.462655165158847,
+    "90": 0.6080370292446876
+   },
+   "drug_on_non_tumour": 1246.0398826243731,
+   "episode_s": {
+    "build": 0.0321,
+    "run": 1.7746,
+    "simlook": 0.0,
+    "wall": 1.8066
+   },
+   "n_regions": 8,
+   "off_target_share": 0.47302609643455484,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 65
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_406",
+   "coverage": 0.4009171306911235,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.4009171306911235,
+    "30": 0.033082214215525714,
+    "60": 0.2970848345889289,
+    "90": 0.3832296102194563
+   },
+   "drug_on_non_tumour": 666.67417060774,
+   "episode_s": {
+    "build": 0.0447,
+    "run": 1.3462,
+    "simlook": 0.0234,
+    "wall": 1.3908
+   },
+   "n_regions": 6,
+   "off_target_share": 0.45831269046400414,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_420",
+   "coverage": 0.6540825285338016,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.6540825285338016,
+    "30": 0.043507950443859134,
+    "60": 0.3454297141742269,
+    "90": 0.5548726953467954
+   },
+   "drug_on_non_tumour": 1533.4951222485004,
+   "episode_s": {
+    "build": 0.0253,
+    "run": 2.4803,
+    "simlook": 0.0,
+    "wall": 2.5056
+   },
+   "n_regions": 17,
+   "off_target_share": 0.2943765593674045,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 79
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_441",
+   "coverage": 0.5739044446757573,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.5739044446757573,
+    "30": 0.028364734048089934,
+    "60": 0.24971375039034038,
+    "90": 0.4618507338399084
+   },
+   "drug_on_non_tumour": 2768.560485801579,
+   "episode_s": {
+    "build": 0.0394,
+    "run": 5.5679,
+    "simlook": 0.0,
+    "wall": 5.6074
+   },
+   "n_regions": 34,
+   "off_target_share": 0.29927567980494363,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 100
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_462",
+   "coverage": 0.6222780569514238,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.6222780569514238,
+    "30": 0.06469849246231156,
+    "60": 0.4872278056951424,
+    "90": 0.591499162479062
+   },
+   "drug_on_non_tumour": 968.3344883215736,
+   "episode_s": {
+    "build": 0.0196,
+    "run": 1.5908,
+    "simlook": 0.0,
+    "wall": 1.6104
+   },
+   "n_regions": 8,
+   "off_target_share": 0.42149529562418053,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 63
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_464",
+   "coverage": 0.6511648198237501,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.6511648198237501,
+    "30": 0.025215949742605357,
+    "60": 0.3422039961608935,
+    "90": 0.5738591745920949
+   },
+   "drug_on_non_tumour": 1705.320677612037,
+   "episode_s": {
+    "build": 0.0666,
+    "run": 2.479,
+    "simlook": 0.0346,
+    "wall": 2.5455
+   },
+   "n_regions": 21,
+   "off_target_share": 0.27153780263846916,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 79
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_468",
+   "coverage": 0.6465799662464012,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.6465799662464012,
+    "30": 0.04586518415566365,
+    "60": 0.3566961183361461,
+    "90": 0.5816539263377345
+   },
+   "drug_on_non_tumour": 1813.6928577010096,
+   "episode_s": {
+    "build": 0.0382,
+    "run": 3.0727,
+    "simlook": 0.0,
+    "wall": 3.1109
+   },
+   "n_regions": 17,
+   "off_target_share": 0.35180298689709066,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 75
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_479",
+   "coverage": 0.7348670021567217,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.7348670021567217,
+    "30": 0.018260244428468728,
+    "60": 0.3989935298346513,
+    "90": 0.6626887131560029
+   },
+   "drug_on_non_tumour": 1451.5891518456413,
+   "episode_s": {
+    "build": 0.0248,
+    "run": 1.6371,
+    "simlook": 0.0,
+    "wall": 1.6619
+   },
+   "n_regions": 14,
+   "off_target_share": 0.3526258511966299,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": 68
+  },
+  {
+   "arm": "S'",
+   "case_id": "BRATS_483",
+   "coverage": 0.4499195245759564,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.4499195245759564,
+    "30": 0.006809458957533738,
+    "60": 0.1868267921257893,
+    "90": 0.3906153274730717
+   },
+   "drug_on_non_tumour": 1232.0802399463334,
+   "episode_s": {
+    "build": 0.025,
+    "run": 1.8806,
+    "simlook": 0.0,
+    "wall": 1.9056
+   },
+   "n_regions": 14,
+   "off_target_share": 0.2857464748456845,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_016",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 80,
+     "dosed": 26,
+     "need_more": 9,
+     "not_tumour": 6,
+     "slow_uptake": 8,
+     "tumour_here": 27,
+     "washout": 20
+    },
+    "marks_refused": 0,
+    "marks_total": 176,
+    "quorum_events": 6,
+    "share_disputed": 0.0,
+    "share_strong": 0.5738636363636364,
+    "turns_skipped": 0
+   },
+   "coverage": 0.39493034055727555,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.39493034055727555,
+    "30": 0.009578173374613003,
+    "60": 0.15566950464396284,
+    "90": 0.31704721362229105
+   },
+   "drug_on_non_tumour": 2587.9090865914313,
+   "episode_s": {
+    "build": 0.0686,
+    "run": 0.2778,
+    "simlook": 0.0385,
+    "wall": 0.3464
+   },
+   "n_regions": 18,
+   "off_target_share": 0.540958081562293,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_034",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 32,
+     "dosed": 26,
+     "need_more": 35,
+     "not_tumour": 2,
+     "slow_uptake": 16,
+     "tumour_here": 40,
+     "washout": 11
+    },
+    "marks_refused": 0,
+    "marks_total": 162,
+    "quorum_events": 2,
+    "share_disputed": 0.0,
+    "share_strong": 0.41358024691358025,
+    "turns_skipped": 0
+   },
+   "coverage": 0.1763430587197766,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.1763430587197766,
+    "30": 0.02009994855589035,
+    "60": 0.07543911222165062,
+    "90": 0.12284118468435364
+   },
+   "drug_on_non_tumour": 6056.294709645947,
+   "episode_s": {
+    "build": 0.1026,
+    "run": 0.3919,
+    "simlook": 0.0567,
+    "wall": 0.4944
+   },
+   "n_regions": 43,
+   "off_target_share": 0.5649516315771173,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_056",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 59,
+     "dosed": 27,
+     "need_more": 22,
+     "not_tumour": 2,
+     "tumour_here": 50,
+     "washout": 17
+    },
+    "marks_refused": 0,
+    "marks_total": 177,
+    "quorum_events": 4,
+    "share_disputed": 0.0,
+    "share_strong": 0.4293785310734463,
+    "turns_skipped": 0
+   },
+   "coverage": 0.27518228463408045,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.27518228463408045,
+    "30": 0.009289765055360518,
+    "60": 0.11412368349986497,
+    "90": 0.2190116122063192
+   },
+   "drug_on_non_tumour": 4111.422076902393,
+   "episode_s": {
+    "build": 0.0701,
+    "run": 0.2725,
+    "simlook": 0.038,
+    "wall": 0.3426
+   },
+   "n_regions": 28,
+   "off_target_share": 0.5830988187159932,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_069",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 39,
+     "dosed": 28,
+     "need_more": 14,
+     "not_tumour": 7,
+     "slow_uptake": 1,
+     "tumour_here": 58,
+     "washout": 1
+    },
+    "marks_refused": 0,
+    "marks_total": 148,
+    "quorum_events": 7,
+    "share_disputed": 0.033783783783783786,
+    "share_strong": 0.3108108108108108,
+    "turns_skipped": 0
+   },
+   "coverage": 0.23481238832638476,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.23481238832638476,
+    "30": 0.008040500297796307,
+    "60": 0.06447290053603336,
+    "90": 0.1707861822513401
+   },
+   "drug_on_non_tumour": 2273.0007414368247,
+   "episode_s": {
+    "build": 0.0918,
+    "run": 0.3216,
+    "simlook": 0.0508,
+    "wall": 0.4134
+   },
+   "n_regions": 14,
+   "off_target_share": 0.6671397833277064,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_113",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 65,
+     "dosed": 25,
+     "need_more": 15,
+     "not_tumour": 1,
+     "slow_uptake": 2,
+     "tumour_here": 51,
+     "washout": 34
+    },
+    "marks_refused": 0,
+    "marks_total": 193,
+    "quorum_events": 3,
+    "share_disputed": 0.0,
+    "share_strong": 0.533678756476684,
+    "turns_skipped": 0
+   },
+   "coverage": 0.2525232337363845,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.2525232337363845,
+    "30": 0.005346257619666233,
+    "60": 0.10772459278505046,
+    "90": 0.18896772259418407
+   },
+   "drug_on_non_tumour": 4376.322781619218,
+   "episode_s": {
+    "build": 0.0699,
+    "run": 0.2978,
+    "simlook": 0.0389,
+    "wall": 0.3677
+   },
+   "n_regions": 33,
+   "off_target_share": 0.5296906352433219,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_120",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 66,
+     "dosed": 24,
+     "need_more": 6,
+     "not_tumour": 2,
+     "slow_uptake": 13,
+     "tumour_here": 18,
+     "washout": 6
+    },
+    "marks_refused": 0,
+    "marks_total": 135,
+    "quorum_events": 3,
+    "share_disputed": 0.0,
+    "share_strong": 0.48148148148148145,
+    "turns_skipped": 0
+   },
+   "coverage": 0.16534653465346535,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.16534653465346535,
+    "30": 0.00024752475247524753,
+    "60": 0.019554455445544554,
+    "90": 0.08465346534653466
+   },
+   "drug_on_non_tumour": 1484.7982039515648,
+   "episode_s": {
+    "build": 0.0423,
+    "run": 0.1975,
+    "simlook": 0.0234,
+    "wall": 0.2398
+   },
+   "n_regions": 9,
+   "off_target_share": 0.6464783286700313,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_183",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 56,
+     "dosed": 19,
+     "need_more": 2,
+     "not_tumour": 9,
+     "slow_uptake": 4,
+     "tumour_here": 24,
+     "washout": 2
+    },
+    "marks_refused": 0,
+    "marks_total": 116,
+    "quorum_events": 7,
+    "share_disputed": 0.0,
+    "share_strong": 0.4396551724137931,
+    "turns_skipped": 0
+   },
+   "coverage": 0.26340996168582376,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.26340996168582376,
+    "30": 0.04118773946360153,
+    "60": 0.10919540229885058,
+    "90": 0.22365900383141762
+   },
+   "drug_on_non_tumour": 3141.1436709441627,
+   "episode_s": {
+    "build": 0.0629,
+    "run": 0.2306,
+    "simlook": 0.0326,
+    "wall": 0.2935
+   },
+   "n_regions": 19,
+   "off_target_share": 0.8835924034274445,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_193",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 23,
+     "dosed": 28,
+     "need_more": 20,
+     "not_tumour": 9,
+     "slow_uptake": 7,
+     "tumour_here": 43,
+     "washout": 8
+    },
+    "marks_refused": 0,
+    "marks_total": 138,
+    "quorum_events": 6,
+    "share_disputed": 0.0,
+    "share_strong": 0.26811594202898553,
+    "turns_skipped": 0
+   },
+   "coverage": 0.24119660006623247,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.24119660006623247,
+    "30": 0.0,
+    "60": 0.02627221547632189,
+    "90": 0.1389778121205431
+   },
+   "drug_on_non_tumour": 2997.996855019379,
+   "episode_s": {
+    "build": 0.0649,
+    "run": 0.2504,
+    "simlook": 0.0345,
+    "wall": 0.3153
+   },
+   "n_regions": 20,
+   "off_target_share": 0.641204200654697,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_205",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 67,
+     "dosed": 26,
+     "need_more": 8,
+     "not_tumour": 2,
+     "slow_uptake": 5,
+     "tumour_here": 57,
+     "washout": 2
+    },
+    "marks_refused": 0,
+    "marks_total": 167,
+    "quorum_events": 3,
+    "share_disputed": 0.0,
+    "share_strong": 0.33532934131736525,
+    "turns_skipped": 0
+   },
+   "coverage": 0.2847310873064328,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.2847310873064328,
+    "30": 0.0,
+    "60": 0.10417938613531665,
+    "90": 0.2039185213964589
+   },
+   "drug_on_non_tumour": 4029.489411139248,
+   "episode_s": {
+    "build": 0.0892,
+    "run": 0.3339,
+    "simlook": 0.048,
+    "wall": 0.4231
+   },
+   "n_regions": 29,
+   "off_target_share": 0.5450616541197593,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_238",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 60,
+     "dosed": 19,
+     "slow_uptake": 2,
+     "tumour_here": 45,
+     "washout": 41
+    },
+    "marks_refused": 0,
+    "marks_total": 167,
+    "quorum_events": 1,
+    "share_disputed": 0.0,
+    "share_strong": 0.7964071856287425,
+    "turns_skipped": 0
+   },
+   "coverage": 0.06429615197272284,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.06429615197272284,
+    "30": 0.0,
+    "60": 0.007793472966390648,
+    "90": 0.031660983925962005
+   },
+   "drug_on_non_tumour": 634.778087121971,
+   "episode_s": {
+    "build": 0.03,
+    "run": 0.1429,
+    "simlook": 0.0161,
+    "wall": 0.173
+   },
+   "n_regions": 1,
+   "off_target_share": 0.7374852094721969,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_246",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 27,
+     "dosed": 34,
+     "need_more": 49,
+     "not_tumour": 3,
+     "slow_uptake": 14,
+     "tumour_here": 53,
+     "washout": 9
+    },
+    "marks_refused": 0,
+    "marks_total": 189,
+    "quorum_events": 3,
+    "share_disputed": 0.021164021164021163,
+    "share_strong": 0.30158730158730157,
+    "turns_skipped": 0
+   },
+   "coverage": 0.16058679706601467,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.16058679706601467,
+    "30": 0.001271393643031785,
+    "60": 0.02278728606356968,
+    "90": 0.10709046454767726
+   },
+   "drug_on_non_tumour": 2892.4968649060556,
+   "episode_s": {
+    "build": 0.076,
+    "run": 0.2989,
+    "simlook": 0.0417,
+    "wall": 0.3749
+   },
+   "n_regions": 15,
+   "off_target_share": 0.6411838093565227,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_286",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 35,
+     "dosed": 33,
+     "need_more": 30,
+     "not_tumour": 3,
+     "slow_uptake": 14,
+     "tumour_here": 41,
+     "washout": 7
+    },
+    "marks_refused": 0,
+    "marks_total": 163,
+    "quorum_events": 4,
+    "share_disputed": 0.0,
+    "share_strong": 0.22699386503067484,
+    "turns_skipped": 0
+   },
+   "coverage": 0.19010275824770145,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.19010275824770145,
+    "30": 0.010059491617090318,
+    "60": 0.085289345592212,
+    "90": 0.1447809626825311
+   },
+   "drug_on_non_tumour": 6329.034394865368,
+   "episode_s": {
+    "build": 0.0798,
+    "run": 0.3183,
+    "simlook": 0.0412,
+    "wall": 0.3981
+   },
+   "n_regions": 32,
+   "off_target_share": 0.6684923844990406,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_287",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 27,
+     "dosed": 23,
+     "need_more": 20,
+     "not_tumour": 8,
+     "slow_uptake": 14,
+     "tumour_here": 58,
+     "washout": 7
+    },
+    "marks_refused": 0,
+    "marks_total": 157,
+    "quorum_events": 3,
+    "share_disputed": 0.006369426751592357,
+    "share_strong": 0.445859872611465,
+    "turns_skipped": 0
+   },
+   "coverage": 0.07036485480268057,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.07036485480268057,
+    "30": 0.00037230081906180194,
+    "60": 0.03648548026805659,
+    "90": 0.05919583023082651
+   },
+   "drug_on_non_tumour": 892.6397322830504,
+   "episode_s": {
+    "build": 0.0317,
+    "run": 0.1655,
+    "simlook": 0.0171,
+    "wall": 0.1972
+   },
+   "n_regions": 5,
+   "off_target_share": 0.6907113359499846,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_303",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 75,
+     "dosed": 20,
+     "need_more": 3,
+     "not_tumour": 6,
+     "slow_uptake": 3,
+     "tumour_here": 67,
+     "washout": 3
+    },
+    "marks_refused": 0,
+    "marks_total": 177,
+    "quorum_events": 5,
+    "share_disputed": 0.0,
+    "share_strong": 0.4180790960451977,
+    "turns_skipped": 0
+   },
+   "coverage": 0.19050323257033025,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.19050323257033025,
+    "30": 0.013585532063603006,
+    "60": 0.08470207932902324,
+    "90": 0.15385287436659095
+   },
+   "drug_on_non_tumour": 5260.160654083112,
+   "episode_s": {
+    "build": 0.111,
+    "run": 0.3776,
+    "simlook": 0.0556,
+    "wall": 0.4887
+   },
+   "n_regions": 37,
+   "off_target_share": 0.6342296922711634,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_328",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 93,
+     "dosed": 27,
+     "need_more": 5,
+     "slow_uptake": 3,
+     "tumour_here": 53,
+     "washout": 12
+    },
+    "marks_refused": 0,
+    "marks_total": 193,
+    "quorum_events": 6,
+    "share_disputed": 0.0,
+    "share_strong": 0.46632124352331605,
+    "turns_skipped": 0
+   },
+   "coverage": 0.2725203536724153,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.2725203536724153,
+    "30": 0.0,
+    "60": 0.09717237153112142,
+    "90": 0.2310251247483148
+   },
+   "drug_on_non_tumour": 3411.0998194123613,
+   "episode_s": {
+    "build": 0.0536,
+    "run": 0.2373,
+    "simlook": 0.0294,
+    "wall": 0.2909
+   },
+   "n_regions": 20,
+   "off_target_share": 0.6472649859647843,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_337",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 46,
+     "dosed": 25,
+     "need_more": 9,
+     "not_tumour": 3,
+     "slow_uptake": 11,
+     "tumour_here": 42,
+     "washout": 2
+    },
+    "marks_refused": 0,
+    "marks_total": 138,
+    "quorum_events": 3,
+    "share_disputed": 0.0,
+    "share_strong": 0.4057971014492754,
+    "turns_skipped": 0
+   },
+   "coverage": 0.18609143593045718,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.18609143593045718,
+    "30": 0.000643915003219575,
+    "60": 0.012234385061171926,
+    "90": 0.09680188881734278
+   },
+   "drug_on_non_tumour": 1410.0357944419172,
+   "episode_s": {
+    "build": 0.0695,
+    "run": 0.318,
+    "simlook": 0.0372,
+    "wall": 0.3875
+   },
+   "n_regions": 8,
+   "off_target_share": 0.6725972648395137,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_343",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 28,
+     "dosed": 23,
+     "need_more": 9,
+     "not_tumour": 22,
+     "tumour_here": 27,
+     "washout": 2
+    },
+    "marks_refused": 0,
+    "marks_total": 111,
+    "quorum_events": 5,
+    "share_disputed": 0.0,
+    "share_strong": 0.2702702702702703,
+    "turns_skipped": 0
+   },
+   "coverage": 0.1588065447545717,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.1588065447545717,
+    "30": 0.004042348411934553,
+    "60": 0.03541867179980751,
+    "90": 0.09499518768046199
+   },
+   "drug_on_non_tumour": 2648.447529168659,
+   "episode_s": {
+    "build": 0.0521,
+    "run": 0.2254,
+    "simlook": 0.0289,
+    "wall": 0.2775
+   },
+   "n_regions": 17,
+   "off_target_share": 0.7116676981646046,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_356",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 40,
+     "dosed": 34,
+     "need_more": 42,
+     "not_tumour": 8,
+     "slow_uptake": 7,
+     "tumour_here": 44,
+     "washout": 8
+    },
+    "marks_refused": 0,
+    "marks_total": 183,
+    "quorum_events": 7,
+    "share_disputed": 0.0,
+    "share_strong": 0.3551912568306011,
+    "turns_skipped": 0
+   },
+   "coverage": 0.2665388302972196,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.2665388302972196,
+    "30": 0.02537927922846991,
+    "60": 0.12971631605662398,
+    "90": 0.21967176132197846
+   },
+   "drug_on_non_tumour": 5376.556674479447,
+   "episode_s": {
+    "build": 0.0808,
+    "run": 0.3145,
+    "simlook": 0.0437,
+    "wall": 0.3953
+   },
+   "n_regions": 31,
+   "off_target_share": 0.6163106562306726,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_368",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 39,
+     "dosed": 26,
+     "need_more": 9,
+     "not_tumour": 10,
+     "slow_uptake": 2,
+     "tumour_here": 25,
+     "washout": 7
+    },
+    "marks_refused": 0,
+    "marks_total": 118,
+    "quorum_events": 1,
+    "share_disputed": 0.0,
+    "share_strong": 0.3644067796610169,
+    "turns_skipped": 0
+   },
+   "coverage": 0.09393813576915093,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.09393813576915093,
+    "30": 0.0010379904504878555,
+    "60": 0.031139713514635667,
+    "90": 0.0768112933361013
+   },
+   "drug_on_non_tumour": 3650.2969834834917,
+   "episode_s": {
+    "build": 0.0817,
+    "run": 0.2984,
+    "simlook": 0.0442,
+    "wall": 0.3801
+   },
+   "n_regions": 19,
+   "off_target_share": 0.7945971525230049,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_373",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 11,
+     "dosed": 12,
+     "not_tumour": 56,
+     "slow_uptake": 3,
+     "tumour_here": 3
+    },
+    "marks_refused": 0,
+    "marks_total": 85,
+    "quorum_events": 1,
+    "share_disputed": 0.0,
+    "share_strong": 0.7411764705882353,
+    "turns_skipped": 0
+   },
+   "coverage": 0.049019607843137254,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.049019607843137254,
+    "30": 0.0,
+    "60": 0.0,
+    "90": 0.037037037037037035
+   },
+   "drug_on_non_tumour": 245.95413302768014,
+   "episode_s": {
+    "build": 0.047,
+    "run": 0.1648,
+    "simlook": 0.0197,
+    "wall": 0.2118
+   },
+   "n_regions": 1,
+   "off_target_share": 0.8250300519740106,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_375",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 38,
+     "dosed": 31,
+     "need_more": 34,
+     "not_tumour": 1,
+     "slow_uptake": 11,
+     "tumour_here": 33,
+     "washout": 5
+    },
+    "marks_refused": 0,
+    "marks_total": 153,
+    "quorum_events": 1,
+    "share_disputed": 0.013071895424836602,
+    "share_strong": 0.3464052287581699,
+    "turns_skipped": 0
+   },
+   "coverage": 0.1624777862401625,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.1624777862401625,
+    "30": 0.0,
+    "60": 0.022086824067022087,
+    "90": 0.12693577050012694
+   },
+   "drug_on_non_tumour": 1435.935929169292,
+   "episode_s": {
+    "build": 0.0384,
+    "run": 0.1783,
+    "simlook": 0.019,
+    "wall": 0.2167
+   },
+   "n_regions": 7,
+   "off_target_share": 0.7181076147269653,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_389",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 34,
+     "dosed": 20,
+     "need_more": 9,
+     "slow_uptake": 2,
+     "tumour_here": 48,
+     "washout": 1
+    },
+    "marks_refused": 0,
+    "marks_total": 114,
+    "quorum_events": 2,
+    "share_disputed": 0.0,
+    "share_strong": 0.5175438596491229,
+    "turns_skipped": 0
+   },
+   "coverage": 0.11845150431306543,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.11845150431306543,
+    "30": 0.0,
+    "60": 0.003997475278771302,
+    "90": 0.06017252261729434
+   },
+   "drug_on_non_tumour": 1270.5579857839036,
+   "episode_s": {
+    "build": 0.0648,
+    "run": 0.2154,
+    "simlook": 0.0328,
+    "wall": 0.2802
+   },
+   "n_regions": 8,
+   "off_target_share": 0.713742421894871,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_406",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 69,
+     "dosed": 24,
+     "need_more": 1,
+     "slow_uptake": 7,
+     "tumour_here": 17,
+     "washout": 4
+    },
+    "marks_refused": 0,
+    "marks_total": 122,
+    "quorum_events": 2,
+    "share_disputed": 0.0,
+    "share_strong": 0.5737704918032787,
+    "turns_skipped": 0
+   },
+   "coverage": 0.15427448411398625,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.15427448411398625,
+    "30": 0.0,
+    "60": 0.00491320013101867,
+    "90": 0.09433344251555846
+   },
+   "drug_on_non_tumour": 785.1300167726682,
+   "episode_s": {
+    "build": 0.0447,
+    "run": 0.1853,
+    "simlook": 0.0234,
+    "wall": 0.2299
+   },
+   "n_regions": 6,
+   "off_target_share": 0.6595470360290031,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_420",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 71,
+     "dosed": 23,
+     "not_tumour": 2,
+     "tumour_here": 25,
+     "washout": 1
+    },
+    "marks_refused": 0,
+    "marks_total": 122,
+    "quorum_events": 4,
+    "share_disputed": 0.0,
+    "share_strong": 0.3360655737704918,
+    "turns_skipped": 0
+   },
+   "coverage": 0.35664813188957173,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.35664813188957173,
+    "30": 0.013754755633596722,
+    "60": 0.10701394985855038,
+    "90": 0.24982928494780998
+   },
+   "drug_on_non_tumour": 2522.912042281085,
+   "episode_s": {
+    "build": 0.0576,
+    "run": 0.2332,
+    "simlook": 0.032,
+    "wall": 0.2908
+   },
+   "n_regions": 17,
+   "off_target_share": 0.5903962718561873,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_441",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 46,
+     "dosed": 31,
+     "need_more": 27,
+     "not_tumour": 4,
+     "tumour_here": 47,
+     "washout": 17
+    },
+    "marks_refused": 0,
+    "marks_total": 172,
+    "quorum_events": 6,
+    "share_disputed": 0.0,
+    "share_strong": 0.29651162790697677,
+    "turns_skipped": 0
+   },
+   "coverage": 0.2552826064328094,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.2552826064328094,
+    "30": 0.01962110960757781,
+    "60": 0.09024669511814302,
+    "90": 0.20016654522743832
+   },
+   "drug_on_non_tumour": 5791.1982110222825,
+   "episode_s": {
+    "build": 0.0946,
+    "run": 0.3696,
+    "simlook": 0.054,
+    "wall": 0.4642
+   },
+   "n_regions": 34,
+   "off_target_share": 0.6819584929110845,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_462",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 41,
+     "dosed": 32,
+     "need_more": 45,
+     "tumour_here": 50,
+     "washout": 8
+    },
+    "marks_refused": 0,
+    "marks_total": 176,
+    "quorum_events": 2,
+    "share_disputed": 0.0,
+    "share_strong": 0.48295454545454547,
+    "turns_skipped": 0
+   },
+   "coverage": 0.3479899497487437,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.3479899497487437,
+    "30": 0.0,
+    "60": 0.10238693467336683,
+    "90": 0.21545226130653267
+   },
+   "drug_on_non_tumour": 1324.6905705600982,
+   "episode_s": {
+    "build": 0.0465,
+    "run": 0.1967,
+    "simlook": 0.0262,
+    "wall": 0.2432
+   },
+   "n_regions": 8,
+   "off_target_share": 0.6502732436886265,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_464",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 53,
+     "dosed": 29,
+     "need_more": 3,
+     "not_tumour": 3,
+     "slow_uptake": 3,
+     "tumour_here": 46,
+     "washout": 5
+    },
+    "marks_refused": 0,
+    "marks_total": 142,
+    "quorum_events": 4,
+    "share_disputed": 0.0,
+    "share_strong": 0.5,
+    "turns_skipped": 0
+   },
+   "coverage": 0.21882907250676206,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.21882907250676206,
+    "30": 8.725242125468982e-05,
+    "60": 0.06700985952360178,
+    "90": 0.15051042666433995
+   },
+   "drug_on_non_tumour": 3819.7660725075134,
+   "episode_s": {
+    "build": 0.0669,
+    "run": 0.256,
+    "simlook": 0.0356,
+    "wall": 0.3229
+   },
+   "n_regions": 21,
+   "off_target_share": 0.6829141736652742,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_468",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 53,
+     "dosed": 24,
+     "need_more": 15,
+     "not_tumour": 5,
+     "slow_uptake": 7,
+     "tumour_here": 30,
+     "washout": 6
+    },
+    "marks_refused": 0,
+    "marks_total": 140,
+    "quorum_events": 6,
+    "share_disputed": 0.0,
+    "share_strong": 0.37857142857142856,
+    "turns_skipped": 0
+   },
+   "coverage": 0.2000397101161521,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.2000397101161521,
+    "30": 0.005956517422813462,
+    "60": 0.06482676461828651,
+    "90": 0.16052814454482278
+   },
+   "drug_on_non_tumour": 2952.6657456838657,
+   "episode_s": {
+    "build": 0.0813,
+    "run": 0.3155,
+    "simlook": 0.0437,
+    "wall": 0.3968
+   },
+   "n_regions": 17,
+   "off_target_share": 0.6883517601896434,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_479",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 56,
+     "dosed": 30,
+     "need_more": 22,
+     "not_tumour": 1,
+     "slow_uptake": 6,
+     "tumour_here": 61,
+     "washout": 5
+    },
+    "marks_refused": 0,
+    "marks_total": 181,
+    "quorum_events": 3,
+    "share_disputed": 0.0,
+    "share_strong": 0.47513812154696133,
+    "turns_skipped": 0
+   },
+   "coverage": 0.22789360172537743,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.22789360172537743,
+    "30": 0.034363767074047445,
+    "60": 0.1212077641984184,
+    "90": 0.1907979870596693
+   },
+   "drug_on_non_tumour": 2711.6018819175397,
+   "episode_s": {
+    "build": 0.0551,
+    "run": 0.2369,
+    "simlook": 0.03,
+    "wall": 0.2921
+   },
+   "n_regions": 14,
+   "off_target_share": 0.7191069373349988,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  },
+  {
+   "arm": "S-solo",
+   "case_id": "BRATS_483",
+   "colony": {
+    "answers_refused": 0,
+    "asks_answered": 0,
+    "asks_lapsed": 0,
+    "asks_refused": 0,
+    "asks_sent": 0,
+    "honesty": {
+     "correlation": null,
+     "n_ants": 0
+    },
+    "marks_by_kind": {
+     "dose_ok": 35,
+     "dosed": 31,
+     "need_more": 17,
+     "not_tumour": 9,
+     "slow_uptake": 16,
+     "tumour_here": 31,
+     "washout": 3
+    },
+    "marks_refused": 0,
+    "marks_total": 142,
+    "quorum_events": 5,
+    "share_disputed": 0.0,
+    "share_strong": 0.28169014084507044,
+    "turns_skipped": 0
+   },
+   "coverage": 0.1598365729850192,
+   "coverage_at_queen": {
+    "0": 0.0,
+    "120": 0.1598365729850192,
+    "30": 0.0,
+    "60": 0.021295035285378235,
+    "90": 0.07985638232016838
+   },
+   "drug_on_non_tumour": 2295.9971980657633,
+   "episode_s": {
+    "build": 0.055,
+    "run": 0.2437,
+    "simlook": 0.0302,
+    "wall": 0.2987
+   },
+   "n_regions": 14,
+   "off_target_share": 0.57518143763107,
+   "seed": 1,
+   "split": "dev-A",
+   "time_to_50_coverage": null
+  }
+ ]
+}

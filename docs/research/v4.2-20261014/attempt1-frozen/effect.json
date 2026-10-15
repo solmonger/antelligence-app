@@ -1,0 +1,6628 @@
+{
+ "S-marks": {
+  "arm": "S-marks",
+  "effect_rate": 0.13,
+  "mean_abs_delta": 0.0014604593102538785,
+  "mean_delta": -0.0004224248985117692,
+  "median_delta": 0.0,
+  "n_items": 300,
+  "rows": [
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 0,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 3,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 4,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 5,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 6,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 8,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 10,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 26,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 27,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 30,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 33,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 39,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 43,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 45,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": true,
+    "coverage_delta": 0.012841011292095528,
+    "item": {
+     "id": 47,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 71,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": true,
+    "coverage_delta": -0.10637553712401321,
+    "item": {
+     "id": 72,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 73,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 84,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 85,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 93,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 107,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 109,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 111,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 118,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 129,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 155,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_113",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 159,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 4,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 10,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 15,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 16,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": true,
+    "coverage_delta": -0.03431794283529299,
+    "item": {
+     "id": 22,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 27,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 35,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 39,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 42,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 50,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 62,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 68,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 75,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 77,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": true,
+    "coverage_delta": -0.023707102571455918,
+    "item": {
+     "id": 94,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 100,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 102,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 111,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 117,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 118,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": true,
+    "coverage_delta": -0.0015294904884810556,
+    "item": {
+     "id": 129,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 136,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 137,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 139,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 149,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 153,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 154,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 157,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 161,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 164,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 3,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 12,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 15,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 16,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 17,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.01715046900149858,
+    "item": {
+     "id": 20,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 27,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 37,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 39,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 44,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 45,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 50,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.007936948437586744,
+    "item": {
+     "id": 56,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 61,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 63,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.007936948437586744,
+    "item": {
+     "id": 72,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 78,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 114,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 126,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 129,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 132,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 134,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 135,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 138,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 144,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 149,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 156,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 158,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 159,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 168,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 0,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 12,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 13,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 14,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 23,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 41,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.0010545595826164655,
+    "item": {
+     "id": 42,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.005550313592717959,
+    "item": {
+     "id": 56,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 60,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 65,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 75,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 79,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 80,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 82,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 94,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 99,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 104,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 112,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 114,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 120,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 127,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 134,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 135,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 160,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 165,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 169,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 181,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 183,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 2,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 6,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 10,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 11,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": true,
+    "coverage_delta": -0.04330369945511903,
+    "item": {
+     "id": 19,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 26,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 34,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 43,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 61,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 62,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 73,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 82,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 91,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 102,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 109,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 111,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 116,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 120,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 127,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 134,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 139,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 140,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 144,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 145,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 165,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 166,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 167,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 5,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 12,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": true,
+    "coverage_delta": 0.0021813105313672754,
+    "item": {
+     "id": 16,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 17,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 21,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 22,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 33,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 38,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 61,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 66,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 69,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 70,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 74,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 75,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 76,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 77,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 80,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": true,
+    "coverage_delta": 0.007329203385393945,
+    "item": {
+     "id": 81,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 83,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 100,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 107,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 110,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 125,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 130,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 132,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 133,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 145,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 146,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 15,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 20,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 21,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 22,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": true,
+    "coverage_delta": -0.0390284409383434,
+    "item": {
+     "id": 23,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 27,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 34,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 42,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": true,
+    "coverage_delta": 0.003736765621756233,
+    "item": {
+     "id": 49,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 50,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 54,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 60,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 62,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 63,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 66,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 68,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 70,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 71,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 72,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 74,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 80,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 91,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 98,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 105,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 107,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 108,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 110,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 123,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 131,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_368",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 134,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 2,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 4,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 14,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 17,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 24,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": true,
+    "coverage_delta": -0.03399591305963218,
+    "item": {
+     "id": 30,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 40,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 42,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": true,
+    "coverage_delta": 0.00037154003343858877,
+    "item": {
+     "id": 43,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": true,
+    "coverage_delta": 0.003901170351105321,
+    "item": {
+     "id": 45,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 46,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 47,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 52,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 56,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 62,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 65,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 68,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 74,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 77,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 83,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 85,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 96,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 97,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 98,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 102,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 114,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 115,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 129,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 143,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_374",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 145,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 13,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 38,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 45,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 52,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 55,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 67,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 71,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 72,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 73,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 74,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 77,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 94,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": true,
+    "coverage_delta": 0.025886864813039312,
+    "item": {
+     "id": 100,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": true,
+    "coverage_delta": 0.025886864813039312,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 105,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 108,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 109,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 129,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 130,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 138,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 145,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 151,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 152,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 153,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 155,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 159,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 160,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 161,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 166,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 8,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 9,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 11,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 12,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 17,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 28,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 32,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": true,
+    "coverage_delta": 0.0007852717912922302,
+    "item": {
+     "id": 35,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 42,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": true,
+    "coverage_delta": 0.013262368030712846,
+    "item": {
+     "id": 43,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 48,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 55,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": true,
+    "coverage_delta": -0.00017450484250935983,
+    "item": {
+     "id": 59,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 64,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 66,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 74,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 76,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 91,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": true,
+    "coverage_delta": 0.019893552046069296,
+    "item": {
+     "id": 93,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 101,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 108,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 114,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 123,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 127,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 146,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 157,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 158,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 171,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_464",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 177,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   }
+  ],
+  "runs": 10,
+  "spam_rate": 0.87,
+  "unapplied": 0
+ },
+ "S-talk": {
+  "arm": "S-talk",
+  "effect_rate": 0.08666666666666667,
+  "mean_abs_delta": 0.0008276878790031171,
+  "mean_delta": -9.565477636681086e-05,
+  "median_delta": 0.0,
+  "n_items": 300,
+  "rows": [
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 3,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 6,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 20,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 28,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 46,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 47,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 48,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 51,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 52,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 73,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 77,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 96,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 97,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 115,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 121,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 123,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 126,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 138,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 148,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 149,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 177,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 7,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 21,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 27,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 30,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 44,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 67,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 70,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 71,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_056",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 99,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 0,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 12,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 18,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 19,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 32,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 39,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 59,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": true,
+    "coverage_delta": 0.0072759670354146655,
+    "item": {
+     "id": 67,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": true,
+    "coverage_delta": -0.0028212933402628204,
+    "item": {
+     "id": 72,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 80,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 90,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 92,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 93,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 107,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 156,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 162,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 168,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 183,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 184,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 8,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 24,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 43,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 48,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 56,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 67,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 69,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 98,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 100,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 101,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_161",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 107,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 17,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 30,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 42,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 51,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 58,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": true,
+    "coverage_delta": -0.010802026574897206,
+    "item": {
+     "id": 61,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 63,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 78,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 92,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 97,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": true,
+    "coverage_delta": -0.021890832616384637,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 107,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 110,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 127,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 139,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 142,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 3,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 6,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 16,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 33,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 40,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 51,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 70,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 93,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 96,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 111,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 112,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 130,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_101",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 135,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 5,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 16,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 19,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 20,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 40,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 72,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 86,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 89,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 101,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 105,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 110,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 112,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 128,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 152,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": true,
+    "coverage_delta": 0.004754358161648153,
+    "item": {
+     "id": 155,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 158,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 162,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 25,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 35,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 56,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 61,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": true,
+    "coverage_delta": -0.05517936896700765,
+    "item": {
+     "id": 68,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.012102002593286254,
+    "item": {
+     "id": 69,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 82,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 89,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 96,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 99,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 126,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_067",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 127,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.05172892268413165,
+    "item": {
+     "id": 7,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 19,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": true,
+    "coverage_delta": 0.0135982683021591,
+    "item": {
+     "id": 24,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 38,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 42,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 45,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 46,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 48,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 54,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 60,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 78,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 80,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 85,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 86,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 99,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 116,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 127,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 135,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 141,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 145,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 148,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 160,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 161,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 7,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 14,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 21,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 27,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 54,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.019981128933784786,
+    "item": {
+     "id": 59,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_205",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 84,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 8,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 12,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 23,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 33,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 55,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 68,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 71,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 79,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 86,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 93,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 99,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 101,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 120,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 126,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 137,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 140,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 23,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 27,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 50,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 67,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 81,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 83,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 88,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 93,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 95,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 109,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 121,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 122,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_375",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 134,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 1,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 12,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 13,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 27,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": true,
+    "coverage_delta": -0.0007895775759968471,
+    "item": {
+     "id": 46,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 51,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 56,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 58,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": true,
+    "coverage_delta": -0.001409959957137219,
+    "item": {
+     "id": 77,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 84,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 91,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 97,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 103,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 116,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 120,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 128,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 4,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 14,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 16,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 26,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 29,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 38,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 45,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 46,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 53,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 61,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 67,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 74,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 96,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_356",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 109,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 7,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 15,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 20,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": true,
+    "coverage_delta": -0.0026405867970660246,
+    "item": {
+     "id": 22,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 25,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 38,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": true,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 48,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": true,
+    "coverage_delta": -0.0019559902200488866,
+    "item": {
+     "id": 50,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 62,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 91,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 98,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 117,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 169,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 180,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 14,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 17,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 24,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 37,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 38,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 43,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 44,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 49,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 59,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 70,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 71,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 94,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 97,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 98,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_246",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 110,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 11,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 13,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 20,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 45,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 46,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 57,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 58,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 87,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 90,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 92,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 99,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 107,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 110,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 113,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 130,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 138,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 139,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 15,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 17,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 42,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 55,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 63,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 83,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 87,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 96,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 100,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 106,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 112,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 114,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_483",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 116,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 3
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 34,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 38,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 44,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": true,
+    "coverage_delta": -0.02940564171957949,
+    "item": {
+     "id": 47,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": true,
+    "coverage_delta": -0.003382949932341006,
+    "item": {
+     "id": 60,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 65,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 67,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 73,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 81,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 88,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": true,
+    "coverage_delta": -0.006765899864682012,
+    "item": {
+     "id": 96,
+     "kind": "mark"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 112,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 113,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 116,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 120,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 122,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 128,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 136,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 140,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 145,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 167,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 173,
+     "kind": "mark"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 15,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.00036431768502132034,
+    "item": {
+     "id": 46,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 48,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": -0.0014572707400853924,
+    "item": {
+     "id": 61,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 73,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 78,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 86,
+     "kind": "message"
+    },
+    "no_ant_changed": true,
+    "seed": 4
+   },
+   {
+    "case_id": "BRATS_441",
+    "changed": false,
+    "coverage_delta": 0.0,
+    "item": {
+     "id": 108,
+     "kind": "message"
+    },
+    "no_ant_changed": false,
+    "seed": 4
+   }
+  ],
+  "runs": 10,
+  "spam_rate": 0.68,
+  "unapplied": 0
+ }
+}

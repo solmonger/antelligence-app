@@ -1,0 +1,6491 @@
+{
+ "ceiling": {
+  "n_case_seeds": 80,
+  "ok": true,
+  "required": 0.95,
+  "share_s_prime_ge_all": 1.0,
+  "violations": []
+ },
+ "episode_times": [
+  {
+   "arm": "S",
+   "build": 0.069,
+   "case_id": "BRATS_016",
+   "run": 0.1934,
+   "seed": 3,
+   "simlook": 0.0386,
+   "wall": 0.2624
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.069,
+   "case_id": "BRATS_016",
+   "run": 0.285,
+   "seed": 3,
+   "simlook": 0.0389,
+   "wall": 0.354
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.07,
+   "case_id": "BRATS_016",
+   "run": 0.6846,
+   "seed": 3,
+   "simlook": 0.0394,
+   "wall": 0.7546
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0693,
+   "case_id": "BRATS_016",
+   "run": 0.7239,
+   "seed": 3,
+   "simlook": 0.0384,
+   "wall": 0.7933
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0293,
+   "case_id": "BRATS_016",
+   "run": 0.7018,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7311
+  },
+  {
+   "arm": "S",
+   "build": 0.0288,
+   "case_id": "BRATS_016",
+   "run": 0.1786,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2074
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0691,
+   "case_id": "BRATS_016",
+   "run": 1.3313,
+   "seed": 3,
+   "simlook": 0.0386,
+   "wall": 1.4004
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0291,
+   "case_id": "BRATS_016",
+   "run": 0.6786,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7077
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0286,
+   "case_id": "BRATS_016",
+   "run": 0.6675,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6961
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.029,
+   "case_id": "BRATS_016",
+   "run": 0.262,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2909
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.029,
+   "case_id": "BRATS_016",
+   "run": 0.6063,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6353
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.029,
+   "case_id": "BRATS_016",
+   "run": 0.6287,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6577
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0293,
+   "case_id": "BRATS_016",
+   "run": 0.6275,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6568
+  },
+  {
+   "arm": "S'",
+   "build": 0.0291,
+   "case_id": "BRATS_016",
+   "run": 2.2425,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.2716
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0296,
+   "case_id": "BRATS_016",
+   "run": 0.5267,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5563
+  },
+  {
+   "arm": "S",
+   "build": 0.0405,
+   "case_id": "BRATS_406",
+   "run": 0.108,
+   "seed": 3,
+   "simlook": 0.0215,
+   "wall": 0.1485
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0293,
+   "case_id": "BRATS_016",
+   "run": 0.6142,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6435
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0293,
+   "case_id": "BRATS_016",
+   "run": 1.2914,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.3207
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0395,
+   "case_id": "BRATS_406",
+   "run": 0.1803,
+   "seed": 3,
+   "simlook": 0.0205,
+   "wall": 0.2198
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0184,
+   "case_id": "BRATS_406",
+   "run": 0.4837,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5021
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0394,
+   "case_id": "BRATS_406",
+   "run": 0.5107,
+   "seed": 3,
+   "simlook": 0.0205,
+   "wall": 0.5502
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0187,
+   "case_id": "BRATS_406",
+   "run": 0.5113,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.53
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0394,
+   "case_id": "BRATS_406",
+   "run": 0.6837,
+   "seed": 3,
+   "simlook": 0.0206,
+   "wall": 0.7231
+  },
+  {
+   "arm": "S",
+   "build": 0.0188,
+   "case_id": "BRATS_406",
+   "run": 0.1101,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1289
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0188,
+   "case_id": "BRATS_406",
+   "run": 0.4878,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5066
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0184,
+   "case_id": "BRATS_406",
+   "run": 0.1809,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1993
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0189,
+   "case_id": "BRATS_406",
+   "run": 0.4776,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.4965
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0191,
+   "case_id": "BRATS_406",
+   "run": 0.5267,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5458
+  },
+  {
+   "arm": "S'",
+   "build": 0.0188,
+   "case_id": "BRATS_406",
+   "run": 1.1421,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.1608
+  },
+  {
+   "arm": "S'",
+   "build": 0.0288,
+   "case_id": "BRATS_016",
+   "run": 2.4049,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.4337
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0189,
+   "case_id": "BRATS_406",
+   "run": 0.5594,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5783
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0186,
+   "case_id": "BRATS_406",
+   "run": 0.6774,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.696
+  },
+  {
+   "arm": "S",
+   "build": 0.0607,
+   "case_id": "BRATS_183",
+   "run": 0.1557,
+   "seed": 3,
+   "simlook": 0.0311,
+   "wall": 0.2164
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.019,
+   "case_id": "BRATS_406",
+   "run": 0.5468,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5658
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0389,
+   "case_id": "BRATS_406",
+   "run": 0.517,
+   "seed": 4,
+   "simlook": 0.0201,
+   "wall": 0.556
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0186,
+   "case_id": "BRATS_406",
+   "run": 0.561,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5796
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0292,
+   "case_id": "BRATS_183",
+   "run": 0.2347,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.2638
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0609,
+   "case_id": "BRATS_183",
+   "run": 0.581,
+   "seed": 3,
+   "simlook": 0.0314,
+   "wall": 0.6419
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0601,
+   "case_id": "BRATS_183",
+   "run": 0.5931,
+   "seed": 3,
+   "simlook": 0.0307,
+   "wall": 0.6532
+  },
+  {
+   "arm": "S'",
+   "build": 0.0186,
+   "case_id": "BRATS_406",
+   "run": 1.2746,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.2931
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0298,
+   "case_id": "BRATS_183",
+   "run": 0.6013,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.631
+  },
+  {
+   "arm": "S",
+   "build": 0.029,
+   "case_id": "BRATS_183",
+   "run": 0.1567,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1858
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0623,
+   "case_id": "BRATS_183",
+   "run": 0.9309,
+   "seed": 3,
+   "simlook": 0.032,
+   "wall": 0.9932
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0291,
+   "case_id": "BRATS_183",
+   "run": 0.2413,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2704
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0295,
+   "case_id": "BRATS_183",
+   "run": 0.5712,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6008
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0596,
+   "case_id": "BRATS_183",
+   "run": 0.5344,
+   "seed": 3,
+   "simlook": 0.0308,
+   "wall": 0.594
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0294,
+   "case_id": "BRATS_183",
+   "run": 0.4924,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5218
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0294,
+   "case_id": "BRATS_183",
+   "run": 0.5049,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5343
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0293,
+   "case_id": "BRATS_183",
+   "run": 0.5093,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5385
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0295,
+   "case_id": "BRATS_183",
+   "run": 0.823,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8524
+  },
+  {
+   "arm": "S",
+   "build": 0.0307,
+   "case_id": "BRATS_238",
+   "run": 0.0856,
+   "seed": 3,
+   "simlook": 0.0159,
+   "wall": 0.1163
+  },
+  {
+   "arm": "S'",
+   "build": 0.0293,
+   "case_id": "BRATS_183",
+   "run": 1.7143,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.7436
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0287,
+   "case_id": "BRATS_183",
+   "run": 0.4842,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5129
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0289,
+   "case_id": "BRATS_183",
+   "run": 0.5409,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5698
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0145,
+   "case_id": "BRATS_238",
+   "run": 0.1542,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.1687
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0311,
+   "case_id": "BRATS_238",
+   "run": 0.4256,
+   "seed": 3,
+   "simlook": 0.0166,
+   "wall": 0.4568
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0307,
+   "case_id": "BRATS_238",
+   "run": 0.4433,
+   "seed": 3,
+   "simlook": 0.0159,
+   "wall": 0.474
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0311,
+   "case_id": "BRATS_238",
+   "run": 0.4509,
+   "seed": 3,
+   "simlook": 0.016,
+   "wall": 0.4819
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0149,
+   "case_id": "BRATS_238",
+   "run": 0.4398,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.4547
+  },
+  {
+   "arm": "S",
+   "build": 0.0145,
+   "case_id": "BRATS_238",
+   "run": 0.083,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.0974
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0145,
+   "case_id": "BRATS_238",
+   "run": 0.1423,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1568
+  },
+  {
+   "arm": "S'",
+   "build": 0.0289,
+   "case_id": "BRATS_183",
+   "run": 1.7504,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.7793
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0144,
+   "case_id": "BRATS_238",
+   "run": 0.4638,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.4782
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0144,
+   "case_id": "BRATS_238",
+   "run": 0.5577,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5722
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0142,
+   "case_id": "BRATS_238",
+   "run": 0.3741,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3883
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.015,
+   "case_id": "BRATS_238",
+   "run": 0.349,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.364
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0305,
+   "case_id": "BRATS_238",
+   "run": 0.3803,
+   "seed": 4,
+   "simlook": 0.0159,
+   "wall": 0.4108
+  },
+  {
+   "arm": "S'",
+   "build": 0.0144,
+   "case_id": "BRATS_238",
+   "run": 1.0105,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.0249
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0145,
+   "case_id": "BRATS_238",
+   "run": 0.3989,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4134
+  },
+  {
+   "arm": "S",
+   "build": 0.0645,
+   "case_id": "BRATS_193",
+   "run": 0.1699,
+   "seed": 3,
+   "simlook": 0.0349,
+   "wall": 0.2344
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0145,
+   "case_id": "BRATS_238",
+   "run": 0.3748,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3893
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0649,
+   "case_id": "BRATS_193",
+   "run": 0.2284,
+   "seed": 3,
+   "simlook": 0.0346,
+   "wall": 0.2934
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0144,
+   "case_id": "BRATS_238",
+   "run": 0.4009,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4153
+  },
+  {
+   "arm": "S'",
+   "build": 0.0143,
+   "case_id": "BRATS_238",
+   "run": 1.0161,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0304
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0296,
+   "case_id": "BRATS_193",
+   "run": 0.5794,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6091
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0652,
+   "case_id": "BRATS_193",
+   "run": 0.5993,
+   "seed": 3,
+   "simlook": 0.0349,
+   "wall": 0.6645
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0647,
+   "case_id": "BRATS_193",
+   "run": 0.6016,
+   "seed": 3,
+   "simlook": 0.0352,
+   "wall": 0.6662
+  },
+  {
+   "arm": "S",
+   "build": 0.0296,
+   "case_id": "BRATS_193",
+   "run": 0.1708,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2004
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0297,
+   "case_id": "BRATS_193",
+   "run": 0.5217,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5514
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.03,
+   "case_id": "BRATS_193",
+   "run": 0.4388,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.4688
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0296,
+   "case_id": "BRATS_193",
+   "run": 0.2537,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2834
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0299,
+   "case_id": "BRATS_193",
+   "run": 1.2533,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.2832
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0297,
+   "case_id": "BRATS_193",
+   "run": 0.6361,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6658
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0299,
+   "case_id": "BRATS_193",
+   "run": 0.6622,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6921
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0298,
+   "case_id": "BRATS_193",
+   "run": 0.6622,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.692
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0296,
+   "case_id": "BRATS_193",
+   "run": 1.1133,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.1429
+  },
+  {
+   "arm": "S'",
+   "build": 0.0637,
+   "case_id": "BRATS_193",
+   "run": 1.9427,
+   "seed": 3,
+   "simlook": 0.0343,
+   "wall": 2.0064
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0295,
+   "case_id": "BRATS_193",
+   "run": 0.5028,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5322
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0299,
+   "case_id": "BRATS_193",
+   "run": 0.7102,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7401
+  },
+  {
+   "arm": "S",
+   "build": 0.066,
+   "case_id": "BRATS_464",
+   "run": 0.1751,
+   "seed": 3,
+   "simlook": 0.0343,
+   "wall": 0.2411
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0664,
+   "case_id": "BRATS_464",
+   "run": 0.2519,
+   "seed": 3,
+   "simlook": 0.035,
+   "wall": 0.3183
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0659,
+   "case_id": "BRATS_464",
+   "run": 0.4382,
+   "seed": 3,
+   "simlook": 0.0347,
+   "wall": 0.5041
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0664,
+   "case_id": "BRATS_464",
+   "run": 0.4391,
+   "seed": 3,
+   "simlook": 0.0347,
+   "wall": 0.5054
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0315,
+   "case_id": "BRATS_464",
+   "run": 0.4664,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.4979
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0317,
+   "case_id": "BRATS_464",
+   "run": 0.4826,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5143
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0315,
+   "case_id": "BRATS_464",
+   "run": 1.0379,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.0694
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0321,
+   "case_id": "BRATS_464",
+   "run": 0.4857,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5179
+  },
+  {
+   "arm": "S",
+   "build": 0.0325,
+   "case_id": "BRATS_464",
+   "run": 0.171,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2035
+  },
+  {
+   "arm": "S'",
+   "build": 0.03,
+   "case_id": "BRATS_193",
+   "run": 2.0949,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.1248
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0329,
+   "case_id": "BRATS_464",
+   "run": 0.2647,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2976
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0313,
+   "case_id": "BRATS_464",
+   "run": 0.8612,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8925
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0314,
+   "case_id": "BRATS_464",
+   "run": 0.889,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9204
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0318,
+   "case_id": "BRATS_464",
+   "run": 0.8824,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9142
+  },
+  {
+   "arm": "S'",
+   "build": 0.0315,
+   "case_id": "BRATS_464",
+   "run": 2.3768,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.4082
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.066,
+   "case_id": "BRATS_464",
+   "run": 1.5728,
+   "seed": 4,
+   "simlook": 0.0347,
+   "wall": 1.6388
+  },
+  {
+   "arm": "S",
+   "build": 0.0543,
+   "case_id": "BRATS_479",
+   "run": 0.1508,
+   "seed": 3,
+   "simlook": 0.0297,
+   "wall": 0.2051
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0313,
+   "case_id": "BRATS_464",
+   "run": 0.886,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9172
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0317,
+   "case_id": "BRATS_464",
+   "run": 0.7505,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7822
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0543,
+   "case_id": "BRATS_479",
+   "run": 0.2379,
+   "seed": 3,
+   "simlook": 0.0293,
+   "wall": 0.2921
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0245,
+   "case_id": "BRATS_479",
+   "run": 0.7232,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7478
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0545,
+   "case_id": "BRATS_479",
+   "run": 0.7423,
+   "seed": 3,
+   "simlook": 0.0296,
+   "wall": 0.7967
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0246,
+   "case_id": "BRATS_479",
+   "run": 0.7421,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7667
+  },
+  {
+   "arm": "S'",
+   "build": 0.0312,
+   "case_id": "BRATS_464",
+   "run": 2.1655,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.1967
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0547,
+   "case_id": "BRATS_479",
+   "run": 1.2596,
+   "seed": 3,
+   "simlook": 0.0297,
+   "wall": 1.3143
+  },
+  {
+   "arm": "S",
+   "build": 0.054,
+   "case_id": "BRATS_479",
+   "run": 0.1478,
+   "seed": 4,
+   "simlook": 0.0294,
+   "wall": 0.2018
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0249,
+   "case_id": "BRATS_479",
+   "run": 0.2482,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2731
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0248,
+   "case_id": "BRATS_479",
+   "run": 0.6665,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6914
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0247,
+   "case_id": "BRATS_479",
+   "run": 0.8089,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8336
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0252,
+   "case_id": "BRATS_479",
+   "run": 0.786,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8112
+  },
+  {
+   "arm": "S'",
+   "build": 0.0244,
+   "case_id": "BRATS_479",
+   "run": 1.582,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.6065
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0246,
+   "case_id": "BRATS_479",
+   "run": 0.8363,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8609
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0249,
+   "case_id": "BRATS_479",
+   "run": 0.8149,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8397
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0251,
+   "case_id": "BRATS_479",
+   "run": 1.1542,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.1793
+  },
+  {
+   "arm": "S",
+   "build": 0.1159,
+   "case_id": "BRATS_303",
+   "run": 0.2662,
+   "seed": 3,
+   "simlook": 0.06,
+   "wall": 0.3821
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0247,
+   "case_id": "BRATS_479",
+   "run": 0.8568,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8815
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0251,
+   "case_id": "BRATS_479",
+   "run": 0.7335,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7586
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.1185,
+   "case_id": "BRATS_303",
+   "run": 0.3846,
+   "seed": 3,
+   "simlook": 0.0592,
+   "wall": 0.5031
+  },
+  {
+   "arm": "S'",
+   "build": 0.0242,
+   "case_id": "BRATS_479",
+   "run": 1.4551,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.4793
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.055,
+   "case_id": "BRATS_303",
+   "run": 0.8237,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8787
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.1131,
+   "case_id": "BRATS_303",
+   "run": 0.8486,
+   "seed": 3,
+   "simlook": 0.0578,
+   "wall": 0.9617
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0552,
+   "case_id": "BRATS_303",
+   "run": 0.8508,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.906
+  },
+  {
+   "arm": "S",
+   "build": 0.0541,
+   "case_id": "BRATS_303",
+   "run": 0.2651,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3192
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0543,
+   "case_id": "BRATS_303",
+   "run": 0.8224,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8767
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.1118,
+   "case_id": "BRATS_303",
+   "run": 1.6222,
+   "seed": 3,
+   "simlook": 0.0568,
+   "wall": 1.734
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.055,
+   "case_id": "BRATS_303",
+   "run": 0.7649,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8199
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0552,
+   "case_id": "BRATS_303",
+   "run": 0.3882,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4434
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0592,
+   "case_id": "BRATS_303",
+   "run": 0.9301,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9893
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0552,
+   "case_id": "BRATS_303",
+   "run": 0.9396,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9948
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0541,
+   "case_id": "BRATS_303",
+   "run": 0.9285,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9827
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0549,
+   "case_id": "BRATS_303",
+   "run": 0.8481,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.903
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0552,
+   "case_id": "BRATS_303",
+   "run": 0.9683,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0235
+  },
+  {
+   "arm": "S",
+   "build": 0.0575,
+   "case_id": "BRATS_420",
+   "run": 0.1535,
+   "seed": 3,
+   "simlook": 0.0317,
+   "wall": 0.211
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0578,
+   "case_id": "BRATS_420",
+   "run": 0.2401,
+   "seed": 3,
+   "simlook": 0.0318,
+   "wall": 0.2979
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0552,
+   "case_id": "BRATS_303",
+   "run": 2.3178,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.373
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0258,
+   "case_id": "BRATS_420",
+   "run": 0.6264,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6522
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0262,
+   "case_id": "BRATS_420",
+   "run": 0.6482,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6744
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0264,
+   "case_id": "BRATS_420",
+   "run": 0.6369,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6634
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0598,
+   "case_id": "BRATS_420",
+   "run": 1.0402,
+   "seed": 3,
+   "simlook": 0.0334,
+   "wall": 1.1
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0259,
+   "case_id": "BRATS_420",
+   "run": 0.5882,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6141
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0258,
+   "case_id": "BRATS_420",
+   "run": 0.5932,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.619
+  },
+  {
+   "arm": "S",
+   "build": 0.0255,
+   "case_id": "BRATS_420",
+   "run": 0.1665,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.192
+  },
+  {
+   "arm": "S'",
+   "build": 0.1121,
+   "case_id": "BRATS_303",
+   "run": 5.5152,
+   "seed": 3,
+   "simlook": 0.0574,
+   "wall": 5.6272
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0257,
+   "case_id": "BRATS_420",
+   "run": 0.2373,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.263
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0257,
+   "case_id": "BRATS_420",
+   "run": 0.6626,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6883
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0577,
+   "case_id": "BRATS_420",
+   "run": 0.688,
+   "seed": 4,
+   "simlook": 0.0318,
+   "wall": 0.7457
+  },
+  {
+   "arm": "S'",
+   "build": 0.026,
+   "case_id": "BRATS_420",
+   "run": 2.0534,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.0794
+  },
+  {
+   "arm": "S'",
+   "build": 0.0537,
+   "case_id": "BRATS_303",
+   "run": 4.6077,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 4.6614
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0261,
+   "case_id": "BRATS_420",
+   "run": 1.0339,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.06
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0259,
+   "case_id": "BRATS_420",
+   "run": 0.6903,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7162
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0258,
+   "case_id": "BRATS_420",
+   "run": 0.6247,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6504
+  },
+  {
+   "arm": "S",
+   "build": 0.071,
+   "case_id": "BRATS_337",
+   "run": 0.237,
+   "seed": 3,
+   "simlook": 0.0384,
+   "wall": 0.308
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0573,
+   "case_id": "BRATS_420",
+   "run": 0.5478,
+   "seed": 4,
+   "simlook": 0.0315,
+   "wall": 0.6051
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0704,
+   "case_id": "BRATS_337",
+   "run": 0.3228,
+   "seed": 3,
+   "simlook": 0.0376,
+   "wall": 0.3932
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0322,
+   "case_id": "BRATS_337",
+   "run": 0.7231,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7552
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0712,
+   "case_id": "BRATS_337",
+   "run": 0.725,
+   "seed": 3,
+   "simlook": 0.0382,
+   "wall": 0.7963
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0325,
+   "case_id": "BRATS_337",
+   "run": 0.7574,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7899
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0702,
+   "case_id": "BRATS_337",
+   "run": 1.0575,
+   "seed": 3,
+   "simlook": 0.0378,
+   "wall": 1.1278
+  },
+  {
+   "arm": "S'",
+   "build": 0.0258,
+   "case_id": "BRATS_420",
+   "run": 2.1141,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.1399
+  },
+  {
+   "arm": "S",
+   "build": 0.0323,
+   "case_id": "BRATS_337",
+   "run": 0.2334,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2657
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0323,
+   "case_id": "BRATS_337",
+   "run": 0.7258,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.758
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0705,
+   "case_id": "BRATS_337",
+   "run": 0.2996,
+   "seed": 4,
+   "simlook": 0.038,
+   "wall": 0.37
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0324,
+   "case_id": "BRATS_337",
+   "run": 0.7009,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7333
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0324,
+   "case_id": "BRATS_337",
+   "run": 0.6936,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.726
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0324,
+   "case_id": "BRATS_337",
+   "run": 0.7194,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7518
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0326,
+   "case_id": "BRATS_337",
+   "run": 0.7086,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7412
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0331,
+   "case_id": "BRATS_337",
+   "run": 1.0436,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0767
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0325,
+   "case_id": "BRATS_337",
+   "run": 0.6775,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.71
+  },
+  {
+   "arm": "S",
+   "build": 0.0717,
+   "case_id": "BRATS_056",
+   "run": 0.1931,
+   "seed": 3,
+   "simlook": 0.0387,
+   "wall": 0.2648
+  },
+  {
+   "arm": "S'",
+   "build": 0.0327,
+   "case_id": "BRATS_337",
+   "run": 2.3879,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.4206
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0325,
+   "case_id": "BRATS_337",
+   "run": 0.6727,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7052
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0709,
+   "case_id": "BRATS_056",
+   "run": 0.2984,
+   "seed": 3,
+   "simlook": 0.0381,
+   "wall": 0.3693
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0322,
+   "case_id": "BRATS_056",
+   "run": 0.7807,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8129
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0715,
+   "case_id": "BRATS_056",
+   "run": 0.791,
+   "seed": 3,
+   "simlook": 0.0389,
+   "wall": 0.8625
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0324,
+   "case_id": "BRATS_056",
+   "run": 0.8039,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8364
+  },
+  {
+   "arm": "S'",
+   "build": 0.0324,
+   "case_id": "BRATS_337",
+   "run": 2.2109,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.2433
+  },
+  {
+   "arm": "S",
+   "build": 0.0743,
+   "case_id": "BRATS_056",
+   "run": 0.1964,
+   "seed": 4,
+   "simlook": 0.04,
+   "wall": 0.2708
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0325,
+   "case_id": "BRATS_056",
+   "run": 0.8169,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8494
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.033,
+   "case_id": "BRATS_056",
+   "run": 0.6921,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7251
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.071,
+   "case_id": "BRATS_056",
+   "run": 1.7301,
+   "seed": 3,
+   "simlook": 0.0386,
+   "wall": 1.8011
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0327,
+   "case_id": "BRATS_056",
+   "run": 0.3091,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3418
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0327,
+   "case_id": "BRATS_056",
+   "run": 1.092,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.1248
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0359,
+   "case_id": "BRATS_056",
+   "run": 1.099,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.1348
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0328,
+   "case_id": "BRATS_056",
+   "run": 1.1114,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.1442
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0325,
+   "case_id": "BRATS_056",
+   "run": 0.8889,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9214
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0327,
+   "case_id": "BRATS_056",
+   "run": 1.1038,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.1365
+  },
+  {
+   "arm": "S'",
+   "build": 0.0323,
+   "case_id": "BRATS_056",
+   "run": 3.4409,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 3.4732
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0328,
+   "case_id": "BRATS_056",
+   "run": 2.3231,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.3559
+  },
+  {
+   "arm": "S",
+   "build": 0.0959,
+   "case_id": "BRATS_441",
+   "run": 0.2645,
+   "seed": 3,
+   "simlook": 0.0547,
+   "wall": 0.3604
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0949,
+   "case_id": "BRATS_441",
+   "run": 0.3878,
+   "seed": 3,
+   "simlook": 0.0545,
+   "wall": 0.4827
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0957,
+   "case_id": "BRATS_441",
+   "run": 0.9795,
+   "seed": 3,
+   "simlook": 0.0546,
+   "wall": 1.0752
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0944,
+   "case_id": "BRATS_441",
+   "run": 0.9923,
+   "seed": 3,
+   "simlook": 0.0531,
+   "wall": 1.0868
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0412,
+   "case_id": "BRATS_441",
+   "run": 0.9802,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.0214
+  },
+  {
+   "arm": "S'",
+   "build": 0.0329,
+   "case_id": "BRATS_056",
+   "run": 3.4371,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 3.47
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0396,
+   "case_id": "BRATS_441",
+   "run": 0.9386,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.9782
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0395,
+   "case_id": "BRATS_441",
+   "run": 0.8397,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8792
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0405,
+   "case_id": "BRATS_441",
+   "run": 2.1255,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.166
+  },
+  {
+   "arm": "S",
+   "build": 0.091,
+   "case_id": "BRATS_441",
+   "run": 0.2477,
+   "seed": 4,
+   "simlook": 0.0514,
+   "wall": 0.3387
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0404,
+   "case_id": "BRATS_441",
+   "run": 0.3381,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3785
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0396,
+   "case_id": "BRATS_441",
+   "run": 1.0135,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0531
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0398,
+   "case_id": "BRATS_441",
+   "run": 1.0471,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0869
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0394,
+   "case_id": "BRATS_441",
+   "run": 1.0307,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0701
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0394,
+   "case_id": "BRATS_441",
+   "run": 2.0466,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.086
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0396,
+   "case_id": "BRATS_441",
+   "run": 0.9027,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9423
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0399,
+   "case_id": "BRATS_441",
+   "run": 1.1185,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.1584
+  },
+  {
+   "arm": "S",
+   "build": 0.0483,
+   "case_id": "BRATS_373",
+   "run": 0.1062,
+   "seed": 3,
+   "simlook": 0.0207,
+   "wall": 0.1545
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0481,
+   "case_id": "BRATS_373",
+   "run": 0.176,
+   "seed": 3,
+   "simlook": 0.0201,
+   "wall": 0.2241
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0485,
+   "case_id": "BRATS_373",
+   "run": 0.3602,
+   "seed": 3,
+   "simlook": 0.0207,
+   "wall": 0.4087
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0277,
+   "case_id": "BRATS_373",
+   "run": 0.3925,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.4202
+  },
+  {
+   "arm": "S'",
+   "build": 0.0387,
+   "case_id": "BRATS_441",
+   "run": 4.1357,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 4.1744
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0274,
+   "case_id": "BRATS_373",
+   "run": 0.3977,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.4251
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0274,
+   "case_id": "BRATS_373",
+   "run": 0.3952,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.4226
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0474,
+   "case_id": "BRATS_373",
+   "run": 0.2901,
+   "seed": 3,
+   "simlook": 0.0199,
+   "wall": 0.3375
+  },
+  {
+   "arm": "S",
+   "build": 0.0272,
+   "case_id": "BRATS_373",
+   "run": 0.1043,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1316
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0274,
+   "case_id": "BRATS_373",
+   "run": 0.3404,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.3678
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0275,
+   "case_id": "BRATS_373",
+   "run": 0.1545,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.182
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0272,
+   "case_id": "BRATS_373",
+   "run": 0.4207,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4479
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0275,
+   "case_id": "BRATS_373",
+   "run": 0.4446,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4721
+  },
+  {
+   "arm": "S'",
+   "build": 0.0278,
+   "case_id": "BRATS_373",
+   "run": 1.062,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.0898
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0273,
+   "case_id": "BRATS_373",
+   "run": 0.4572,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4845
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0273,
+   "case_id": "BRATS_373",
+   "run": 0.4506,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4779
+  },
+  {
+   "arm": "S",
+   "build": 0.0472,
+   "case_id": "BRATS_462",
+   "run": 0.1403,
+   "seed": 3,
+   "simlook": 0.0267,
+   "wall": 0.1875
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0278,
+   "case_id": "BRATS_373",
+   "run": 0.4273,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4551
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0273,
+   "case_id": "BRATS_373",
+   "run": 0.5332,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5605
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.02,
+   "case_id": "BRATS_462",
+   "run": 0.1993,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.2194
+  },
+  {
+   "arm": "S'",
+   "build": 0.0275,
+   "case_id": "BRATS_373",
+   "run": 0.9812,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0087
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0471,
+   "case_id": "BRATS_462",
+   "run": 0.6299,
+   "seed": 3,
+   "simlook": 0.0268,
+   "wall": 0.6769
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0479,
+   "case_id": "BRATS_462",
+   "run": 0.6596,
+   "seed": 3,
+   "simlook": 0.0268,
+   "wall": 0.7075
+  },
+  {
+   "arm": "S'",
+   "build": 0.04,
+   "case_id": "BRATS_441",
+   "run": 4.3313,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 4.3713
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0201,
+   "case_id": "BRATS_462",
+   "run": 0.8033,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8234
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.047,
+   "case_id": "BRATS_462",
+   "run": 0.6512,
+   "seed": 3,
+   "simlook": 0.0267,
+   "wall": 0.6982
+  },
+  {
+   "arm": "S",
+   "build": 0.0203,
+   "case_id": "BRATS_462",
+   "run": 0.1308,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1511
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0201,
+   "case_id": "BRATS_462",
+   "run": 0.2203,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2405
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0204,
+   "case_id": "BRATS_462",
+   "run": 0.6627,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6832
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.047,
+   "case_id": "BRATS_462",
+   "run": 0.4749,
+   "seed": 3,
+   "simlook": 0.0266,
+   "wall": 0.5219
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0201,
+   "case_id": "BRATS_462",
+   "run": 0.7244,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7445
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0199,
+   "case_id": "BRATS_462",
+   "run": 0.7469,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7668
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0202,
+   "case_id": "BRATS_462",
+   "run": 0.7598,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.78
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.02,
+   "case_id": "BRATS_462",
+   "run": 0.9316,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9517
+  },
+  {
+   "arm": "S'",
+   "build": 0.0201,
+   "case_id": "BRATS_462",
+   "run": 1.6972,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.7173
+  },
+  {
+   "arm": "S",
+   "build": 0.0712,
+   "case_id": "BRATS_113",
+   "run": 0.1972,
+   "seed": 3,
+   "simlook": 0.0391,
+   "wall": 0.2685
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0716,
+   "case_id": "BRATS_113",
+   "run": 0.2993,
+   "seed": 3,
+   "simlook": 0.0396,
+   "wall": 0.3709
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0201,
+   "case_id": "BRATS_462",
+   "run": 0.7568,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7769
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0201,
+   "case_id": "BRATS_462",
+   "run": 0.6265,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6466
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0314,
+   "case_id": "BRATS_113",
+   "run": 0.6425,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6739
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0316,
+   "case_id": "BRATS_113",
+   "run": 0.6643,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6959
+  },
+  {
+   "arm": "S'",
+   "build": 0.0199,
+   "case_id": "BRATS_462",
+   "run": 1.5563,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.5761
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0715,
+   "case_id": "BRATS_113",
+   "run": 0.6624,
+   "seed": 3,
+   "simlook": 0.0397,
+   "wall": 0.7339
+  },
+  {
+   "arm": "S",
+   "build": 0.0316,
+   "case_id": "BRATS_113",
+   "run": 0.2016,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2332
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0313,
+   "case_id": "BRATS_113",
+   "run": 0.6407,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.672
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0719,
+   "case_id": "BRATS_113",
+   "run": 0.5783,
+   "seed": 3,
+   "simlook": 0.0399,
+   "wall": 0.6503
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0314,
+   "case_id": "BRATS_113",
+   "run": 0.305,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3364
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0717,
+   "case_id": "BRATS_113",
+   "run": 1.7107,
+   "seed": 3,
+   "simlook": 0.04,
+   "wall": 1.7824
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0312,
+   "case_id": "BRATS_113",
+   "run": 0.7076,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7388
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0311,
+   "case_id": "BRATS_113",
+   "run": 0.7495,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7806
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0312,
+   "case_id": "BRATS_113",
+   "run": 0.7361,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7673
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0314,
+   "case_id": "BRATS_113",
+   "run": 0.7131,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7445
+  },
+  {
+   "arm": "S",
+   "build": 0.0386,
+   "case_id": "BRATS_375",
+   "run": 0.1102,
+   "seed": 3,
+   "simlook": 0.0189,
+   "wall": 0.1489
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0311,
+   "case_id": "BRATS_113",
+   "run": 1.7069,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.7381
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0198,
+   "case_id": "BRATS_375",
+   "run": 0.1926,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.2125
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0313,
+   "case_id": "BRATS_113",
+   "run": 0.6868,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7181
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0388,
+   "case_id": "BRATS_375",
+   "run": 0.6142,
+   "seed": 3,
+   "simlook": 0.019,
+   "wall": 0.653
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0198,
+   "case_id": "BRATS_375",
+   "run": 0.638,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6578
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0389,
+   "case_id": "BRATS_375",
+   "run": 0.7346,
+   "seed": 3,
+   "simlook": 0.0192,
+   "wall": 0.7735
+  },
+  {
+   "arm": "S'",
+   "build": 0.0313,
+   "case_id": "BRATS_113",
+   "run": 3.6746,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 3.7059
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0197,
+   "case_id": "BRATS_375",
+   "run": 0.63,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6497
+  },
+  {
+   "arm": "S",
+   "build": 0.0195,
+   "case_id": "BRATS_375",
+   "run": 0.1017,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1212
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0196,
+   "case_id": "BRATS_375",
+   "run": 0.6003,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6199
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0197,
+   "case_id": "BRATS_375",
+   "run": 0.1731,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1929
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0387,
+   "case_id": "BRATS_375",
+   "run": 0.5942,
+   "seed": 3,
+   "simlook": 0.019,
+   "wall": 0.6329
+  },
+  {
+   "arm": "S'",
+   "build": 0.0198,
+   "case_id": "BRATS_375",
+   "run": 1.147,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.1668
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0195,
+   "case_id": "BRATS_375",
+   "run": 0.4874,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5069
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0196,
+   "case_id": "BRATS_375",
+   "run": 0.525,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5446
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0194,
+   "case_id": "BRATS_375",
+   "run": 0.6875,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7068
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0204,
+   "case_id": "BRATS_375",
+   "run": 0.5209,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5413
+  },
+  {
+   "arm": "S'",
+   "build": 0.0307,
+   "case_id": "BRATS_113",
+   "run": 3.6993,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 3.73
+  },
+  {
+   "arm": "S",
+   "build": 0.0898,
+   "case_id": "BRATS_205",
+   "run": 0.23,
+   "seed": 3,
+   "simlook": 0.049,
+   "wall": 0.3198
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0196,
+   "case_id": "BRATS_375",
+   "run": 0.5878,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6074
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0195,
+   "case_id": "BRATS_375",
+   "run": 0.487,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5065
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0886,
+   "case_id": "BRATS_205",
+   "run": 0.3384,
+   "seed": 3,
+   "simlook": 0.0481,
+   "wall": 0.4271
+  },
+  {
+   "arm": "S'",
+   "build": 0.02,
+   "case_id": "BRATS_375",
+   "run": 1.1122,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.1321
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.04,
+   "case_id": "BRATS_205",
+   "run": 0.7653,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8053
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0895,
+   "case_id": "BRATS_205",
+   "run": 0.7924,
+   "seed": 3,
+   "simlook": 0.0489,
+   "wall": 0.8819
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0403,
+   "case_id": "BRATS_205",
+   "run": 0.7879,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8283
+  },
+  {
+   "arm": "S",
+   "build": 0.0405,
+   "case_id": "BRATS_205",
+   "run": 0.2277,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2682
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0407,
+   "case_id": "BRATS_205",
+   "run": 0.6542,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6949
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0409,
+   "case_id": "BRATS_205",
+   "run": 0.7671,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.808
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0405,
+   "case_id": "BRATS_205",
+   "run": 0.3237,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3642
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0889,
+   "case_id": "BRATS_205",
+   "run": 1.8724,
+   "seed": 3,
+   "simlook": 0.0485,
+   "wall": 1.9613
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0405,
+   "case_id": "BRATS_205",
+   "run": 0.8194,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8599
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0407,
+   "case_id": "BRATS_205",
+   "run": 0.8387,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8793
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.04,
+   "case_id": "BRATS_205",
+   "run": 0.846,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.886
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0403,
+   "case_id": "BRATS_205",
+   "run": 0.8418,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8821
+  },
+  {
+   "arm": "S",
+   "build": 0.078,
+   "case_id": "BRATS_246",
+   "run": 0.1907,
+   "seed": 3,
+   "simlook": 0.043,
+   "wall": 0.2688
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0404,
+   "case_id": "BRATS_205",
+   "run": 0.7511,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7915
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0402,
+   "case_id": "BRATS_205",
+   "run": 2.0677,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.1079
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0338,
+   "case_id": "BRATS_246",
+   "run": 0.2971,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.3309
+  },
+  {
+   "arm": "S'",
+   "build": 0.0874,
+   "case_id": "BRATS_205",
+   "run": 3.5316,
+   "seed": 3,
+   "simlook": 0.047,
+   "wall": 3.6191
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0768,
+   "case_id": "BRATS_246",
+   "run": 0.7237,
+   "seed": 3,
+   "simlook": 0.0424,
+   "wall": 0.8005
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0785,
+   "case_id": "BRATS_246",
+   "run": 0.7451,
+   "seed": 3,
+   "simlook": 0.0433,
+   "wall": 0.8236
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0786,
+   "case_id": "BRATS_246",
+   "run": 0.7286,
+   "seed": 3,
+   "simlook": 0.043,
+   "wall": 0.8071
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0347,
+   "case_id": "BRATS_246",
+   "run": 0.7225,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7571
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.034,
+   "case_id": "BRATS_246",
+   "run": 0.643,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6771
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0351,
+   "case_id": "BRATS_246",
+   "run": 1.5024,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.5375
+  },
+  {
+   "arm": "S",
+   "build": 0.035,
+   "case_id": "BRATS_246",
+   "run": 0.199,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2341
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0345,
+   "case_id": "BRATS_246",
+   "run": 0.2999,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3344
+  },
+  {
+   "arm": "S'",
+   "build": 0.0407,
+   "case_id": "BRATS_205",
+   "run": 3.7203,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 3.761
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0347,
+   "case_id": "BRATS_246",
+   "run": 0.8405,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8751
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0342,
+   "case_id": "BRATS_246",
+   "run": 0.8628,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8969
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0768,
+   "case_id": "BRATS_246",
+   "run": 0.8645,
+   "seed": 4,
+   "simlook": 0.0424,
+   "wall": 0.9413
+  },
+  {
+   "arm": "S'",
+   "build": 0.0343,
+   "case_id": "BRATS_246",
+   "run": 2.6247,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.659
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.034,
+   "case_id": "BRATS_246",
+   "run": 1.4751,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.5091
+  },
+  {
+   "arm": "S",
+   "build": 0.0811,
+   "case_id": "BRATS_468",
+   "run": 0.2194,
+   "seed": 3,
+   "simlook": 0.0436,
+   "wall": 0.3005
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0349,
+   "case_id": "BRATS_246",
+   "run": 0.919,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9539
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0822,
+   "case_id": "BRATS_468",
+   "run": 0.3062,
+   "seed": 3,
+   "simlook": 0.0446,
+   "wall": 0.3884
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0345,
+   "case_id": "BRATS_246",
+   "run": 0.7923,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8267
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0371,
+   "case_id": "BRATS_468",
+   "run": 0.795,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8321
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0813,
+   "case_id": "BRATS_468",
+   "run": 0.8206,
+   "seed": 3,
+   "simlook": 0.0442,
+   "wall": 0.9019
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0817,
+   "case_id": "BRATS_468",
+   "run": 0.818,
+   "seed": 3,
+   "simlook": 0.0442,
+   "wall": 0.8997
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0376,
+   "case_id": "BRATS_468",
+   "run": 0.7735,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8111
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0375,
+   "case_id": "BRATS_468",
+   "run": 1.5052,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.5427
+  },
+  {
+   "arm": "S'",
+   "build": 0.0347,
+   "case_id": "BRATS_246",
+   "run": 2.8966,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.9314
+  },
+  {
+   "arm": "S",
+   "build": 0.0385,
+   "case_id": "BRATS_468",
+   "run": 0.235,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2734
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.038,
+   "case_id": "BRATS_468",
+   "run": 0.3182,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3562
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0376,
+   "case_id": "BRATS_468",
+   "run": 0.7826,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8202
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0825,
+   "case_id": "BRATS_468",
+   "run": 0.6067,
+   "seed": 4,
+   "simlook": 0.0443,
+   "wall": 0.6891
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0382,
+   "case_id": "BRATS_468",
+   "run": 0.6235,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6617
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.037,
+   "case_id": "BRATS_468",
+   "run": 0.6217,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6587
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0376,
+   "case_id": "BRATS_468",
+   "run": 0.6043,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6419
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0371,
+   "case_id": "BRATS_468",
+   "run": 1.3026,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.3396
+  },
+  {
+   "arm": "S'",
+   "build": 0.0374,
+   "case_id": "BRATS_468",
+   "run": 2.778,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.8155
+  },
+  {
+   "arm": "S",
+   "build": 0.0871,
+   "case_id": "BRATS_368",
+   "run": 0.2288,
+   "seed": 3,
+   "simlook": 0.0481,
+   "wall": 0.3159
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0385,
+   "case_id": "BRATS_468",
+   "run": 0.7547,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7933
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0871,
+   "case_id": "BRATS_368",
+   "run": 0.3098,
+   "seed": 3,
+   "simlook": 0.0475,
+   "wall": 0.3969
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0841,
+   "case_id": "BRATS_368",
+   "run": 0.653,
+   "seed": 3,
+   "simlook": 0.0458,
+   "wall": 0.7371
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0383,
+   "case_id": "BRATS_368",
+   "run": 0.6741,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7124
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0392,
+   "case_id": "BRATS_368",
+   "run": 0.6796,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7188
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0394,
+   "case_id": "BRATS_368",
+   "run": 0.6659,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7053
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.086,
+   "case_id": "BRATS_368",
+   "run": 1.4674,
+   "seed": 3,
+   "simlook": 0.0467,
+   "wall": 1.5534
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0399,
+   "case_id": "BRATS_368",
+   "run": 0.6183,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6582
+  },
+  {
+   "arm": "S",
+   "build": 0.0392,
+   "case_id": "BRATS_368",
+   "run": 0.2086,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2477
+  },
+  {
+   "arm": "S'",
+   "build": 0.0376,
+   "case_id": "BRATS_468",
+   "run": 2.8703,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.9079
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0384,
+   "case_id": "BRATS_368",
+   "run": 0.3144,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3528
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0399,
+   "case_id": "BRATS_368",
+   "run": 0.7735,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8134
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0394,
+   "case_id": "BRATS_368",
+   "run": 0.8201,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8595
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0394,
+   "case_id": "BRATS_368",
+   "run": 0.799,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8383
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0861,
+   "case_id": "BRATS_368",
+   "run": 1.4542,
+   "seed": 4,
+   "simlook": 0.0472,
+   "wall": 1.5403
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0392,
+   "case_id": "BRATS_368",
+   "run": 0.7386,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7778
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0385,
+   "case_id": "BRATS_368",
+   "run": 0.7322,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7707
+  },
+  {
+   "arm": "S'",
+   "build": 0.0391,
+   "case_id": "BRATS_368",
+   "run": 2.897,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.9361
+  },
+  {
+   "arm": "S",
+   "build": 0.1056,
+   "case_id": "BRATS_034",
+   "run": 0.2745,
+   "seed": 3,
+   "simlook": 0.0592,
+   "wall": 0.3801
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.1099,
+   "case_id": "BRATS_034",
+   "run": 0.3995,
+   "seed": 3,
+   "simlook": 0.0614,
+   "wall": 0.5094
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.106,
+   "case_id": "BRATS_034",
+   "run": 0.8292,
+   "seed": 3,
+   "simlook": 0.0598,
+   "wall": 0.9352
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.1056,
+   "case_id": "BRATS_034",
+   "run": 0.8466,
+   "seed": 3,
+   "simlook": 0.0591,
+   "wall": 0.9522
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0459,
+   "case_id": "BRATS_034",
+   "run": 0.8488,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8948
+  },
+  {
+   "arm": "S'",
+   "build": 0.0397,
+   "case_id": "BRATS_368",
+   "run": 2.7315,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.7712
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0462,
+   "case_id": "BRATS_034",
+   "run": 0.6559,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7021
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0461,
+   "case_id": "BRATS_034",
+   "run": 0.8336,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8796
+  },
+  {
+   "arm": "S",
+   "build": 0.1048,
+   "case_id": "BRATS_034",
+   "run": 0.2892,
+   "seed": 4,
+   "simlook": 0.0592,
+   "wall": 0.394
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0463,
+   "case_id": "BRATS_034",
+   "run": 2.1771,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.2234
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0467,
+   "case_id": "BRATS_034",
+   "run": 0.3881,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4348
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0458,
+   "case_id": "BRATS_034",
+   "run": 1.0084,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0543
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0453,
+   "case_id": "BRATS_034",
+   "run": 1.0273,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0725
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0461,
+   "case_id": "BRATS_034",
+   "run": 1.0252,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0713
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0457,
+   "case_id": "BRATS_034",
+   "run": 1.007,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0527
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.047,
+   "case_id": "BRATS_034",
+   "run": 0.7742,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8212
+  },
+  {
+   "arm": "S",
+   "build": 0.0835,
+   "case_id": "BRATS_356",
+   "run": 0.2213,
+   "seed": 3,
+   "simlook": 0.0448,
+   "wall": 0.3048
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0842,
+   "case_id": "BRATS_356",
+   "run": 0.3342,
+   "seed": 3,
+   "simlook": 0.0455,
+   "wall": 0.4184
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0383,
+   "case_id": "BRATS_356",
+   "run": 0.6224,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6607
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0454,
+   "case_id": "BRATS_034",
+   "run": 2.9549,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 3.0003
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0386,
+   "case_id": "BRATS_356",
+   "run": 0.6358,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6744
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0827,
+   "case_id": "BRATS_356",
+   "run": 0.6343,
+   "seed": 3,
+   "simlook": 0.0449,
+   "wall": 0.717
+  },
+  {
+   "arm": "S'",
+   "build": 0.0456,
+   "case_id": "BRATS_034",
+   "run": 5.17,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 5.2156
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0377,
+   "case_id": "BRATS_356",
+   "run": 1.4837,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.5213
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0384,
+   "case_id": "BRATS_356",
+   "run": 0.6265,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6649
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0835,
+   "case_id": "BRATS_356",
+   "run": 0.6214,
+   "seed": 3,
+   "simlook": 0.0449,
+   "wall": 0.7049
+  },
+  {
+   "arm": "S",
+   "build": 0.0376,
+   "case_id": "BRATS_356",
+   "run": 0.2184,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.256
+  },
+  {
+   "arm": "S'",
+   "build": 0.0454,
+   "case_id": "BRATS_034",
+   "run": 4.1201,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 4.1655
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.038,
+   "case_id": "BRATS_356",
+   "run": 0.3195,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3575
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0382,
+   "case_id": "BRATS_356",
+   "run": 0.7852,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8234
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0383,
+   "case_id": "BRATS_356",
+   "run": 0.8109,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8492
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0375,
+   "case_id": "BRATS_356",
+   "run": 0.8074,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8449
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0377,
+   "case_id": "BRATS_356",
+   "run": 0.7801,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8178
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0381,
+   "case_id": "BRATS_356",
+   "run": 0.7273,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7654
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0832,
+   "case_id": "BRATS_356",
+   "run": 1.577,
+   "seed": 4,
+   "simlook": 0.045,
+   "wall": 1.6602
+  },
+  {
+   "arm": "S",
+   "build": 0.0425,
+   "case_id": "BRATS_120",
+   "run": 0.1279,
+   "seed": 3,
+   "simlook": 0.0234,
+   "wall": 0.1704
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0437,
+   "case_id": "BRATS_120",
+   "run": 0.1755,
+   "seed": 3,
+   "simlook": 0.0246,
+   "wall": 0.2192
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0424,
+   "case_id": "BRATS_120",
+   "run": 0.3395,
+   "seed": 3,
+   "simlook": 0.0237,
+   "wall": 0.3819
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0188,
+   "case_id": "BRATS_120",
+   "run": 0.3609,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.3797
+  },
+  {
+   "arm": "S'",
+   "build": 0.0376,
+   "case_id": "BRATS_356",
+   "run": 3.943,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 3.9805
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0191,
+   "case_id": "BRATS_120",
+   "run": 0.5567,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5758
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0187,
+   "case_id": "BRATS_120",
+   "run": 0.3764,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.3951
+  },
+  {
+   "arm": "S",
+   "build": 0.0193,
+   "case_id": "BRATS_120",
+   "run": 0.1285,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1478
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.043,
+   "case_id": "BRATS_120",
+   "run": 0.3436,
+   "seed": 3,
+   "simlook": 0.0241,
+   "wall": 0.3866
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0194,
+   "case_id": "BRATS_120",
+   "run": 0.3281,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.3475
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0193,
+   "case_id": "BRATS_120",
+   "run": 0.2034,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2227
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.019,
+   "case_id": "BRATS_120",
+   "run": 0.444,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.463
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0186,
+   "case_id": "BRATS_120",
+   "run": 0.4992,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5179
+  },
+  {
+   "arm": "S'",
+   "build": 0.0187,
+   "case_id": "BRATS_120",
+   "run": 1.3262,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.3449
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.019,
+   "case_id": "BRATS_120",
+   "run": 0.6451,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6641
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0186,
+   "case_id": "BRATS_120",
+   "run": 0.4635,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4821
+  },
+  {
+   "arm": "S",
+   "build": 0.0648,
+   "case_id": "BRATS_389",
+   "run": 0.1627,
+   "seed": 3,
+   "simlook": 0.0333,
+   "wall": 0.2276
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0187,
+   "case_id": "BRATS_120",
+   "run": 0.3591,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3778
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0188,
+   "case_id": "BRATS_120",
+   "run": 0.4429,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4617
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0312,
+   "case_id": "BRATS_389",
+   "run": 0.2503,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.2815
+  },
+  {
+   "arm": "S'",
+   "build": 0.0377,
+   "case_id": "BRATS_356",
+   "run": 3.7597,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 3.7974
+  },
+  {
+   "arm": "S'",
+   "build": 0.0185,
+   "case_id": "BRATS_120",
+   "run": 1.349,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.3675
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0648,
+   "case_id": "BRATS_389",
+   "run": 0.7821,
+   "seed": 3,
+   "simlook": 0.033,
+   "wall": 0.8469
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0644,
+   "case_id": "BRATS_389",
+   "run": 0.7934,
+   "seed": 3,
+   "simlook": 0.0331,
+   "wall": 0.8579
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.065,
+   "case_id": "BRATS_389",
+   "run": 0.7945,
+   "seed": 3,
+   "simlook": 0.033,
+   "wall": 0.8595
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0315,
+   "case_id": "BRATS_389",
+   "run": 1.1816,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.2131
+  },
+  {
+   "arm": "S",
+   "build": 0.0315,
+   "case_id": "BRATS_389",
+   "run": 0.1558,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1873
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0314,
+   "case_id": "BRATS_389",
+   "run": 0.6613,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6927
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0312,
+   "case_id": "BRATS_389",
+   "run": 0.7593,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7904
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0315,
+   "case_id": "BRATS_389",
+   "run": 0.2513,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2828
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.031,
+   "case_id": "BRATS_389",
+   "run": 0.7694,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8004
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.031,
+   "case_id": "BRATS_389",
+   "run": 0.7823,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8133
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0309,
+   "case_id": "BRATS_389",
+   "run": 0.7783,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8092
+  },
+  {
+   "arm": "S'",
+   "build": 0.0641,
+   "case_id": "BRATS_389",
+   "run": 1.881,
+   "seed": 3,
+   "simlook": 0.0329,
+   "wall": 1.9452
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0313,
+   "case_id": "BRATS_389",
+   "run": 1.0358,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0671
+  },
+  {
+   "arm": "S",
+   "build": 0.053,
+   "case_id": "BRATS_343",
+   "run": 0.1561,
+   "seed": 3,
+   "simlook": 0.0297,
+   "wall": 0.2092
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0525,
+   "case_id": "BRATS_343",
+   "run": 0.2135,
+   "seed": 3,
+   "simlook": 0.0294,
+   "wall": 0.2659
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0316,
+   "case_id": "BRATS_389",
+   "run": 0.5642,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5959
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0313,
+   "case_id": "BRATS_389",
+   "run": 0.7742,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8056
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0231,
+   "case_id": "BRATS_343",
+   "run": 0.6775,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7006
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0229,
+   "case_id": "BRATS_343",
+   "run": 0.7056,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7285
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.052,
+   "case_id": "BRATS_343",
+   "run": 0.7139,
+   "seed": 3,
+   "simlook": 0.0296,
+   "wall": 0.7659
+  },
+  {
+   "arm": "S'",
+   "build": 0.0313,
+   "case_id": "BRATS_389",
+   "run": 1.8326,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.8639
+  },
+  {
+   "arm": "S",
+   "build": 0.0526,
+   "case_id": "BRATS_343",
+   "run": 0.1501,
+   "seed": 4,
+   "simlook": 0.0293,
+   "wall": 0.2027
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0234,
+   "case_id": "BRATS_343",
+   "run": 0.6017,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6251
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0521,
+   "case_id": "BRATS_343",
+   "run": 1.1847,
+   "seed": 3,
+   "simlook": 0.0294,
+   "wall": 1.2368
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0226,
+   "case_id": "BRATS_343",
+   "run": 0.2412,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2639
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0229,
+   "case_id": "BRATS_343",
+   "run": 0.6517,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6745
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.023,
+   "case_id": "BRATS_343",
+   "run": 1.0143,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0373
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.023,
+   "case_id": "BRATS_343",
+   "run": 1.0274,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0505
+  },
+  {
+   "arm": "S'",
+   "build": 0.0234,
+   "case_id": "BRATS_343",
+   "run": 1.8934,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.9168
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0233,
+   "case_id": "BRATS_343",
+   "run": 1.0554,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0787
+  },
+  {
+   "arm": "S",
+   "build": 0.054,
+   "case_id": "BRATS_483",
+   "run": 0.1511,
+   "seed": 3,
+   "simlook": 0.0297,
+   "wall": 0.2051
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0242,
+   "case_id": "BRATS_483",
+   "run": 0.213,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.2372
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.023,
+   "case_id": "BRATS_343",
+   "run": 1.7446,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.7676
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0234,
+   "case_id": "BRATS_343",
+   "run": 0.9958,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0192
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0231,
+   "case_id": "BRATS_343",
+   "run": 0.9918,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0149
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0239,
+   "case_id": "BRATS_483",
+   "run": 0.4023,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.4261
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0541,
+   "case_id": "BRATS_483",
+   "run": 0.4421,
+   "seed": 3,
+   "simlook": 0.0299,
+   "wall": 0.4962
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0544,
+   "case_id": "BRATS_483",
+   "run": 0.4387,
+   "seed": 3,
+   "simlook": 0.0299,
+   "wall": 0.4931
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0542,
+   "case_id": "BRATS_483",
+   "run": 0.7877,
+   "seed": 3,
+   "simlook": 0.0301,
+   "wall": 0.8418
+  },
+  {
+   "arm": "S'",
+   "build": 0.023,
+   "case_id": "BRATS_343",
+   "run": 1.986,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.009
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0243,
+   "case_id": "BRATS_483",
+   "run": 0.6323,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6566
+  },
+  {
+   "arm": "S",
+   "build": 0.0246,
+   "case_id": "BRATS_483",
+   "run": 0.2601,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2847
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0245,
+   "case_id": "BRATS_483",
+   "run": 0.701,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7254
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0724,
+   "case_id": "BRATS_483",
+   "run": 0.3493,
+   "seed": 4,
+   "simlook": 0.031,
+   "wall": 0.4217
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0245,
+   "case_id": "BRATS_483",
+   "run": 0.8331,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8577
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0247,
+   "case_id": "BRATS_483",
+   "run": 0.8503,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.875
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0249,
+   "case_id": "BRATS_483",
+   "run": 0.8039,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8287
+  },
+  {
+   "arm": "S'",
+   "build": 0.0244,
+   "case_id": "BRATS_483",
+   "run": 2.1645,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.1889
+  },
+  {
+   "arm": "S",
+   "build": 0.0337,
+   "case_id": "BRATS_287",
+   "run": 0.0962,
+   "seed": 3,
+   "simlook": 0.0181,
+   "wall": 0.1299
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0357,
+   "case_id": "BRATS_483",
+   "run": 1.2806,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.3163
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0244,
+   "case_id": "BRATS_483",
+   "run": 0.6057,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6301
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0154,
+   "case_id": "BRATS_287",
+   "run": 0.16,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.1754
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0245,
+   "case_id": "BRATS_483",
+   "run": 0.5693,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5938
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0321,
+   "case_id": "BRATS_287",
+   "run": 0.4856,
+   "seed": 3,
+   "simlook": 0.017,
+   "wall": 0.5177
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0323,
+   "case_id": "BRATS_287",
+   "run": 0.5216,
+   "seed": 3,
+   "simlook": 0.0172,
+   "wall": 0.5539
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.015,
+   "case_id": "BRATS_287",
+   "run": 0.5465,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5615
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.032,
+   "case_id": "BRATS_287",
+   "run": 0.5096,
+   "seed": 3,
+   "simlook": 0.0169,
+   "wall": 0.5416
+  },
+  {
+   "arm": "S",
+   "build": 0.0151,
+   "case_id": "BRATS_287",
+   "run": 0.0934,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1085
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0148,
+   "case_id": "BRATS_287",
+   "run": 0.378,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.3929
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0151,
+   "case_id": "BRATS_287",
+   "run": 0.1565,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1716
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0149,
+   "case_id": "BRATS_287",
+   "run": 0.4877,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5027
+  },
+  {
+   "arm": "S'",
+   "build": 0.0243,
+   "case_id": "BRATS_483",
+   "run": 1.9075,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.9318
+  },
+  {
+   "arm": "S'",
+   "build": 0.0152,
+   "case_id": "BRATS_287",
+   "run": 0.9152,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.9305
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0149,
+   "case_id": "BRATS_287",
+   "run": 0.5405,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5554
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.015,
+   "case_id": "BRATS_287",
+   "run": 0.5675,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5825
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0152,
+   "case_id": "BRATS_287",
+   "run": 0.6547,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6699
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0316,
+   "case_id": "BRATS_287",
+   "run": 0.5707,
+   "seed": 4,
+   "simlook": 0.0168,
+   "wall": 0.6023
+  },
+  {
+   "arm": "S",
+   "build": 0.053,
+   "case_id": "BRATS_328",
+   "run": 0.1418,
+   "seed": 3,
+   "simlook": 0.0292,
+   "wall": 0.1948
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0152,
+   "case_id": "BRATS_287",
+   "run": 0.5751,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5903
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.015,
+   "case_id": "BRATS_287",
+   "run": 0.5275,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5425
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0534,
+   "case_id": "BRATS_328",
+   "run": 0.2374,
+   "seed": 3,
+   "simlook": 0.0293,
+   "wall": 0.2908
+  },
+  {
+   "arm": "S'",
+   "build": 0.015,
+   "case_id": "BRATS_287",
+   "run": 0.8924,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9074
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0242,
+   "case_id": "BRATS_328",
+   "run": 0.7063,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7305
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0536,
+   "case_id": "BRATS_328",
+   "run": 0.7413,
+   "seed": 3,
+   "simlook": 0.0291,
+   "wall": 0.7949
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0241,
+   "case_id": "BRATS_328",
+   "run": 0.7369,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.761
+  },
+  {
+   "arm": "S",
+   "build": 0.0238,
+   "case_id": "BRATS_328",
+   "run": 0.1545,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1784
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0236,
+   "case_id": "BRATS_328",
+   "run": 0.2295,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2531
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0532,
+   "case_id": "BRATS_328",
+   "run": 1.1773,
+   "seed": 3,
+   "simlook": 0.0291,
+   "wall": 1.2305
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0243,
+   "case_id": "BRATS_328",
+   "run": 0.7148,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7391
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0241,
+   "case_id": "BRATS_328",
+   "run": 0.686,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7101
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0241,
+   "case_id": "BRATS_328",
+   "run": 0.5963,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6204
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0243,
+   "case_id": "BRATS_328",
+   "run": 0.6085,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6328
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0244,
+   "case_id": "BRATS_328",
+   "run": 0.6061,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6305
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0242,
+   "case_id": "BRATS_328",
+   "run": 0.9747,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.999
+  },
+  {
+   "arm": "S'",
+   "build": 0.0537,
+   "case_id": "BRATS_328",
+   "run": 2.2396,
+   "seed": 3,
+   "simlook": 0.0291,
+   "wall": 2.2933
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.024,
+   "case_id": "BRATS_328",
+   "run": 0.6663,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6903
+  },
+  {
+   "arm": "S",
+   "build": 0.082,
+   "case_id": "BRATS_286",
+   "run": 0.2201,
+   "seed": 3,
+   "simlook": 0.0424,
+   "wall": 0.3021
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0239,
+   "case_id": "BRATS_328",
+   "run": 0.5468,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5707
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0848,
+   "case_id": "BRATS_286",
+   "run": 0.3262,
+   "seed": 3,
+   "simlook": 0.0432,
+   "wall": 0.4111
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0813,
+   "case_id": "BRATS_286",
+   "run": 0.8597,
+   "seed": 3,
+   "simlook": 0.0426,
+   "wall": 0.941
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0388,
+   "case_id": "BRATS_286",
+   "run": 0.8841,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.923
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0399,
+   "case_id": "BRATS_286",
+   "run": 0.8882,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.928
+  },
+  {
+   "arm": "S'",
+   "build": 0.024,
+   "case_id": "BRATS_328",
+   "run": 2.0052,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.0292
+  },
+  {
+   "arm": "S",
+   "build": 0.0806,
+   "case_id": "BRATS_286",
+   "run": 0.2067,
+   "seed": 4,
+   "simlook": 0.0416,
+   "wall": 0.2873
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0397,
+   "case_id": "BRATS_286",
+   "run": 0.8709,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.9106
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0384,
+   "case_id": "BRATS_286",
+   "run": 0.3092,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3476
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0388,
+   "case_id": "BRATS_286",
+   "run": 0.7625,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8013
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0848,
+   "case_id": "BRATS_286",
+   "run": 1.8857,
+   "seed": 3,
+   "simlook": 0.0455,
+   "wall": 1.9704
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.039,
+   "case_id": "BRATS_286",
+   "run": 0.9802,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0192
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0389,
+   "case_id": "BRATS_286",
+   "run": 1.02,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.059
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0391,
+   "case_id": "BRATS_286",
+   "run": 1.019,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.058
+  },
+  {
+   "arm": "S'",
+   "build": 0.0392,
+   "case_id": "BRATS_286",
+   "run": 2.8313,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.8705
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0391,
+   "case_id": "BRATS_286",
+   "run": 0.9744,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0135
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.039,
+   "case_id": "BRATS_286",
+   "run": 0.812,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.851
+  },
+  {
+   "arm": "S",
+   "build": 0.0932,
+   "case_id": "BRATS_069",
+   "run": 0.2349,
+   "seed": 3,
+   "simlook": 0.0514,
+   "wall": 0.328
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0392,
+   "case_id": "BRATS_286",
+   "run": 2.1469,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.186
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0934,
+   "case_id": "BRATS_069",
+   "run": 0.3312,
+   "seed": 3,
+   "simlook": 0.0516,
+   "wall": 0.4246
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0933,
+   "case_id": "BRATS_069",
+   "run": 0.9317,
+   "seed": 3,
+   "simlook": 0.0514,
+   "wall": 1.0249
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0409,
+   "case_id": "BRATS_069",
+   "run": 0.9577,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.9985
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0412,
+   "case_id": "BRATS_069",
+   "run": 0.9605,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.0017
+  },
+  {
+   "arm": "S'",
+   "build": 0.0387,
+   "case_id": "BRATS_286",
+   "run": 2.7757,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.8145
+  },
+  {
+   "arm": "S",
+   "build": 0.0929,
+   "case_id": "BRATS_069",
+   "run": 0.2395,
+   "seed": 4,
+   "simlook": 0.0513,
+   "wall": 0.3324
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0933,
+   "case_id": "BRATS_069",
+   "run": 1.8217,
+   "seed": 3,
+   "simlook": 0.051,
+   "wall": 1.9149
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0425,
+   "case_id": "BRATS_069",
+   "run": 1.0688,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.1113
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0414,
+   "case_id": "BRATS_069",
+   "run": 0.3205,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3619
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0412,
+   "case_id": "BRATS_069",
+   "run": 0.9491,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.9903
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0409,
+   "case_id": "BRATS_069",
+   "run": 0.7209,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7618
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0411,
+   "case_id": "BRATS_069",
+   "run": 0.7531,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7941
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0424,
+   "case_id": "BRATS_069",
+   "run": 0.7447,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7871
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0419,
+   "case_id": "BRATS_069",
+   "run": 1.2807,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.3225
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0409,
+   "case_id": "BRATS_069",
+   "run": 0.7275,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7684
+  },
+  {
+   "arm": "S",
+   "build": 0.0323,
+   "case_id": "BRATS_167",
+   "run": 0.0927,
+   "seed": 3,
+   "simlook": 0.0171,
+   "wall": 0.125
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0418,
+   "case_id": "BRATS_069",
+   "run": 0.6191,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6609
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0327,
+   "case_id": "BRATS_167",
+   "run": 0.1668,
+   "seed": 3,
+   "simlook": 0.0174,
+   "wall": 0.1996
+  },
+  {
+   "arm": "S'",
+   "build": 0.0425,
+   "case_id": "BRATS_069",
+   "run": 3.1729,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 3.2154
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0149,
+   "case_id": "BRATS_167",
+   "run": 0.5008,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5157
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0324,
+   "case_id": "BRATS_167",
+   "run": 0.5301,
+   "seed": 3,
+   "simlook": 0.0172,
+   "wall": 0.5625
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.015,
+   "case_id": "BRATS_167",
+   "run": 0.5431,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5581
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0322,
+   "case_id": "BRATS_167",
+   "run": 0.5283,
+   "seed": 3,
+   "simlook": 0.017,
+   "wall": 0.5605
+  },
+  {
+   "arm": "S",
+   "build": 0.0151,
+   "case_id": "BRATS_167",
+   "run": 0.0951,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1102
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0152,
+   "case_id": "BRATS_167",
+   "run": 0.5085,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5238
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0151,
+   "case_id": "BRATS_167",
+   "run": 0.4487,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.4637
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.015,
+   "case_id": "BRATS_167",
+   "run": 0.1587,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1737
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0151,
+   "case_id": "BRATS_167",
+   "run": 0.2869,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3021
+  },
+  {
+   "arm": "S'",
+   "build": 0.0149,
+   "case_id": "BRATS_167",
+   "run": 0.9569,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.9718
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0149,
+   "case_id": "BRATS_167",
+   "run": 0.3196,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3345
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0149,
+   "case_id": "BRATS_167",
+   "run": 0.3944,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4093
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0151,
+   "case_id": "BRATS_167",
+   "run": 0.3153,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3304
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0151,
+   "case_id": "BRATS_167",
+   "run": 0.2831,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2982
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.015,
+   "case_id": "BRATS_167",
+   "run": 0.2875,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3025
+  },
+  {
+   "arm": "S",
+   "build": 0.0491,
+   "case_id": "BRATS_067",
+   "run": 0.1385,
+   "seed": 3,
+   "simlook": 0.0271,
+   "wall": 0.1876
+  },
+  {
+   "arm": "S'",
+   "build": 0.0423,
+   "case_id": "BRATS_069",
+   "run": 2.9882,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 3.0305
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0495,
+   "case_id": "BRATS_067",
+   "run": 0.2236,
+   "seed": 3,
+   "simlook": 0.0275,
+   "wall": 0.273
+  },
+  {
+   "arm": "S'",
+   "build": 0.0149,
+   "case_id": "BRATS_167",
+   "run": 0.9898,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.0047
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0497,
+   "case_id": "BRATS_067",
+   "run": 0.7617,
+   "seed": 3,
+   "simlook": 0.0272,
+   "wall": 0.8114
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0223,
+   "case_id": "BRATS_067",
+   "run": 0.7769,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7992
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0228,
+   "case_id": "BRATS_067",
+   "run": 0.77,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7927
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0509,
+   "case_id": "BRATS_067",
+   "run": 0.9931,
+   "seed": 3,
+   "simlook": 0.0286,
+   "wall": 1.044
+  },
+  {
+   "arm": "S",
+   "build": 0.0223,
+   "case_id": "BRATS_067",
+   "run": 0.1424,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1648
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0224,
+   "case_id": "BRATS_067",
+   "run": 0.2313,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2537
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0227,
+   "case_id": "BRATS_067",
+   "run": 0.6487,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6714
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.022,
+   "case_id": "BRATS_067",
+   "run": 0.7578,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.7798
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0223,
+   "case_id": "BRATS_067",
+   "run": 0.8924,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9147
+  },
+  {
+   "arm": "S'",
+   "build": 0.05,
+   "case_id": "BRATS_067",
+   "run": 1.6689,
+   "seed": 3,
+   "simlook": 0.0277,
+   "wall": 1.7189
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0224,
+   "case_id": "BRATS_067",
+   "run": 0.9375,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9599
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0225,
+   "case_id": "BRATS_067",
+   "run": 0.9046,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9271
+  },
+  {
+   "arm": "S",
+   "build": 0.0515,
+   "case_id": "BRATS_355",
+   "run": 0.1359,
+   "seed": 3,
+   "simlook": 0.0277,
+   "wall": 0.1875
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0226,
+   "case_id": "BRATS_067",
+   "run": 1.1927,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.2153
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.023,
+   "case_id": "BRATS_355",
+   "run": 0.2061,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.2291
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0225,
+   "case_id": "BRATS_067",
+   "run": 0.8666,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.889
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0228,
+   "case_id": "BRATS_067",
+   "run": 0.8036,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8265
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0506,
+   "case_id": "BRATS_355",
+   "run": 0.5005,
+   "seed": 3,
+   "simlook": 0.0269,
+   "wall": 0.5511
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0233,
+   "case_id": "BRATS_355",
+   "run": 0.5219,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5453
+  },
+  {
+   "arm": "S'",
+   "build": 0.022,
+   "case_id": "BRATS_067",
+   "run": 1.5503,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.5722
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0513,
+   "case_id": "BRATS_355",
+   "run": 0.5249,
+   "seed": 3,
+   "simlook": 0.0272,
+   "wall": 0.5762
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0516,
+   "case_id": "BRATS_355",
+   "run": 0.7048,
+   "seed": 3,
+   "simlook": 0.0276,
+   "wall": 0.7563
+  },
+  {
+   "arm": "S",
+   "build": 0.0244,
+   "case_id": "BRATS_355",
+   "run": 0.1358,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1601
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0236,
+   "case_id": "BRATS_355",
+   "run": 0.5095,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5331
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0236,
+   "case_id": "BRATS_355",
+   "run": 0.2161,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2398
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0514,
+   "case_id": "BRATS_355",
+   "run": 0.6109,
+   "seed": 3,
+   "simlook": 0.0275,
+   "wall": 0.6623
+  },
+  {
+   "arm": "S'",
+   "build": 0.0233,
+   "case_id": "BRATS_355",
+   "run": 1.2824,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.3057
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0238,
+   "case_id": "BRATS_355",
+   "run": 0.6432,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.667
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0234,
+   "case_id": "BRATS_355",
+   "run": 0.6719,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6953
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0241,
+   "case_id": "BRATS_355",
+   "run": 0.6632,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6873
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0237,
+   "case_id": "BRATS_355",
+   "run": 0.8815,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9052
+  },
+  {
+   "arm": "S",
+   "build": 0.0495,
+   "case_id": "BRATS_297",
+   "run": 0.1464,
+   "seed": 3,
+   "simlook": 0.0279,
+   "wall": 0.1959
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.051,
+   "case_id": "BRATS_297",
+   "run": 0.1901,
+   "seed": 3,
+   "simlook": 0.0291,
+   "wall": 0.2411
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0236,
+   "case_id": "BRATS_355",
+   "run": 0.66,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6836
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0237,
+   "case_id": "BRATS_355",
+   "run": 0.5836,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6073
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0215,
+   "case_id": "BRATS_297",
+   "run": 0.2688,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.2903
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0219,
+   "case_id": "BRATS_297",
+   "run": 0.3201,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.342
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0508,
+   "case_id": "BRATS_297",
+   "run": 0.2947,
+   "seed": 3,
+   "simlook": 0.0291,
+   "wall": 0.3454
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0217,
+   "case_id": "BRATS_297",
+   "run": 0.3007,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.3224
+  },
+  {
+   "arm": "S'",
+   "build": 0.0239,
+   "case_id": "BRATS_355",
+   "run": 1.3794,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.4033
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0506,
+   "case_id": "BRATS_297",
+   "run": 0.5768,
+   "seed": 3,
+   "simlook": 0.0287,
+   "wall": 0.6274
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0223,
+   "case_id": "BRATS_297",
+   "run": 0.3025,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.3248
+  },
+  {
+   "arm": "S",
+   "build": 0.0221,
+   "case_id": "BRATS_297",
+   "run": 0.154,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1761
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0521,
+   "case_id": "BRATS_297",
+   "run": 0.244,
+   "seed": 4,
+   "simlook": 0.0289,
+   "wall": 0.2961
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0218,
+   "case_id": "BRATS_297",
+   "run": 0.639,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6607
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.023,
+   "case_id": "BRATS_297",
+   "run": 0.637,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.66
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0214,
+   "case_id": "BRATS_297",
+   "run": 0.6413,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6627
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0217,
+   "case_id": "BRATS_297",
+   "run": 0.9139,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.9356
+  },
+  {
+   "arm": "S'",
+   "build": 0.0213,
+   "case_id": "BRATS_297",
+   "run": 1.8042,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.8255
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0211,
+   "case_id": "BRATS_297",
+   "run": 0.5877,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6088
+  },
+  {
+   "arm": "S",
+   "build": 0.1084,
+   "case_id": "BRATS_149",
+   "run": 0.2751,
+   "seed": 3,
+   "simlook": 0.0588,
+   "wall": 0.3835
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.021,
+   "case_id": "BRATS_297",
+   "run": 0.5146,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.5356
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.1086,
+   "case_id": "BRATS_149",
+   "run": 0.3816,
+   "seed": 3,
+   "simlook": 0.0584,
+   "wall": 0.4903
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.11,
+   "case_id": "BRATS_149",
+   "run": 0.9219,
+   "seed": 3,
+   "simlook": 0.0606,
+   "wall": 1.0319
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0491,
+   "case_id": "BRATS_149",
+   "run": 0.953,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.0021
+  },
+  {
+   "arm": "S'",
+   "build": 0.0214,
+   "case_id": "BRATS_297",
+   "run": 1.9691,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.9905
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0501,
+   "case_id": "BRATS_149",
+   "run": 0.9583,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.0085
+  },
+  {
+   "arm": "S",
+   "build": 0.0502,
+   "case_id": "BRATS_149",
+   "run": 0.2743,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3245
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0521,
+   "case_id": "BRATS_149",
+   "run": 0.9683,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.0204
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0497,
+   "case_id": "BRATS_149",
+   "run": 0.3721,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4218
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.1111,
+   "case_id": "BRATS_149",
+   "run": 0.9042,
+   "seed": 3,
+   "simlook": 0.0596,
+   "wall": 1.0153
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.1099,
+   "case_id": "BRATS_149",
+   "run": 2.1081,
+   "seed": 3,
+   "simlook": 0.06,
+   "wall": 2.218
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0497,
+   "case_id": "BRATS_149",
+   "run": 0.7194,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7691
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0494,
+   "case_id": "BRATS_149",
+   "run": 0.745,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7944
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0497,
+   "case_id": "BRATS_149",
+   "run": 0.7492,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7989
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0507,
+   "case_id": "BRATS_149",
+   "run": 0.7393,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7901
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0493,
+   "case_id": "BRATS_149",
+   "run": 0.6167,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6661
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0509,
+   "case_id": "BRATS_149",
+   "run": 1.7174,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.7684
+  },
+  {
+   "arm": "S",
+   "build": 0.0842,
+   "case_id": "BRATS_161",
+   "run": 0.2156,
+   "seed": 3,
+   "simlook": 0.0463,
+   "wall": 0.2997
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0807,
+   "case_id": "BRATS_161",
+   "run": 0.3146,
+   "seed": 3,
+   "simlook": 0.0429,
+   "wall": 0.3953
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0814,
+   "case_id": "BRATS_161",
+   "run": 0.7383,
+   "seed": 3,
+   "simlook": 0.0435,
+   "wall": 0.8196
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.039,
+   "case_id": "BRATS_161",
+   "run": 0.7755,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8145
+  },
+  {
+   "arm": "S'",
+   "build": 0.0524,
+   "case_id": "BRATS_149",
+   "run": 4.3963,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 4.4487
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0379,
+   "case_id": "BRATS_161",
+   "run": 0.7719,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.8098
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0378,
+   "case_id": "BRATS_161",
+   "run": 1.6582,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.696
+  },
+  {
+   "arm": "S",
+   "build": 0.0382,
+   "case_id": "BRATS_161",
+   "run": 0.2107,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2488
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0827,
+   "case_id": "BRATS_161",
+   "run": 0.7609,
+   "seed": 3,
+   "simlook": 0.0442,
+   "wall": 0.8435
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0385,
+   "case_id": "BRATS_161",
+   "run": 0.6021,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6406
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0382,
+   "case_id": "BRATS_161",
+   "run": 0.3223,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3605
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0375,
+   "case_id": "BRATS_161",
+   "run": 0.7261,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7636
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0375,
+   "case_id": "BRATS_161",
+   "run": 0.7551,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7926
+  },
+  {
+   "arm": "S'",
+   "build": 0.0494,
+   "case_id": "BRATS_149",
+   "run": 4.3888,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 4.4382
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0376,
+   "case_id": "BRATS_161",
+   "run": 0.7484,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.786
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0377,
+   "case_id": "BRATS_161",
+   "run": 1.4006,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.4383
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0806,
+   "case_id": "BRATS_161",
+   "run": 0.7643,
+   "seed": 4,
+   "simlook": 0.0428,
+   "wall": 0.845
+  },
+  {
+   "arm": "S'",
+   "build": 0.0375,
+   "case_id": "BRATS_161",
+   "run": 3.2599,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 3.2974
+  },
+  {
+   "arm": "S",
+   "build": 0.0917,
+   "case_id": "BRATS_290",
+   "run": 0.2248,
+   "seed": 3,
+   "simlook": 0.0501,
+   "wall": 0.3164
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0914,
+   "case_id": "BRATS_290",
+   "run": 0.2984,
+   "seed": 3,
+   "simlook": 0.0515,
+   "wall": 0.3898
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.038,
+   "case_id": "BRATS_161",
+   "run": 0.7326,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7706
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0906,
+   "case_id": "BRATS_290",
+   "run": 0.6251,
+   "seed": 3,
+   "simlook": 0.0503,
+   "wall": 0.7157
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.04,
+   "case_id": "BRATS_290",
+   "run": 0.6545,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6946
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0906,
+   "case_id": "BRATS_290",
+   "run": 0.636,
+   "seed": 3,
+   "simlook": 0.0506,
+   "wall": 0.7266
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0391,
+   "case_id": "BRATS_290",
+   "run": 0.5718,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6108
+  },
+  {
+   "arm": "S",
+   "build": 0.0393,
+   "case_id": "BRATS_290",
+   "run": 0.2242,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2634
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0393,
+   "case_id": "BRATS_290",
+   "run": 0.6324,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.6717
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0397,
+   "case_id": "BRATS_290",
+   "run": 1.5085,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.5482
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0397,
+   "case_id": "BRATS_290",
+   "run": 0.2957,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3354
+  },
+  {
+   "arm": "S'",
+   "build": 0.0377,
+   "case_id": "BRATS_161",
+   "run": 3.2972,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 3.335
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0392,
+   "case_id": "BRATS_290",
+   "run": 0.5968,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.636
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0397,
+   "case_id": "BRATS_290",
+   "run": 0.6118,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6515
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0878,
+   "case_id": "BRATS_290",
+   "run": 0.6203,
+   "seed": 4,
+   "simlook": 0.0486,
+   "wall": 0.7081
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0401,
+   "case_id": "BRATS_290",
+   "run": 0.5968,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.637
+  },
+  {
+   "arm": "S",
+   "build": 0.0669,
+   "case_id": "BRATS_423",
+   "run": 0.1861,
+   "seed": 3,
+   "simlook": 0.0368,
+   "wall": 0.2529
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0395,
+   "case_id": "BRATS_290",
+   "run": 0.6186,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6581
+  },
+  {
+   "arm": "S'",
+   "build": 0.0404,
+   "case_id": "BRATS_290",
+   "run": 2.9208,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.9612
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0392,
+   "case_id": "BRATS_290",
+   "run": 1.6274,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.6666
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0295,
+   "case_id": "BRATS_423",
+   "run": 0.282,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.3115
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0665,
+   "case_id": "BRATS_423",
+   "run": 0.9238,
+   "seed": 3,
+   "simlook": 0.0366,
+   "wall": 0.9903
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0656,
+   "case_id": "BRATS_423",
+   "run": 0.9548,
+   "seed": 3,
+   "simlook": 0.036,
+   "wall": 1.0204
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0297,
+   "case_id": "BRATS_423",
+   "run": 0.9498,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.9795
+  },
+  {
+   "arm": "S'",
+   "build": 0.0397,
+   "case_id": "BRATS_290",
+   "run": 2.8292,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.869
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0667,
+   "case_id": "BRATS_423",
+   "run": 1.6172,
+   "seed": 3,
+   "simlook": 0.0366,
+   "wall": 1.6839
+  },
+  {
+   "arm": "S",
+   "build": 0.066,
+   "case_id": "BRATS_423",
+   "run": 0.183,
+   "seed": 4,
+   "simlook": 0.0364,
+   "wall": 0.2489
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0298,
+   "case_id": "BRATS_423",
+   "run": 0.2912,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.3209
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0299,
+   "case_id": "BRATS_423",
+   "run": 0.9991,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.029
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0302,
+   "case_id": "BRATS_423",
+   "run": 0.9415,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.9717
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0297,
+   "case_id": "BRATS_423",
+   "run": 0.7827,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8123
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0298,
+   "case_id": "BRATS_423",
+   "run": 0.8078,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8377
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.03,
+   "case_id": "BRATS_423",
+   "run": 0.8119,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8419
+  },
+  {
+   "arm": "S'",
+   "build": 0.0294,
+   "case_id": "BRATS_423",
+   "run": 2.2424,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 2.2719
+  },
+  {
+   "arm": "S",
+   "build": 0.0589,
+   "case_id": "BRATS_374",
+   "run": 0.1631,
+   "seed": 3,
+   "simlook": 0.0312,
+   "wall": 0.222
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0294,
+   "case_id": "BRATS_423",
+   "run": 0.6495,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6789
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0316,
+   "case_id": "BRATS_423",
+   "run": 1.5777,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.6093
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0294,
+   "case_id": "BRATS_423",
+   "run": 0.7579,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7874
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0273,
+   "case_id": "BRATS_374",
+   "run": 0.2407,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.268
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0619,
+   "case_id": "BRATS_374",
+   "run": 0.4786,
+   "seed": 3,
+   "simlook": 0.0345,
+   "wall": 0.5405
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0588,
+   "case_id": "BRATS_374",
+   "run": 0.5218,
+   "seed": 3,
+   "simlook": 0.0314,
+   "wall": 0.5806
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0273,
+   "case_id": "BRATS_374",
+   "run": 0.5127,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5399
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.059,
+   "case_id": "BRATS_374",
+   "run": 0.8572,
+   "seed": 3,
+   "simlook": 0.0314,
+   "wall": 0.9162
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0276,
+   "case_id": "BRATS_374",
+   "run": 0.4592,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.4868
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0274,
+   "case_id": "BRATS_374",
+   "run": 0.5062,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.5336
+  },
+  {
+   "arm": "S",
+   "build": 0.0272,
+   "case_id": "BRATS_374",
+   "run": 0.1646,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.1918
+  },
+  {
+   "arm": "S'",
+   "build": 0.0294,
+   "case_id": "BRATS_423",
+   "run": 2.1278,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 2.1572
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0278,
+   "case_id": "BRATS_374",
+   "run": 0.2604,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.2882
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.028,
+   "case_id": "BRATS_374",
+   "run": 0.7042,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7323
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0273,
+   "case_id": "BRATS_374",
+   "run": 0.7368,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7641
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0277,
+   "case_id": "BRATS_374",
+   "run": 0.719,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7467
+  },
+  {
+   "arm": "S'",
+   "build": 0.0273,
+   "case_id": "BRATS_374",
+   "run": 1.6949,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 1.7222
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0592,
+   "case_id": "BRATS_374",
+   "run": 1.0339,
+   "seed": 4,
+   "simlook": 0.0312,
+   "wall": 1.0931
+  },
+  {
+   "arm": "S",
+   "build": 0.1034,
+   "case_id": "BRATS_101",
+   "run": 0.2375,
+   "seed": 3,
+   "simlook": 0.0498,
+   "wall": 0.3409
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0268,
+   "case_id": "BRATS_374",
+   "run": 0.7074,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7342
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0278,
+   "case_id": "BRATS_374",
+   "run": 0.6105,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.6383
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.1032,
+   "case_id": "BRATS_101",
+   "run": 0.3567,
+   "seed": 3,
+   "simlook": 0.0498,
+   "wall": 0.4598
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0532,
+   "case_id": "BRATS_101",
+   "run": 0.8536,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.9069
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.1044,
+   "case_id": "BRATS_101",
+   "run": 0.8782,
+   "seed": 3,
+   "simlook": 0.0503,
+   "wall": 0.9826
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0539,
+   "case_id": "BRATS_101",
+   "run": 0.8652,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.9192
+  },
+  {
+   "arm": "S'",
+   "build": 0.0269,
+   "case_id": "BRATS_374",
+   "run": 1.9695,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.9964
+  },
+  {
+   "arm": "S",
+   "build": 0.1035,
+   "case_id": "BRATS_101",
+   "run": 0.2464,
+   "seed": 4,
+   "simlook": 0.05,
+   "wall": 0.3499
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.053,
+   "case_id": "BRATS_101",
+   "run": 0.728,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.781
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.1087,
+   "case_id": "BRATS_101",
+   "run": 1.6152,
+   "seed": 3,
+   "simlook": 0.0529,
+   "wall": 1.7239
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0534,
+   "case_id": "BRATS_101",
+   "run": 0.8216,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 0.875
+  },
+  {
+   "arm": "S-solo",
+   "build": 0.0531,
+   "case_id": "BRATS_101",
+   "run": 0.3471,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.4002
+  },
+  {
+   "arm": "S-marks",
+   "build": 0.0524,
+   "case_id": "BRATS_101",
+   "run": 0.7593,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8116
+  },
+  {
+   "arm": "S-talk",
+   "build": 0.0558,
+   "case_id": "BRATS_101",
+   "run": 0.754,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8098
+  },
+  {
+   "arm": "S-talk-shuffled",
+   "build": 0.0527,
+   "case_id": "BRATS_101",
+   "run": 0.7908,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8435
+  },
+  {
+   "arm": "S-marks-perfect",
+   "build": 0.0531,
+   "case_id": "BRATS_101",
+   "run": 0.8154,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.8685
+  },
+  {
+   "arm": "S-marks-quiet",
+   "build": 0.0538,
+   "case_id": "BRATS_101",
+   "run": 0.6941,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 0.7479
+  },
+  {
+   "arm": "S-marks-displaced",
+   "build": 0.0534,
+   "case_id": "BRATS_101",
+   "run": 1.7894,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 1.8427
+  },
+  {
+   "arm": "S'",
+   "build": 0.053,
+   "case_id": "BRATS_101",
+   "run": 4.104,
+   "seed": 3,
+   "simlook": 0.0,
+   "wall": 4.157
+  },
+  {
+   "arm": "S'",
+   "build": 0.0529,
+   "case_id": "BRATS_101",
+   "run": 3.4089,
+   "seed": 4,
+   "simlook": 0.0,
+   "wall": 3.4618
+  }
+ ]
+}
