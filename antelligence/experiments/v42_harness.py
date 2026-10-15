@@ -405,6 +405,10 @@ class V42Harness:
             raise RuntimeError("world.queen_hook must stay unset in every colony arm")
         return w
 
+    def build_scan(self, world: HarnessWorld, case: CaseData) -> ScanInfo:
+        """What the scan tells every ant (perceived regions only). A hook so a later harness can add the scan's p map."""
+        return ScanInfo(tuple(world.regions), world.voxel_mm)
+
     def make_kit(self, arm: str, n: int, scan: ScanInfo, sharing: bool) -> ColonyKit:
         return ColonyKit(arm, n, scan, sharing=sharing)
 
@@ -439,7 +443,7 @@ class V42Harness:
             res = run_colony_episode(world, lambda a: oracle, arm=arm_spec("S"), base_keys=OBS_KEYS)
         else:
             spec = arm_spec(arm.driver_arm)
-            scan = ScanInfo(tuple(world.regions), world.voxel_mm)
+            scan = self.build_scan(world, case)
             kit = self.make_kit(arm.name, self.world_cfg.n_squads, scan, spec.reads_marks)
             queen = ScriptedQueen(world.regions, world.total_drug, self.world_cfg.n_squads, world.voxel_mm, board=board,
                                   half_life=ccfg.half_life)

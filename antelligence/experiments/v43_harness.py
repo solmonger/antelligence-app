@@ -28,7 +28,7 @@ from antelligence.worlds.tumor_mri.data import Region
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CELL_TABLE = REPO_ROOT / "docs" / "research" / "v4.2-20261014" / "simlook" / "cells_v4_2.json"   # read-only
-CODE_FILES = ("worlds/tumor_mri/colony_policies.py", "worlds/tumor_mri/ant_rules.py", "worlds/tumor_mri/combined.py",
+CODE_FILES = ("worlds/tumor_mri/colony_policies.py", "worlds/tumor_mri/move_on.py", "worlds/tumor_mri/ant_rules.py", "worlds/tumor_mri/combined.py",
               "worlds/tumor_mri/colony_world.py", "worlds/tumor_mri/colony_queen.py", "kernel/colony/episode.py",
               "kernel/colony/messages.py", "kernel/colony/thresholds.py", "kernel/colony/cards.py",
               "experiments/v42_harness.py", "experiments/v43_harness.py")
@@ -103,6 +103,14 @@ class V43Harness(V42Harness):
         if w.queen_hook is not None:
             raise RuntimeError("world.queen_hook must stay unset in every colony arm")
         return w
+
+    def build_scan(self, world: Any, case: CaseData) -> ScanInfo:
+        """The scan every ant sees. With ``rules.dose_move_on`` it also carries the scan's own p map (``case.crop.p_tumour``,
+        perception, never truth), which the dose move-on needs; with the switch off it is the v4.2 scan, byte for byte."""
+        scan = super().build_scan(world, case)
+        if self.rules.dose_move_on:
+            scan = replace(scan, p_tumour=np.asarray(case.crop.p_tumour))
+        return scan
 
     def make_kit(self, arm: str, n: int, scan: ScanInfo, sharing: bool) -> V43Kit:
         return V43Kit(arm, n, scan, sharing=sharing, rules=self.rules)
