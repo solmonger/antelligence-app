@@ -26,7 +26,7 @@ Goal sections 8 and 9.4 ask which of the world or the scripts is the limit. This
 2. World: the close look (SimLook) is a worse sensor than the scan. AUROC 0.776 against 0.964 (`SL:reliability.json`, `auroc_overall`). The colony scripts trust it for releases. S trusts the scan.
 3. About two thirds of the on-target gap to S is drug dumped on look false positives away from the tumour. About one third is drug never released (section 3).
 4. Scripts: the explore job releases on one noisy look, and the verify job eats 45% of all turns (section 3).
-5. Sharing is a narrow channel: it fires on a few turns per run and the decisions it changes are not the costly ones. Perfect marks cannot fix it, because the costly releases happen where no other ant is (section 2).
+5. Sharing is a narrow channel: it fires on a few turns per run and the decisions it changes are not the costly ones. The perfect-marks design tested here did not fix it, and the costly releases happen where no other ant is (section 2). Only one perfect-marks design was tested.
 6. The world also offers little to share: the scan is 98% right where ants walk, and the F2 and F3 facts touch 13% and 6% of released drug (section 4).
 
 ## 1. How often do shared-input arms act differently from S-solo?
@@ -131,7 +131,7 @@ This split is an estimate. It assumes S's tumour-side releases yield the same sh
 - The explore job caused most of the false-positive mass: 1740 of 2051 in S-solo (85%) (`fp_job_explore`, `look_false_positive`). The explore job releases on one look of 0.65 or more as it walks past.
 - Timing of the false-positive mass in S-solo: 278 at tick 0, 908 in ticks 1 to 29, 865 from tick 30 (`fp_tick_*`). The first two pools are almost the same in every colony arm (278 at tick 0 in all four; 908 to 920 in ticks 1 to 29, `N:release_anatomy_per_run.*`), so sharing did not touch them.
 - Releases farther than 4 mm from the tumour: 6.2 per run in S-solo (`N:release_anatomy_per_run.S-solo.per_run.releases_fp_far`).
-- The sensor is the cause. At the places ants stood (15,360 looks per arm), the look and the scan compare as follows (`N:look_quality_totals.S-solo`):
+- The sensor is the likely cause (no intervention was run; far releases are look >= 0.5 releases by rule, so part of this is by construction). At the places ants stood (15,360 looks per arm), the look and the scan compare as follows (`N:look_quality_totals.S-solo`):
 
 | where the ant stood | looks | look at least 0.5 | scan at least 0.5 | look in the grey band 0.35 to 0.65 |
 |---|---|---|---|---|
@@ -207,21 +207,21 @@ Are the judgement marks right? (`N:judgement_mark_accuracy_per_run`, tumour mask
 
 Ranking of what limits the result (largest first):
 
-1. World: the close look is worse than the scan and the script trusts it. This explains about 65% to 73% of the on-target gap (section 3a) and makes shared judgement marks harmful or empty (section 4).
-2. Scripts: the explore job releases on one look, and the verify job uses 45% of turns because most looks are grey. This explains the rest, about 30% to 36% (never-released drug) plus the false-positive share that the explore job causes (section 3b, 3c).
+1. World: the close look is worse than the scan and the script trusts it. This is associated with about 65% to 73% of the on-target gap (section 3a; the split assumes S's tumour-side yield equals the colony arms', and S has no saved log) and makes shared judgement marks harmful or empty (section 4).
+2. Scripts: the explore job releases on one look, and the verify job uses 45% of turns because most looks are grey. This is associated with the rest, about 30% to 36% (never-released drug) plus the false-positive share that the explore job causes (section 3b, 3c).
 3. Both: sharing reaches few of the costly decisions. The costly releases happen alone, early, and far from the tumour, where no mark can reach (section 4). The shared inputs the scripts do read are the wrong ones to prevent that.
 
-S-marks-perfect answers goal 9.4 this way. Perfect marks changed 49.6% of turns against S-solo (`N:divergence_from_solo.S-marks-perfect`) and left coverage flat (0.269 against 0.266, `REPORT`). The authors' own decisions still use SimLook, and those decisions carry the loss. So with this world and these scripts, better shared information cannot help. This is a joint limit. Neither fixing marks alone nor adding facts alone will move the verdict.
+S-marks-perfect answers goal 9.4 this way. Perfect marks changed 49.6% of turns against S-solo (`N:divergence_from_solo.S-marks-perfect`) and left coverage flat (0.269 against 0.266, `REPORT`). The authors' own decisions still use SimLook, and those decisions carry the loss. So with this world and these scripts, better shared information was not shown to help. The data fit a joint limit with the order undetermined: no ablation separates the world from the scripts. Fixing marks alone or adding facts alone did not move the verdict in the attempts made.
 
 Proposed changes for the next iteration (not implemented):
 
-1. **World: make the close look at least as informative as the scan.** Rebuild SimLook so a look refines the scan (for example, condition the cell on the scan value more finely, or combine the two) and keep far healthy tissue near 0 as the scan does. Evidence: look at least 0.5 on 34.1% of far-healthy turns against 2.2% for the scan (section 3b); AUROC 0.776 against 0.964 (`SL:reliability.json`); 65% to 73% of the on-target gap (section 3a). Check the fix on S-solo alone first: it should close most of the 0.59 against 0.27 gap before any sharing arm is run.
+1. **World: make the close look at least as informative as the scan.** Rebuild SimLook so a look refines the scan (for example, condition the cell on the scan value more finely, or combine the two) and keep far healthy tissue near 0 as the scan does. Evidence: look at least 0.5 on 34.1% of far-healthy turns against 2.2% for the scan (section 3b); AUROC 0.776 against 0.964 (`SL:reliability.json`); 65% to 73% of the on-target gap (section 3a). Check the fix on S-solo alone first: a prediction, not a result: it may close much of the 0.59 against 0.27 gap before any sharing arm is run.
 2. **Script: stop the explore job from releasing on a lone look.** Require scan 0.5 or more as well, or a mean of two looks 4 mm apart. Evidence: the explore job caused 1740 of 2051 false-positive mass in S-solo (85%) (section 3b). Same fix removes the mass that hits before tick 30.
 3. **Script: bound the verify job.** Cap verify turns per spot, or define "grey" against the local scan value. Evidence: 45% of turns are verify, 56% of looks are grey, and an ant inside the tumour releases on 15% of turns (section 3c). This also frees the 14% to 18% of drug that is never released.
 4. **World: give sharing something the scan does not know.** Add a scan error the close look can correct (a perceived region that is partly wrong, or a missed lesion), so a `tumour_here` or `not_tumour` mark carries new information. Evidence: the scan is right on 98.2% of in-tumour and 97.8% of far-healthy turns, and judgement marks that correct it were 2% right (section 4). F2 and F3 reach only 13.5% and 6.2% of released drug, so raising their strength alone (R1, R2) did not move any arm (section 3d).
 5. **Script and world: let a mark or a board summary reach the first 30 ticks and the transit.** Options: ants enter in groups so marks are within 6 mm; a larger read radius for `not_tumour`; or a zone-level "healthy" status written at tick 0 from the scan. Also let the release rule read `not_tumour` marks. Evidence: 58% of false-positive mass in S-solo lands by tick 30 (1186 of 2051, section 3b), before the first zone closes (median tick 51), and only 3% of far releases had any foreign mark within 6 mm (sections 2 and 3b).
 
-Order of work: 1 and 2 together, then 3, then check S-solo against S. Only then run 4 and 5 with a sharing arm. If S-solo still trails S by more than 0.05 after 1 to 3, sharing cannot show a win however it is built.
+Order of work: 1 and 2 together, then 3, then check S-solo against S. Only then run 4 and 5 with a sharing arm. If S-solo still trails S by more than 0.05 after 1 to 3, sharing has not been shown able to win with this design.
 
 ## Reproduce
 
@@ -234,3 +234,7 @@ HF_HUB_OFFLINE=1 PYTHONPATH=<worktree> /Volumes/WD_BLACK/antelligence-v4.2/venv/
 ```
 
 It takes about 10 seconds, reads the run directories only, and writes `diagnostics_numbers.json` next to this file. Tests: `tests/test_v42_diagnose.py`.
+
+
+## Review note
+Headline numbers were recomputed by an independent reviewer from the raw files and match. The 46-50% divergence figure counts a difference in target, release, amount or goal override (target_vox); without target_vox it is about 25%. Causal wording was softened after review: no intervention was run.
