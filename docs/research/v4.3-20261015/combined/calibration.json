@@ -1,0 +1,258 @@
+{
+ "schema": "combined_calibration_v4_3",
+ "coef": [
+  -0.6038913398835776,
+  0.8415654488555326,
+  0.48416783685617587,
+  0.07985560758307218
+ ],
+ "fit_info": {
+  "ridge": false,
+  "iterations": 9,
+  "converged": true
+ },
+ "fit_split": "dev_a",
+ "label": "whole-tumour truth at the look's voxel",
+ "definitions": {
+  "scan": "perception p_tumour at the look (ppm / 1e6)",
+  "look": "d1 look p, temperature-calibrated (ppm / 1e6)",
+  "combined": "logistic on [1, logit scan, logit look, logit scan * logit look], clip 0.001 to 0.999",
+  "ece": "10 equal-width bins on the predicted probability",
+  "band_auroc": "band scores vs the opposite-label partner band; zones as in the v4.2 reliability table"
+ },
+ "runs": 40,
+ "board_looks_seen": {
+  "dev_a": 5760,
+  "dev_b": 1920
+ },
+ "dropped": {
+  "dev_a": {},
+  "dev_b": {}
+ },
+ "splits": {
+  "dev_a": {
+   "cases": 30,
+   "in_sample": true,
+   "overall": {
+    "n": 5760,
+    "positive_rate": 0.7782986111111111,
+    "combined": {
+     "ece": 0.013920936297960188,
+     "auroc": 0.9694404564288898
+    },
+    "scan": {
+     "ece": 0.024834350868055695,
+     "auroc": 0.9578591602732746
+    },
+    "look": {
+     "ece": 0.14843006805555548,
+     "auroc": 0.7825449872318483
+    }
+   },
+   "by_band": {
+    "per_band": {
+     "out_gt10": {
+      "n": 809,
+      "label_rate": 0.0,
+      "partner": "in_gt4",
+      "ece_combined": 0.13549170316714412,
+      "ece_scan": 0.15780305809641532,
+      "ece_look": 0.4340287292954265,
+      "auroc_vs_partner": {
+       "combined": 0.961660806161148,
+       "scan": 0.9415221047781596,
+       "look": 0.8460795199793901
+      }
+     },
+     "out_4_10": {
+      "n": 252,
+      "label_rate": 0.0,
+      "partner": "in_gt4",
+      "ece_combined": 0.1154802208214307,
+      "ece_scan": 0.1397027341269841,
+      "ece_look": 0.5820005515873016,
+      "auroc_vs_partner": {
+       "combined": 0.9982862550497821,
+       "scan": 0.9991858717434869,
+       "look": 0.6676070394757769
+      }
+     },
+     "out_0_4": {
+      "n": 216,
+      "label_rate": 0.0,
+      "partner": "in_0_4",
+      "ece_combined": 0.2877824835411312,
+      "ece_scan": 0.40281234259259263,
+      "ece_look": 0.4733166018518518,
+      "auroc_vs_partner": {
+       "combined": 0.9205985517085313,
+       "scan": 0.9090857660104096,
+       "look": 0.642255035075809
+      }
+     },
+     "in_0_4": {
+      "n": 491,
+      "label_rate": 1.0,
+      "partner": "out_0_4",
+      "ece_combined": 0.1859040028382757,
+      "ece_scan": 0.1253584297352343,
+      "ece_look": 0.4161886965376782,
+      "auroc_vs_partner": {
+       "combined": 0.9205985517085313,
+       "scan": 0.9090857660104096,
+       "look": 0.642255035075809
+      }
+     },
+     "in_gt4": {
+      "n": 3992,
+      "label_rate": 1.0,
+      "partner": "out_4_10",
+      "ece_combined": 0.02745389643299436,
+      "ece_scan": 0.012909162074148411,
+      "ece_look": 0.306304757765531,
+      "auroc_vs_partner": {
+       "combined": 0.9982862550497821,
+       "scan": 0.9991858717434869,
+       "look": 0.6676070394757769
+      }
+     }
+    },
+    "auroc_by_zone": {
+     "edge": {
+      "positive": "in_0_4",
+      "negative": "out_0_4",
+      "combined": 0.9205985517085313,
+      "scan": 0.9090857660104096,
+      "look": 0.642255035075809
+     },
+     "mid": {
+      "positive": "in_gt4",
+      "negative": "out_4_10",
+      "combined": 0.9982862550497821,
+      "scan": 0.9991858717434869,
+      "look": 0.6676070394757769
+     },
+     "far": {
+      "positive": "in_gt4",
+      "negative": "out_gt10",
+      "combined": 0.961660806161148,
+      "scan": 0.9415221047781596,
+      "look": 0.8460795199793901
+     }
+    }
+   }
+  },
+  "dev_b": {
+   "cases": 10,
+   "in_sample": false,
+   "overall": {
+    "n": 1920,
+    "positive_rate": 0.7614583333333333,
+    "combined": {
+     "ece": 0.06435159697049662,
+     "auroc": 0.9718770721449949
+    },
+    "scan": {
+     "ece": 0.029067739062499872,
+     "auroc": 0.981370109737812
+    },
+    "look": {
+     "ece": 0.11810221666666666,
+     "auroc": 0.7577427284511855
+    }
+   },
+   "by_band": {
+    "per_band": {
+     "out_gt10": {
+      "n": 350,
+      "label_rate": 0.0,
+      "partner": "in_gt4",
+      "ece_combined": 0.1370297718864757,
+      "ece_scan": 0.21237944857142857,
+      "ece_look": 0.39765014285714295,
+      "auroc_vs_partner": {
+       "combined": 1.0,
+       "scan": 1.0,
+       "look": 0.8218657937806874
+      }
+     },
+     "out_4_10": {
+      "n": 40,
+      "label_rate": 0.0,
+      "partner": "in_gt4",
+      "ece_combined": 0.0071092827165665975,
+      "ece_scan": 0.005421625,
+      "ece_look": 0.525946075,
+      "auroc_vs_partner": {
+       "combined": 1.0,
+       "scan": 1.0,
+       "look": 0.7191796235679214
+      }
+     },
+     "out_0_4": {
+      "n": 68,
+      "label_rate": 0.0,
+      "partner": "in_0_4",
+      "ece_combined": 0.5498170199395227,
+      "ece_scan": 0.5395774411764706,
+      "ece_look": 0.7463773235294118,
+      "auroc_vs_partner": {
+       "combined": 0.6583946078431373,
+       "scan": 0.6958333333333333,
+       "look": 0.5540134803921568
+      }
+     },
+     "in_0_4": {
+      "n": 240,
+      "label_rate": 1.0,
+      "partner": "out_0_4",
+      "ece_combined": 0.22094029569210596,
+      "ece_scan": 0.20528111666666654,
+      "ece_look": 0.27892484166666665,
+      "auroc_vs_partner": {
+       "combined": 0.6583946078431373,
+       "scan": 0.6958333333333333,
+       "look": 0.5540134803921568
+      }
+     },
+     "in_gt4": {
+      "n": 1222,
+      "label_rate": 1.0,
+      "partner": "out_4_10",
+      "ece_combined": 0.03349216906576225,
+      "ece_scan": 0.014002244680851136,
+      "ece_look": 0.2601462774140752,
+      "auroc_vs_partner": {
+       "combined": 1.0,
+       "scan": 1.0,
+       "look": 0.7191796235679214
+      }
+     }
+    },
+    "auroc_by_zone": {
+     "edge": {
+      "positive": "in_0_4",
+      "negative": "out_0_4",
+      "combined": 0.6583946078431373,
+      "scan": 0.6958333333333333,
+      "look": 0.5540134803921568
+     },
+     "mid": {
+      "positive": "in_gt4",
+      "negative": "out_4_10",
+      "combined": 1.0,
+      "scan": 1.0,
+      "look": 0.7191796235679214
+     },
+     "far": {
+      "positive": "in_gt4",
+      "negative": "out_gt10",
+      "combined": 1.0,
+      "scan": 1.0,
+      "look": 0.8218657937806874
+     }
+    }
+   }
+  }
+ }
+}
