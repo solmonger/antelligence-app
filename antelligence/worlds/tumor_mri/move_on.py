@@ -18,7 +18,7 @@ from typing import Optional, Sequence, Tuple
 import numpy as np
 
 Vox = Tuple[int, int, int]
-CHUNK = 256            # candidates tested against the known spots at a time (nearest first)
+CHUNK = 256            # the nearest candidates tested first against the known spots (grown x4 until one is free)
 
 
 def zone_candidates(p: np.ndarray, centre_vox: Sequence[float], radius_mm: float, voxel_mm: float,
@@ -48,18 +48,23 @@ def nearest_new_spot(cands: np.ndarray, from_pos: Sequence[float], known: Sequen
         return None
     pos = np.asarray(from_pos, dtype=np.float64)
     d2 = ((cands - pos) ** 2).sum(axis=1)
-    order = np.lexsort((cands[:, 2], cands[:, 1], cands[:, 0], d2))        # primary d2, then x, y, z
     gap2 = (min_gap_mm / voxel_mm) ** 2 * (1 - 1e-9) ** 2
     kn = np.asarray([tuple(k) for k in known], dtype=np.float64).reshape(-1, 3)
-    for start in range(0, len(order), CHUNK):
-        chunk = order[start:start + CHUNK]
-        pts = cands[chunk]
+    n, k = len(cands), CHUNK
+    while True:
+        # every candidate no farther than the k-th nearest (ties included), so a hit below is the nearest overall
+        cut = np.inf if k >= n else np.partition(d2, k - 1)[k - 1]
+        idx = np.flatnonzero(d2 <= cut)
+        pts = cands[idx]
         if len(kn):
             far = (((pts[:, None, :] - kn[None, :, :]) ** 2).sum(axis=2) >= gap2).all(axis=1)
         else:
-            far = np.ones(len(chunk), dtype=bool)
-        hit = np.flatnonzero(far)
-        if hit.size:
-            v = pts[hit[0]]
+            far = np.ones(len(idx), dtype=bool)
+        if far.any():
+            idx, pts = idx[far], pts[far]
+            best = np.lexsort((pts[:, 2], pts[:, 1], pts[:, 0], d2[idx]))[0]       # primary d2, then x, y, z
+            v = pts[best]
             return (int(v[0]), int(v[1]), int(v[2]))
-    return None
+        if k >= n:
+            return None
+        k *= 4
