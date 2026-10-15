@@ -49,7 +49,7 @@ def test_cli_is_resumable_and_writes_bundles_and_cards(tmp_path, capsys):
     bundle = json.loads((d / "bundle.json").read_text())
     assert rec["complete"] and rec["split"] == "synthetic" and rec["timing_s"]["wall"] > 0 and rec["queen_hook_unset"]
     assert bundle["extra"]["colony"]["arm"] == "S-solo" and bundle["metrics"] == rec["metrics"]
-    assert (d / "cards" / "ant-00.json").is_file() and (tmp_path / "S-prime" / "phantom" / "seed2" / "record.json").is_file()
+    assert (d / "cards" / "ant-00.json").is_file() and (tmp_path / "S'" / "phantom" / "seed2" / "record.json").is_file()
     stamp = (d / "bundle.json").stat().st_mtime_ns
     code, _ = run_cli(tmp_path, "--arms", "S,S-solo,S'", "--seeds", "1,2")
     out = capsys.readouterr().out
@@ -73,5 +73,5 @@ def test_cli_smoke_reports_wall_time_per_arm(tmp_path, capsys):
     assert cli.main(["--out", str(tmp_path), "--smoke", "--cases-root", str(tmp_path / "no-cases"), "--phantom", str(PHANTOM),
                      "--ticks", "30"]) == 0
     rows = json.loads((tmp_path / "smoke.json").read_text())
-    assert {r["arm"] for r in rows} == {"S", "S-solo", "S-marks", "S-talk", "S-marks-quiet", "S-prime"}
+    assert {r["arm"] for r in rows} == {"S", "S-solo", "S-marks", "S-talk", "S-marks-quiet", "S'"}
     assert all(r["episode_wall_s"] > 0 and r["case_id"] == "phantom" for r in rows)

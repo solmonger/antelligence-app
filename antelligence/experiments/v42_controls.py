@@ -115,12 +115,12 @@ class PerfectMarks:
       (``need_more`` is a request, not a claim, and is left alone). Runs on the policy OUTPUT, so the author's own
       observation and decision are exactly those of S-marks.
     * ``wrap_auto_rule(rule)``: an automatic ``slow_uptake`` mark is kept (with reading = true u) only where true u < 0.7,
-      a ``washout`` mark only where true delta >= ``fast_delta`` (reading = true delta); a mark truth disagrees with is
+      a ``washout`` mark only where true delta >= ``fast_delta`` (REQUIRED; the harness passes 0.5 x f3_decay, goal 5.3; reading = true delta); a mark truth disagrees with is
       dropped. ``dosed`` / ``dose_ok`` are world facts and pass unchanged. The judgement mark's ``reading_ppm`` is set by
       the driver from the author's own look and cannot be rewritten through the hooks (logged limitation).
     """
 
-    def __init__(self, truth: Truth, *, fast_delta: float = 0.02, slow_u: float = SLOW_U) -> None:
+    def __init__(self, truth: Truth, *, fast_delta: float, slow_u: float = SLOW_U) -> None:
         self.truth, self.fast_delta, self.slow_u = truth, float(fast_delta), float(slow_u)
         self.rewritten = 0
         self.dropped = 0

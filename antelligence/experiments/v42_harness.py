@@ -9,7 +9,7 @@ one of the registered arms:
     S-marks     colony script + marks, region status, public cards
     S-talk      S-marks + asking when unsure
     S-marks-quiet   S-marks with the quiet rule ON (the only arm that has it on)
-    S-prime     the oracle S' (knows F1-F3); written "S'" on the command line
+    S'          the oracle S' (knows F1-F3); "S-prime" is accepted as a command-line alias only
 
 Rules this module enforces:
 
@@ -86,10 +86,9 @@ ARMS: Dict[str, ArmDef] = {a.name: a for a in (
     ArmDef("S-marks", "ant", "S-marks"),
     ArmDef("S-talk", "ant", "S-talk"),
     ArmDef("S-marks-quiet", "ant", "S-marks-quiet", quiet_rule=True, verdict=False),
-    ArmDef("S-prime", "oracle", "S"),
+    ArmDef("S'", "oracle", "S"),
 )}
-ARM_ALIASES = {"S'": "S-prime", "S-prime": "S-prime"}
-VERDICT_ARMS = ("S", "S-solo", "S-marks", "S-talk", "S-prime")
+VERDICT_ARMS = ("S", "S-solo", "S-marks", "S-talk", "S'")
 
 
 def register_arm(arm: ArmDef) -> None:
@@ -98,10 +97,11 @@ def register_arm(arm: ArmDef) -> None:
 
 
 def resolve_arm(name: str) -> ArmDef:
-    key = ARM_ALIASES.get(name, name)
-    if key not in ARMS:
+    """The arm named exactly ``name``. The oracle is ``S'`` everywhere; ``S-prime`` is a command-line alias only
+    (``scripts/v42_run.py`` rewrites it before it gets here)."""
+    if name not in ARMS:
         raise KeyError(f"unknown arm {name!r}; registered: {sorted(ARMS)}")
-    return ARMS[key]
+    return ARMS[name]
 
 
 # --- cases --------------------------------------------------------------------------------------------------------------
@@ -141,20 +141,15 @@ def phantom_case(path: Path, case_id: str = "phantom") -> CaseData:
 # --- the world ----------------------------------------------------------------------------------------------------------
 
 class HarnessWorld(ColonyTumorWorld):
-    """``ColonyTumorWorld`` with the two things the harness adds: scorer-side TC / ET channels (F2 Source A; the kernel world
-    class takes them but the colony subclass does not forward them) and the W1 sensor readings behind the colony sensors."""
+    """``ColonyTumorWorld`` plus the W1 sensor readings behind the colony sensors (scorer-side TC / ET channels, F2 Source A,
+    are forwarded by ``ColonyTumorWorld`` itself)."""
 
     def __init__(self, crop: Crop, config: WorldConfig, seed: int, *, arm: str, look_fn: Optional[Callable] = None,
                  regions: Optional[Sequence[Region]] = None, scorer_channels: Optional[Mapping[str, np.ndarray]] = None) -> None:
-        self._channels = dict(scorer_channels or {})
-        super().__init__(crop, config, seed, arm=arm, look_fn=look_fn, queen_hook=None, regions=regions)
+        super().__init__(crop, config, seed, arm=arm, look_fn=look_fn, queen_hook=None, regions=regions,
+                         scorer_channels=scorer_channels)
         self.uptake_fn = self._uptake
         self.washout_fn = self._washout
-
-    def _hidden_fields(self, crop: Crop):
-        self._scorer.tc = None if "tc" not in self._channels else np.asarray(self._channels["tc"], dtype=bool)
-        self._scorer.et = None if "et" not in self._channels else np.asarray(self._channels["et"], dtype=bool)
-        return super()._hidden_fields(crop)
 
     def _uptake(self, i: int, tick: int, release: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
         r = self.sensor_readings(f"squad-{i}", tick)["uptake"]

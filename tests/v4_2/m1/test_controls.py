@@ -109,7 +109,7 @@ def test_perfect_hook_rewrites_what_others_read_but_not_the_author_inputs():
     looks = {(0, 0, 0): 0.9, (10, 0, 0): 0.7}
     seen_a, seen_b = [], []
     plain = run_colony_episode(FakeWorld(looks=looks), lambda a: Scripted(pol, seen_a), **kw)
-    pm = PerfectMarks(Truth())
+    pm = PerfectMarks(Truth(), fast_delta=0.02)
     perfect = run_colony_episode(FakeWorld(looks=looks), pm.wrap_policy_for(lambda a: Scripted(pol, seen_b)),
                                  auto_mark_rule=pm.wrap_auto_rule(default_auto_marks), **kw)
     assert {r["mark_kind"] for r in plain.colony["marks"] if r["ant"] == 0} == {"tumour_here"}
@@ -140,3 +140,8 @@ def test_quiet_pair_differs_only_in_quiet_rule():
     p = quiet_pair()
     assert not p["S-marks"].quiet_rule and p["S-marks-quiet"].quiet_rule
     assert dataclasses.replace(p["S-marks-quiet"], quiet_rule=False) == p["S-marks"]
+
+
+def test_perfect_marks_requires_fast_delta():
+    with pytest.raises(TypeError):
+        PerfectMarks(Truth())

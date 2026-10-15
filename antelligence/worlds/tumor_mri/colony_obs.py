@@ -30,10 +30,10 @@ ALLOWED: Dict[str, Tuple[str, ...]] = {
     "S-marks-perfect": _MARKS,
     "S-marks-quiet": _MARKS,
     "S-talk-shuffled": _TALK,
-    "S-prime": (),          # the oracle reads the scorer and F1-F3 directly; it is not an ant arm
+    "S'": (),          # the oracle reads the scorer and F1-F3 directly; it is not an ant arm
 }
 
-ANT_ARMS: Tuple[str, ...] = tuple(a for a in ALLOWED if a != "S-prime")
+ANT_ARMS: Tuple[str, ...] = tuple(a for a in ALLOWED if a != "S'")
 
 
 def expected_keys(arm: str) -> FrozenSet[str]:
@@ -42,7 +42,7 @@ def expected_keys(arm: str) -> FrozenSet[str]:
 
 
 def arm_spec(arm: str) -> ArmSpec:
-    """The kernel's view of an arm. ``S`` is plain v4.1 (colony off); ``S-prime`` is not an ant arm."""
+    """The kernel's view of an arm. ``S`` is plain v4.1 (colony off); ``S'`` is not an ant arm."""
     if arm not in ANT_ARMS:
         raise ValueError(f"{arm!r} is not an ant arm (one of {ANT_ARMS})")
     allowed = frozenset(ALLOWED[arm])

@@ -19,7 +19,7 @@ What one turn does, in order:
    ties dose > verify > explore.
 4. Release rule (dose job; the explore job releases only if the look >= 0.65; verify never): release if the look is >= 0.5
    and its own dose reading is below D_t. 50% of the payload, 75% if its own uptake reading near this zone was slow.
-   Skip releasing and move on if its own washout reading here is fast and the look is below 0.65.
+   Skip releasing and move on if its own washout reading here is fast and the look is below 0.65 (the only move-on).
 5. Judgement marks in every arm (read only in sharing arms): ``tumour_here`` (look >= 0.65 where scan p < 0.5, or look
    >= 0.8 anywhere), ``not_tumour`` (look <= 0.3 where scan p >= 0.5), ``need_more`` (own dose below D_t, look >= 0.5
    and payload empty).
@@ -401,9 +401,11 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
 
     release, level, reason = release_rule(inp, job, look, pos)
     target: Optional[_Target] = targets[0] if (job == "dose" and targets) else None
-    if (target is not None and not release and reason != "payload_empty"
+    if (target is not None and not release and reason == "washout"
             and _mm(vm, pos, target.pos) <= READ_MM * (1 + 1e-9)):
-        # at the target and cannot release: it has been served or judged, so move on to the next one
+        # goal 7: the ONLY move-on of the release rule is a fast washout with a look below 0.65 (own reading, or another ant's
+        # washout mark in sharing arms). Strong not_tumour / done zones are already dropped from the targets above. A dose_ok
+        # reading at one voxel, a low look or a shared "dose high" never abandons a zone.
         (st.skip_zones.add(target.region_id) if target.kind == "zone" and target.region_id is not None
          else st.skip_spots.add(target.pos))
         st.counters["moved_on_" + reason] += 1
@@ -435,13 +437,14 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
         est, own = _estimate(inp, ask_pos, look)
         disputed = any(m["disputed"] and _mm(vm, m["pos_vox"], ask_pos) <= CONFIRM_MM * (1 + 1e-9) for m in (inp.marks or ()))
         if _grey(est) or disputed:
-            if own:
-                ask = {"question": "is_tumour", **({"region_id": ask_region} if ask_region is not None else {"pos_vox": list(ask_pos)})}
-                st.pending = {"pos": ask_pos, "region_id": ask_region, "estimate": est, "round": inp.round}
-                st.last_ask_round = inp.round
-                st.counters["asks"] += 1
-            else:
-                st.counters["ask_skipped_no_reading_to_quote"] += 1
+            # goal 7: with no own look near the target the estimate is the current look and the ask is still sent; the kernel
+            # decides whether it has a reading to quote and counts a refusal (asks_refused) itself.
+            ask = {"question": "is_tumour", **({"region_id": ask_region} if ask_region is not None else {"pos_vox": list(ask_pos)})}
+            st.pending = {"pos": ask_pos, "region_id": ask_region, "estimate": est, "round": inp.round}
+            st.last_ask_round = inp.round
+            st.counters["asks"] += 1
+            if not own:
+                st.counters["asks_on_current_look"] += 1
 
     marks = tuple((k, pos) for k in judgement_marks(inp, look))
     st.prev = {"job": job, "released": release, "look": look, "pos": pos if release else None, "spot": spot}

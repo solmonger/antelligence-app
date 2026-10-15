@@ -195,12 +195,20 @@ def test_unsure_talker_takes_the_smarks_action_and_asks():
     assert st.pending["estimate"] == pytest.approx(0.5)
 
 
-def test_confident_or_unquotable_talker_does_not_ask():
+def test_confident_talker_does_not_ask():
     sure = dict(look=0.9, scan_p=0.9, reading_log=[log_look((10, 10, 10), 0.9)], marks=[], messages=[])
     assert decide(inputs(**sure))[0].ask is None
-    far = dict(look=0.5, scan_p=0.6, reading_log=[log_look((30, 30, 30), 0.5)], marks=[], messages=[])   # nothing logged near the target
-    d, st = decide(inputs(**far))
-    assert d.ask is None and st.counters["ask_skipped_no_reading_to_quote"] == 1
+
+
+def test_talker_with_no_own_look_near_the_target_estimates_from_the_current_look_and_still_asks():
+    far = dict(look=0.5, scan_p=0.6, reading_log=[log_look((30, 30, 30), 0.1)], marks=[], messages=[])   # nothing logged near the target
+    d, st = decide(inputs(**far), no_verify())
+    assert d.ask == {"question": "is_tumour", "region_id": 0}
+    assert st.pending["estimate"] == pytest.approx(0.5)               # the current look, not the far-away 0.1
+    assert st.counters["asks"] == 1 and st.counters["asks_on_current_look"] == 1
+    assert "ask_skipped_no_reading_to_quote" not in st.counters
+    sure = dict(far, look=0.9)                                          # a confident current look is not unsure: no ask
+    assert decide(inputs(**sure), no_verify())[0].ask is None
 
 
 def test_disputed_target_is_unsure_even_with_a_confident_estimate():
@@ -268,3 +276,36 @@ def test_automatic_marks_rule():
     ok = {**ctx, "release_fraction": 0.0, "readings": [{"kind": "dose", "value": 0.99}, {"kind": "uptake", "value": 0.9, "word": "as expected"},
                                                           {"kind": "washout", "value": 0.0, "word": "normal"}]}
     assert automatic_marks(ok) == []
+
+
+# --- move on (goal 7: only own fast washout with look < 0.65; never a single-voxel dose_ok) -------------------------------
+
+def washout_row(pos, tick=0):
+    return {"tick": tick, "pos_vox": list(pos), "kind": "washout", "value": 0.1, "band": 0, "word": "fast"}
+
+
+def test_single_voxel_dose_ok_never_abandons_a_zone():
+    st = no_verify()
+    d, _ = decide(inputs(dose_rel=1.0, look=0.8), st)
+    assert not d.release and d.info["reason"] == "dose_ok"
+    assert d.target_label == "A" and not st.skip_zones and not st.skip_spots
+    assert not [k for k in st.counters if k.startswith("moved_on_")]
+    for kw in (dict(look=0.4), dict(look=0.8, marks=[mark_row("dose_ok", (10, 10, 10), strong=True)], dose_rel=0.0)):
+        st = no_verify()
+        d, _ = decide(inputs(**kw), st)
+        assert not st.skip_zones and not [k for k in st.counters if k.startswith("moved_on_")]
+
+
+def test_fast_washout_with_low_look_moves_on_in_every_arm():
+    kw = dict(look=0.55, reading_log=[washout_row((10, 10, 10))])
+    for shared in (dict(), dict(marks=[], region_status={}), dict(marks=[], region_status={}, messages=[])):   # S-solo / S-marks / S-talk
+        st = no_verify()
+        d, _ = decide(inputs(**kw, **shared), st)
+        assert not d.release and d.info["reason"] == "washout"
+        assert st.skip_zones == {0} and st.counters["moved_on_washout"] == 1 and d.target_label != "A"
+    st = no_verify()
+    decide(inputs(look=0.7, reading_log=[washout_row((10, 10, 10))]), st)             # look >= 0.65: releases, no skip
+    assert not st.skip_zones
+    st = no_verify()                                                                  # sharing arms: another ant's washout mark counts
+    decide(inputs(look=0.55, marks=[mark_row("washout", (10, 10, 10))], region_status={}), st)
+    assert st.skip_zones == {0}

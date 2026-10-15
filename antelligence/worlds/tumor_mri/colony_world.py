@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import math
 from contextlib import contextmanager
-from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence
+from typing import Any, Callable, Dict, Iterator, List, Mapping, Optional, Sequence
 
 import numpy as np
 
@@ -35,8 +35,9 @@ class ColonyTumorWorld(TumorMRIWorld):
     def __init__(self, crop: Crop, config: Optional[WorldConfig] = None, seed: int = 0, *, arm: str = "S",
                  look_fn: Optional[LookFn] = None, queen_hook: Optional[QueenHook] = None,
                  regions: Optional[Sequence[Region]] = None, uptake_fn: Optional[SensorFn] = None,
-                 washout_fn: Optional[SensorFn] = None) -> None:
-        super().__init__(crop, config, seed, look_fn=look_fn, queen_hook=queen_hook, regions=regions)
+                 washout_fn: Optional[SensorFn] = None, scorer_channels: Optional[Mapping[str, np.ndarray]] = None) -> None:
+        super().__init__(crop, config, seed, look_fn=look_fn, queen_hook=queen_hook, regions=regions,
+                         scorer_channels=scorer_channels)
         self.arm = arm
         self.per_ant_visits = arm != "S"
         self.uptake_fn, self.washout_fn = uptake_fn, washout_fn

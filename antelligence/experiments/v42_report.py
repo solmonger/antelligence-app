@@ -19,7 +19,7 @@ import numpy as np
 from antelligence.experiments.v42_stats import N_RESAMPLES, analyse
 
 ARM_ORDER = ["S", "S-solo", "S-marks", "S-talk", "S-marks-displaced", "S-talk-shuffled", "S-marks-perfect",
-             "S-marks-quiet", "S-prime"]
+             "S-marks-quiet", "S'"]
 PRIMARY_FIELDS = [("coverage", "coverage"), ("off_target_share", "off-target share"),
                   ("time_to_50_coverage", "time to 50% coverage"), ("drug_on_non_tumour", "drug on non-tumour")]
 
@@ -51,17 +51,40 @@ def coverage_values(runs: Sequence[Mapping[str, Any]]) -> Dict[str, Dict[tuple, 
     return out
 
 
+SPLITS = ("dev-A", "dev-B")
+
+
+def case_splits(runs: Sequence[Mapping[str, Any]]) -> Dict[str, str]:
+    """case -> "dev-A" | "dev-B". A run without a valid ``split``, or a case with two different ones, is an error: the
+    same-sign check across dev-A and dev-B must never run on guessed labels."""
+    out: Dict[str, str] = {}
+    for r in runs:
+        sp = r.get("split")
+        if sp not in SPLITS:
+            raise ValueError(f"run {r.get('arm')}/{r.get('case_id')}/seed {r.get('seed')}: split {sp!r} is missing or not one of {SPLITS}")
+        if out.setdefault(r["case_id"], sp) != sp:
+            raise ValueError(f"case {r['case_id']!r} has two splits: {out[r['case_id']]!r} and {sp!r}")
+    return out
+
+
+def never_reached_50(runs: Sequence[Mapping[str, Any]], arm: str) -> int:
+    """Runs of ``arm`` whose coverage never reached 50% (``time_to_50_coverage`` is None). The mean of the time column
+    skips them, so they are counted next to it."""
+    return sum(1 for r in runs if r["arm"] == arm and r.get("time_to_50_coverage") is None)
+
+
 def compute_stats(results: Mapping[str, Any], n: int = N_RESAMPLES) -> Optional[Dict[str, Any]]:
     runs = results["runs"]
     vals = coverage_values(runs)
     if not all(a in vals for a in ("S-solo", "S-marks", "S-talk", "S-marks-displaced", "S-talk-shuffled")):
         return None
-    splits = {r["case_id"]: r.get("split", "dev-A") for r in runs}
+    splits = case_splits(runs)
     return analyse(vals, splits, n=n)
 
 
 def render(results: Mapping[str, Any], stats: Optional[Mapping[str, Any]] = None) -> str:
     runs = results["runs"]
+    case_splits(runs)                                      # fails loudly on a missing or inconsistent split
     L: List[str] = ["# v4.2 Phase 0 report (generated)", "",
                     "Generated from `results.json` by `scripts/v42_report.py`. Tables only. No interpretation here.", ""]
     meta = results.get("meta") or {}
@@ -69,9 +92,10 @@ def render(results: Mapping[str, Any], stats: Optional[Mapping[str, Any]] = None
         L += ["## Run info", "", _table(["key", "value"], [(k, json.dumps(v, sort_keys=True)) for k, v in sorted(meta.items())]), ""]
     arms = _arms(runs)
     L += ["## Primary metrics (mean over runs)", "",
-          _table(["arm", "runs"] + [h for _, h in PRIMARY_FIELDS],
+          "The time-to-50% mean covers only runs that reached 50%; the last column counts the runs that never did.", "",
+          _table(["arm", "runs"] + [h for _, h in PRIMARY_FIELDS] + ["runs never at 50%"],
                  [[a, sum(r["arm"] == a for r in runs)] + [_f(_mean([r.get(k) for r in runs if r["arm"] == a])) for k, _ in PRIMARY_FIELDS]
-                  for a in arms]), ""]
+                  + [never_reached_50(runs, a)] for a in arms]), ""]
     qticks = sorted({int(t) for r in runs for t in (r.get("coverage_at_queen") or {})})
     if qticks:
         L += ["## Coverage at queen steps (mean)", "",

@@ -15,7 +15,7 @@ from antelligence.worlds.tumor_mri.colony_queen import ScriptedQueen
 from tests.v4_2.q1.helpers import fake_look_factory, harness, phantom, phantom_cfg
 
 ANT_ARMS = ("S-solo", "S-marks", "S-talk", "S-marks-quiet")
-ALL_ARMS = ("S", "S-solo", "S-marks", "S-talk", "S-marks-quiet", "S-prime")
+ALL_ARMS = ("S", "S-solo", "S-marks", "S-talk", "S-marks-quiet", "S'")
 SHARED = {"marks_near", "messages_in", "region_status", "cards_public"}
 MARK_KEYS = {"subtype", "mark_kind", "ant", "pos_vox", "amount_milli", "reading_ppm", "tick"}
 
@@ -47,7 +47,7 @@ class Spy:
 
 def test_registered_arms_by_name():
     assert set(ALL_ARMS) <= set(ARMS)
-    assert resolve_arm("S'").name == "S-prime"
+    assert resolve_arm("S'").name == "S'"
     assert ARMS["S-marks-quiet"].quiet_rule and not any(a.quiet_rule for n, a in ARMS.items() if n != "S-marks-quiet")
     with pytest.raises(KeyError):
         resolve_arm("S-nope")
@@ -268,3 +268,29 @@ def test_real_simlook_table_runs_on_the_phantom(case):
     h2 = V42Harness(phantom_cfg(30, f1_simlook=True, f1_source="log2000"))
     with pytest.raises(ValueError, match="recorded, never inferred"):
         h2.run_episode("S-solo", case, 1)
+
+
+def test_oracle_arm_is_s_prime_everywhere_and_s_prime_is_a_cli_alias_only(tmp_path):
+    from antelligence.experiments.v42_harness import VERDICT_ARMS
+    from antelligence.experiments.v42_report import ARM_ORDER
+    from antelligence.worlds.tumor_mri.colony_obs import ALLOWED
+    assert "S'" in ARMS and "S-prime" not in ARMS and "S'" in VERDICT_ARMS and "S'" in ARM_ORDER and "S'" in ALLOWED
+    with pytest.raises(KeyError):
+        resolve_arm("S-prime")
+    from tests.v4_2.q1.test_cards_cli import run_cli
+    code, _ = run_cli(tmp_path, "--arms", "S-prime", "--seeds", "1")
+    assert code == 0 and (tmp_path / "S'" / "phantom" / "seed1" / "record.json").is_file()
+
+
+def test_colony_world_forwards_scorer_channels_and_the_harness_world_has_no_workaround():
+    import numpy as np
+    from antelligence.experiments.v42_harness import HarnessWorld
+    from antelligence.worlds.tumor_mri.colony_world import ColonyTumorWorld
+    case = phantom()
+    tc = np.zeros(case.crop.shape, dtype=bool)
+    tc[5, 5, 5] = True
+    et = np.zeros(case.crop.shape, dtype=bool)
+    for cls, extra in ((ColonyTumorWorld, {}), (HarnessWorld, {"arm": "S-solo"})):
+        w = cls(case.crop, phantom_cfg(10), 1, scorer_channels={"tc": tc, "et": et}, **extra)
+        assert w._scorer.tc[5, 5, 5] and not w._scorer.tc.sum() > 1 and w._scorer.et is not None
+    assert "_hidden_fields" not in vars(HarnessWorld) and "_channels" not in vars(HarnessWorld(case.crop, phantom_cfg(10), 1, arm="S-solo"))

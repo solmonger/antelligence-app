@@ -38,6 +38,7 @@ DEFAULT_CONFIG = REPO / "config" / "v4_2" / "world.yaml"
 DEFAULT_CASES_ROOT = Path("/Volumes/WD_BLACK/antelligence-v4.1/data_v4_1/cases")
 DEFAULT_PHANTOM = REPO / "tests" / "v4_1" / "world" / "fixtures" / "phantom.npz"
 ALL_ARMS = "S,S-solo,S-marks,S-talk,S-marks-quiet,S'"
+CLI_ALIASES = {"S-prime": "S'"}                  # command line only; the arm is S' everywhere else
 
 
 def atomic_write(path: Path, text: str) -> None:
@@ -90,7 +91,7 @@ def run_one(h: V42Harness, arm: str, case, seed: int, out: Path) -> Dict[str, An
 def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", required=True, type=Path)
-    ap.add_argument("--arms", default=ALL_ARMS, help="comma list; S' is accepted for S-prime")
+    ap.add_argument("--arms", default=ALL_ARMS, help="comma list; S-prime is accepted as an alias of S'")
     ap.add_argument("--cases", default="", help="comma list of development case ids")
     ap.add_argument("--seeds", default="1")
     ap.add_argument("--phantom", nargs="?", const=str(DEFAULT_PHANTOM), default=None, help="add the synthetic phantom")
@@ -115,7 +116,7 @@ def dev_cases_available(root: Optional[Path]) -> List[str]:
 def main(argv: Optional[List[str]] = None) -> int:
     args = parse_args(argv)
     os.environ.setdefault("HF_HUB_OFFLINE", "1")
-    arms = [resolve_arm(a.strip()).name for a in args.arms.split(",") if a.strip()]
+    arms = [resolve_arm(CLI_ALIASES.get(a.strip(), a.strip())).name for a in args.arms.split(",") if a.strip()]
     cases = [c.strip() for c in args.cases.split(",") if c.strip()]
     seeds = [int(s) for s in args.seeds.split(",") if s.strip()]
     try:

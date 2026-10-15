@@ -16,7 +16,8 @@ What she computes, per zone (a perceived region):
 * need = scan mass x (1 - delivered share), normalised by the maximum over zones. Bands: none < 0.05, low < 0.25,
   medium < 0.6, high >= 0.6.
 
-Alarms (board ``alarm`` type, ``kind: "other"``): ``stall`` when the summed delivered share is unchanged over 2 queen steps,
+Alarms (board ``alarm`` type, ``kind: "other"``): ``stall`` when the summed delivered share is unchanged over 2 queen steps (fires when a stall begins; again only after the
+delivered share has changed),
 ``dispute:<region_id>`` when a zone has been disputed for more than 30 ticks. The colony note is a fixed template. She never
 sets options, routes or gates: she returns only ``zone_need``, ``colony_note`` and ``need_rows``.
 """
@@ -63,6 +64,7 @@ class ScriptedQueen:
         self.total_mass = sum(self.mass.values())
         self.alarms: List[Dict[str, Any]] = []
         self._delivered_milli: List[int] = []                 # summed delivered share per queen step, milli
+        self._stall_fired = False                              # a stall alarm is out; re-armed when the delivered share changes
         self._dispute_since: Dict[int, int] = {}
         self._dispute_alarmed: set = set()
         self.reads: List[Tuple[int, Tuple[str, ...]]] = []    # (tick, input keys read): the barrier test walks this
@@ -126,7 +128,11 @@ class ScriptedQueen:
         summed = int(round(sum(share.values()) * 1000))
         self._delivered_milli.append(summed)
         h = self._delivered_milli
-        if len(h) > STALL_STEPS and h[-1] == h[-1 - STALL_STEPS] and h[-1] < 1000 * len(self.mass):
+        if len(h) > 1 and h[-1] != h[-2]:
+            self._stall_fired = False                                 # delivered share changed since: a new stall may alarm
+        stalled = len(h) > STALL_STEPS and h[-1] == h[-1 - STALL_STEPS] and h[-1] < 1000 * len(self.mass)
+        if stalled and not self._stall_fired:
+            self._stall_fired = True                                  # fire once when the stall begins, not at every step
             self._alarm(tick, summed * 1000, "stall")                 # value_ppm = summed delivered share, ppm
         disputed = self._disputed_zones(marks, tick)
         for rid in list(self._dispute_since):

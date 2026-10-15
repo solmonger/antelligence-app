@@ -102,3 +102,21 @@ def test_queen_reads_only_inputs_and_records_the_keys_she_was_given():
     q(0, {"tick": 0, "regions": []})
     assert q.reads == [(0, ("regions", "tick"))]
     assert not hasattr(q, "world") and not hasattr(q, "scorer")
+
+
+def test_stall_alarm_fires_when_the_stall_begins_and_again_only_after_the_delivered_share_changed():
+    q = queen()
+    call(q, 0), call(q, 30), call(q, 60)
+    assert [a["tick"] for a in q.alarms] == [60]
+    for t in (90, 120, 150, 180):                                                  # still stalled: no repeat
+        call(q, t)
+    assert [a["tick"] for a in q.alarms] == [60]
+    m = [dosed(5, (10, 10, 10), 300)]
+    call(q, 210, m)                                                                # the share changed: re-armed, no alarm yet
+    assert [a["tick"] for a in q.alarms] == [60]
+    call(q, 240, m)
+    assert [a["tick"] for a in q.alarms] == [60]                                   # one unchanged step is not a stall
+    call(q, 270, m)
+    assert [a["tick"] for a in q.alarms] == [60, 270]                              # a new stall begins
+    call(q, 300, m), call(q, 330, m)
+    assert [a["tick"] for a in q.alarms] == [60, 270]
