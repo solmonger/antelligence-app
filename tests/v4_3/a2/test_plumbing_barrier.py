@@ -91,7 +91,8 @@ def test_v43_rules_need_an_estimate():
 
 
 def test_all_ant_arms_and_the_controls_run_under_v43():
-    import antelligence.experiments.v42_arms  # noqa: F401  (registers the control arms)
+    from antelligence.experiments import v42_arms
+    v42_arms.register_all()          # idempotent; tests/v4_2 can edit the arm registry after the module was first imported
     case = phantom()
     for arm in ("S-solo", "S-marks", "S-talk", "S-marks-quiet", "S-marks-displaced", "S-talk-shuffled", "S-marks-perfect"):
         rec = v43_harness(R43, 60).run_episode(arm, case, 1)
