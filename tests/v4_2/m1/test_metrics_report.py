@@ -167,3 +167,30 @@ def test_report_without_all_arms_says_so():
     r = _results()
     r["runs"] = [x for x in r["runs"] if x["arm"] in ("S-solo", "S-marks")]
     assert "Not computed" in render(r)
+
+
+def test_report_fails_loudly_on_a_missing_or_bad_split():
+    r = _results()
+    del r["runs"][5]["split"]
+    with pytest.raises(ValueError, match="split"):
+        render(r)
+    r = _results()
+    r["runs"][5]["split"] = "dev"
+    with pytest.raises(ValueError, match="split"):
+        render(r)
+    r = _results()
+    r["runs"][5]["split"] = "dev-B"                              # case00 is dev-A in its other runs
+    with pytest.raises(ValueError, match="two splits"):
+        render(r)
+
+
+def test_report_counts_runs_that_never_reached_50_percent():
+    r = _results()
+    for x in r["runs"]:
+        if x["arm"] == "S-solo" and x["case_id"] < "case03":
+            x["time_to_50_coverage"] = None
+    text = render(r)
+    assert "runs never at 50%" in text
+    row = next(l for l in text.splitlines() if l.startswith("| S-solo | 80 |"))
+    assert row.endswith("| 6 |")                                   # 3 cases x 2 seeds
+    assert next(l for l in text.splitlines() if l.startswith("| S-marks | 80 |")).endswith("| 0 |")

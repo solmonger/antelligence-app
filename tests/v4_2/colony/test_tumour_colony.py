@@ -67,14 +67,14 @@ def test_colony_obs_tables_match_interfaces():
                                "zone_need", "colony_note", "region_status", "visited_self", "card_self", "cards_public",
                                "notebook_self")
     assert len(OBS_KEYS) == 18 and not set(OBS_KEYS) & set(COLONY_OBS_KEYS) - {"look"}
-    assert ALLOWED["S"] == () and ALLOWED["S-prime"] == ()
+    assert ALLOWED["S"] == () and ALLOWED["S'"] == ()
     assert set(ALLOWED["S-marks"]) == set(ALLOWED["S-solo"]) | {"marks_near", "region_status", "cards_public"}
     assert set(ALLOWED["S-talk"]) == set(ALLOWED["S-marks"]) | {"messages_in"}
     for a in ("S-marks-displaced", "S-marks-perfect", "S-marks-quiet"):
         assert ALLOWED[a] == ALLOWED["S-marks"]
     assert ALLOWED["S-talk-shuffled"] == ALLOWED["S-talk"]
     with pytest.raises(ValueError):
-        arm_spec("S-prime")
+        arm_spec("S'")
 
 
 def test_colony_off_is_v41_exactly(crop):
