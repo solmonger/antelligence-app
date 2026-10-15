@@ -12,8 +12,11 @@ What one turn does, in order:
    look >= 0.5 and the uptake reading about it is not slow; explore if it found a look >= 0.65 where the scan said < 0.5 or
    <= 0.3 where the scan said >= 0.5; verify if the mean of its logged looks within 4 mm of the spot left [0.35, 0.65].
    Success: theta - 0.1 (floor 0.1); a turn without success: theta + 0.05 (cap 1.0).
-2. S-talk only: fold in the answer to its pending ask, ``mean(estimate, 0.8 yes / 0.2 no)`` (unknown is ignored). A target
-   whose combined estimate is <= 0.35 is dropped.
+2. S-talk only: fold in the answer to its pending ask, ``mean(estimate, 0.8 yes / 0.2 no)`` (unknown is ignored). On THIS
+   turn the combined estimate REPLACES the look for that pending target in the release test (release needs estimate >= 0.5,
+   the look rule's threshold; every other release condition is unchanged) and in dose-target eligibility (the target is
+   eligible only at estimate >= 0.5). Nothing is dropped for good and no constant is added. Judgement marks keep the raw
+   look. S-solo / S-marks never receive an answer, so for them this step does nothing.
 3. Stimuli, each in [0, 1]: dose = max over zones of normalised need x scan p; explore = share of perceived regions not
    visited; verify = 1 if a grey or disputed spot lies within 20 mm. ``P_j = s_j^2 / (s_j^2 + theta_j^2)``, highest wins,
    ties dose > verify > explore.
@@ -354,29 +357,25 @@ def _settle_previous(inp: TurnInputs, st: AntState, look: float) -> None:
     st.thresholds.update(job, ok)
 
 
-def _fold_in_answer(inp: TurnInputs, st: AntState) -> None:
-    """Step 2 (S-talk): the answer to the pending ask. mean(estimate, 0.8 yes | 0.2 no); unknown is ignored."""
+def _fold_in_answer(inp: TurnInputs, st: AntState) -> Optional[Tuple[Dict[str, Any], float]]:
+    """Step 2 (S-talk): the answer to the pending ask. mean(estimate, 0.8 yes | 0.2 no); unknown is ignored.
+    Returns (the pending target, the combined estimate) when an answer was used, else None. The caller lets the combined
+    estimate replace the look for that target on this turn only."""
     p = st.pending
     if p is None or inp.messages is None:
-        return
+        return None
     st.pending = None                                   # an ask is settled at the next decision turn, answered or not
     vm = inp.voxel_mm
     answers = [m for m in inp.messages if m["type"] == "answer" and m["question"] == "is_tumour"
                and ((m["about"]["region_id"] is not None and m["about"]["region_id"] == p["region_id"])
                     or (m["about"]["pos_vox"] is not None and _mm(vm, m["about"]["pos_vox"], p["pos"]) <= CONFIRM_MM * (1 + 1e-9)))]
     if not answers:
-        return
+        return None
     val = ANSWER_VALUE.get(answers[-1]["answer"])
     if val is None:
-        return
-    est = 0.5 * (p["estimate"] + val)
+        return None
     st.counters["answers_used"] += 1
-    if est <= GREY[0]:
-        st.counters["targets_dropped_by_answer"] += 1
-        if p["region_id"] is not None:
-            st.skip_zones.add(p["region_id"])
-        else:
-            st.skip_spots.add(p["pos"])
+    return p, 0.5 * (p["estimate"] + val)
 
 
 def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Decision:
@@ -384,10 +383,24 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
     vm, pos = inp.voxel_mm, inp.pos
     look = float(inp.look) if inp.look is not None else inp.scan_p
     _settle_previous(inp, st, look)
-    _fold_in_answer(inp, st)
+    folded = _fold_in_answer(inp, st)
 
     status = inp.region_status or {}
     targets = _dose_targets(inp, st, scan, ant)
+    release_look = look                                  # the look the release test sees; the combined estimate replaces it
+    if folded is not None:
+        p, est = folded
+        is_pending = lambda t: (p["region_id"] is not None and t.kind == "zone" and t.region_id == p["region_id"]) or (  # noqa: E731
+            p["region_id"] is None and _mm(vm, t.pos, p["pos"]) <= CONFIRM_MM * (1 + 1e-9))
+        here = ((p["region_id"] is not None and scan.zone_at(pos) == p["region_id"])
+                or _mm(vm, pos, p["pos"]) <= READ_MM * (1 + 1e-9))
+        if here:
+            release_look = est
+        if est < RELEASE_LOOK:                           # not eligible as a dose target on this turn (no permanent skip)
+            kept = [t for t in targets if not is_pending(t)]
+            if len(kept) != len(targets):
+                st.counters["targets_dropped_by_answer"] += 1
+            targets = kept
     n_regions = len(scan.regions)
     shared_seen = _shared_visited(inp, scan)
     seen = set(inp.visited_regions) | shared_seen
@@ -399,7 +412,9 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
                "verify": 1.0 if verify is not None else 0.0}
     job = st.thresholds.choose(stimuli)
 
-    release, level, reason = release_rule(inp, job, look, pos)
+    release, level, reason = release_rule(inp, job, release_look, pos)
+    if release_look != look and release != release_rule(inp, job, look, pos)[0]:
+        st.counters["release_changed_by_answer"] += 1
     target: Optional[_Target] = targets[0] if (job == "dose" and targets) else None
     if (target is not None and not release and reason == "washout"
             and _mm(vm, pos, target.pos) <= READ_MM * (1 + 1e-9)):
@@ -447,7 +462,7 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
                 st.counters["asks_on_current_look"] += 1
 
     marks = tuple((k, pos) for k in judgement_marks(inp, look))
-    st.prev = {"job": job, "released": release, "look": look, "pos": pos if release else None, "spot": spot}
+    st.prev = {"job": job, "released": release, "look": release_look, "pos": pos if release else None, "spot": spot}
     return Decision(job, label, goal, release, level, marks, ask,
                     {"job": job, "reason": reason, "stimuli": {k: round(v, 6) for k, v in stimuli.items()},
                      "p": {k: round(v, 6) for k, v in st.thresholds.probabilities(stimuli).items()},
