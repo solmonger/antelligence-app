@@ -72,7 +72,9 @@ def _harness(task: Mapping[str, Any], case: CaseData) -> V42Harness:
         wc = wc.with_(ticks=int(task["ticks"]))
     f = task.get("facts") or {}
     wc = wc.with_(facts=facts_for(wc.facts, case.scorer_channels is not None, f2=f.get("f2"), f3=f.get("f3")))
-    key = json.dumps([str(task["config"]), task.get("ticks"), wc.facts.__dict__, bool(task.get("board", True)), case.case_id],
+    if task.get("drug_scale_k") is not None:               # tuning stage 2 only: k override (never written to the config file)
+        wc = wc.with_(drug_scale_k=float(task["drug_scale_k"]))
+    key = json.dumps([str(task["config"]), task.get("ticks"), wc.facts.__dict__, wc.drug_scale_k, bool(task.get("board", True)), case.case_id],
                      sort_keys=True, default=str)
     if key not in _HARNESS:
         if len(_HARNESS) > 24:
