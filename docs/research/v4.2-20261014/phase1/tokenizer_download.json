@@ -1,0 +1,51 @@
+{
+ "cache_dir": "/Volumes/WD_BLACK/cache/hf-tokenizers",
+ "results": {
+  "d1-3b": {
+   "files": {
+    "tokenizer.json": {
+     "path": "/Volumes/WD_BLACK/cache/hf-tokenizers/models--LiquidAI--d1-3B/snapshots/051bcc464b01b9f92942b364d9586b0ef5912432/tokenizer.json",
+     "status": "ok"
+    },
+    "tokenizer_config.json": {
+     "path": "/Volumes/WD_BLACK/cache/hf-tokenizers/models--LiquidAI--d1-3B/snapshots/051bcc464b01b9f92942b364d9586b0ef5912432/tokenizer_config.json",
+     "status": "ok"
+    }
+   },
+   "repo": "LiquidAI/d1-3B",
+   "revision": "051bcc464b01b9f92942b364d9586b0ef5912432",
+   "usable": true
+  },
+  "qwen3.5-4b": {
+   "files": {
+    "tokenizer.json": {
+     "path": "/Volumes/WD_BLACK/cache/hf-tokenizers/models--RedHatAI--Qwen3.5-4B-FP8-dynamic/snapshots/397b7ba47a99b3221ebfc0cfc5a279118cb733ad/tokenizer.json",
+     "status": "ok"
+    },
+    "tokenizer_config.json": {
+     "path": "/Volumes/WD_BLACK/cache/hf-tokenizers/models--RedHatAI--Qwen3.5-4B-FP8-dynamic/snapshots/397b7ba47a99b3221ebfc0cfc5a279118cb733ad/tokenizer_config.json",
+     "status": "ok"
+    }
+   },
+   "repo": "RedHatAI/Qwen3.5-4B-FP8-dynamic",
+   "revision": "397b7ba47a99b3221ebfc0cfc5a279118cb733ad",
+   "usable": true
+  },
+  "qwen3.5-9b": {
+   "files": {
+    "tokenizer.json": {
+     "path": "/Volumes/WD_BLACK/cache/hf-tokenizers/models--RedHatAI--Qwen3.5-9B-FP8-dynamic/snapshots/790f0576d2d77dd5322aa0603a470bd9e3a3d1f6/tokenizer.json",
+     "status": "ok"
+    },
+    "tokenizer_config.json": {
+     "path": "/Volumes/WD_BLACK/cache/hf-tokenizers/models--RedHatAI--Qwen3.5-9B-FP8-dynamic/snapshots/790f0576d2d77dd5322aa0603a470bd9e3a3d1f6/tokenizer_config.json",
+     "status": "ok"
+    }
+   },
+   "repo": "RedHatAI/Qwen3.5-9B-FP8-dynamic",
+   "revision": "790f0576d2d77dd5322aa0603a470bd9e3a3d1f6",
+   "usable": true
+  }
+ },
+ "token": "never used: token=False on every call, HF_HUB_DISABLE_IMPLICIT_TOKEN=1"
+}
