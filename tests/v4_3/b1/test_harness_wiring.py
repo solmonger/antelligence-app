@@ -43,7 +43,8 @@ def test_world_yaml_is_the_foraging_config():
     assert f.f1_simlook and f.f2 and f.f2_model == "foraging" and f.uptake_level == "mid" and f.foraging
     assert f.f3 and f.f3_decay == 0.04 and f.f3_share == 0.1                       # F3 unchanged from v4.2
     assert f.u_core == 1.0                                                          # u_core is out of use
-    assert doc["colony"]["ant_rules"] == {"version": "v43"} and AntRules.from_dict(doc["colony"]["ant_rules"]).version == "v43"
+    assert doc["colony"]["ant_rules"] == {"version": "v43", "foraging": True}      # B2 switched the probe-and-hold rule on
+    assert AntRules.from_dict(doc["colony"]["ant_rules"]) == AntRules.v43_foraging()
     assert c.half_life["good_uptake"] == 60 and "good_uptake" not in c.to_dict()["half_life"]
     base, _, _ = load_yaml_configs("config/v4_2/world.yaml")
     assert {k: v for k, v in w.to_dict().items() if k != "facts"} == {k: v for k, v in base.to_dict().items() if k != "facts"}

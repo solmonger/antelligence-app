@@ -106,10 +106,11 @@ class V43Harness(V42Harness):
         return w
 
     def build_scan(self, world: Any, case: CaseData) -> ScanInfo:
-        """The scan every ant sees. With ``rules.dose_move_on`` it also carries the scan's own p map (``case.crop.p_tumour``,
-        perception, never truth), which the dose move-on needs; with the switch off it is the v4.2 scan, byte for byte."""
+        """The scan every ant sees. With ``rules.dose_move_on`` or ``rules.foraging`` it also carries the scan's own p map
+        (``case.crop.p_tumour``, perception, never truth), which the move-on and the probe-and-hold rule need; with both switches
+        off it is the v4.2 scan, byte for byte."""
         scan = super().build_scan(world, case)
-        if self.rules.dose_move_on:
+        if self.rules.dose_move_on or self.rules.foraging:
             scan = replace(scan, p_tumour=np.asarray(case.crop.p_tumour))
         return scan
 

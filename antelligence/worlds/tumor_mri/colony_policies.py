@@ -48,6 +48,15 @@ decision turns have passed, or the zone is skipped. With no spot left the zone i
 release voxels, its own dose readings >= 1, its voxel, and, through ``marks`` (absent in S-solo), visible ``dosed`` /
 ``dose_ok`` marks. It needs the scan map (``ScanInfo.p_tumour``); without it the switch has no effect.
 
+B2 (``rules.foraging``, :func:`uptake_info`, :func:`_forage_forced`, :func:`_forage_release`, :func:`_poor_response`). The probe-and-hold
+rule: at a tumour spot (the ordinary release rule says ok, dose or explore job) with NO uptake information within 6 mm the ant
+releases a 10% probe and holds on the voxel (``AntState.hold``); at its next decision turn the uptake reading is in its log and the
+job is forced to dose there: good tissue (reading >= 0.7) 50%, middling 25% (and ``AntState.stay`` keeps dosing that voxel at that
+amount while its own dose < D_t, c >= 0.6 and payload is left), poor (< 0.4) no release, the zone's value halved once in the ant's own
+ranking (``AntState.zone_mult``) and the nearest unprobed voxel of the zone becomes the A2r1 dose goal (none left: the zone is
+skipped). Uptake information is the nearest of an own uptake reading and, ONLY when the ``marks`` input exists (sharing arms), a
+foreign ``good_uptake`` / ``slow_uptake`` mark; a foreign mark that saves a probe is counted (``probes_saved_by_marks``). No new input.
+
 Judgement calls and defaults chosen where the goal text is silent are listed in ``DEFAULTS_CHOSEN`` and in the Q1 report.
 Every random draw in the colony is seeded per INTERFACES 1; this module draws none.
 """
@@ -205,6 +214,9 @@ class AntState:
     verify_by_spot: Counter = field(default_factory=Counter)   # verify turns taken per spot (v4.3 per-spot cap)
     released_at: List[Vox] = field(default_factory=list)       # A2r1: voxels where this ant released (its own previous decisions)
     dose_goal: Optional[Dict[str, Any]] = None                 # A2r1: {"spot", "zone", "age"}, the persistent dose goal
+    hold: Optional[Dict[str, Any]] = None                      # B2: {"pos", "age", "tick"}, a probe released and its reading awaited
+    stay: Optional[Dict[str, Any]] = None                      # B2: {"pos", "cls"}, keep dosing this voxel at the class's amount
+    zone_mult: Dict[int, float] = field(default_factory=dict)  # B2: zone -> factor on its value in this ant's own ranking
 
 
 @dataclass(frozen=True)
@@ -358,6 +370,8 @@ def _dose_targets(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Li
         if rid in st.skip_zones or status.get(rid, "open") != "open":
             continue
         value = _need(inp, rid) * float(c["p_tumour"])
+        if st.zone_mult:
+            value *= st.zone_mult.get(rid, 1.0)
         if value > 0.0:
             out.append(_Target("zone", str(c["label"]), rid, _vox(c["centroid_vox"]), value, float(c["dist_mm"])))
     rows = list(inp.marks or ())
@@ -374,6 +388,8 @@ def _dose_targets(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Li
         if rid is not None and (status.get(rid, "open") != "open" or rid in st.skip_zones):
             continue
         value = _need(inp, rid) * min(1.0, float(m["strength"]))
+        if st.zone_mult:
+            value *= st.zone_mult.get(rid, 1.0)
         if value > 0.0:
             out.append(_Target("spot", STAY, rid, spot, value, _mm(vm, inp.pos, spot)))
     return sorted(out, key=lambda t: (-t.score, t.dist_mm, t.pos))
@@ -485,6 +501,176 @@ def _dose_move_on(inp: TurnInputs, st: AntState, scan: ScanInfo, job: str, reaso
     if g is not None and any(t.kind == "zone" and t.region_id == g["zone"] for t in targets):
         return _Target("spot", STAY, g["zone"], g["spot"], target.value, _mm(vm, inp.pos, g["spot"]))
     return target
+
+
+# --- B2: probe and hold (rules.foraging) -------------------------------------------------------------------------------------
+
+UPTAKE_MARKS = {"good_uptake": "good", "slow_uptake": "poor"}      # a foreign mark carries good or poor, never middling
+
+
+@dataclass
+class _ForageOut:
+    """What the foraging rule decided for the turn beyond (release, level, reason)."""
+
+    stay_here: bool = False         # the decision keeps the ant on its own voxel (label STAY, target_vox = this voxel)
+    poor: bool = False              # poor tissue: no release, halve the zone, move to the nearest unprobed voxel
+
+
+def uptake_class(value: float, rules: AntRules) -> str:
+    """good (>= good_u), poor (< poor_u), else middling: the sensor words of foraging.py as the ant reads them."""
+    return "good" if value >= rules.good_u else "poor" if value < rules.poor_u else "middling"
+
+
+def uptake_info(inp: TurnInputs, pos: Sequence[float], ant: int, rules: AntRules) -> Tuple[Optional[Dict[str, Any]], bool]:
+    """(the nearest uptake information within ``info_mm`` of ``pos`` or None, whether an OWN reading lies within that distance).
+
+    Candidates: an own ``uptake`` entry of the reading log (class from its ratio; its ``pos_vox`` is the voxel it is about) and,
+    ONLY when the ``marks`` input exists (sharing arms), a visible ``good_uptake`` / ``slow_uptake`` mark that is not purely this
+    ant's own (its own mark repeats its own reading). Nearest wins; ties: the later own reading, then own before foreign. A
+    foreign mark never carries a middling class. Nothing else enters."""
+    vm, lim2 = inp.voxel_mm, (rules.info_mm * (1 + 1e-9)) ** 2
+    cands: List[Tuple[Tuple[int, int, int], Dict[str, Any]]] = []
+    for e in inp.reading_log:
+        if e["kind"] == "uptake":
+            d2 = sum((int(a) - int(b)) ** 2 for a, b in zip(e["pos_vox"], pos))
+            if vm * vm * d2 <= lim2:
+                cands.append(((d2, 0, -int(e["tick"])), {"cls": uptake_class(float(e["value"]), rules), "src": "own"}))
+    for m in inp.marks or ():
+        cls = UPTAKE_MARKS.get(m["kind"])
+        if cls is None or list(m["authors"]) == [ant]:
+            continue
+        d2 = sum((int(a) - int(b)) ** 2 for a, b in zip(m["pos_vox"], pos))
+        if vm * vm * d2 <= lim2:
+            cands.append(((d2, 1, 0), {"cls": cls, "src": "foreign"}))
+    if not cands:
+        return None, False
+    return min(cands, key=lambda kv: kv[0])[1], any(k[1] == 0 for k, _ in cands)
+
+
+def known_uptake_spots(inp: TurnInputs) -> List[Vox]:
+    """Spots the ant has uptake information about: its own uptake readings and, with the ``marks`` input, visible uptake marks."""
+    out: Set[Vox] = {_vox(e["pos_vox"]) for e in inp.reading_log if e["kind"] == "uptake"}
+    if inp.marks is not None:
+        out.update(_vox(m["pos_vox"]) for m in inp.marks if m["kind"] in UPTAKE_MARKS)
+    return sorted(out)
+
+
+def _hold_reading(inp: TurnInputs, hold: Mapping[str, Any]) -> Optional[Mapping[str, Any]]:
+    """The newest own uptake entry about the hold voxel (within 1 voxel) read after the probe's tick, else None."""
+    hit = None
+    for e in inp.reading_log:
+        if (e["kind"] == "uptake" and int(e["tick"]) > int(hold["tick"])
+                and math.dist(e["pos_vox"], hold["pos"]) <= MOVE_ON_ARRIVE_VOX * (1 + 1e-9)):
+            hit = e
+    return hit
+
+
+def _forage_forced(inp: TurnInputs, st: AntState, look: float) -> Optional[Dict[str, Any]]:
+    """Section 3: is this turn's job forced? ``{"kind": "hold"}`` (reading not yet here), ``{"kind": "dose", "cls", "src"}`` (act on
+    a class at the held / stayed voxel; ``cls`` None when a stay just ended on ``dose_ok``, so the A2r1 move-on takes over), or None.
+    Clears ``hold`` / ``stay`` when their conditions stop (payload empty, ant displaced, c dropped...)."""
+    rules, c, pos = st.rules, st.counters, inp.pos
+    payload_ok = inp.payload_fraction >= EMPTY_FRACTION
+    h = st.hold
+    if h is not None:
+        e = _hold_reading(inp, h)
+        if e is None:
+            if h["age"] >= rules.hold_max_turns:
+                st.hold = None
+                c["hold_timeouts"] += 1
+            else:
+                h["age"] += 1
+                c["hold_turns"] += 1
+                return {"kind": "hold"}
+        else:
+            st.hold = None
+            if math.dist(pos, h["pos"]) > MOVE_ON_ARRIVE_VOX * (1 + 1e-9) or not payload_ok:
+                c["hold_dropped"] += 1
+                return None
+            c["holds_resolved"] += 1
+            return {"kind": "dose", "cls": uptake_class(float(e["value"]), rules), "src": "reading"}
+    s = st.stay
+    if s is not None:
+        if _vox(pos) != s["pos"]:
+            st.stay = None
+            c["stay_moved"] += 1
+            return None
+        ok, _, why = release_rule(inp, "dose", look, pos, rules)
+        if ok:
+            return {"kind": "dose", "cls": s["cls"], "src": "stay"}
+        st.stay = None
+        c["stay_ended_" + why] += 1
+        return {"kind": "dose", "cls": None, "src": "stay"} if why == "dose_ok" else None
+    return None
+
+
+def _forage_release(inp: TurnInputs, st: AntState, ant: int, job: str, forced: Optional[Dict[str, Any]], release: bool, level: int,
+                    reason: str) -> Tuple[bool, int, str, _ForageOut]:
+    """Sections 2 and 3: the foraging rule applied to the ordinary release verdict ``(release, level, reason)``.
+
+    A tumour spot is a voxel where the ordinary rule says ok, in the dose and explore jobs. No uptake information within 6 mm:
+    probe (10%) and hold. Good: 50% (``ok_good``). Middling: 25% (``ok_middling``). Poor: no release (``poor_uptake``)."""
+    rules, c, pos = st.rules, st.counters, inp.pos
+    out = _ForageOut()
+    if forced is not None and forced["kind"] == "hold":
+        out.stay_here = True
+        return False, level, "hold", out
+    if forced is not None:
+        if not release:
+            return release, level, reason, out
+        cls = forced["cls"]
+    elif job in ("dose", "explore") and release:
+        info, own = uptake_info(inp, pos, ant, rules)
+        if info is None:
+            st.hold = {"pos": _vox(pos), "age": 0, "tick": int(inp.tick)}
+            c["probes"] += 1
+            out.stay_here = True
+            return True, rules.probe_level, "probe", out
+        cls = info["cls"]
+        if info["src"] == "foreign" and not own:
+            c["probes_saved_by_marks"] += 1            # a probe this ant did not need: another ant's mark answered it
+    else:
+        return release, level, reason, out
+    if cls == "poor":
+        c["no_release_poor"] += 1
+        out.poor = True
+        return False, level, "poor_uptake", out
+    if forced is not None:
+        out.stay_here = True
+        if forced["src"] == "reading":
+            st.stay = {"pos": _vox(pos), "cls": cls}
+    return True, (rules.good_level if cls == "good" else rules.middling_level), "ok_" + cls, out
+
+
+def _poor_response(inp: TurnInputs, st: AntState, scan: ScanInfo, targets: List[_Target]) -> Optional[_Target]:
+    """Section 4. Halve this zone's value in the ant's own ranking (once per zone), then send the ant to the nearest voxel of the
+    SAME zone with scan p >= 0.5 that is >= ``info_mm`` from every known uptake-information spot; that spot becomes the A2r1
+    persistent dose goal. No such voxel: the zone is exhausted and skipped. Returns the dose target to use."""
+    rules, c, vm = st.rules, st.counters, inp.voxel_mm
+    rid = scan.zone_at(inp.pos)
+    if rid is None:
+        c["poor_no_zone"] += 1
+        return targets[0] if targets else None
+    if rid not in st.zone_mult:
+        st.zone_mult[rid] = rules.zone_halve
+        c["zones_halved"] += 1
+    if scan.p_tumour is None:
+        c["forage_no_scan_map"] += 1
+        return targets[0] if targets else None
+    rest = [t for t in targets if t.region_id != rid]
+    # "at least 6 mm" is taken on the strict side: a voxel exactly 6.0 mm from a known spot is still INSIDE the 6 mm information
+    # radius (``uptake_info`` counts <= 6 mm), so the ant would arrive on tissue it already has a reading for and be sent on again.
+    spot = nearest_new_spot(scan.zone_voxels(rid), inp.pos, known_uptake_spots(inp), vm, rules.info_mm * (1 + 1e-6))
+    if spot is None:
+        st.skip_zones.add(rid)
+        if st.dose_goal is not None and st.dose_goal["zone"] == rid:
+            st.dose_goal = None
+        c["zone_exhausted"] += 1                       # exhausted, not dropped because of uptake
+        return rest[0] if rest else None
+    ref = next((t for t in targets if t.region_id == rid), None)
+    st.dose_goal = {"spot": spot, "zone": rid, "age": 0}
+    c["poor_moved_on"] += 1
+    return _Target("spot", STAY, rid, spot, 0.0 if ref is None else ref.value, _mm(vm, inp.pos, spot))
 
 
 # --- the one decision function ------------------------------------------------------------------------------------------
@@ -612,10 +798,16 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
                "explore": (len(unvisited) / n_regions) if n_regions else 0.0,
                "verify": 1.0 if verify is not None else 0.0}
     job = st.thresholds.choose(stimuli)
+    forced = _forage_forced(inp, st, release_look) if rules.foraging else None
+    if forced is not None:
+        job = "dose"                                     # B2: a held probe or a stay forces the dose job at that voxel
 
     release, level, reason = release_rule(inp, job, release_look, pos, rules)
     if release_look != look and release != release_rule(inp, job, look, pos, rules)[0]:
         st.counters["release_changed_by_answer"] += 1
+    fg: Optional[_ForageOut] = None
+    if rules.foraging:
+        release, level, reason, fg = _forage_release(inp, st, ant, job, forced, release, level, reason)
     target: Optional[_Target] = targets[0] if (job == "dose" and targets) else None
     if (target is not None and not release and reason == "washout"
             and _mm(vm, pos, target.pos) <= READ_MM * (1 + 1e-9)):
@@ -629,6 +821,11 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
         target = rest[0] if rest else None
     if rules.dose_move_on:
         target = _dose_move_on(inp, st, scan, job, reason, target, targets)
+    if fg is not None and fg.poor:
+        if job != "dose":
+            job = "dose"                                 # an explorer on poor tissue goes on as a dose ant towards the new spot
+            st.counters["poor_explore_to_dose"] += 1
+        target = _poor_response(inp, st, scan, targets)
 
     label, goal = STAY, None
     spot = None
@@ -650,6 +847,9 @@ def decide_turn(inp: TurnInputs, st: AntState, scan: ScanInfo, ant: int) -> Deci
         label, ask_pos = EXPLORE, spot
         st.verify_turns += 1
         st.verify_by_spot[spot] += 1
+
+    if fg is not None and fg.stay_here:
+        label, goal = STAY, _vox(pos)                    # B2: a probe, a hold, or dosing a known voxel: stay on this voxel
 
     ask = None
     if inp.messages is not None and ask_pos is not None and st.pending is None and (

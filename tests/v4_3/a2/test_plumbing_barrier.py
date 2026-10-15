@@ -211,7 +211,8 @@ def test_v43_run_smoke_on_the_phantom(tmp_path, coef_file):
                      "--coefficients", str(coef_file)]) == 0
     rec = json.loads((out / "S-solo" / "phantom" / "seed1" / "record.json").read_text())
     bundle = json.loads((out / "S-solo" / "phantom" / "seed1" / "bundle.json").read_text())
-    assert rec["complete"] and rec["ant_rules"]["sha"] == R43.sha() and bundle["extra"]["ant_rules"]["sha"] == R43.sha()
+    rules = AntRules.v43_foraging()                       # the default config (config/v4_3/world.yaml) carries B2 since the probe rule
+    assert rec["complete"] and rec["ant_rules"]["sha"] == rules.sha() and bundle["extra"]["ant_rules"]["sha"] == rules.sha()
     assert (out / "S-marks" / "phantom" / "seed1" / "cards" / "ant-00.json").is_file()
     # resumable: a second call skips what is complete
     assert cli.main(["--out", str(out), "--phantom", str(PHANTOM), "--ticks", "60", "--arms", "S-solo",
