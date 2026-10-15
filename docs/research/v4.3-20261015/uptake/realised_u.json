@@ -1,0 +1,3612 @@
+{
+ "cases": {
+  "dev_a": 30,
+  "dev_b": 10
+ },
+ "clip_bounds": [
+  0.05,
+  1.0
+ ],
+ "foraging_py_sha256": "71e361419ab93f701ffe9e1d581906d325658461d2e8d8a2a859e49841cf711a",
+ "levels": {
+  "high": {
+   "by_group": {
+    "dev_a": {
+     "core": {
+      "mean_u": 0.19250873733765192,
+      "n_voxels": 57622,
+      "share_clipped_at_0.05": 0.014317448196869252,
+      "share_clipped_at_1.0": 0.00010412689597723092
+     },
+     "edema": {
+      "mean_u": 0.6312638662495831,
+      "n_voxels": 184736,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16999393729430107
+     },
+     "rim": {
+      "mean_u": 0.776332882769712,
+      "n_voxels": 67291,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.374760369142976
+     },
+     "wt": {
+      "mean_u": 0.5811422483935353,
+      "n_voxels": 309649,
+      "share_clipped_at_0.05": 0.0026643070056741667,
+      "share_clipped_at_1.0": 0.1828780328694748
+     }
+    },
+    "dev_b": {
+     "core": {
+      "mean_u": 0.18030183180641768,
+      "n_voxels": 14346,
+      "share_clipped_at_0.05": 0.01491705004879409,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6255317294735833,
+      "n_voxels": 50169,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16263030955370847
+     },
+     "rim": {
+      "mean_u": 0.7655388504555485,
+      "n_voxels": 11059,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3484040148295506
+     },
+     "wt": {
+      "mean_u": 0.5615027067806783,
+      "n_voxels": 75574,
+      "share_clipped_at_0.05": 0.0028316616825892504,
+      "share_clipped_at_1.0": 0.15894355201524335
+     }
+    }
+   },
+   "n_cases": 40,
+   "overall_mean_of_case_means": {
+    "core": {
+     "cases": 40,
+     "max_case_mean": 0.32252690735572853,
+     "mean_of_case_means": 0.18778382168151792,
+     "min_case_mean": 0.08310735680650982
+    },
+    "edema": {
+     "cases": 40,
+     "max_case_mean": 0.7452156588793204,
+     "mean_of_case_means": 0.6304759124928493,
+     "min_case_mean": 0.5162565873477027
+    },
+    "rim": {
+     "cases": 40,
+     "max_case_mean": 0.9250982360243245,
+     "mean_of_case_means": 0.7484490717259435,
+     "min_case_mean": 0.44108108662354295
+    },
+    "wt": {
+     "cases": 40,
+     "max_case_mean": 0.7004903251792578,
+     "mean_of_case_means": 0.577180966353618,
+     "min_case_mean": 0.3825314120099673
+    }
+   },
+   "overall_voxel_weighted": {
+    "core": {
+     "mean_u": 0.1900754299405992,
+     "n_voxels": 71968,
+     "share_clipped_at_0.05": 0.014436971987550022,
+     "share_clipped_at_1.0": 8.337038683859493e-05
+    },
+    "edema": {
+     "mean_u": 0.6300396455224162,
+     "n_voxels": 234905,
+     "share_clipped_at_0.05": 0.0,
+     "share_clipped_at_1.0": 0.16842127668632
+    },
+    "rim": {
+     "mean_u": 0.7748093192296694,
+     "n_voxels": 78350,
+     "share_clipped_at_0.05": 0.0,
+     "share_clipped_at_1.0": 0.37104020421186984
+    },
+    "wt": {
+     "mean_u": 0.577289314591945,
+     "n_voxels": 385223,
+     "share_clipped_at_0.05": 0.0026971390597134645,
+     "share_clipped_at_1.0": 0.17818250727500695
+    }
+   },
+   "per_case": {
+    "BRATS_016": {
+     "core": {
+      "mean_u": 0.19134796475732382,
+      "n_voxels": 1494,
+      "share_clipped_at_0.05": 0.039491298527443104,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6713369588323157,
+      "n_voxels": 6321,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2235405790223066
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.6587028215594298,
+      "n_voxels": 2521,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.26457754859182864
+     },
+     "wt": {
+      "mean_u": 0.5988762180028863,
+      "n_voxels": 10336,
+      "share_clipped_at_0.05": 0.005708204334365325,
+      "share_clipped_at_1.0": 0.20123839009287925
+     }
+    },
+    "BRATS_034": {
+     "core": {
+      "mean_u": 0.18960766151074987,
+      "n_voxels": 13875,
+      "share_clipped_at_0.05": 0.02018018018018018,
+      "share_clipped_at_1.0": 0.0002882882882882883
+     },
+     "edema": {
+      "mean_u": 0.5814522879274692,
+      "n_voxels": 13227,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1479549406516973
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.790483308580027,
+      "n_voxels": 112,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2857142857142857
+     },
+     "wt": {
+      "mean_u": 0.3825314120099673,
+      "n_voxels": 27214,
+      "share_clipped_at_0.05": 0.010288821929889027,
+      "share_clipped_at_1.0": 0.07323436466524583
+     }
+    },
+    "BRATS_056": {
+     "core": {
+      "mean_u": 0.32252690735572853,
+      "n_voxels": 629,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.003179650238473768
+     },
+     "edema": {
+      "mean_u": 0.6778259021206402,
+      "n_voxels": 16383,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2064334981383141
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9088755952557842,
+      "n_voxels": 1503,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.6580172987358616
+     },
+     "wt": {
+      "mean_u": 0.6845115419302534,
+      "n_voxels": 18515,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2361868755063462
+     }
+    },
+    "BRATS_067": {
+     "core": {
+      "mean_u": 0.15642801780908072,
+      "n_voxels": 604,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.689775010521313,
+      "n_voxels": 5742,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.22814350400557298
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.6068083177456431,
+      "n_voxels": 595,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.043697478991596636
+     },
+     "wt": {
+      "mean_u": 0.6362514885792713,
+      "n_voxels": 6941,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.19247946981702924
+     }
+    },
+    "BRATS_069": {
+     "core": {
+      "mean_u": 0.2159150248662468,
+      "n_voxels": 764,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.737368030294119,
+      "n_voxels": 5900,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2635593220338983
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7786872309946928,
+      "n_voxels": 52,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4423076923076923
+     },
+     "wt": {
+      "mean_u": 0.6783684028804109,
+      "n_voxels": 6716,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.23496128648004766
+     }
+    },
+    "BRATS_101": {
+     "core": {
+      "mean_u": 0.14896526372143024,
+      "n_voxels": 3450,
+      "share_clipped_at_0.05": 0.010144927536231883,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5476240186962589,
+      "n_voxels": 5802,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0656670113753878
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.6255575586553738,
+      "n_voxels": 1180,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.22627118644067798
+     },
+     "wt": {
+      "mean_u": 0.4245976452768376,
+      "n_voxels": 10432,
+      "share_clipped_at_0.05": 0.0033550613496932517,
+      "share_clipped_at_1.0": 0.062116564417177916
+     }
+    },
+    "BRATS_113": {
+     "core": {
+      "mean_u": 0.18595812507483606,
+      "n_voxels": 1520,
+      "share_clipped_at_0.05": 0.009868421052631578,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5969606831820332,
+      "n_voxels": 11707,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1401725463397967
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.791256042820236,
+      "n_voxels": 6787,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.38824222778841905
+     },
+     "wt": {
+      "mean_u": 0.6316343474940919,
+      "n_voxels": 20014,
+      "share_clipped_at_0.05": 0.00074947536724293,
+      "share_clipped_at_1.0": 0.2136504446887179
+     }
+    },
+    "BRATS_120": {
+     "core": {
+      "mean_u": 0.19254052188969728,
+      "n_voxels": 1574,
+      "share_clipped_at_0.05": 0.008259212198221092,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5880950189500264,
+      "n_voxels": 1949,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.17496151872755258
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8177784199984134,
+      "n_voxels": 517,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4700193423597679
+     },
+     "wt": {
+      "mean_u": 0.46337807339781295,
+      "n_voxels": 4040,
+      "share_clipped_at_0.05": 0.0032178217821782176,
+      "share_clipped_at_1.0": 0.14455445544554454
+     }
+    },
+    "BRATS_149": {
+     "core": {
+      "mean_u": 0.1621946873423942,
+      "n_voxels": 2399,
+      "share_clipped_at_0.05": 0.03751563151313047,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5964133072066816,
+      "n_voxels": 13174,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16122665856991042
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.44108108662354295,
+      "n_voxels": 57,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "wt": {
+      "mean_u": 0.5291999735132932,
+      "n_voxels": 15630,
+      "share_clipped_at_0.05": 0.005758157389635317,
+      "share_clipped_at_1.0": 0.1358925143953935
+     }
+    },
+    "BRATS_161": {
+     "core": {
+      "mean_u": 0.2186562504519327,
+      "n_voxels": 4423,
+      "share_clipped_at_0.05": 0.019217725525661315,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6254815235219896,
+      "n_voxels": 9035,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.14798007747648034
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.5286852009176597,
+      "n_voxels": 11,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "wt": {
+      "mean_u": 0.49180768416216264,
+      "n_voxels": 13469,
+      "share_clipped_at_0.05": 0.006310787734798426,
+      "share_clipped_at_1.0": 0.09926497884029994
+     }
+    },
+    "BRATS_167": {
+     "core": {
+      "mean_u": 0.17873180276774558,
+      "n_voxels": 330,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6411423430350944,
+      "n_voxels": 1400,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.13071428571428573
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.794625947848258,
+      "n_voxels": 1111,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3564356435643564
+     },
+     "wt": {
+      "mean_u": 0.6474516730805712,
+      "n_voxels": 2841,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.20380147835269272
+     }
+    },
+    "BRATS_183": {
+     "core": {
+      "mean_u": 0.20353068871579616,
+      "n_voxels": 815,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6563703200516258,
+      "n_voxels": 1200,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.18833333333333332
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9157715143166102,
+      "n_voxels": 73,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.6575342465753424
+     },
+     "wt": {
+      "mean_u": 0.4886844903785619,
+      "n_voxels": 2088,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.13122605363984674
+     }
+    },
+    "BRATS_193": {
+     "core": {
+      "mean_u": 0.22460194812229692,
+      "n_voxels": 2002,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6524795396496711,
+      "n_voxels": 1852,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2381209503239741
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8228355072192389,
+      "n_voxels": 5205,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4549471661863593
+     },
+     "wt": {
+      "mean_u": 0.6558013050721015,
+      "n_voxels": 9059,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.31007837509658903
+     }
+    },
+    "BRATS_205": {
+     "core": {
+      "mean_u": 0.20924120899547535,
+      "n_voxels": 2454,
+      "share_clipped_at_0.05": 0.0008149959250203749,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6322357452593979,
+      "n_voxels": 12085,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.18800165494414564
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7898125915288866,
+      "n_voxels": 3478,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.34847613571017827
+     },
+     "wt": {
+      "mean_u": 0.605040522932352,
+      "n_voxels": 18017,
+      "share_clipped_at_0.05": 0.00011100627185435977,
+      "share_clipped_at_1.0": 0.19337292557029473
+     }
+    },
+    "BRATS_238": {
+     "core": {
+      "mean_u": 0.18367652920042268,
+      "n_voxels": 383,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6185154796374724,
+      "n_voxels": 1302,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.13978494623655913
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7394767608553569,
+      "n_voxels": 365,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2547945205479452
+     },
+     "wt": {
+      "mean_u": 0.558811845309247,
+      "n_voxels": 2050,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.13414634146341464
+     }
+    },
+    "BRATS_246": {
+     "core": {
+      "mean_u": 0.18232608887265578,
+      "n_voxels": 2533,
+      "share_clipped_at_0.05": 0.002368732727990525,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6265285849526162,
+      "n_voxels": 6323,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.14012335916495333
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.6560631168285214,
+      "n_voxels": 1369,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.19065010956902848
+     },
+     "wt": {
+      "mean_u": 0.5204423112672933,
+      "n_voxels": 10225,
+      "share_clipped_at_0.05": 0.00058679706601467,
+      "share_clipped_at_1.0": 0.11217603911980441
+     }
+    },
+    "BRATS_286": {
+     "core": {
+      "mean_u": 0.20123273596544683,
+      "n_voxels": 6454,
+      "share_clipped_at_0.05": 0.005268050821196158,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.619326328176547,
+      "n_voxels": 2958,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.17545638945233266
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7694091384083673,
+      "n_voxels": 9078,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3829037232870676
+     },
+     "wt": {
+      "mean_u": 0.547075149547776,
+      "n_voxels": 18490,
+      "share_clipped_at_0.05": 0.001838831800973499,
+      "share_clipped_at_1.0": 0.21606273661438616
+     }
+    },
+    "BRATS_287": {
+     "core": {
+      "mean_u": 0.26863803016803195,
+      "n_voxels": 1045,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7452156588793204,
+      "n_voxels": 1550,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.35870967741935483
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9250982360243245,
+      "n_voxels": 91,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.6813186813186813
+     },
+     "wt": {
+      "mean_u": 0.5658953656987169,
+      "n_voxels": 2686,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.23008190618019358
+     }
+    },
+    "BRATS_290": {
+     "core": {
+      "mean_u": 0.22676835530601713,
+      "n_voxels": 566,
+      "share_clipped_at_0.05": 0.00530035335689046,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6424149270898145,
+      "n_voxels": 4381,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2246062542798448
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.7902893894381328,
+      "n_voxels": 2689,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.46597248047601336
+     },
+     "wt": {
+      "mean_u": 0.6636797869149845,
+      "n_voxels": 7636,
+      "share_clipped_at_0.05": 0.000392875851231011,
+      "share_clipped_at_1.0": 0.2929544264012572
+     }
+    },
+    "BRATS_297": {
+     "core": {
+      "mean_u": 0.14298592946794714,
+      "n_voxels": 94,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7095424878291444,
+      "n_voxels": 3272,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2438875305623472
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.7609325984058745,
+      "n_voxels": 377,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.26525198938992045
+     },
+     "wt": {
+      "mean_u": 0.7004903251792578,
+      "n_voxels": 3743,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.23991450707988246
+     }
+    },
+    "BRATS_303": {
+     "core": {
+      "mean_u": 0.185042694080809,
+      "n_voxels": 3216,
+      "share_clipped_at_0.05": 0.0018656716417910447,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6795203556563033,
+      "n_voxels": 13321,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2275354703100368
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7784000151557072,
+      "n_voxels": 6355,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3228953579858379
+     },
+     "wt": {
+      "mean_u": 0.6375030603781242,
+      "n_voxels": 22892,
+      "share_clipped_at_0.05": 0.00026210029704700334,
+      "share_clipped_at_1.0": 0.22204263498165297
+     }
+    },
+    "BRATS_328": {
+     "core": {
+      "mean_u": 0.17008533187489688,
+      "n_voxels": 2566,
+      "share_clipped_at_0.05": 0.012081060015588464,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.659127054285276,
+      "n_voxels": 5790,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1466321243523316
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7132598990391634,
+      "n_voxels": 3067,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.21878056732963808
+     },
+     "wt": {
+      "mean_u": 0.5638057179598921,
+      "n_voxels": 11423,
+      "share_clipped_at_0.05": 0.0027138229887069946,
+      "share_clipped_at_1.0": 0.1330648691236978
+     }
+    },
+    "BRATS_337": {
+     "core": {
+      "mean_u": 0.08310735680650982,
+      "n_voxels": 631,
+      "share_clipped_at_0.05": 0.24088748019017434,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5268337087865668,
+      "n_voxels": 3705,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.06531713900134953
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.5163302717376056,
+      "n_voxels": 323,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.030959752321981424
+     },
+     "wt": {
+      "mean_u": 0.4660086522795415,
+      "n_voxels": 4659,
+      "share_clipped_at_0.05": 0.0326250268297918,
+      "share_clipped_at_1.0": 0.0540888602704443
+     }
+    },
+    "BRATS_343": {
+     "core": {
+      "mean_u": 0.19574821377895255,
+      "n_voxels": 190,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5545313331828661,
+      "n_voxels": 9445,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.09317098994176813
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.837326725989827,
+      "n_voxels": 755,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3933774834437086
+     },
+     "wt": {
+      "mean_u": 0.5685199500146767,
+      "n_voxels": 10390,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.11328200192492782
+     }
+    },
+    "BRATS_355": {
+     "core": {
+      "mean_u": 0.1545593879175166,
+      "n_voxels": 887,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5503133775646882,
+      "n_voxels": 942,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.006369426751592357
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.7205601062151716,
+      "n_voxels": 787,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.14104193138500634
+     },
+     "wt": {
+      "mean_u": 0.46734334187313215,
+      "n_voxels": 2616,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.04472477064220184
+     }
+    },
+    "BRATS_356": {
+     "core": {
+      "mean_u": 0.21492463622705438,
+      "n_voxels": 2484,
+      "share_clipped_at_0.05": 0.03180354267310789,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6446634396540062,
+      "n_voxels": 11482,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.17017941125239505
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7679336661542147,
+      "n_voxels": 3765,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3944223107569721
+     },
+     "wt": {
+      "mean_u": 0.6106349705919532,
+      "n_voxels": 17731,
+      "share_clipped_at_0.05": 0.004455473464553606,
+      "share_clipped_at_1.0": 0.1939540917037956
+     }
+    },
+    "BRATS_368": {
+     "core": {
+      "mean_u": 0.19258848046712568,
+      "n_voxels": 2023,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5846094416580724,
+      "n_voxels": 4830,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.11697722567287784
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7436993678094972,
+      "n_voxels": 2781,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3293779216109313
+     },
+     "wt": {
+      "mean_u": 0.5482144530902736,
+      "n_voxels": 9634,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1537263857172514
+     }
+    },
+    "BRATS_373": {
+     "core": {
+      "mean_u": 0.15165660448654109,
+      "n_voxels": 262,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6221873238066831,
+      "n_voxels": 465,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.12903225806451613
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7138938811010156,
+      "n_voxels": 191,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2356020942408377
+     },
+     "wt": {
+      "mean_u": 0.506976979559777,
+      "n_voxels": 918,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.11437908496732026
+     }
+    },
+    "BRATS_374": {
+     "core": {
+      "mean_u": 0.2247885796298264,
+      "n_voxels": 490,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6778013476309459,
+      "n_voxels": 4049,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16152136329958014
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.8900375910861766,
+      "n_voxels": 844,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5556872037914692
+     },
+     "wt": {
+      "mean_u": 0.6698413129208709,
+      "n_voxels": 5383,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2086197287757756
+     }
+    },
+    "BRATS_375": {
+     "core": {
+      "mean_u": 0.19492059713228552,
+      "n_voxels": 1160,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7203675245403574,
+      "n_voxels": 1730,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.22890173410404624
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8596672747634552,
+      "n_voxels": 1049,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5433746425166825
+     },
+     "wt": {
+      "mean_u": 0.6027252300977747,
+      "n_voxels": 3939,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.24523990860624523
+     }
+    },
+    "BRATS_389": {
+     "core": {
+      "mean_u": 0.1785215351342056,
+      "n_voxels": 385,
+      "share_clipped_at_0.05": 0.0025974025974025974,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6411187224145408,
+      "n_voxels": 3249,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.22868574946137274
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.6326147111635455,
+      "n_voxels": 1119,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.19928507596067918
+     },
+     "wt": {
+      "mean_u": 0.601645567419213,
+      "n_voxels": 4753,
+      "share_clipped_at_0.05": 0.00021039343572480537,
+      "share_clipped_at_1.0": 0.203240058910162
+     }
+    },
+    "BRATS_406": {
+     "core": {
+      "mean_u": 0.12490492537572657,
+      "n_voxels": 556,
+      "share_clipped_at_0.05": 0.09352517985611511,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5162565873477027,
+      "n_voxels": 1945,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.017480719794344474
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7919979971919152,
+      "n_voxels": 552,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4076086956521739
+     },
+     "wt": {
+      "mean_u": 0.4948408435473708,
+      "n_voxels": 3053,
+      "share_clipped_at_0.05": 0.017032427120864724,
+      "share_clipped_at_1.0": 0.08483458892892237
+     }
+    },
+    "BRATS_420": {
+     "core": {
+      "mean_u": 0.23850504438040268,
+      "n_voxels": 176,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6895815337530823,
+      "n_voxels": 8703,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2593358611972883
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.779007971237951,
+      "n_voxels": 1372,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.43075801749271136
+     },
+     "wt": {
+      "mean_u": 0.6938058640720413,
+      "n_voxels": 10251,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.27782655350697494
+     }
+    },
+    "BRATS_423": {
+     "core": {
+      "mean_u": 0.15771722876513694,
+      "n_voxels": 1103,
+      "share_clipped_at_0.05": 0.0009066183136899365,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.606858870437993,
+      "n_voxels": 2372,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16104553119730186
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.7989631465500688,
+      "n_voxels": 3408,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.36120892018779344
+     },
+     "wt": {
+      "mean_u": 0.6300011255919657,
+      "n_voxels": 6883,
+      "share_clipped_at_0.05": 0.0001452854859799506,
+      "share_clipped_at_1.0": 0.2343454888856603
+     }
+    },
+    "BRATS_441": {
+     "core": {
+      "mean_u": 0.15980532674854656,
+      "n_voxels": 761,
+      "share_clipped_at_0.05": 0.035479632063074903,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5980163553481671,
+      "n_voxels": 16672,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.11834213051823417
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7094072579271754,
+      "n_voxels": 1781,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.21729365524985964
+     },
+     "wt": {
+      "mean_u": 0.5909854718636716,
+      "n_voxels": 19214,
+      "share_clipped_at_0.05": 0.0014052253565108774,
+      "share_clipped_at_1.0": 0.1228271052357656
+     }
+    },
+    "BRATS_462": {
+     "core": {
+      "mean_u": 0.14255882449440763,
+      "n_voxels": 40,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5884367748916663,
+      "n_voxels": 4526,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1042863455589925
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.6010780687491313,
+      "n_voxels": 210,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.08095238095238096
+     },
+     "wt": {
+      "mean_u": 0.5852582894842495,
+      "n_voxels": 4776,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.10238693467336683
+     }
+    },
+    "BRATS_464": {
+     "core": {
+      "mean_u": 0.21257338828547198,
+      "n_voxels": 2188,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6408575833828603,
+      "n_voxels": 4346,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1242521859180856
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8862085018034975,
+      "n_voxels": 4927,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5262837426425817
+     },
+     "wt": {
+      "mean_u": 0.664569140505746,
+      "n_voxels": 11461,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2733618357909432
+     }
+    },
+    "BRATS_468": {
+     "core": {
+      "mean_u": 0.1976666954372785,
+      "n_voxels": 1108,
+      "share_clipped_at_0.05": 0.021660649819494584,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6366341826933888,
+      "n_voxels": 6815,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.18620689655172415
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7342759536061895,
+      "n_voxels": 2150,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.33395348837209304
+     },
+     "wt": {
+      "mean_u": 0.609189909049266,
+      "n_voxels": 10073,
+      "share_clipped_at_0.05": 0.0023826069691253848,
+      "share_clipped_at_1.0": 0.1972600019855058
+     }
+    },
+    "BRATS_479": {
+     "core": {
+      "mean_u": 0.1769746601544765,
+      "n_voxels": 1234,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.5954525225430496,
+      "n_voxels": 2420,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1309917355371901
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8040543255768706,
+      "n_voxels": 3301,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.43835201454104816
+     },
+     "wt": {
+      "mean_u": 0.620210663395263,
+      "n_voxels": 6955,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.25363048166786484
+     }
+    },
+    "BRATS_483": {
+     "core": {
+      "mean_u": 0.14882961372229053,
+      "n_voxels": 3100,
+      "share_clipped_at_0.05": 0.014193548387096775,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6297643043222064,
+      "n_voxels": 2535,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1779092702169625
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7470157521551883,
+      "n_voxels": 2442,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.35298935298935297
+     },
+     "wt": {
+      "mean_u": 0.48062854782207065,
+      "n_voxels": 8077,
+      "share_clipped_at_0.05": 0.00544756716602699,
+      "share_clipped_at_1.0": 0.1625603565680327
+     }
+    }
+   },
+   "preset": {
+    "core": 0.2,
+    "edema": 0.7,
+    "rim": 1.0,
+    "sigma": 0.6
+   }
+  },
+  "low": {
+   "by_group": {
+    "dev_a": {
+     "core": {
+      "mean_u": 0.5964521404907989,
+      "n_voxels": 57622,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0009024330984693346
+     },
+     "edema": {
+      "mean_u": 0.875239217534676,
+      "n_voxels": 184736,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.25668521565910274
+     },
+     "rim": {
+      "mean_u": 0.9276611981897306,
+      "n_voxels": 67291,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.46010610631436594
+     },
+     "wt": {
+      "mean_u": 0.8347522744049936,
+      "n_voxels": 309649,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.25329324493216515
+     }
+    },
+    "dev_b": {
+     "core": {
+      "mean_u": 0.5848378966887438,
+      "n_voxels": 14346,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.00027882336539802036
+     },
+     "edema": {
+      "mean_u": 0.8735419591266302,
+      "n_voxels": 50169,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.24670613326954893
+     },
+     "rim": {
+      "mean_u": 0.9236704628062163,
+      "n_voxels": 11059,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.44362058052265124
+     },
+     "wt": {
+      "mean_u": 0.8260735525643023,
+      "n_voxels": 75574,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.22874268928467462
+     }
+    }
+   },
+   "n_cases": 40,
+   "overall_mean_of_case_means": {
+    "core": {
+     "cases": 40,
+     "max_case_mean": 0.7062095994335967,
+     "mean_of_case_means": 0.592496339863722,
+     "min_case_mean": 0.4516656219488636
+    },
+    "edema": {
+     "cases": 40,
+     "max_case_mean": 0.9225666182866977,
+     "mean_of_case_means": 0.8758227807489704,
+     "min_case_mean": 0.8289838862253766
+    },
+    "rim": {
+     "cases": 40,
+     "max_case_mean": 0.9823460266102193,
+     "mean_of_case_means": 0.9171141411319492,
+     "min_case_mean": 0.7856695054577528
+    },
+    "wt": {
+     "cases": 40,
+     "max_case_mean": 0.9034651499244309,
+     "mean_of_case_means": 0.8332199576048016,
+     "min_case_mean": 0.7165095780797336
+    }
+   },
+   "overall_voxel_weighted": {
+    "core": {
+     "mean_u": 0.5941369734501102,
+     "n_voxels": 71968,
+     "share_clipped_at_0.05": 0.0,
+     "share_clipped_at_1.0": 0.0007781236104935527
+    },
+    "edema": {
+     "mean_u": 0.8748767316060101,
+     "n_voxels": 234905,
+     "share_clipped_at_0.05": 0.0,
+     "share_clipped_at_1.0": 0.25455396862561464
+    },
+    "rim": {
+     "mean_u": 0.9270979111111566,
+     "n_voxels": 78350,
+     "share_clipped_at_0.05": 0.0,
+     "share_clipped_at_1.0": 0.4577791959157626
+    },
+    "wt": {
+     "mean_u": 0.8330496613097516,
+     "n_voxels": 385223,
+     "share_clipped_at_0.05": 0.0,
+     "share_clipped_at_1.0": 0.24847685626247654
+    }
+   },
+   "per_case": {
+    "BRATS_016": {
+     "core": {
+      "mean_u": 0.5895761440894933,
+      "n_voxels": 1494,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8905779634001219,
+      "n_voxels": 6321,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3285872488530296
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.87243628881515,
+      "n_voxels": 2521,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.32487108290360966
+     },
+     "wt": {
+      "mean_u": 0.8426453125024057,
+      "n_voxels": 10336,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2801857585139319
+     }
+    },
+    "BRATS_034": {
+     "core": {
+      "mean_u": 0.5895621038149224,
+      "n_voxels": 13875,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0023063063063063064
+     },
+     "edema": {
+      "mean_u": 0.8477765948540804,
+      "n_voxels": 13227,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.21947531564224693
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9408611365615985,
+      "n_voxels": 112,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.375
+     },
+     "wt": {
+      "mean_u": 0.7165095780797336,
+      "n_voxels": 27214,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.10939222459028441
+     }
+    },
+    "BRATS_056": {
+     "core": {
+      "mean_u": 0.7062095994335967,
+      "n_voxels": 629,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.017488076311605722
+     },
+     "edema": {
+      "mean_u": 0.8982830283196069,
+      "n_voxels": 16383,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2998229872428737
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9759421505530458,
+      "n_voxels": 1503,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.7258815701929474
+     },
+     "wt": {
+      "mean_u": 0.8980619899154784,
+      "n_voxels": 18515,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3248177153659195
+     }
+    },
+    "BRATS_067": {
+     "core": {
+      "mean_u": 0.5616935794098786,
+      "n_voxels": 604,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.9003366492230352,
+      "n_voxels": 5742,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3455242075931731
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.8701368500884568,
+      "n_voxels": 595,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0907563025210084
+     },
+     "wt": {
+      "mean_u": 0.8682794104026605,
+      "n_voxels": 6941,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.29361763434663596
+     }
+    },
+    "BRATS_069": {
+     "core": {
+      "mean_u": 0.6224269970478077,
+      "n_voxels": 764,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.9225666182866977,
+      "n_voxels": 5900,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.40220338983050846
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9234433087003359,
+      "n_voxels": 52,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5384615384615384
+     },
+     "wt": {
+      "mean_u": 0.8884300663621887,
+      "n_voxels": 6716,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3575044669446099
+     }
+    },
+    "BRATS_101": {
+     "core": {
+      "mean_u": 0.5555152597022581,
+      "n_voxels": 3450,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8433593020470852,
+      "n_voxels": 5802,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.11789038262668046
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.8596281758596178,
+      "n_voxels": 1180,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2745762711864407
+     },
+     "wt": {
+      "mean_u": 0.7500057097358445,
+      "n_voxels": 10432,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.09662576687116564
+     }
+    },
+    "BRATS_113": {
+     "core": {
+      "mean_u": 0.5953983402315868,
+      "n_voxels": 1520,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8582476464077993,
+      "n_voxels": 11707,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.21448705902451526
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9331839500667518,
+      "n_voxels": 6787,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.48887579195520847
+     },
+     "wt": {
+      "mean_u": 0.8636969192940525,
+      "n_voxels": 20014,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2912461277106026
+     }
+    },
+    "BRATS_120": {
+     "core": {
+      "mean_u": 0.5955381917889158,
+      "n_voxels": 1574,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8510765547758588,
+      "n_voxels": 1949,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.23293996921498203
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.944042963813,
+      "n_voxels": 517,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5164410058027079
+     },
+     "wt": {
+      "mean_u": 0.7634147355012929,
+      "n_voxels": 4040,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.17846534653465346
+     }
+    },
+    "BRATS_149": {
+     "core": {
+      "mean_u": 0.5609546850386311,
+      "n_voxels": 2399,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0016673614005835765
+     },
+     "edema": {
+      "mean_u": 0.857792426641261,
+      "n_voxels": 13174,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.22665856991042962
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.7856695054577528,
+      "n_voxels": 57,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "wt": {
+      "mean_u": 0.8119687063205848,
+      "n_voxels": 15630,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.19129878438899553
+     }
+    },
+    "BRATS_161": {
+     "core": {
+      "mean_u": 0.6198202323124979,
+      "n_voxels": 4423,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8738447984025861,
+      "n_voxels": 9035,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.24084117321527393
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.8379422921880689,
+      "n_voxels": 11,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "wt": {
+      "mean_u": 0.7903979513178123,
+      "n_voxels": 13469,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16155616601083972
+     }
+    },
+    "BRATS_167": {
+     "core": {
+      "mean_u": 0.5813508843269751,
+      "n_voxels": 330,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8867329691698012,
+      "n_voxels": 1400,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.23214285714285715
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.9396537099736796,
+      "n_voxels": 1111,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4464446444644464
+     },
+     "wt": {
+      "mean_u": 0.8719560790025982,
+      "n_voxels": 2841,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.28898275255191835
+     }
+    },
+    "BRATS_183": {
+     "core": {
+      "mean_u": 0.610843596507554,
+      "n_voxels": 815,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8907327441673101,
+      "n_voxels": 1200,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2733333333333333
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9807087609664654,
+      "n_voxels": 73,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.684931506849315
+     },
+     "wt": {
+      "mean_u": 0.7846305381728834,
+      "n_voxels": 2088,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1810344827586207
+     }
+    },
+    "BRATS_193": {
+     "core": {
+      "mean_u": 0.6354443770084292,
+      "n_voxels": 2002,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8819204616353024,
+      "n_voxels": 1852,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3126349892008639
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9464666897390128,
+      "n_voxels": 5205,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5406340057636888
+     },
+     "wt": {
+      "mean_u": 0.8645364232046601,
+      "n_voxels": 9059,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.37454465172756374
+     }
+    },
+    "BRATS_205": {
+     "core": {
+      "mean_u": 0.6150580037891624,
+      "n_voxels": 2454,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0016299918500407497
+     },
+     "edema": {
+      "mean_u": 0.8758951344341337,
+      "n_voxels": 12085,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2613156805957799
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9373515017320362,
+      "n_voxels": 3478,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.44594594594594594
+     },
+     "wt": {
+      "mean_u": 0.8522314238751807,
+      "n_voxels": 18017,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2615862796247988
+     }
+    },
+    "BRATS_238": {
+     "core": {
+      "mean_u": 0.5890172958729067,
+      "n_voxels": 383,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8726452657300466,
+      "n_voxels": 1302,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.23425499231950844
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9202228638723713,
+      "n_voxels": 365,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3287671232876712
+     },
+     "wt": {
+      "mean_u": 0.8281263929820779,
+      "n_voxels": 2050,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2073170731707317
+     }
+    },
+    "BRATS_246": {
+     "core": {
+      "mean_u": 0.5911842624146895,
+      "n_voxels": 2533,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8756247494470848,
+      "n_voxels": 6323,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.23849438557646688
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8819257931888239,
+      "n_voxels": 1369,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.24397370343316288
+     },
+     "wt": {
+      "mean_u": 0.8060050306431125,
+      "n_voxels": 10225,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.18014669926650367
+     }
+    },
+    "BRATS_286": {
+     "core": {
+      "mean_u": 0.6065431848731341,
+      "n_voxels": 6454,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8677998000643004,
+      "n_voxels": 2958,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2647058823529412
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9238268261252619,
+      "n_voxels": 9078,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.46045384445913196
+     },
+     "wt": {
+      "mean_u": 0.804114735063631,
+      "n_voxels": 18490,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.268415359653867
+     }
+    },
+    "BRATS_287": {
+     "core": {
+      "mean_u": 0.6672282419198852,
+      "n_voxels": 1045,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0009569377990430622
+     },
+     "edema": {
+      "mean_u": 0.9187916352622812,
+      "n_voxels": 1550,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.44967741935483874
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9823460266102193,
+      "n_voxels": 91,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.7472527472527473
+     },
+     "wt": {
+      "mean_u": 0.8230729843203074,
+      "n_voxels": 2686,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2851824274013403
+     }
+    },
+    "BRATS_290": {
+     "core": {
+      "mean_u": 0.6349568738314759,
+      "n_voxels": 566,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.876935369628842,
+      "n_voxels": 4381,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2958228714905273
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.9273655183730258,
+      "n_voxels": 2689,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5392339159538863
+     },
+     "wt": {
+      "mean_u": 0.8767581618435881,
+      "n_voxels": 7636,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3596123624934521
+     }
+    },
+    "BRATS_297": {
+     "core": {
+      "mean_u": 0.5550987580446056,
+      "n_voxels": 94,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.9105475938319955,
+      "n_voxels": 3272,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.36033007334963324
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.9288568856569319,
+      "n_voxels": 377,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3819628647214854
+     },
+     "wt": {
+      "mean_u": 0.9034651499244309,
+      "n_voxels": 3743,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3534597916110072
+     }
+    },
+    "BRATS_303": {
+     "core": {
+      "mean_u": 0.5963596374096269,
+      "n_voxels": 3216,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8958797413945486,
+      "n_voxels": 13321,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.32872907439381427
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9328691089295347,
+      "n_voxels": 6355,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4187254130605822
+     },
+     "wt": {
+      "mean_u": 0.8640699727535092,
+      "n_voxels": 22892,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.30753101520181725
+     }
+    },
+    "BRATS_328": {
+     "core": {
+      "mean_u": 0.5694471797589731,
+      "n_voxels": 2566,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8934361537398673,
+      "n_voxels": 5790,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2618307426597582
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9086230834280652,
+      "n_voxels": 3067,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2944245190740137
+     },
+     "wt": {
+      "mean_u": 0.8247346397872042,
+      "n_voxels": 11423,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.21176573579620064
+     }
+    },
+    "BRATS_337": {
+     "core": {
+      "mean_u": 0.4516656219488636,
+      "n_voxels": 631,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8289838862253766,
+      "n_voxels": 3705,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.12712550607287448
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8203163795896936,
+      "n_voxels": 323,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.04953560371517028
+     },
+     "wt": {
+      "mean_u": 0.7772802095991037,
+      "n_voxels": 4659,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.10452886885597767
+     }
+    },
+    "BRATS_343": {
+     "core": {
+      "mean_u": 0.6123622771409888,
+      "n_voxels": 190,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8401876760408779,
+      "n_voxels": 9445,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16071995764955002
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9545126933235486,
+      "n_voxels": 755,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5549668874172186
+     },
+     "wt": {
+      "mean_u": 0.8443290198577631,
+      "n_voxels": 10390,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.18642925890279113
+     }
+    },
+    "BRATS_355": {
+     "core": {
+      "mean_u": 0.5684975214867526,
+      "n_voxels": 887,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8508086073296012,
+      "n_voxels": 942,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.07855626326963906
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.9150655982174966,
+      "n_voxels": 787,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2731893265565438
+     },
+     "wt": {
+      "mean_u": 0.7744172918426621,
+      "n_voxels": 2616,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.11047400611620795
+     }
+    },
+    "BRATS_356": {
+     "core": {
+      "mean_u": 0.6202310179967425,
+      "n_voxels": 2484,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8811403887086693,
+      "n_voxels": 11482,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.26615572199965165
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9189398657117159,
+      "n_voxels": 3765,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.47729083665338645
+     },
+     "wt": {
+      "mean_u": 0.8526149899194325,
+      "n_voxels": 17731,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.27370142687947663
+     }
+    },
+    "BRATS_368": {
+     "core": {
+      "mean_u": 0.6034794748511839,
+      "n_voxels": 2023,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8566137923098425,
+      "n_voxels": 4830,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1886128364389234
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9159239459106923,
+      "n_voxels": 2781,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.40668824163969797
+     },
+     "wt": {
+      "mean_u": 0.8205800382040814,
+      "n_voxels": 9634,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2119576499896201
+     }
+    },
+    "BRATS_373": {
+     "core": {
+      "mean_u": 0.5617628388688811,
+      "n_voxels": 262,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8776768309255912,
+      "n_voxels": 465,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.210752688172043
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9101143768330784,
+      "n_voxels": 191,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.31413612565445026
+     },
+     "wt": {
+      "mean_u": 0.7942630023302449,
+      "n_voxels": 918,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1721132897603486
+     }
+    },
+    "BRATS_374": {
+     "core": {
+      "mean_u": 0.6384347864336641,
+      "n_voxels": 490,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.9021412209780989,
+      "n_voxels": 4049,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.27414176339837
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.9703576671883021,
+      "n_voxels": 844,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.6943127962085308
+     },
+     "wt": {
+      "mean_u": 0.8888323834664209,
+      "n_voxels": 5383,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3150659483559354
+     }
+    },
+    "BRATS_375": {
+     "core": {
+      "mean_u": 0.6077418387465734,
+      "n_voxels": 1160,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.9161428568758778,
+      "n_voxels": 1730,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3699421965317919
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9584985356190613,
+      "n_voxels": 1049,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.6282173498570067
+     },
+     "wt": {
+      "mean_u": 0.8366013300852219,
+      "n_voxels": 3939,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.32977913175932977
+     }
+    },
+    "BRATS_389": {
+     "core": {
+      "mean_u": 0.5917039725923108,
+      "n_voxels": 385,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8718855123283911,
+      "n_voxels": 3249,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3139427516158818
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8677485631309693,
+      "n_voxels": 1119,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2537980339588919
+     },
+     "wt": {
+      "mean_u": 0.8482164319685539,
+      "n_voxels": 4753,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2743530401851462
+     }
+    },
+    "BRATS_406": {
+     "core": {
+      "mean_u": 0.5187945099158561,
+      "n_voxels": 556,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8303960553340352,
+      "n_voxels": 1945,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.05038560411311054
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9334773457073846,
+      "n_voxels": 552,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5
+     },
+     "wt": {
+      "mean_u": 0.7922861349388768,
+      "n_voxels": 3053,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1225024566000655
+     }
+    },
+    "BRATS_420": {
+     "core": {
+      "mean_u": 0.6271275904734661,
+      "n_voxels": 176,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.9000079388673689,
+      "n_voxels": 8703,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.34941974031943007
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.924579194226771,
+      "n_voxels": 1372,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5102040816326531
+     },
+     "wt": {
+      "mean_u": 0.8986114722822331,
+      "n_voxels": 10251,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3649400058530875
+     }
+    },
+    "BRATS_423": {
+     "core": {
+      "mean_u": 0.5680849577974166,
+      "n_voxels": 1103,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8639352465952552,
+      "n_voxels": 2372,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.23735244519392917
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.9395011016282927,
+      "n_voxels": 3408,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.48034037558685444
+     },
+     "wt": {
+      "mean_u": 0.8539404137329243,
+      "n_voxels": 6883,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3196280691558913
+     }
+    },
+    "BRATS_441": {
+     "core": {
+      "mean_u": 0.5673737077970448,
+      "n_voxels": 761,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8607599104248179,
+      "n_voxels": 16672,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.20495441458733205
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9018413737285037,
+      "n_voxels": 1781,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3357664233576642
+     },
+     "wt": {
+      "mean_u": 0.8529478559824388,
+      "n_voxels": 19214,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.20896221505152493
+     }
+    },
+    "BRATS_462": {
+     "core": {
+      "mean_u": 0.5521767908510009,
+      "n_voxels": 40,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8612921019736484,
+      "n_voxels": 4526,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16548828988068934
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8653562361241497,
+      "n_voxels": 210,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.12857142857142856
+     },
+     "wt": {
+      "mean_u": 0.858881895886274,
+      "n_voxels": 4776,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1624790619765494
+     }
+    },
+    "BRATS_464": {
+     "core": {
+      "mean_u": 0.6249623043720042,
+      "n_voxels": 2188,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8876037067676065,
+      "n_voxels": 4346,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.21951219512195122
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9718463544217333,
+      "n_voxels": 4927,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.6393342804952303
+     },
+     "wt": {
+      "mean_u": 0.8736785812593877,
+      "n_voxels": 11461,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.358083936829247
+     }
+    },
+    "BRATS_468": {
+     "core": {
+      "mean_u": 0.5999885639925275,
+      "n_voxels": 1108,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8775103569296788,
+      "n_voxels": 6815,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.26969919295671313
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9118396484396047,
+      "n_voxels": 2150,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3883720930232558
+     },
+     "wt": {
+      "mean_u": 0.8543110945621594,
+      "n_voxels": 10073,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.26536285118633973
+     }
+    },
+    "BRATS_479": {
+     "core": {
+      "mean_u": 0.5883098326717673,
+      "n_voxels": 1234,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.861576779863395,
+      "n_voxels": 2420,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.19586776859504132
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9381026986844534,
+      "n_voxels": 3301,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5165101484398668
+     },
+     "wt": {
+      "mean_u": 0.8494129617748034,
+      "n_voxels": 6955,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3132997843278217
+     }
+    },
+    "BRATS_483": {
+     "core": {
+      "mean_u": 0.547928557984824,
+      "n_voxels": 3100,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0012903225806451613
+     },
+     "edema": {
+      "mean_u": 0.873445160617031,
+      "n_voxels": 2535,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.25680473372781065
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.913040676093314,
+      "n_voxels": 2442,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4332514332514332
+     },
+     "wt": {
+      "mean_u": 0.760481285494243,
+      "n_voxels": 8077,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.21208369444100533
+     }
+    }
+   },
+   "preset": {
+    "core": 0.6,
+    "edema": 0.9,
+    "rim": 1.0,
+    "sigma": 0.2
+   }
+  },
+  "mid": {
+   "by_group": {
+    "dev_a": {
+     "core": {
+      "mean_u": 0.3923875350374431,
+      "n_voxels": 57622,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.002238728263510465
+     },
+     "edema": {
+      "mean_u": 0.7515269286935844,
+      "n_voxels": 184736,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.21190239043824702
+     },
+     "rim": {
+      "mean_u": 0.8526269624174591,
+      "n_voxels": 67291,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.41683137418079685
+     },
+     "wt": {
+      "mean_u": 0.7066657866523023,
+      "n_voxels": 309649,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.21742036951516072
+     }
+    },
+    "dev_b": {
+     "core": {
+      "mean_u": 0.3765099396868819,
+      "n_voxels": 14346,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0009061759375435662
+     },
+     "edema": {
+      "mean_u": 0.7476765619938202,
+      "n_voxels": 50169,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.20357192688712153
+     },
+     "rim": {
+      "mean_u": 0.845087717311525,
+      "n_voxels": 11059,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.39596708563161226
+     },
+     "wt": {
+      "mean_u": 0.6914735504163353,
+      "n_voxels": 75574,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.19325429380474765
+     }
+    }
+   },
+   "n_cases": 40,
+   "overall_mean_of_case_means": {
+    "core": {
+     "cases": 40,
+     "max_case_mean": 0.5493846887620503,
+     "mean_of_case_means": 0.3865388001647819,
+     "min_case_mean": 0.22272976470909822
+    },
+    "edema": {
+     "cases": 40,
+     "max_case_mean": 0.8345610725610012,
+     "mean_of_case_means": 0.7516357789374265,
+     "min_case_mean": 0.6674041703401455
+    },
+    "rim": {
+     "cases": 40,
+     "max_case_mean": 0.9571852723492421,
+     "mean_of_case_means": 0.8325554217914007,
+     "min_case_mean": 0.5980180560584551
+    },
+    "wt": {
+     "cases": 40,
+     "max_case_mean": 0.8044142057771235,
+     "mean_of_case_means": 0.7037766409094748,
+     "min_case_mean": 0.5443992967691611
+    }
+   },
+   "overall_voxel_weighted": {
+    "core": {
+     "mean_u": 0.38922251748937803,
+     "n_voxels": 71968,
+     "share_clipped_at_0.05": 0.0,
+     "share_clipped_at_1.0": 0.00197309915518008
+    },
+    "edema": {
+     "mean_u": 0.750704600318452,
+     "n_voxels": 234905,
+     "share_clipped_at_0.05": 0.0,
+     "share_clipped_at_1.0": 0.21012324131031693
+    },
+    "rim": {
+     "mean_u": 0.8515628078338404,
+     "n_voxels": 78350,
+     "share_clipped_at_0.05": 0.0,
+     "share_clipped_at_1.0": 0.4138864071474154
+    },
+    "wt": {
+     "mean_u": 0.7036853362085412,
+     "n_voxels": 385223,
+     "share_clipped_at_0.05": 0.0,
+     "share_clipped_at_1.0": 0.21267940906955193
+    }
+   },
+   "per_case": {
+    "BRATS_016": {
+     "core": {
+      "mean_u": 0.38730329002091923,
+      "n_voxels": 1494,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7805895181290086,
+      "n_voxels": 6321,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.27748773928175924
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7590366111180568,
+      "n_voxels": 2521,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2935343117810393
+     },
+     "wt": {
+      "mean_u": 0.7184857542582563,
+      "n_voxels": 10336,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.24129256965944273
+     }
+    },
+    "BRATS_034": {
+     "core": {
+      "mean_u": 0.38558907486761046,
+      "n_voxels": 13875,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.004900900900900901
+     },
+     "edema": {
+      "mean_u": 0.708230697897777,
+      "n_voxels": 13227,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1827322900128525
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8702375660174736,
+      "n_voxels": 112,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.33035714285714285
+     },
+     "wt": {
+      "mean_u": 0.5443992967691611,
+      "n_voxels": 27214,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.09267288895421474
+     }
+    },
+    "BRATS_056": {
+     "core": {
+      "mean_u": 0.5493846887620503,
+      "n_voxels": 629,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.04451510333863275
+     },
+     "edema": {
+      "mean_u": 0.7897440642718256,
+      "n_voxels": 16383,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2500762986022096
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.945219378189537,
+      "n_voxels": 1503,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.6892880904856953
+     },
+     "wt": {
+      "mean_u": 0.7941995516940602,
+      "n_voxels": 18515,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2787469619227653
+     }
+    },
+    "BRATS_067": {
+     "core": {
+      "mean_u": 0.3449060963539209,
+      "n_voxels": 604,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7963968191784304,
+      "n_voxels": 5742,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.289272030651341
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.7368047213284629,
+      "n_voxels": 595,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.06554621848739496
+     },
+     "wt": {
+      "mean_u": 0.7520000903487611,
+      "n_voxels": 6941,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2449214810546031
+     }
+    },
+    "BRATS_069": {
+     "core": {
+      "mean_u": 0.42594639975837023,
+      "n_voxels": 764,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8345610725610012,
+      "n_voxels": 5900,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3335593220338983
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8495444276655479,
+      "n_voxels": 52,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4807692307692308
+     },
+     "wt": {
+      "mean_u": 0.7881938189046918,
+      "n_voxels": 6716,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2967540202501489
+     }
+    },
+    "BRATS_101": {
+     "core": {
+      "mean_u": 0.3357151323513154,
+      "n_voxels": 3450,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.690597726730104,
+      "n_voxels": 5802,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0889348500517063
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.7347321905037774,
+      "n_voxels": 1180,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.24745762711864408
+     },
+     "wt": {
+      "mean_u": 0.5782255753349845,
+      "n_voxels": 10432,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.07745398773006135
+     }
+    },
+    "BRATS_113": {
+     "core": {
+      "mean_u": 0.38750965640997925,
+      "n_voxels": 1520,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7234632101275363,
+      "n_voxels": 11707,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.17715896472196122
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8634421194816713,
+      "n_voxels": 6787,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4364225725651982
+     },
+     "wt": {
+      "mean_u": 0.7454172151308254,
+      "n_voxels": 20014,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.25162386329569303
+     }
+    },
+    "BRATS_120": {
+     "core": {
+      "mean_u": 0.3919877600769633,
+      "n_voxels": 1574,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7131395529146438,
+      "n_voxels": 1949,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.20574653668547974
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8823412856860187,
+      "n_voxels": 517,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4990328820116054
+     },
+     "wt": {
+      "mean_u": 0.6096703385374883,
+      "n_voxels": 4040,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16311881188118812
+     }
+    },
+    "BRATS_149": {
+     "core": {
+      "mean_u": 0.3481469216567129,
+      "n_voxels": 2399,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.003751563151313047
+     },
+     "edema": {
+      "mean_u": 0.7223495029913657,
+      "n_voxels": 13174,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.19219675117655988
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.5980180560584551,
+      "n_voxels": 57,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "wt": {
+      "mean_u": 0.6644608986985309,
+      "n_voxels": 15630,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16257197696737044
+     }
+    },
+    "BRATS_161": {
+     "core": {
+      "mean_u": 0.4259769757810944,
+      "n_voxels": 4423,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0009043635541487678
+     },
+     "edema": {
+      "mean_u": 0.7482183937955088,
+      "n_voxels": 9035,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1907028223574986
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.6775027586374923,
+      "n_voxels": 11,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "wt": {
+      "mean_u": 0.6423418132130978,
+      "n_voxels": 13469,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.12822035785878685
+     }
+    },
+    "BRATS_167": {
+     "core": {
+      "mean_u": 0.3732298228239846,
+      "n_voxels": 330,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7654786288158425,
+      "n_voxels": 1400,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.17857142857142858
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.8701996157688567,
+      "n_voxels": 1111,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4014401440144014
+     },
+     "wt": {
+      "mean_u": 0.7608686008424127,
+      "n_voxels": 2841,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.24498416050686378
+     }
+    },
+    "BRATS_183": {
+     "core": {
+      "mean_u": 0.4094184443197322,
+      "n_voxels": 815,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7743389445654509,
+      "n_voxels": 1200,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.23
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9520962820925971,
+      "n_voxels": 73,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.6575342465753424
+     },
+     "wt": {
+      "mean_u": 0.6381158018160356,
+      "n_voxels": 2088,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.15517241379310345
+     }
+    },
+    "BRATS_193": {
+     "core": {
+      "mean_u": 0.44034674590420014,
+      "n_voxels": 2002,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.765005641670192,
+      "n_voxels": 1852,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2737580993520518
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8868466854489,
+      "n_voxels": 5205,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.49855907780979825
+     },
+     "wt": {
+      "mean_u": 0.763263233407101,
+      "n_voxels": 9059,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3424219008720609
+     }
+    },
+    "BRATS_205": {
+     "core": {
+      "mean_u": 0.41588866051023615,
+      "n_voxels": 2454,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0024449877750611247
+     },
+     "edema": {
+      "mean_u": 0.752040310223016,
+      "n_voxels": 12085,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2220935043442284
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.866455970572517,
+      "n_voxels": 3478,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3939045428407131
+     },
+     "wt": {
+      "mean_u": 0.7283416655152624,
+      "n_voxels": 18017,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.22534273186435033
+     }
+    },
+    "BRATS_238": {
+     "core": {
+      "mean_u": 0.38142616601841123,
+      "n_voxels": 383,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0026109660574412533
+     },
+     "edema": {
+      "mean_u": 0.7441640477355914,
+      "n_voxels": 1302,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.18433179723502305
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8321545524538637,
+      "n_voxels": 365,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.28493150684931506
+     },
+     "wt": {
+      "mean_u": 0.6920605967719277,
+      "n_voxels": 2050,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16829268292682928
+     }
+    },
+    "BRATS_246": {
+     "core": {
+      "mean_u": 0.38217975199160503,
+      "n_voxels": 2533,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7502135734637434,
+      "n_voxels": 6323,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.19263008065791554
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7659488767303485,
+      "n_voxels": 1369,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2191380569758948
+     },
+     "wt": {
+      "mean_u": 0.6611487285134309,
+      "n_voxels": 10225,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1484596577017115
+     }
+    },
+    "BRATS_286": {
+     "core": {
+      "mean_u": 0.40521339083368973,
+      "n_voxels": 6454,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0003098853424233034
+     },
+     "edema": {
+      "mean_u": 0.7401732567935198,
+      "n_voxels": 2958,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2210953346855984
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8464492209128294,
+      "n_voxels": 9078,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.42311081736065215
+     },
+     "wt": {
+      "mean_u": 0.6754324362078167,
+      "n_voxels": 18490,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.24321254732287723
+     }
+    },
+    "BRATS_287": {
+     "core": {
+      "mean_u": 0.4905131057616146,
+      "n_voxels": 1045,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.011483253588516746
+     },
+     "edema": {
+      "mean_u": 0.8334172898802161,
+      "n_voxels": 1550,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9571852723492421,
+      "n_voxels": 91,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.7032967032967034
+     },
+     "wt": {
+      "mean_u": 0.7042021052192864,
+      "n_voxels": 2686,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.25912137006701413
+     }
+    },
+    "BRATS_290": {
+     "core": {
+      "mean_u": 0.4416711690459315,
+      "n_voxels": 566,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7568246319482422,
+      "n_voxels": 4381,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.25838849577721984
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.857385263671989,
+      "n_voxels": 2689,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5065079955373745
+     },
+     "wt": {
+      "mean_u": 0.7688768423597728,
+      "n_voxels": 7636,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.32661079099004714
+     }
+    },
+    "BRATS_297": {
+     "core": {
+      "mean_u": 0.33087894352593883,
+      "n_voxels": 94,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8129726591889394,
+      "n_voxels": 3272,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3025672371638142
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.8482048028279202,
+      "n_voxels": 377,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3156498673740053
+     },
+     "wt": {
+      "mean_u": 0.8044142057771235,
+      "n_voxels": 3743,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2962864012823938
+     }
+    },
+    "BRATS_303": {
+     "core": {
+      "mean_u": 0.38733591800705575,
+      "n_voxels": 3216,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7883349254864137,
+      "n_voxels": 13321,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.27603032805344946
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8582894270860473,
+      "n_voxels": 6355,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.36947285601888274
+     },
+     "wt": {
+      "mean_u": 0.7514201976169422,
+      "n_voxels": 22892,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2631923816180325
+     }
+    },
+    "BRATS_328": {
+     "core": {
+      "mean_u": 0.3593716055420618,
+      "n_voxels": 2566,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0003897116134060795
+     },
+     "edema": {
+      "mean_u": 0.7786973747086311,
+      "n_voxels": 5790,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2013816925734024
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.811802594483833,
+      "n_voxels": 3067,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.250733615911314
+     },
+     "wt": {
+      "mean_u": 0.6933908690069003,
+      "n_voxels": 11423,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16948262277860457
+     }
+    },
+    "BRATS_337": {
+     "core": {
+      "mean_u": 0.22272976470909822,
+      "n_voxels": 631,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6702349793650543,
+      "n_voxels": 3705,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.09689608636977058
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.6580010643968968,
+      "n_voxels": 323,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.04643962848297214
+     },
+     "wt": {
+      "mean_u": 0.6087781549429416,
+      "n_voxels": 4659,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.08027473706804035
+     }
+    },
+    "BRATS_343": {
+     "core": {
+      "mean_u": 0.40546158286432965,
+      "n_voxels": 190,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6910105694212452,
+      "n_voxels": 9445,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1258867125463208
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.90053200263939,
+      "n_voxels": 755,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.46622516556291393
+     },
+     "wt": {
+      "mean_u": 0.7010138778556904,
+      "n_voxels": 10390,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.14831568816169394
+     }
+    },
+    "BRATS_355": {
+     "core": {
+      "mean_u": 0.34784542295182785,
+      "n_voxels": 887,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6988269253010061,
+      "n_voxels": 942,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.032908704883227176
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.8212318536931433,
+      "n_voxels": 787,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.19949174078780177
+     },
+     "wt": {
+      "mean_u": 0.616645001012356,
+      "n_voxels": 2616,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.07186544342507645
+     }
+    },
+    "BRATS_356": {
+     "core": {
+      "mean_u": 0.423861662992875,
+      "n_voxels": 2484,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7623148724385462,
+      "n_voxels": 11482,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2126807176450096
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.841877215525028,
+      "n_voxels": 3765,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.43718459495351925
+     },
+     "wt": {
+      "mean_u": 0.7317940021806676,
+      "n_voxels": 17731,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.23055665219107777
+     }
+    },
+    "BRATS_368": {
+     "core": {
+      "mean_u": 0.3974437858806599,
+      "n_voxels": 2023,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7167477214840063,
+      "n_voxels": 4830,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.15320910973084886
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8295015136523217,
+      "n_voxels": 2781,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.36533620999640415
+     },
+     "wt": {
+      "mean_u": 0.6822466247738668,
+      "n_voxels": 9634,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.18227112310566743
+     }
+    },
+    "BRATS_373": {
+     "core": {
+      "mean_u": 0.34137945713351076,
+      "n_voxels": 262,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7496206019864887,
+      "n_voxels": 465,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.17849462365591398
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8131517824238059,
+      "n_voxels": 191,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2617801047120419
+     },
+     "wt": {
+      "mean_u": 0.6463256951368672,
+      "n_voxels": 918,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.144880174291939
+     }
+    },
+    "BRATS_374": {
+     "core": {
+      "mean_u": 0.4425389845577557,
+      "n_voxels": 490,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7935170025776251,
+      "n_voxels": 4049,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.22203013089651766
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.9340372549800987,
+      "n_voxels": 844,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.6303317535545023
+     },
+     "wt": {
+      "mean_u": 0.7836005738572001,
+      "n_voxels": 5383,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.26583689392532045
+     }
+    },
+    "BRATS_375": {
+     "core": {
+      "mean_u": 0.40174812021819956,
+      "n_voxels": 1160,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.8225125818277013,
+      "n_voxels": 1730,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2930635838150289
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9113678505441347,
+      "n_voxels": 1049,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.5910390848427073
+     },
+     "wt": {
+      "mean_u": 0.7222643973688327,
+      "n_voxels": 3939,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2861132267072861
+     }
+    },
+    "BRATS_389": {
+     "core": {
+      "mean_u": 0.3799457688770273,
+      "n_voxels": 385,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7524657635890445,
+      "n_voxels": 3249,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.27300707910126193
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7444404895718271,
+      "n_voxels": 1119,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.22698838248436104
+     },
+     "wt": {
+      "mean_u": 0.720401703082124,
+      "n_voxels": 4753,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.24005891016200295
+     }
+    },
+    "BRATS_406": {
+     "core": {
+      "mean_u": 0.2952415940645064,
+      "n_voxels": 556,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.6674041703401455,
+      "n_voxels": 1945,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.02930591259640103
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8635170822666114,
+      "n_voxels": 552,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4528985507246377
+     },
+     "wt": {
+      "mean_u": 0.6350857736726558,
+      "n_voxels": 3053,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.10055682934818212
+     }
+    },
+    "BRATS_420": {
+     "core": {
+      "mean_u": 0.4433512753900857,
+      "n_voxels": 176,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.005681818181818182
+     },
+     "edema": {
+      "mean_u": 0.7954067196478126,
+      "n_voxels": 8703,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3041479949442721
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8506986209395468,
+      "n_voxels": 1372,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4737609329446064
+     },
+     "wt": {
+      "mean_u": 0.7967625610664937,
+      "n_voxels": 10251,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.32172470978441126
+     }
+    },
+    "BRATS_423": {
+     "core": {
+      "mean_u": 0.34989405304537113,
+      "n_voxels": 1103,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7316318344277783,
+      "n_voxels": 2372,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.20193929173693087
+     },
+     "group": "dev_b",
+     "rim": {
+      "mean_u": 0.8721220194729772,
+      "n_voxels": 3408,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.42018779342723006
+     },
+     "wt": {
+      "mean_u": 0.7400197143884412,
+      "n_voxels": 6883,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2776405637076856
+     }
+    },
+    "BRATS_441": {
+     "core": {
+      "mean_u": 0.3510391742983785,
+      "n_voxels": 761,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7263119528003661,
+      "n_voxels": 16672,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.15924904030710174
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8049656565534221,
+      "n_voxels": 1781,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.28017967434025826
+     },
+     "wt": {
+      "mean_u": 0.718739331896035,
+      "n_voxels": 19214,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16415113979390028
+     }
+    },
+    "BRATS_462": {
+     "core": {
+      "mean_u": 0.32875952887281423,
+      "n_voxels": 40,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.72232665235985,
+      "n_voxels": 4526,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.12991604065399912
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.7301826933088761,
+      "n_voxels": 210,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.10476190476190476
+     },
+     "wt": {
+      "mean_u": 0.7193758742316704,
+      "n_voxels": 4776,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1277219430485762
+     }
+    },
+    "BRATS_464": {
+     "core": {
+      "mean_u": 0.42518047070801634,
+      "n_voxels": 2188,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7661800210744012,
+      "n_voxels": 4346,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.17303267372296363
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.9338265072903038,
+      "n_voxels": 4927,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.583925309518977
+     },
+     "wt": {
+      "mean_u": 0.7731503745674736,
+      "n_voxels": 11461,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3166390367332694
+     }
+    },
+    "BRATS_468": {
+     "core": {
+      "mean_u": 0.39853208832601256,
+      "n_voxels": 1108,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.755397385406155,
+      "n_voxels": 6815,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.22450476889214968
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8220519573211074,
+      "n_voxels": 2150,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3632558139534884
+     },
+     "wt": {
+      "mean_u": 0.7303701423258759,
+      "n_voxels": 10073,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2294251960686985
+     }
+    },
+    "BRATS_479": {
+     "core": {
+      "mean_u": 0.3764063657683749,
+      "n_voxels": 1234,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0
+     },
+     "edema": {
+      "mean_u": 0.7252223968022933,
+      "n_voxels": 2420,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.16983471074380166
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8722475873283875,
+      "n_voxels": 3301,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.4744016964556195
+     },
+     "wt": {
+      "mean_u": 0.7331147291719241,
+      "n_voxels": 6955,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2842559309849029
+     }
+    },
+    "BRATS_483": {
+     "core": {
+      "mean_u": 0.33025318560903444,
+      "n_voxels": 3100,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.0032258064516129032
+     },
+     "edema": {
+      "mean_u": 0.7493471635705373,
+      "n_voxels": 2535,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.2153846153846154
+     },
+     "group": "dev_a",
+     "rim": {
+      "mean_u": 0.8285660406627119,
+      "n_voxels": 2442,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.3906633906633907
+     },
+     "wt": {
+      "mean_u": 0.6124474689040066,
+      "n_voxels": 8077,
+      "share_clipped_at_0.05": 0.0,
+      "share_clipped_at_1.0": 0.1869506004704717
+     }
+    }
+   },
+   "preset": {
+    "core": 0.4,
+    "edema": 0.8,
+    "rim": 1.0,
+    "sigma": 0.4
+   }
+  }
+ },
+ "skipped": [],
+ "split_sha256": "76ec40c52f85db4060e58c4aca14fd62e355445d073f4ca539cf8614d725dd53",
+ "sub_regions": {
+  "core": "TC & ~ET & WT",
+  "edema": "WT & ~TC",
+  "rim": "ET & WT"
+ },
+ "what": "realised mean uptake u per sub-region, from the foraging field (antelligence/worlds/tumor_mri/foraging.py); aggregates only"
+}
