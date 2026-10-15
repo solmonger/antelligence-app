@@ -113,13 +113,29 @@ def _within(log: Sequence[Mapping[str, Any]], kind: str, about: Sequence[float],
             and voxel_mm * math.dist(e["pos_vox"], about) <= radius_mm * (1 + _EPS)]
 
 
+V43_YES, V43_NO = 0.6, 0.4          # v4.3 answer bands on the mean combined estimate: >= 0.6 yes, <= 0.4 no, else unknown
+
+
+def _look_value(e: Mapping[str, Any]) -> float:
+    """A look's value for the v4.3 rules: the combined estimate ``est`` when the world logged one, else the raw look."""
+    return float(e.get("est", e["value"]))
+
+
 def answer_question(question: str, about_pos: Sequence[float], log: Sequence[Mapping[str, Any]], *,
-                    has_own_need_more: bool, voxel_mm: float, radius_mm: float = 6.0) -> Tuple[str, Optional[float]]:
-    """The answer rule from the answerer's own reading log (INTERFACES 3.2). Returns (answer, reading used)."""
+                    has_own_need_more: bool, voxel_mm: float, radius_mm: float = 6.0,
+                    answer_rule: str = "v42") -> Tuple[str, Optional[float]]:
+    """The answer rule from the answerer's own reading log (INTERFACES 3.2). Returns (answer, reading used).
+
+    ``answer_rule="v42"`` is the v4.2 rule on the raw look values. ``"v43"`` reads the combined estimate (``est``, else the
+    raw value) and uses the 0.6 / 0.4 bands with an ``unknown`` in between."""
     looks = _within(log, "look", about_pos, radius_mm, voxel_mm)
+    v43 = answer_rule == "v43"
     if question == "is_tumour":
         if not looks:
             return "unknown", None
+        if v43:
+            mean = sum(_look_value(e) for e in looks) / len(looks)
+            return ("yes" if mean >= V43_YES else "no" if mean <= V43_NO else "unknown"), mean
         mean = sum(float(e["value"]) for e in looks) / len(looks)
         return ("yes" if mean >= 0.5 else "no"), mean
     if question == "dosed_enough":
@@ -129,7 +145,10 @@ def answer_question(question: str, about_pos: Sequence[float], log: Sequence[Map
         latest = max(doses, key=lambda e: e["tick"])      # dose only accumulates, so the newest reading is the answer
         rel = float(latest["value"])
         return ("yes" if rel >= 1.0 else "no"), min(1.0, max(0.0, rel))
-    # should_i_come: yes iff a need_more mark of its own within 6 mm of `about`, or a look >= 0.5 there
+    # should_i_come: yes iff a need_more mark of its own within 6 mm of `about`, or a look >= 0.5 there (v4.3: est >= 0.6)
+    if v43:
+        top = max((_look_value(e) for e in looks), default=None)
+        return ("yes" if has_own_need_more or (top is not None and top >= V43_YES) else "no"), top
     top = max((float(e["value"]) for e in looks), default=None)
     return ("yes" if has_own_need_more or (top is not None and top >= 0.5) else "no"), top
 
