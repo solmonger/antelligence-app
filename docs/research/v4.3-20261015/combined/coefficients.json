@@ -1,0 +1,26 @@
+{
+ "schema": "combined_v4_3",
+ "features": [
+  "1",
+  "logit_scan",
+  "logit_look",
+  "logit_scan*logit_look"
+ ],
+ "coef": [
+  -0.6038913398835776,
+  0.8415654488555326,
+  0.48416783685617587,
+  0.07985560758307218
+ ],
+ "clip": [
+  0.001,
+  0.999
+ ],
+ "fit": {
+  "split": "dev_a",
+  "n_looks": 5760,
+  "n_cases": 30,
+  "ridge": false,
+  "inputs_sha256": "89ffa0281f0e772b91777556e53e9467add2f84aec352d6358c565e958dbc8c8"
+ }
+}
