@@ -1,0 +1,34 @@
+# v4.31 A.2 real-units world, PRIMARY clearance k_ref = 2.0e-3 /s (L = 0.505 mm): CALIBRATED to carmustine's own measured wafer penetration profiles (rat 1.0 mm, rabbit <1.2 mm via
+# x10 = 2.303 L); not independently measured, and no carmustine tissue clearance has been measured directly. The carried pair (world_units_k_low/high.yaml) is secondary sensitivity.
+# The world stays on the 2 mm grid; only the SCORER refines (scripts/v431_run.py --score-mm 1.0).
+# Every physical constant (diffusivity, clearance, voxel, budget cap, molar mass) lives in antelligence/worlds/tumor_mri/physical.py with
+# its source string, and nothing derived is written here. The loader REFUSES drug_scale_k, total_drug, drug_mode, release_sigma_mm,
+# diffuse_sigma_vox, decay and dose_threshold in a units config: the budget is the fixed 61.6 mg cap (8 x 7.7 mg BCNU), never scaled
+# by perceived volume and never tuned.
+# physics.tick_seconds: the declared tick (default 1800 s). physics.policy_threshold_umol_h_L is what the SCRIPTS plan against (plumbing,
+# not a result): every coverage figure is a curve over thresholds. S' is run once per decade of it (scripts/v431_run.py --plan-thr).
+# Entry and motion are UNCHANGED and UNPHYSICAL: squads still walk through tissue one voxel per tick carrying their whole dose.
+world:
+  physics_model: units
+  physics:
+    k_set: ref
+    tick_seconds: 1800.0
+    n_sub: 5
+    kernel_tol_umol_h_L: 0.1
+    policy_threshold_umol_h_L: 1000.0   # default plumbing value; every Phase A run states its own
+  n_squads: 8
+  ticks: 120
+  decision_every: 5
+  queen_every: 30
+  entry_shell_mm: 4.0
+  entry_min_dist_mm: 10.0
+  visit_radius_mm: 6.0
+  explore_unc_quantile: 0.95
+  path_weight: 1.5
+  path_max_expand: 40000
+  amount_fractions:
+  - 0.1
+  - 0.25
+  - 0.5
+  - 0.75
+  - 1.0

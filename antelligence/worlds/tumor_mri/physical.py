@@ -6,6 +6,10 @@ points to"). Nothing in :class:`PhysicalParams` may ever be tuned to a result.
 **Declared substitution (also in every report): no measured effective diffusivity of BCNU in brain exists.** The small-molecule
 value measured for free tetramethylammonium (TMA+) in brain extracellular space, corrected for tortuosity, stands in for it.
 
+**The primary clearance ``k_ref`` is CALIBRATED to an external published measurement (carmustine's own wafer penetration profiles); it is not
+independently measured, and no carmustine tissue clearance constant has been measured directly.** That is legitimate calibration. It is the opposite
+of what v4.1 did, which tuned a constant to widen our own result. The carried literature pair (low, high) is inert-tracer efflux and is secondary.
+
 **What Phase A does not fix.** Entry and motion stay unphysical: squads still walk through tissue one voxel per tick and still
 arrive carrying their whole dose. Nothing in this module says anything about delivery in a patient.
 
@@ -45,7 +49,16 @@ D_STAR_SOURCE = (
 )
 K_CLEAR_LOW_S = 1.2e-4
 K_CLEAR_HIGH_S = 6.0e-4
+K_CLEAR_REF_S = 2.0e-3
 K_CLEAR_SOURCES = {
+    "ref": (
+        "PRIMARY. k_ref is CALIBRATED to an external published measurement; it is NOT independently measured, and no carmustine tissue clearance constant has ever been measured "
+        "directly. Calibrated so the model reproduces carmustine's own measured penetration profiles from polymer wafers/pellets: 10%-of-maximum at 1.0 mm in rat brain, days 3-14 "
+        "(Fung et al. 1996) and 'under 1.2 mm' in rabbit (Strasser et al. 1995), converted with the near-planar relation x10 = 2.303 L and the TMA-anchored D*; the grounding report's "
+        "transport ledger quotes ~1.9e-3 to 2.8e-3 /s for this, and A.2 fixes 2.0e-3 /s (L = 0.505 mm). A COMPOSITE (Verification log, remaining doubt 2). Legitimate calibration, the "
+        "opposite of v4.1's tuning of a constant to widen our own result. The rat comparison passes largely by construction; the rabbit comparison (another species, and a bound) is the "
+        "independent one."
+    ),
     "low": (
         "Bork et al. 2024, PNAS 121(16):e2318444121: Cserr-derived brain efflux constant k_p = 0.432 /h = 1.2e-4 /s (rat). "
         "A model-fitted blood-brain efflux rate, not a direct measurement. LOW end of a genuine 5x literature conflict "
@@ -66,6 +79,10 @@ TICKS_DEFAULT = 120
 TICKS_SOURCE = "v4.1 world.yaml episode length (120 ticks); 60 h at the default 1800 s tick (v4.31 goal, Step A)."
 VOXEL_MM = 2.0
 VOXEL_SOURCE = "Perception store grid: store_adapter requires a 2.0 mm crop grid (v4.31 goal, Step A: 'from the perception store')."
+VOXEL_SOURCE_FINE = (
+    "SCORING GRID finer than the perception store (A.2): the scorer is analytic, so its grid is a numerical choice. Truth comes from the native 1 mm MSD labels (the 2 mm raw "
+    "bundles are not 1 mm); perception, targets and release points stay on the 2 mm grid, and a release is placed at its 2 mm voxel centre (snapped to the scoring lattice)."
+)
 BUDGET_CAP_MG = 61.6
 BUDGET_SOURCE = (
     "Gliadel label / NICE TA121: at most 8 wafers x 7.7 mg BCNU = 61.6 mg, the clinical maximum (grounding report, delivery "
@@ -78,7 +95,15 @@ MOLAR_MASS_SOURCE = (
 )
 PHYSICAL_FIELDS = ("d_star_cm2_s", "k_clear_s", "tick_seconds", "ticks", "voxel_mm", "budget_mg", "molar_mass_g_mol")
 
-# The standing acceptance test: 0.4 mm <= L = sqrt(D/k) <= 2.0 mm (goal, Step A). The goal itself computes L = 2.06 mm for the LOW
+# NOT ADOPTED (A.2 goal): a tissue clearance of 1.31e-4 /s and a normal-brain diffusivity of 2.5e-10 m2/s. They trace to a non-peer-reviewed student report whose companion
+# value for carmustine's diffusivity in tumour (6.75e-5 cm2/s) exceeds free aqueous diffusion of a 214 Da molecule by ~7x (impossible) and which prints that rate constant in
+# units that do not match how it uses it. Wang et al. 1999, J Control Release 61:21-41 ("The delivery of BCNU to brain tumors"): the abstract is reachable (Europe PMC) and says
+# BCNU penetrates only a short distance, that its reaction with brain tissue lowers its concentration (more so at higher rate constants) and that interstitial convection has a
+# minor effect; it states no numbers, and the full text (where a parameter table would be) returned HTTP 403, so neither constant could be checked against it.
+# DEMOTED (operator decision 2026-10-16): 0.4-2.1 mm is now only a SANITY FLOOR. It is a union across different agents (carmustine wafers at the
+# bottom, an inert tracer's brain efflux at the top), so it passes while the check that matters fails. The ACCEPTANCE TEST is now
+# profile_check(): the set must reproduce the reference agent's own penetration profile within 1.5x (see below).
+# History: the original standing test was 0.4 mm <= L = sqrt(D/k) <= 2.0 mm (goal, Step A). The goal itself computes L = 2.06 mm for the LOW
 # clearance end of the pair and says: "report the exact figure and either narrow k or widen the band with a written reason, rather
 # than quietly nudging D". k is a literature pair that must be carried whole and D is declared, so the band is widened.
 L_BAND_STATED_MM = (0.4, 2.0)
@@ -92,9 +117,17 @@ L_BAND_REASON = (
 
 MM2_PER_CM2 = 100.0
 
+# The ACCEPTANCE TEST (operator decision 2026-10-16): a set must reproduce the reference agent's OWN penetration profile within 1.5x. The measured
+# 10%-of-maximum distances for carmustine from polymer wafers/pellets (grounding report, transport ledger; Verification log):
+#   rat brain, days 3-14: 1.0 mm (Fung et al. 1996);  rabbit brain: "under 1.2 mm" (Strasser et al. 1995), a BOUND, taken at 1.2 mm.
+# Geometry: the experiments are near-planar sources, so the comparison is against the planar x10 = 2.303 L. The point-source figure is reported beside it.
+PUBLISHED_CARMUSTINE_X10_MM = {"rat_fung1996": 1.0, "rabbit_strasser1995_bound": 1.2}
+PROFILE_FACTOR = 1.5
+K_SETS_ALL = ("ref", "low", "high")
+
 
 class PhysicalParamsError(ValueError):
-    """A physical field has no source, or a value is out of range, or L = sqrt(D/k) misses the acceptance band."""
+    """A physical field has no source, or a value is out of range, or L = sqrt(D/k) is outside the sanity floor."""
 
 
 def _src_map(sources: Mapping[str, str]) -> Tuple[Tuple[str, str], ...]:
@@ -116,7 +149,7 @@ class PhysicalParams:
     budget_mg: float
     molar_mass_g_mol: float
     sources: Tuple[Tuple[str, str], ...]
-    k_label: str = "custom"           # "low" | "high" | "custom"; reporting only
+    k_label: str = "custom"           # "ref" (primary) | "low" | "high" (secondary) | "custom"; reporting only
 
     def __post_init__(self) -> None:
         src = dict(self.sources)
@@ -138,25 +171,53 @@ class PhysicalParams:
         lo, hi = L_BAND_MM
         if not lo <= self.L_mm <= hi:
             raise PhysicalParamsError(
-                f"acceptance test failed: L = sqrt(D/k) = {self.L_mm:.4f} mm is outside [{lo}, {hi}] mm. Do not nudge D; "
-                "narrow k or widen the band with a written reason.")
+                f"sanity floor failed: L = sqrt(D/k) = {self.L_mm:.4f} mm is outside [{lo}, {hi}] mm. Do not nudge D. (The acceptance test is "
+                "profile_check(): reproduce the reference agent's own penetration profile within 1.5x.)")
 
     # --- construction ----------------------------------------------------------------------------------------------
 
     @classmethod
-    def carmustine_wafer(cls, k: str = "low", *, tick_seconds: float = TICK_SECONDS_DEFAULT, ticks: int = TICKS_DEFAULT,
-                         budget_mg: float = BUDGET_CAP_MG) -> "PhysicalParams":
-        """The reference parameter set. ``k`` selects an end of the carried clearance pair: "low" 1.2e-4 /s, "high" 6.0e-4 /s."""
-        if k not in ("low", "high"):
-            raise PhysicalParamsError(f"k must be 'low' or 'high', got {k!r}")
-        k_val = K_CLEAR_LOW_S if k == "low" else K_CLEAR_HIGH_S
+    def carmustine_wafer(cls, k: str = "ref", *, tick_seconds: float = TICK_SECONDS_DEFAULT, ticks: int = TICKS_DEFAULT,
+                         budget_mg: float = BUDGET_CAP_MG, voxel_mm: float = VOXEL_MM) -> "PhysicalParams":
+        """The reference parameter set. ``k`` selects the clearance: "ref" 2.0e-3 /s (PRIMARY: calibrated to carmustine's own wafer profiles), or an end of
+        the carried literature pair, "low" 1.2e-4 /s and "high" 6.0e-4 /s (SECONDARY: inert-tracer efflux; they do not reproduce the profile)."""
+        if k not in K_SETS_ALL:
+            raise PhysicalParamsError(f"k must be one of {K_SETS_ALL}, got {k!r}")
+        k_val = {"ref": K_CLEAR_REF_S, "low": K_CLEAR_LOW_S, "high": K_CLEAR_HIGH_S}[k]
+        vsrc = VOXEL_SOURCE if abs(voxel_mm - VOXEL_MM) < 1e-12 else VOXEL_SOURCE_FINE
         return cls(
-            d_star_cm2_s=D_STAR_CM2_S, k_clear_s=k_val, tick_seconds=float(tick_seconds), ticks=int(ticks), voxel_mm=VOXEL_MM,
+            d_star_cm2_s=D_STAR_CM2_S, k_clear_s=k_val, tick_seconds=float(tick_seconds), ticks=int(ticks), voxel_mm=float(voxel_mm),
             budget_mg=float(budget_mg), molar_mass_g_mol=BCNU_MOLAR_MASS_G_MOL,
             sources=_src_map({"d_star_cm2_s": D_STAR_SOURCE, "k_clear_s": K_CLEAR_SOURCES[k], "tick_seconds": TICK_SOURCE,
-                              "ticks": TICKS_SOURCE, "voxel_mm": VOXEL_SOURCE, "budget_mg": BUDGET_SOURCE,
+                              "ticks": TICKS_SOURCE, "voxel_mm": vsrc, "budget_mg": BUDGET_SOURCE,
                               "molar_mass_g_mol": MOLAR_MASS_SOURCE}),
             k_label=k)
+
+    # --- the acceptance test ------------------------------------------------------------------------------------------
+
+    def profile_check(self) -> Dict[str, object]:
+        """Does this set reproduce the reference agent's own penetration profile within 1.5x? Planar x10 = 2.303 L (the wafer geometry)
+        against the carmustine measurements (rat 1.0 mm; rabbit 'under 1.2 mm', a bound, so only the upper side is tested). The point-source
+        figure is reported beside it. ``accepted`` is the acceptance test; the L sanity floor is enforced at construction."""
+        x10p = planar_x10_mm(self.L_mm)
+        x10pt = x10_distance_mm(self.L_mm)
+        rat, rabbit = PUBLISHED_CARMUSTINE_X10_MM["rat_fung1996"], PUBLISHED_CARMUSTINE_X10_MM["rabbit_strasser1995_bound"]
+        r_rat, r_rab = x10p / rat, x10p / rabbit
+        ok_rat = 1.0 / PROFILE_FACTOR <= r_rat <= PROFILE_FACTOR
+        ok_rab = r_rab <= PROFILE_FACTOR
+        return {"planar_x10_mm": x10p, "point_source_x10_mm": x10pt, "ratio_planar_to_rat": r_rat, "ratio_planar_to_rabbit_bound": r_rab,
+                "ratio_point_to_rat": x10pt / rat, "ratio_point_to_rabbit_bound": x10pt / rabbit,
+                "within_1.5x_rat": bool(ok_rat), "within_1.5x_rabbit": bool(ok_rab), "accepted": bool(ok_rat and ok_rab),
+                "note": "rat comparison is largely calibrated-in for the ref set (passes by construction); rabbit is the independent one"}
+
+    @property
+    def accepted(self) -> bool:
+        return bool(self.profile_check()["accepted"])
+
+    @property
+    def role(self) -> str:
+        """'primary' if the set passes the profile acceptance test, else 'secondary' (reported for sensitivity only)."""
+        return "primary" if self.accepted else "secondary"
 
     # --- derived quantities (properties; never hand-copied constants) -----------------------------------------------------
 
@@ -198,6 +259,13 @@ class PhysicalParams:
     def source(self, name: str) -> str:
         return dict(self.sources)[name]
 
+    def with_voxel(self, voxel_mm: float) -> "PhysicalParams":
+        """The same physics on another (scoring) grid. Only the voxel field and its source string change."""
+        src = dict(self.sources)
+        src["voxel_mm"] = VOXEL_SOURCE if abs(voxel_mm - VOXEL_MM) < 1e-12 else VOXEL_SOURCE_FINE
+        return PhysicalParams(self.d_star_cm2_s, self.k_clear_s, self.tick_seconds, self.ticks, float(voxel_mm), self.budget_mg, self.molar_mass_g_mol,
+                              _src_map(src), self.k_label)
+
     def with_tick(self, tick_seconds: float, ticks: Optional[int] = None) -> "PhysicalParams":
         return PhysicalParams(self.d_star_cm2_s, self.k_clear_s, float(tick_seconds), self.ticks if ticks is None else int(ticks),
                               self.voxel_mm, self.budget_mg, self.molar_mass_g_mol, self.sources, self.k_label)
@@ -210,6 +278,8 @@ class PhysicalParams:
         d["derived"] = {"d_star_mm2_s": self.d_star_mm2_s, "L_mm": self.L_mm, "diffuse_sigma_mm": self.diffuse_sigma_mm,
                         "diffuse_sigma_vox": self.diffuse_sigma_vox, "decay": self.decay, "episode_hours": self.episode_hours,
                         "exposure_to_umol_h_L": self.exposure_to_umol_h_L}
+        d["acceptance"] = self.profile_check()
+        d["role"] = self.role
         return d
 
     def sha(self) -> str:
@@ -228,7 +298,7 @@ def tick_tradeoff(base: PhysicalParams, ticks_s: Sequence[float] = (600.0, 1800.
     rows = []
     for ts in ticks_s:
         row: Dict[str, float] = {"tick_seconds": float(ts)}
-        for lab, k in (("low", K_CLEAR_LOW_S), ("high", K_CLEAR_HIGH_S)):
+        for lab, k in (("low", K_CLEAR_LOW_S), ("high", K_CLEAR_HIGH_S), ("ref", K_CLEAR_REF_S)):
             row[f"loss_per_tick_{lab}"] = -math.expm1(-k * ts)
         row["spread_mm"] = math.sqrt(2.0 * base.d_star_mm2_s * ts)
         row["spread_vox"] = row["spread_mm"] / base.voxel_mm
@@ -345,7 +415,7 @@ CUBE_CENTRE_INV_R = 3.0 * math.log((math.sqrt(3.0) + 1.0) / (math.sqrt(3.0) - 1.
 # --- voxel-averaged exposure --------------------------------------------------------------------------------------------
 
 SOURCE_VOXEL_N_SUB = 24     # even, so no node sits on the singularity; the release voxel is the only one with a conical remainder
-NEAR_VOX = 3                # within this Chebyshev distance (voxels) the 1/r singularity is removed in closed form; beyond it the kernel is sampled directly
+NEAR_MM = 6.0               # within this Chebyshev distance (mm; 3 voxels at 2 mm, 6 at 1 mm) the 1/r singularity is removed in closed form; beyond it the kernel is sampled directly
 
 
 def _gl_nodes(n: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -356,15 +426,16 @@ def _gl_nodes(n: int) -> Tuple[np.ndarray, np.ndarray]:
 def voxel_average_kernel(offsets_vox: np.ndarray, voxel_mm: float, D_mm2_s: float, k_s: float, T_s: float = math.inf,
                          n_sub: int = 3) -> np.ndarray:
     """Voxel-averaged exposure per unit mass (mg*s/mm^3 per mg) for a release at a voxel centre, at voxels offset by ``offsets_vox``
-    (integer array (N,3)). Within ``NEAR_VOX`` voxels the 1/r singularity is removed exactly: K = 1/(4 pi D r) + R(r), the box average of 1/r is closed form
+    (integer array (N,3)). Within ``NEAR_MM`` millimetres the 1/r singularity is removed exactly: K = 1/(4 pi D r) + R(r), the box average of 1/r is closed form
     and the bounded remainder R is averaged by an ``n_sub``^3 Gauss-Legendre sub-sampling of each voxel (the release voxel alone uses
     an even, finer count, :data:`SOURCE_VOXEL_N_SUB`, so no node sits on the singularity and its conical remainder converges)."""
     off = np.atleast_2d(np.asarray(offsets_vox, dtype=np.float64))
     s = float(voxel_mm)
     cheb = np.abs(off).max(axis=1)
-    is_src = cheb == 0
-    near = (cheb <= NEAR_VOX) & ~is_src            # voxels close enough that the 1/r variation across the voxel matters
-    far = cheb > NEAR_VOX                          # smooth: a plain sub-sampled average, no cancellation (see below)
+    near_vox = int(NEAR_MM // s + 1e-9)
+    is_src = cheb < 1.0                           # the release voxel (centre placement) or the 8 voxels sharing the release corner (corner placement)
+    near = (cheb <= near_vox) & ~is_src            # voxels close enough that the 1/r variation across the voxel matters
+    far = cheb > near_vox                          # smooth: a plain sub-sampled average, no cancellation (see below)
     n_src = max(SOURCE_VOXEL_N_SUB, int(n_sub) + (int(n_sub) % 2))      # one voxel, so refine it: its remainder is conical at r = 0
     out = np.zeros(off.shape[0], dtype=np.float64)
     if (is_src | near).any():
@@ -434,7 +505,8 @@ class ExposureTables:
     params: PhysicalParams
     radius_vox: int
     n_sub: int
-    cum: np.ndarray            # (n_tab + 1, 2W+1, 2W+1, 2W+1) float32
+    cum: np.ndarray            # (n_tab + 1, S, S, S) float32; S = 2W+1 (source at a voxel centre) or 2W (source at a voxel corner)
+    corner: bool = False       # True: the release sits at the corner shared by eight voxels (cube index c has offset c - W + 0.5)
 
     @property
     def n_tab(self) -> int:
@@ -450,35 +522,46 @@ class ExposureTables:
         return self.cum[age_ticks] - self.cum[age_ticks - 1]
 
 
-def _unique_offsets(w: int) -> Tuple[np.ndarray, np.ndarray]:
-    """Unique sorted |offset| triples (a >= b >= c >= 0) with a <= w, and for every cube cell the index of its triple."""
-    ax = np.abs(np.arange(-w, w + 1))
-    A, B, C = np.meshgrid(ax, ax, ax, indexing="ij")
-    srt = np.sort(np.stack([A, B, C], axis=-1), axis=-1)[..., ::-1]                    # descending
-    key = (srt[..., 0] * (w + 1) + srt[..., 1]) * (w + 1) + srt[..., 2]
+def _unique_offsets(w: int, corner: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+    """Unique sorted |offset| triples (a >= b >= c, in voxels) and, for every cube cell, the index of its triple. Centre placement: integer offsets 0..w in a
+    (2w+1)^3 cube. Corner placement: half-integer offsets 0.5..w-0.5 in a (2w)^3 cube."""
+    if corner:
+        ax = np.abs(np.arange(2 * w) - w + 0.5)
+        key_scale = 2
+        ax_i = np.rint(ax * 2).astype(int)                      # 1, 3, 5 ... (twice the half-integer offset)
+    else:
+        ax = np.abs(np.arange(-w, w + 1))
+        key_scale = 1
+        ax_i = ax.astype(int)
+    A, B, C = np.meshgrid(ax_i, ax_i, ax_i, indexing="ij")
+    srt = np.sort(np.stack([A, B, C], axis=-1), axis=-1)[..., ::-1]
+    m = int(ax_i.max()) + 1
+    key = (srt[..., 0] * m + srt[..., 1]) * m + srt[..., 2]
     uniq, inv = np.unique(key.ravel(), return_inverse=True)
-    c = uniq % (w + 1)
-    b = (uniq // (w + 1)) % (w + 1)
-    a = uniq // ((w + 1) ** 2)
-    return np.stack([a, b, c], axis=1), inv.reshape(A.shape)
+    c = uniq % m
+    b = (uniq // m) % m
+    a = uniq // (m * m)
+    trip = np.stack([a, b, c], axis=1).astype(np.float64)
+    return (trip / key_scale if corner else trip), inv.reshape(A.shape)
 
 
-def build_tables(p: PhysicalParams, n_sub: int = 5, radius_vox: Optional[int] = None, tol_umol_h_L: float = 0.1) -> ExposureTables:
-    """Voxel-averaged cumulative exposure tables for one parameter set. Cached in-process by (params, n_sub, radius)."""
+def build_tables(p: PhysicalParams, n_sub: int = 5, radius_vox: Optional[int] = None, tol_umol_h_L: float = 0.1, corner: bool = False) -> ExposureTables:
+    """Voxel-averaged cumulative exposure tables for one parameter set. Cached in-process by (params, n_sub, radius, corner). ``corner`` places the release at the corner shared
+    by eight voxels (what a release at a 2 mm voxel centre is on a 1 mm or 0.5 mm scoring lattice) instead of at a voxel centre."""
     w = int(radius_vox) if radius_vox is not None else kernel_radius_vox(p, tol_umol_h_L)
-    key = (p.sha(), int(n_sub), w)
+    key = (p.sha(), int(n_sub), w, bool(corner))
     hit = _TABLE_CACHE.get(key)
     if hit is not None:
         return hit
     n_tab = saturation_ticks(p)
-    uo, inv = _unique_offsets(w)
-    cube = 2 * w + 1
+    uo, inv = _unique_offsets(w, corner)
+    cube = 2 * w if corner else 2 * w + 1
     cum = np.zeros((n_tab + 1, cube, cube, cube), dtype=np.float32)
     f = p.exposure_to_umol_h_L
     for n in range(1, n_tab + 1):
         vals = voxel_average_kernel(uo, p.voxel_mm, p.d_star_mm2_s, p.k_clear_s, n * p.tick_seconds, n_sub) * f
         cum[n] = vals[inv].astype(np.float32)
-    out = ExposureTables(p, w, int(n_sub), cum)
+    out = ExposureTables(p, w, int(n_sub), cum, bool(corner))
     _TABLE_CACHE[key] = out
     return out
 

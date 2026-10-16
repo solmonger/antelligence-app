@@ -159,3 +159,54 @@ def test_far_field_direct_sampling_agrees_with_the_near_field_method_at_the_swit
         for off in ((3, 3, 3), (4, 3, 3)):                          # NEAR_VOX = 3: (3,3,3) is subtracted, (4,3,3) is direct
             ref = P.reference_voxel_average(off, s, D, k, T, n_ref=30)
             assert float(P.voxel_average_kernel(np.array([off]), s, D, k, T, 5)[0]) == pytest.approx(ref, rel=1e-6)
+
+
+# --- A.2: the reference clearance, corner-placement tables and the scoring lattice ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("vox,corner", [(2.0, False), (1.0, True), (0.5, True)])
+def test_ref_tables_are_nonnegative_conserve_mass_and_are_symmetric(vox, corner):
+    p = P.PhysicalParams.carmustine_wafer("ref").with_voxel(vox)
+    tb = P.build_tables(p, n_sub=5, corner=corner)
+    last = tb.cum[-1].astype(np.float64)
+    assert float(tb.cum.min()) >= 0.0 and tb.corner == corner
+    assert last.shape[0] == (2 * tb.radius_vox if corner else 2 * tb.radius_vox + 1)
+    total = float(last.sum()) * p.voxel_volume_mm3 * p.k_clear_s / p.exposure_to_umol_h_L             # all the exposure / (M / k): 1 up to the window tail
+    assert total == pytest.approx(1.0, abs=2e-3)
+    assert np.allclose(last, last[::-1], rtol=1e-5) and np.allclose(last, np.transpose(last, (1, 0, 2)), rtol=1e-5)
+
+
+def test_release_voxel_shares_for_the_reference_clearance_match_the_a2_goal():
+    D = P.D_STAR_CM2_S * P.MM2_PER_CM2
+    s2 = P.release_voxel_share(2.0, D, P.K_CLEAR_REF_S, 10, 5)
+    s1 = P.release_voxel_share(1.0, D, P.K_CLEAR_REF_S, 10, 5)
+    assert s2 == pytest.approx(0.69, abs=0.01) and s1 == pytest.approx(0.34, abs=0.01)         # the goal: about 69% at 2 mm, about 0.34 at 1 mm
+    assert P.release_voxel_share(0.5, D, P.K_CLEAR_REF_S, 10, 5) < 0.15
+
+
+def test_the_one_mm_corner_table_block_averages_to_the_two_mm_centre_table():
+    """The exposure averaged over a 2 mm voxel centred on the release is exactly the mean of the eight 1 mm voxels around that corner: the scorer is the same physics, finer."""
+    p2 = P.PhysicalParams.carmustine_wafer("ref")
+    p1 = p2.with_voxel(1.0)
+    t2, t1 = P.build_tables(p2, 5), P.build_tables(p1, 5, corner=True)
+    n = 3
+    c2 = t2.cumulative(n).astype(np.float64)                  # (2w2+1)^3, centred
+    c1 = t1.cumulative(n).astype(np.float64)                  # (2w1)^3, corner at the centre of the cube
+    w2, w1 = t2.radius_vox, t1.radius_vox
+    for off in [(0, 0, 0), (1, 0, 0), (1, 1, 0), (2, 1, 0)]:
+        sl = [slice(w1 + 2 * o - 1, w1 + 2 * o + 1) for o in off]       # the eight 1 mm voxels that make up the 2 mm voxel at this offset
+        block = c1[sl[0], sl[1], sl[2]].mean()
+        assert block == pytest.approx(float(c2[w2 + off[0], w2 + off[1], w2 + off[2]]), rel=5e-4)
+
+
+def test_ref_subsampling_converges_on_the_scoring_lattices():
+    p = P.PhysicalParams.carmustine_wafer("ref")
+    D, k = p.d_star_mm2_s, p.k_clear_s
+    for vox in (1.0, 0.5):
+        worst = 0.0
+        for off in [(0.5, 0.5, 1.5), (1.5, 0.5, 0.5), (1.5, 1.5, 0.5), (2.5, 1.5, 0.5), (4.5, 0.5, 0.5)]:
+            ref = P.reference_voxel_average(off, vox, D, k, math.inf, n_ref=24)
+            worst = max(worst, abs(float(P.voxel_average_kernel(np.array([off]), vox, D, k, math.inf, 5)[0]) - ref) / ref)
+        assert worst < 5e-4
+        own = [float(P.voxel_average_kernel(np.full((1, 3), 0.5), vox, D, k, math.inf, n)[0]) for n in (24, 96)]       # a voxel that touches the release corner
+        assert abs(own[0] - own[1]) / own[1] < 2e-4

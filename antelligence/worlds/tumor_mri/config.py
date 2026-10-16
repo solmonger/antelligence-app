@@ -14,7 +14,7 @@ DRUG_MODES = ("fixed", "per_perceived_volume")
 F2_MODELS = ("v42", "foraging")
 UPTAKE_LEVEL_NAMES = ("low", "mid", "high")     # the preset values live in ``foraging.UPTAKE_LEVELS`` (named assumptions, never tuned)
 PHYSICS_MODELS = ("legacy", "units")            # v4.31: "units" = the real-units world (physical.py); "legacy" is every earlier config, byte for byte
-K_SETS = ("low", "high")                        # the carried clearance pair (physical.K_CLEAR_LOW_S, K_CLEAR_HIGH_S)
+K_SETS = ("ref", "low", "high")                 # ref = PRIMARY (calibrated to the carmustine wafer profiles); low / high = the carried literature pair (secondary)
 # Keys a units config must not set: the loader refuses them (they are derived from the physical block, or do not exist in real units).
 UNITS_REFUSED_KEYS = ("drug_scale_k", "total_drug", "drug_mode", "release_sigma_mm", "diffuse_sigma_vox", "decay", "dose_threshold")
 
@@ -84,14 +84,15 @@ class FactsConfig:
 class PhysicsConfig:
     """v4.31 real-units block (read only when ``physics_model`` is ``units``). Nothing here is a tuned result.
 
-    * ``k_set``: which end of the carried clearance pair (low 1.2e-4 /s, high 6.0e-4 /s).
+    * ``k_set``: ref 2.0e-3 /s (PRIMARY: calibrated to carmustine's own wafer penetration profiles; not independently measured), or an end of the carried literature pair
+      (low 1.2e-4 /s, high 6.0e-4 /s; SECONDARY).
     * ``tick_seconds``: the declared tick (default 1800 s).
     * ``n_sub``: Gauss-Legendre sub-samples per axis for the voxel-averaged exposure kernel.
     * ``kernel_tol_umol_h_L``: the table radius is chosen so the whole budget released at one point adds less than this beyond it.
     * ``policy_threshold_umol_h_L``: the exposure level the SCRIPTS (S, S') plan against. Plumbing for the policies, not a result:
       every coverage figure is reported as a curve over thresholds, never at this one number alone.
     """
-    k_set: str = "low"
+    k_set: str = "ref"
     tick_seconds: float = 1800.0
     n_sub: int = 5
     kernel_tol_umol_h_L: float = 0.1

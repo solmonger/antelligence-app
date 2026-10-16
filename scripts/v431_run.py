@@ -20,7 +20,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 import yaml
@@ -29,10 +29,14 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 from antelligence.experiments import v431_phaseA as PA  # noqa: E402
+from antelligence.worlds.tumor_mri import geometry as GEO  # noqa: E402
+from antelligence.worlds.tumor_mri.fine_grid import load_fine_case  # noqa: E402
+from antelligence.worlds.tumor_mri.scoring import release_log, score_dose  # noqa: E402
 from antelligence.worlds.tumor_mri import ScriptS, TumorMRIWorld, WorldConfig, oracle_for, run_episode  # noqa: E402
 from antelligence.worlds.tumor_mri.store_adapter import load_case  # noqa: E402
 
 CASES_ROOT = Path("/Volumes/WD_BLACK/antelligence-v4.1/data_v4_1/cases")      # read-only
+FINE_ROOT = Path("/Volumes/WD_BLACK/antelligence-v4.31/data/cases_1mm_a2")    # built by scripts/v431_make_fine_crops.py (native 1 mm truth, brain, FLAIR, T1)
 ALLOWED_OUT = (Path("/Volumes/WD_BLACK/antelligence-v4.31/runs"), Path("/Volumes/WD_BLACK/antelligence-v4.31/data"),
                REPO / "docs" / "research" / "v4.31-20261016")      # NOT the worktrees folder: it holds config/v4_3 and the v4.1-v4.3 evidence
 
@@ -57,7 +61,34 @@ def build_config(physics: str, k: str, plan_thr: Optional[float]) -> WorldConfig
     return WorldConfig.from_dict(doc)
 
 
-def run_one(cfg: WorldConfig, arm: str, lc: Any, seed: int, thresholds: List[float]) -> Dict[str, Any]:
+def case_geometry(fine) -> Dict[str, Any]:
+    """Per-case geometry on the 1 mm lattice (computed once per case): distance to the pial surface and to the (proxy) ventricle surface."""
+    surf = GEO.surface_distance_mm(fine.brain, 1.0)
+    vent = GEO.ventricle_proxy(fine.flair, fine.t1, fine.brain, fine.truth[0], 1.0)
+    return {"surf": surf, "vent_mask": vent, "vent_mm": GEO.distance_to_mask_mm(vent, 1.0), "vent_mL": float(vent.sum()) / 1000.0}
+
+
+def score_fine(world, cfg, fine, geo, spacing: float, thresholds: List[float]) -> Dict[str, Any]:  # geometry only on the 1 mm lattice (the distance maps are 1 mm)
+    """Score the finished episode's releases on the fine lattice: coverage curves (with the +/-1-voxel band at THIS lattice) and the geometric off-target measures."""
+    rel = release_log(world.field)
+    params = cfg.physical_params()
+    dose = score_dose(rel, params, fine, spacing)
+    truth, brain, outside = fine.at_spacing(spacing)
+    ch = {"tc": truth[1], "et": truth[2]}
+    curves = PA.evaluate_dose(dose, truth[0], ch, outside, thresholds)
+    out: Dict[str, Any] = {"grid_mm": spacing, "curves": curves, "n_truth_voxels": int(truth[0].sum()), "outside_crop_truth_voxels": int(outside)}
+    if abs(spacing - 1.0) < 1e-9:
+        lat = fine.release_lattice([r[0] for r in rel], spacing)
+        masses = [r[1] for r in rel]
+        out["geometry"] = {"rule_breaking_mass_share": GEO.precise_rules(lat, masses, geo["surf"], geo["vent_mm"]),
+                           "exposure_share": GEO.exposure_shares(dose, brain, geo["surf"], geo["vent_mm"]), "ventricle_proxy_mL": geo["vent_mL"],
+                           "note": "pial from the brain mask; ependymal from an UNVALIDATED intensity proxy (no ventricle labels exist); measure only, no penalty"}
+        out["releases"] = [[list(r[0]), r[1], r[2]] for r in rel]
+    return out
+
+
+def run_one(cfg: WorldConfig, arm: str, lc: Any, seed: int, thresholds: List[float], fine: Any = None, geo: Optional[Dict[str, Any]] = None,
+            score_mm: Sequence[float] = (1.0,)) -> Dict[str, Any]:
     world = TumorMRIWorld(lc.crop, cfg, seed=seed, regions=lc.regions, scorer_channels=lc.scorer_channels)
     brain = lc.crop.brain
     if not cfg.units:   # the same stepper arithmetic, plus off-target accounting under the +/-1-voxel band
@@ -88,6 +119,8 @@ def run_one(cfg: WorldConfig, arm: str, lc: Any, seed: int, thresholds: List[flo
         rec["ledger"] = f.ledger()
         rec["release_voxel_share"] = f.release_voxel_share()
         rec["n_releases"] = len(f._rel)
+        if fine is not None and any(sp > 0 for sp in score_mm):
+            rec["scored"] = {f"{sp:g}mm": score_fine(world, cfg, fine, geo, sp, thresholds) for sp in score_mm if sp > 0}
     rec["_seconds"] = dt
     rec["_dose"] = dose
     return rec
@@ -96,7 +129,8 @@ def run_one(cfg: WorldConfig, arm: str, lc: Any, seed: int, thresholds: List[flo
 def main(argv: Optional[List[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--physics", choices=("legacy", "units"), required=True)
-    ap.add_argument("--k", choices=("low", "high"), default="low")
+    ap.add_argument("--k", choices=("ref", "low", "high"), default="ref")
+    ap.add_argument("--score-mm", default="1.0", help="scoring lattice(s), comma list (units only): 1.0 = native label grid (default), 0.5 = its 2x upsample; 0 = the world's 2 mm grid only")
     ap.add_argument("--arms", default="S,Sp")
     ap.add_argument("--plan-thrs", default="", help="units S': comma list of planning thresholds (umol*h/L)")
     ap.add_argument("--seeds", default="9,10")
@@ -130,6 +164,11 @@ def main(argv: Optional[List[str]] = None) -> int:
     with out_file.open("a") as fh, (a.out / f"timing_shard{si}of{sn}.jsonl").open("a") as tf:
         for c in cases:
             lc = load_case(c["case"], root=CASES_ROOT, repo_root=REPO)
+            fine = geo = None
+            score_mm = [float(x) for x in str(a.score_mm).split(",") if x]
+            if a.physics == "units" and any(sp > 0 for sp in score_mm):
+                fine = load_fine_case(c["case"], root=FINE_ROOT, repo_root=REPO)
+                geo = case_geometry(fine)
             for seed in seeds:
                 for arm in arms:
                     for pt in (plan if (arm == "Sp" and a.physics == "units") else [None]):
@@ -137,7 +176,7 @@ def main(argv: Optional[List[str]] = None) -> int:
                         if key in done:
                             continue
                         cfg = build_config(a.physics, a.k, pt)
-                        rec = run_one(cfg, arm, lc, seed, thresholds)
+                        rec = run_one(cfg, arm, lc, seed, thresholds, fine, geo, score_mm)
                         dose = rec.pop("_dose")
                         secs = rec.pop("_seconds")
                         rec.update({"label": a.out.name, "physics": a.physics, "k": a.k if a.physics == "units" else None, "arm": arm,
