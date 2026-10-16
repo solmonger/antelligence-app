@@ -58,6 +58,18 @@ def part_a() -> Dict[str, Any]:
     out["band"] = {"stated_mm": list(P.L_BAND_STATED_MM), "enforced_mm": list(P.L_BAND_MM), "reason": P.L_BAND_REASON}
     out["legacy_world_L_mm"] = math.sqrt(2.0 / -math.log1p(-0.02))       # sqrt(D dt / (k dt)) with the v4.3 constants: sigma 1 voxel, decay 0.02
     out["tick_tradeoff"] = P.tick_tradeoff(P.PhysicalParams.carmustine_wafer("low"))
+    # How long an episode must run for a release to deliver (nearly) all of its exposure. The goal says "essentially complete within about 10 ticks".
+    D = P.D_STAR_CM2_S * P.MM2_PER_CM2
+    sat: Dict[str, Any] = {}
+    for k in PAIR:
+        p = P.PhysicalParams.carmustine_wafer(k)
+        row: Dict[str, Any] = {"total_exposure_fraction_after_ticks": {str(n): -math.expm1(-p.k_clear_s * n * p.tick_seconds) for n in (5, 10, 20, 40, 120)}}
+        for frac in (0.9, 0.99, 0.999):
+            row[f"ticks_to_{frac}_of_total"] = int(math.ceil(-math.log(1.0 - frac) / (p.k_clear_s * p.tick_seconds)))
+        row["far_field_fraction_after_10_ticks"] = {f"{r:g}mm": float(P.point_exposure_T(r, D, p.k_clear_s, 10 * p.tick_seconds) / P.point_exposure_inf(r, D, p.k_clear_s))
+                                                    for r in (2.0, 4.0, 6.0, 10.0)}
+        sat[k] = row
+    out["saturation"] = sat
     return out
 
 

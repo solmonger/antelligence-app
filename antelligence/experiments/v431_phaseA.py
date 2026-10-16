@@ -29,7 +29,8 @@ from antelligence.worlds.tumor_mri.physics import DrugField
 # Threshold grid for the units world, umol*h/L: 10^-1 .. 10^7 (eight decades), four points per decade.
 THRESHOLDS_UMOL_H_L: Tuple[float, ...] = tuple(float(10.0 ** e) for e in np.arange(-1.0, 7.0001, 0.25))
 # Threshold grid for the legacy world, in its own arbitrary dose units (D_t = 5 sits inside it).
-THRESHOLDS_LEGACY: Tuple[float, ...] = tuple(float(10.0 ** e) for e in np.arange(-2.0, 4.0001, 0.25))
+LEGACY_D_T = 5.0   # the frozen v4.3 dose threshold, in the legacy world's arbitrary dose units; it is a grid point so the legacy curve is exact there
+THRESHOLDS_LEGACY: Tuple[float, ...] = tuple(sorted({float(10.0 ** e) for e in np.arange(-2.0, 4.0001, 0.25)} | {LEGACY_D_T}))
 # S' plans against one threshold per decade; S' planned for T and scored at T is the attainable ceiling at T.
 PLAN_THRESHOLDS_UMOL_H_L: Tuple[float, ...] = tuple(float(10.0 ** e) for e in range(0, 7))
 

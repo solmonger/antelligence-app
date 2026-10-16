@@ -64,6 +64,8 @@ def _boot_ci(per_case: np.ndarray, n: int = 10000, seed: int = 20261016) -> List
 def curve_block(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Mean / median / interval of every curve over the cases (seeds averaged within a case)."""
     out: Dict[str, Any] = {"n_runs": len(rows), "n_cases": len({r["case"] for r in rows})}
+    out["by_seed_nominal_plain_mean"] = {str(sd): np.mean([r["curves"]["nominal"]["plain"] for r in rows if r["seed"] == sd], axis=0).tolist()
+                                         for sd in sorted({r["seed"] for r in rows})}
     for b in BANDS:
         out[b] = {}
         for k in KINDS:
@@ -109,6 +111,23 @@ def bound_curve(rows: List[Dict[str, Any]], k_set: str, thresholds: List[float])
             "mean_exposure_per_truth_voxel_if_perfectly_spread": float(np.mean([e_total / n for n in per_case.values()]))}
 
 
+def conservation_check(rows: List[Dict[str, Any]], k_set: str, thresholds: List[float]) -> Dict[str, Any]:
+    """Validation of the whole field: the number of voxels at or above T can never exceed E_total / T, because the exposure summed over all space
+    is at most M / k. For every run and every threshold, covered_voxels * T / E_total must be <= 1. Reports the largest value (the nearer to 1, the
+    tighter the physics is packed) and the number of violations (must be 0)."""
+    p = P.PhysicalParams.carmustine_wafer(k_set)
+    e_total = p.budget_mg * p.exposure_to_umol_h_L / (p.k_clear_s * p.voxel_volume_mm3)
+    worst, viol, n = 0.0, 0, 0
+    for r in rows:
+        denom = r["n_truth_voxels"] + r["outside_crop_truth_voxels"]
+        cov = np.asarray(r["curves"]["nominal"]["plain"], dtype=np.float64)
+        used = cov * denom * np.asarray(thresholds) / e_total                     # fraction of the exposure budget the covered voxels would need at the very least
+        worst = max(worst, float(used.max()))
+        viol += int((used > 1.0 + 1e-6).sum())
+        n += len(used)
+    return {"max_fraction_of_exposure_budget_needed": worst, "violations": viol, "checks": n}
+
+
 def build(runs: Path, commit: Optional[str]) -> Dict[str, Any]:
     leg = load(runs, "legacy")
     doc: Dict[str, Any] = {"schema": "v431_phaseA_stepD", "code_commit": commit, "seeds": [9, 10],
@@ -132,6 +151,7 @@ def build(runs: Path, commit: Optional[str]) -> Dict[str, Any]:
         rs = [r for r in rows if r["arm"] == "S"]
         blk["S"] = {"curves": curve_block(rs), **scalar_block(rs, True)}
         blk["bound"] = bound_curve(rs, k, list(PA.THRESHOLDS_UMOL_H_L))
+        blk["conservation_check_all_runs"] = conservation_check(rows, k, list(PA.THRESHOLDS_UMOL_H_L))
         th = list(PA.THRESHOLDS_UMOL_H_L)
         blk["Sp_plan"] = {}
         for pt in PA.PLAN_THRESHOLDS_UMOL_H_L:
