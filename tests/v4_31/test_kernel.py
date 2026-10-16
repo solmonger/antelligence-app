@@ -134,3 +134,28 @@ def test_mass_fraction_cube_is_a_unit_gaussian_mass():
     assert f.sum() == pytest.approx(1.0, abs=1e-12)
     f0 = P.mass_fraction_cube(3, 2.0, D, 0.0)
     assert f0[3, 3, 3] == 1.0 and f0.sum() == 1.0
+
+
+@pytest.mark.parametrize("k", ["low", "high"])
+def test_tables_have_no_negative_roundoff(k):
+    """Regression: far from the source the kernel was computed as 1/(4 pi D r) minus 1/(4 pi D r), which cancelled to roundoff noise of
+    +/-6e-9 umol*h/L and left negative table cells. The planner's `score >= score.max() * (1 - 1e-9)` then selected nothing at the last decision
+    tick and crashed (found on a real development case during Step D). Exposure cannot be negative: the far field is now sampled directly."""
+    p = P.PhysicalParams.carmustine_wafer(k)
+    tb = P.build_tables(p, n_sub=5)
+    assert float(tb.cum.min()) >= 0.0
+    # and nothing was merely clipped: no cell is a noise-level value where the exact kernel is far larger or smaller
+    c = tb.radius_vox
+    n = 5
+    for off in ((4, 0, 0), (7, 3, 1), (tb.radius_vox, 0, 0)):
+        want = float(P.voxel_average_kernel(np.array([off]), 2.0, p.d_star_mm2_s, p.k_clear_s, n * p.tick_seconds, 7)[0]) * p.exposure_to_umol_h_L
+        got = float(tb.cum[n][c + off[0], c + off[1], c + off[2]])
+        assert got == pytest.approx(want, rel=1e-4, abs=1e-12)
+
+
+def test_far_field_direct_sampling_agrees_with_the_near_field_method_at_the_switch():
+    k, s = KS["high"], 2.0
+    for T in (math.inf, 9000.0):
+        for off in ((3, 3, 3), (4, 3, 3)):                          # NEAR_VOX = 3: (3,3,3) is subtracted, (4,3,3) is direct
+            ref = P.reference_voxel_average(off, s, D, k, T, n_ref=30)
+            assert float(P.voxel_average_kernel(np.array([off]), s, D, k, T, 5)[0]) == pytest.approx(ref, rel=1e-6)

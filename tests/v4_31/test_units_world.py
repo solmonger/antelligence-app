@@ -210,3 +210,25 @@ def test_v431_legacy_world_is_the_v43_world_with_facts_off():
     assert facts43["f1_simlook"] and facts43["f2"] and facts43["f3"]  # v4.3 had them on; Phase A turns them off
     cfg = WorldConfig.from_yaml(REPO / "config/v4_31/world.yaml")
     assert not cfg.units and not cfg.facts.any_on
+
+
+@pytest.mark.parametrize("k", ["low", "high"])
+def test_oracle_planning_kernels_are_nonnegative_for_every_horizon(k):
+    """The oracle indexes the table by ticks left; every horizon's planning window must be >= 0 (see the negative-roundoff regression)."""
+    from antelligence.worlds.tumor_mri.units_oracle import UnitsOracle
+    crop = make_phantom(36)
+    w = TumorMRIWorld(crop, ucfg(k, 100.0), seed=1)
+    o = oracle_for(w)
+    assert isinstance(o, UnitsOracle)
+    for n in range(1, w.config.ticks + 1):
+        assert float(o._window_kernel(n).min()) >= 0.0
+    assert o._window_kernel(0) is None
+
+
+def test_oracle_survives_the_last_chance_decision_with_nothing_left_to_gain(crop):
+    """Planned for a threshold the budget has already met everywhere, the oracle must still decide at every tick through the last one."""
+    for k in ("low", "high"):
+        w = TumorMRIWorld(crop, ucfg(k, 1.0), seed=2)
+        pol = oracle_for(w)
+        m = run_episode(w, lambda a: pol)
+        assert m["ticks"] == 120 and 0.0 <= m["coverage"] <= 1.0

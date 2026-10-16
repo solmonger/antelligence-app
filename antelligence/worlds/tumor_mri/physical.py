@@ -345,6 +345,7 @@ CUBE_CENTRE_INV_R = 3.0 * math.log((math.sqrt(3.0) + 1.0) / (math.sqrt(3.0) - 1.
 # --- voxel-averaged exposure --------------------------------------------------------------------------------------------
 
 SOURCE_VOXEL_N_SUB = 24     # even, so no node sits on the singularity; the release voxel is the only one with a conical remainder
+NEAR_VOX = 3                # within this Chebyshev distance (voxels) the 1/r singularity is removed in closed form; beyond it the kernel is sampled directly
 
 
 def _gl_nodes(n: int) -> Tuple[np.ndarray, np.ndarray]:
@@ -355,17 +356,22 @@ def _gl_nodes(n: int) -> Tuple[np.ndarray, np.ndarray]:
 def voxel_average_kernel(offsets_vox: np.ndarray, voxel_mm: float, D_mm2_s: float, k_s: float, T_s: float = math.inf,
                          n_sub: int = 3) -> np.ndarray:
     """Voxel-averaged exposure per unit mass (mg*s/mm^3 per mg) for a release at a voxel centre, at voxels offset by ``offsets_vox``
-    (integer array (N,3)). The 1/r singularity is removed exactly: K = 1/(4 pi D r) + R(r), the box average of 1/r is closed form
+    (integer array (N,3)). Within ``NEAR_VOX`` voxels the 1/r singularity is removed exactly: K = 1/(4 pi D r) + R(r), the box average of 1/r is closed form
     and the bounded remainder R is averaged by an ``n_sub``^3 Gauss-Legendre sub-sampling of each voxel (the release voxel alone uses
     an even, finer count, :data:`SOURCE_VOXEL_N_SUB`, so no node sits on the singularity and its conical remainder converges)."""
     off = np.atleast_2d(np.asarray(offsets_vox, dtype=np.float64))
     s = float(voxel_mm)
-    lo, hi = (off - 0.5) * s, (off + 0.5) * s
-    inv_r = box_inv_r_integral(lo, hi) / s ** 3 / (4.0 * math.pi * D_mm2_s)
-    out = inv_r.copy()
-    is_src = ~(np.abs(off).sum(axis=1) > 0)
+    cheb = np.abs(off).max(axis=1)
+    is_src = cheb == 0
+    near = (cheb <= NEAR_VOX) & ~is_src            # voxels close enough that the 1/r variation across the voxel matters
+    far = cheb > NEAR_VOX                          # smooth: a plain sub-sampled average, no cancellation (see below)
     n_src = max(SOURCE_VOXEL_N_SUB, int(n_sub) + (int(n_sub) % 2))      # one voxel, so refine it: its remainder is conical at r = 0
-    for sel, n in ((~is_src, int(n_sub)), (is_src, n_src)):
+    out = np.zeros(off.shape[0], dtype=np.float64)
+    if (is_src | near).any():
+        sel_any = is_src | near
+        lo, hi = (off[sel_any] - 0.5) * s, (off[sel_any] + 0.5) * s
+        out[sel_any] = box_inv_r_integral(lo, hi) / s ** 3 / (4.0 * math.pi * D_mm2_s)
+    for sel, n, subtract in ((near, int(n_sub), True), (is_src, n_src, True), (far, int(n_sub), False)):
         if not sel.any():
             continue
         x, w = _gl_nodes(n)
@@ -374,8 +380,11 @@ def voxel_average_kernel(offsets_vox: np.ndarray, voxel_mm: float, D_mm2_s: floa
         pts = off[sel][:, None, :] * s + g[None, :, :]                                                   # (m, n^3, 3)
         r = np.sqrt((pts ** 2).sum(axis=-1))
         K = point_exposure_T(r, D_mm2_s, k_s, T_s)
-        out[sel] += ((K - 1.0 / (4.0 * math.pi * D_mm2_s * r)) * wt[None, :]).sum(axis=1)
-    return out
+        if subtract:
+            out[sel] += ((K - 1.0 / (4.0 * math.pi * D_mm2_s * r)) * wt[None, :]).sum(axis=1)
+        else:                                      # far field: K itself, never 1/r minus 1/r (that cancels to roundoff noise where K ~ 0)
+            out[sel] = (K * wt[None, :]).sum(axis=1)
+    return np.maximum(out, 0.0)                    # exposure cannot be negative; this only ever clips roundoff
 
 
 def reference_voxel_average(offset_vox: Sequence[int], voxel_mm: float, D_mm2_s: float, k_s: float, T_s: float = math.inf,
