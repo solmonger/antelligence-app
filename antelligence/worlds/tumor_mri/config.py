@@ -13,6 +13,10 @@ AMOUNT_FRACTIONS = (0.10, 0.25, 0.50, 0.75, 1.00)  # levels 1..5, share of the s
 DRUG_MODES = ("fixed", "per_perceived_volume")
 F2_MODELS = ("v42", "foraging")
 UPTAKE_LEVEL_NAMES = ("low", "mid", "high")     # the preset values live in ``foraging.UPTAKE_LEVELS`` (named assumptions, never tuned)
+PHYSICS_MODELS = ("legacy", "units")            # v4.31: "units" = the real-units world (physical.py); "legacy" is every earlier config, byte for byte
+K_SETS = ("low", "high")                        # the carried clearance pair (physical.K_CLEAR_LOW_S, K_CLEAR_HIGH_S)
+# Keys a units config must not set: the loader refuses them (they are derived from the physical block, or do not exist in real units).
+UNITS_REFUSED_KEYS = ("drug_scale_k", "total_drug", "drug_mode", "release_sigma_mm", "diffuse_sigma_vox", "decay", "dose_threshold")
 
 
 def perceived_volume_vox(p_tumour: Any) -> float:
@@ -77,6 +81,32 @@ class FactsConfig:
 
 
 @dataclass(frozen=True)
+class PhysicsConfig:
+    """v4.31 real-units block (read only when ``physics_model`` is ``units``). Nothing here is a tuned result.
+
+    * ``k_set``: which end of the carried clearance pair (low 1.2e-4 /s, high 6.0e-4 /s).
+    * ``tick_seconds``: the declared tick (default 1800 s).
+    * ``n_sub``: Gauss-Legendre sub-samples per axis for the voxel-averaged exposure kernel.
+    * ``kernel_tol_umol_h_L``: the table radius is chosen so the whole budget released at one point adds less than this beyond it.
+    * ``policy_threshold_umol_h_L``: the exposure level the SCRIPTS (S, S') plan against. Plumbing for the policies, not a result:
+      every coverage figure is reported as a curve over thresholds, never at this one number alone.
+    """
+    k_set: str = "low"
+    tick_seconds: float = 1800.0
+    n_sub: int = 5
+    kernel_tol_umol_h_L: float = 0.1
+    policy_threshold_umol_h_L: float = 0.0
+
+    def __post_init__(self) -> None:
+        if self.k_set not in K_SETS:
+            raise ValueError(f"physics.k_set must be one of {K_SETS}, got {self.k_set!r}")
+        if not self.tick_seconds > 0 or self.n_sub < 2 or not self.kernel_tol_umol_h_L > 0:
+            raise ValueError("physics: tick_seconds > 0, n_sub >= 2, kernel_tol_umol_h_L > 0")
+        if self.policy_threshold_umol_h_L < 0:
+            raise ValueError("physics.policy_threshold_umol_h_L must be >= 0")
+
+
+@dataclass(frozen=True)
 class WorldConfig:
     n_squads: int = 8
     ticks: int = 120
@@ -97,8 +127,15 @@ class WorldConfig:
     path_max_expand: int = 40000
     amount_fractions: Tuple[float, ...] = AMOUNT_FRACTIONS
     facts: FactsConfig = FactsConfig()
+    # v4.31 (additive): both are left out of ``to_dict`` for a legacy config, so every v4.1-v4.3 dict, hash and record is unchanged.
+    physics_model: str = "legacy"
+    physics: PhysicsConfig = PhysicsConfig()
 
     def __post_init__(self) -> None:
+        if self.physics_model not in PHYSICS_MODELS:
+            raise ValueError(f"physics_model must be one of {PHYSICS_MODELS}, got {self.physics_model!r}")
+        if self.physics_model == "units":
+            self._init_units()
         if self.n_squads < 1 or self.ticks < 1 or self.decision_every < 1 or self.queen_every < 1:
             raise ValueError("counts must be positive")
         if self.total_drug <= 0 or self.dose_threshold <= 0:
@@ -117,6 +154,33 @@ class WorldConfig:
     def rounds(self) -> int:
         return self.ticks // self.decision_every
 
+    # --- v4.31 real units ------------------------------------------------------------------------------------------------
+
+    @property
+    def units(self) -> bool:
+        return self.physics_model == "units"
+
+    def physical_params(self):
+        """The :class:`PhysicalParams` of a units config (derived; nothing is hand-copied). Raises for a legacy config."""
+        if not self.units:
+            raise ValueError("physical_params() needs physics_model: units")
+        from antelligence.worlds.tumor_mri.physical import PhysicalParams
+        return PhysicalParams.carmustine_wafer(self.physics.k_set, tick_seconds=self.physics.tick_seconds, ticks=self.ticks)
+
+    def _init_units(self) -> None:
+        """Real-units world: facts off, a positive policy threshold, and the legacy physics fields replaced by values DERIVED from
+        the physical block (the budget is the fixed 61.6 mg cap, never scaled by perceived volume). They exist only so shared code
+        that reads ``cfg.decay`` etc. keeps working; ``to_dict`` leaves them out."""
+        if self.facts.any_on:
+            raise ValueError("physics_model: units needs F1/F2/F3 off (Phase A changes physics, not hidden facts)")
+        if self.physics.policy_threshold_umol_h_L <= 0:
+            raise ValueError("physics.policy_threshold_umol_h_L must be > 0 in a units config (what the scripts plan against; results are curves)")
+        p = self.physical_params()
+        for name, val in (("drug_mode", "fixed"), ("total_drug", p.budget_mg), ("drug_scale_k", 0.0), ("release_sigma_mm", 0.0),
+                          ("diffuse_sigma_vox", p.diffuse_sigma_vox), ("decay", p.decay),
+                          ("dose_threshold", float(self.physics.policy_threshold_umol_h_L))):
+            object.__setattr__(self, name, val)
+
     def resolve_total_drug(self, p_tumour: Any) -> float:
         """The case's total drug. ``fixed``: ``total_drug``. ``per_perceived_volume``: ``drug_scale_k`` x V_perceived, with
         V_perceived the sum of calibrated ``p_tumour`` over the crop (voxels). Perception only: truth is never an input."""
@@ -131,6 +195,12 @@ class WorldConfig:
             d["facts"] = self.facts.to_dict()
         else:
             d.pop("facts", None)
+        if self.units:  # v4.31: the legacy physics keys are derived, not configuration
+            for k in UNITS_REFUSED_KEYS:
+                d.pop(k, None)
+            return d
+        d.pop("physics_model", None)  # a legacy config's dict (and hash) is exactly what v4.1-v4.3 recorded
+        d.pop("physics", None)
         if self.drug_mode == "per_perceived_volume":
             del d["total_drug"]  # the budget is per case (k x V_perceived); a fixed total would mislead
         return d
@@ -143,11 +213,21 @@ class WorldConfig:
             raise ValueError(f"unknown world config keys: {sorted(extra)}")
         if d.get("drug_mode") == "per_perceived_volume" and "total_drug" in d:
             raise ValueError("total_drug must not be set when drug_mode is per_perceived_volume (the budget is k x V_perceived)")
+        model = d.get("physics_model", "legacy")
+        if model == "units":
+            bad = sorted(set(d) & set(UNITS_REFUSED_KEYS))
+            if bad:
+                raise ValueError(f"physics_model: units refuses {bad}: the budget is the fixed 61.6 mg cap (never scaled by perceived volume, "
+                                 "never tuned, so drug_scale_k does not exist here) and spread, loss and release width are derived from the physical block")
+        elif "physics" in d:
+            raise ValueError("a physics block needs physics_model: units")
         def conv(k: str, v: Any) -> Any:
             if k == "amount_fractions":
                 return tuple(v)
             if k == "facts":
                 return v if isinstance(v, FactsConfig) else FactsConfig(**(v or {}))
+            if k == "physics":
+                return v if isinstance(v, PhysicsConfig) else PhysicsConfig(**(v or {}))
             return v
 
         return cls(**{k: conv(k, v) for k, v in d.items()})

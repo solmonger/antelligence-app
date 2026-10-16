@@ -120,8 +120,17 @@ class TumorMRIWorld:
         self.queen_hook = queen_hook
         cfg = self.config
         uptake, washout = self._hidden_fields(crop)
-        self.field = DrugField(self.shape, release_sigma_vox=cfg.release_sigma_mm / crop.voxel_mm,
-                               diffuse_sigma_vox=cfg.diffuse_sigma_vox, decay=cfg.decay, uptake=uptake, washout=washout)
+        if cfg.units:   # v4.31 real units: the analytic exposure field (physical.py); the voxel must be the one the physics is declared on
+            from antelligence.worlds.tumor_mri.physical import build_tables
+            from antelligence.worlds.tumor_mri.units_field import UnitsField
+            params = cfg.physical_params()
+            if abs(crop.voxel_mm - params.voxel_mm) > 1e-9:
+                raise ValueError(f"crop voxel {crop.voxel_mm} mm != physical voxel {params.voxel_mm} mm")
+            self.field = UnitsField(self.shape, params, build_tables(params, n_sub=cfg.physics.n_sub,
+                                                                   tol_umol_h_L=cfg.physics.kernel_tol_umol_h_L))
+        else:
+            self.field = DrugField(self.shape, release_sigma_vox=cfg.release_sigma_mm / crop.voxel_mm,
+                                   diffuse_sigma_vox=cfg.diffuse_sigma_vox, decay=cfg.decay, uptake=uptake, washout=washout)
         self._paths = Pathfinder(crop.brain, weight=cfg.path_weight, max_expand=cfg.path_max_expand)
         self.entry_sites, self.entry_shell_widened_mm = entry_sites_with_info(
             crop.brain, crop.p_tumour, self.seed, n=cfg.n_squads, voxel_mm=crop.voxel_mm,

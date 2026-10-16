@@ -41,7 +41,9 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_classes = "Test*"
 python_functions = "test_*"
-addopts = "-v --tb=short"
+# v4.31: four inherited files run whole episodes on development case BRATS_016 (real data). Tests use the synthetic phantom only, so
+# they stay deselected (decision: vault antelligence/v4.31/decisions/2026-10-16-deselect-four-brats016-test-files.md).
+addopts = "-v --tb=short --deselect=tests/v4_2/h1/test_drivers.py --deselect=tests/v4_2/t2/test_tune_stage2.py --deselect=tests/v4_2/p1/test_prep_projection.py --deselect=tests/v4_3/a2/test_legacy_golden.py"
 
 [build-system]
 requires = ["setuptools>=68"]

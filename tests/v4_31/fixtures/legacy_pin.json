@@ -1,0 +1,58 @@
+{
+ "_about": "Legacy pin (v4.31 Step E). cfg_dict_sha = sha256 of WorldConfig.to_dict() for each frozen world config; S/Sp = sha256 of the metrics dict and of the dose bytes of a 60-tick episode on the synthetic 36^3 phantom with synthetic TC/ET, seed 3. Generated on the UNTOUCHED base a81bffe (hermes/v4.3-integration-20261015) before any v4.31 code existed.",
+ "base_commit": "a81bffe",
+ "pins": {
+  "config/v4_1/world.yaml": {
+   "S": {
+    "cov": 0.2239010989010989,
+    "dose_sha": "d8ba2e8146b9a4e293f9826bfa5e2a27a965dbe595386750edbe5df2ea813bc4",
+    "metrics_sha": "c32b0a8c9c84d89463bd4381a3cd4dd8406ea469ef82f4dbd1bddbeeaf11753e"
+   },
+   "Sp": {
+    "cov": 0.5728021978021978,
+    "dose_sha": "79b2182cf787d9c524efa5415201f15a01bb5348aae9f944fba090051942cb8d",
+    "metrics_sha": "0cc05e3e9504786d3eff239e15a9cf442d36222549e2d559722cc4e36e12aa22"
+   },
+   "cfg_dict_sha": "12b3d0f289a5c99c3e89ae51926c3dfe5e909b617a6e6e454b11857564c0adbc"
+  },
+  "config/v4_2/world.yaml": {
+   "S": {
+    "cov": 0.3475274725274725,
+    "dose_sha": "268603f529b0f88b74979ecc33f42472da5e84720dde79adf8df7b08427b05da",
+    "metrics_sha": "04ab09a24c7cfd04274517fbf18da6f9d22001b625bd88e5fb42fe86ea23c0f8"
+   },
+   "Sp": {
+    "cov": 0.5906593406593407,
+    "dose_sha": "ffb187d076223eb13ef894952ac3bcba77db587df5c68f46b77bf225c7e328dd",
+    "metrics_sha": "f0d1b09b47e524d91740b2e3babed347180b46df66f7fba5a8bf717b1b7545fb"
+   },
+   "cfg_dict_sha": "d8bf8b6f87443087fd1f7faee46c4e541710047a8fcd7b9097f969c28b01c272"
+  },
+  "config/v4_3/world.yaml": {
+   "S": {
+    "cov": 0.33653846153846156,
+    "dose_sha": "97f937f0326c5b70b9bbb1569e85f83b809f32590f79ff35b82d3712b3f7974e",
+    "metrics_sha": "8e49d3dde2f8c8f05d52450204b7c76b8f0c0292a8f1c948dcaf8eaa35dff009"
+   },
+   "Sp": {
+    "cov": 0.4876373626373626,
+    "dose_sha": "50b2f682415d439ca414355f3da8f412f4d474cca8b80e9233910f0964331ea0",
+    "metrics_sha": "04e6f82a21db25bfbb22108a82500c62f87a9e9047d8e334ce73a728b8f0fddb"
+   },
+   "cfg_dict_sha": "94879e0f58f748c340d331cfda870cca4274804f2d64b6fe7de23194a00f72f1"
+  },
+  "config/v4_3/world_gateA.yaml": {
+   "S": {
+    "cov": 0.4697802197802198,
+    "dose_sha": "b7f3c2207c2c0b96ee061c86c446a32cff022b1c7ecc1d4682a6ba40958e58d2",
+    "metrics_sha": "484e69367c5c9048640d0f54970e1b62d2377bb64c7df6fcafabe3501f714a5b"
+   },
+   "Sp": {
+    "cov": 0.7664835164835165,
+    "dose_sha": "f6f7623651554a13404fbb4dda236d35da18c1c7b62ed142848c66bdbe17b896",
+    "metrics_sha": "c64e90b26434fb1b347c6be0461cf28f62835c03ccc1e7ce4fe1a09828851945"
+   },
+   "cfg_dict_sha": "5d0a12d87a2772595e5448583a8315a5159b68f03fddf0cfca597ab069648c25"
+  }
+ }
+}

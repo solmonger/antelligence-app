@@ -169,10 +169,7 @@ class OracleSPrime:
         self._scorer, self._positions, self._dose, self.cfg = scorer, positions, dose_field, config
         self._payloads, self._paths = payloads, pathfinder
         self.voxel_mm, self.n_points, self.map_radius_mm = voxel_mm, n_points, map_radius_mm
-        self._kern = _response_kernels(config, voxel_mm)  # free-space; sizes the target set
-        self._puff = PuffResponse(release_sigma_vox=config.release_sigma_mm / voxel_mm,
-                                  diffuse_sigma_vox=config.diffuse_sigma_vox, decay=config.decay, ticks=config.ticks,
-                                  win_r=_WIN_R, kern_r=_KERN_R)
+        self._init_kernels(config, voxel_mm)
         self._shape = tuple(scorer.truth.shape)
         self._brain = pathfinder.brain if pathfinder is not None else np.ones(scorer.truth.shape, dtype=bool)
         idx = np.argwhere(scorer.truth)
@@ -183,6 +180,13 @@ class OracleSPrime:
         self._actions: Dict[int, _Action] = {}
         self._last_goal: Dict[int, Vox] = {}
         self._claimed: list = []
+
+    def _init_kernels(self, config: WorldConfig, voxel_mm: float) -> None:
+        """Legacy response kernels (the world's stepper physics). v4.31's :class:`UnitsOracle` overrides this."""
+        self._kern = _response_kernels(config, voxel_mm)  # free-space; sizes the target set
+        self._puff = PuffResponse(release_sigma_vox=config.release_sigma_mm / voxel_mm,
+                                  diffuse_sigma_vox=config.diffuse_sigma_vox, decay=config.decay, ticks=config.ticks,
+                                  win_r=_WIN_R, kern_r=_KERN_R)
 
     # --- projected dose ---------------------------------------------------------------------------------------
 
@@ -497,6 +501,10 @@ class OracleSPrime:
 
 def oracle_for(world) -> OracleSPrime:
     """Wire S' to a world (scorer accessor + live dose + squad positions)."""
+    if world.config.units:      # v4.31: the same planner on the analytic exposure kernel (units_oracle.py)
+        from antelligence.worlds.tumor_mri.units_oracle import UnitsOracle
+        return UnitsOracle(world.scorer_truth(), world.squad_positions, world.field, world.config, voxel_mm=world.voxel_mm,
+                           payloads=world.squad_payloads, pathfinder=world.pathfinder)
     cfg = world.config.with_(drug_mode="fixed", total_drug=world.total_drug)  # the resolved per-case budget
     return OracleSPrime(world.scorer_truth(), world.squad_positions, world.field, cfg, voxel_mm=world.voxel_mm,
                         payloads=world.squad_payloads, pathfinder=world.pathfinder)

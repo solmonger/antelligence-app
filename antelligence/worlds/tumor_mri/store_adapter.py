@@ -14,6 +14,8 @@ receipt, G1 file). Reserve and unknown cases never load. There is no bypass argu
 from __future__ import annotations
 
 import json
+import os
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Union
@@ -33,6 +35,25 @@ OUTSIDE_KEY = "truth_wt_outside_crop_voxels"
 
 class AdapterError(RuntimeError):
     """The stored case is incomplete or inconsistent."""
+
+
+class DevCaseInTestError(GateError):
+    """v4.31 freeze guard: a development case was requested from inside a test, from a store that is not a temporary directory."""
+
+
+def under_pytest() -> bool:
+    """True while pytest is running a test (it sets ``PYTEST_CURRENT_TEST`` for the setup, call and teardown of each)."""
+    return "PYTEST_CURRENT_TEST" in os.environ
+
+
+def is_temp_store(root: Union[str, Path]) -> bool:
+    """True if ``root`` resolves (symlinks followed) inside the system temp directory, i.e. a pytest ``tmp_path``: a store a test wrote
+    itself, so synthetic by construction. The default store, WD_BLACK, ``data/`` and every other path are not."""
+    try:
+        Path(root).resolve().relative_to(Path(tempfile.gettempdir()).resolve())
+        return True
+    except ValueError:
+        return False
 
 
 @dataclass(frozen=True)
@@ -74,6 +95,10 @@ def load_case(case: str, *, root: Union[str, Path, None] = None, repo_root: Unio
         if kind != "dev":
             raise GateError(f"case {case!r} is in the {kind} set; the adapter loads it only through the v41_gate lock "
                             "(pass prereg_path, anchor_receipt and g1_file)")
+        if under_pytest() and not is_temp_store(root if root is not None else l1_store.DEFAULT_ROOT):
+            # v4.31: a test may load a dev-case id only from a synthetic store it wrote to a temp dir. No argument or env var lifts this.
+            raise DevCaseInTestError(f"development case {case!r} requested inside a test from {root or l1_store.DEFAULT_ROOT}: "
+                                     "tests use the synthetic phantom only (a temp-dir store is the one exception)")
         split = kind
     else:
         split = assert_eval_allowed(case, repo, prereg_path, anchor_receipt, g1_file)
