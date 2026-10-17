@@ -183,3 +183,55 @@ def test_ventricle_proxy_finds_a_dark_interior_blob_and_ignores_sulcal_edges_and
     v = GEO.ventricle_proxy(fl, t1, b, wt, 1.0)
     assert v[blob].mean() > 0.95 and not (v & edge).any() and not (v & wt).any()
     assert not GEO.ventricle_proxy(np.full(b.shape, 100.0), np.full(b.shape, 100.0), b, wt, 1.0).any()
+
+
+# --- distance from each tumour voxel to its nearest release -------------------------------------------------------------------------------------------------------
+
+
+def _tumour_ball(n=60, r=20.0):
+    g = np.indices((n, n, n)).astype(float) + 0.5
+    c = n / 2.0
+    return ((g[0] - c) ** 2 + (g[1] - c) ** 2 + (g[2] - c) ** 2) <= r * r
+
+
+def test_volume_fraction_within_a_radius_of_one_release_matches_the_ball_volume():
+    wt = _tumour_ball()
+    v = float(wt.sum())
+    rel = np.array([[30.0, 30.0, 30.0]])                                   # a lattice corner at the centre of the tumour
+    s = GEO.tumour_release_distance_stats(wt, rel, 1.0)
+    for r in (0.5, 1.0, 2.0):
+        want = (4.0 / 3.0 * math.pi * r ** 3) / v
+        assert s["fraction_within_mm"][f"{r:g}"] == pytest.approx(want, rel=1e-9), r
+    assert s["fraction_within_mm"]["0.2"] == pytest.approx((4.0 / 3.0 * math.pi * 0.2 ** 3) / v, rel=1e-9)     # exact: the whole ball is inside the tumour
+    assert s["n_release_points"] == 1 and sum(s["hist_fraction"]) == pytest.approx(1.0)
+    q = s["quantiles_mm"]
+    assert q["min"] == pytest.approx(math.sqrt(3) * 0.5, abs=1e-6) and 10.0 < q["median"] < 20.0 and q["p90"] > q["median"]
+
+
+def test_a_voxel_centre_is_never_within_half_a_millimetre_of_a_corner_release_but_the_volume_fraction_is_not_zero():
+    """Why the volume fractions use sub-voxel sampling: on a 1 mm lattice the nearest centre of a corner release is 0.87 mm away."""
+    wt = _tumour_ball()
+    s = GEO.tumour_release_distance_stats(wt, np.array([[30.0, 30.0, 30.0]]), 1.0)
+    assert s["quantiles_mm"]["min"] > 0.85 and s["fraction_within_mm"]["0.5"] > 0.0
+
+
+def test_overlapping_balls_are_not_double_counted_and_the_estimate_is_deterministic():
+    wt = _tumour_ball()
+    rel = np.array([[30.0, 30.0, 30.0], [30.6, 30.0, 30.0]])               # 0.6 mm apart: the 0.5 mm balls overlap
+    a = GEO.tumour_release_distance_stats(wt, rel, 1.0, seed=5)
+    b = GEO.tumour_release_distance_stats(wt, rel, 1.0, seed=5)
+    assert a == b
+    two_balls = 2 * 4.0 / 3.0 * math.pi * 0.5 ** 3 / float(wt.sum())
+    union = a["fraction_within_mm"]["0.5"]
+    assert union < 0.95 * two_balls and union > 0.5 * two_balls                # the union of two overlapping balls
+    exact_union = (2 * 4.0 / 3.0 * math.pi * 0.5 ** 3 - (math.pi * (0.5 + 0.5 - 0.6) ** 2 * (0.6 ** 2 + 2 * 0.6 * 1.0 - 3 * (0.5 - 0.5) ** 2) / (12 * 0.6))) / float(wt.sum())
+    assert union == pytest.approx(exact_union, rel=0.03)                       # lens-volume formula for the overlap
+
+
+def test_more_release_points_cover_more_volume_and_no_tumour_or_no_release_is_handled():
+    wt = _tumour_ball()
+    one = GEO.tumour_release_distance_stats(wt, np.array([[30.0, 30.0, 30.0]]), 1.0)
+    many = GEO.tumour_release_distance_stats(wt, np.array([[30.0, 30.0, 30.0], [25.0, 30.0, 30.0], [35.0, 30.0, 30.0], [30.0, 24.0, 30.0]]), 1.0)
+    assert many["fraction_within_mm"]["2"] > 3.0 * one["fraction_within_mm"]["2"] and many["quantiles_mm"]["median"] < one["quantiles_mm"]["median"]
+    assert GEO.tumour_release_distance_stats(np.zeros_like(wt), np.array([[1.0, 1.0, 1.0]]), 1.0)["fraction_within_mm"]["0.5"] == 0.0
+    assert GEO.tumour_release_distance_stats(wt, np.zeros((0, 3)), 1.0)["hist_fraction"] is None

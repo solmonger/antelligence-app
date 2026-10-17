@@ -1,0 +1,401 @@
+{
+ "A": {
+  "factor": 1.5,
+  "legacy_world_L_mm": 9.949705166738275,
+  "published_carmustine_x10_mm": {
+   "rabbit_strasser1995_bound": 1.2,
+   "rat_fung1996": 1.0
+  },
+  "sets": {
+   "high": {
+    "L_mm": 0.9219544457292888,
+    "decay_per_tick": 0.6604044743550608,
+    "diffuse_sigma_mm": 1.354990774876346,
+    "geometries": {
+     "planar (wafer experiments)": {
+      "vs_rabbit_under_1.2": 1.76906546929654,
+      "vs_rat_1.0": 2.1228785631558478,
+      "x10_mm": 2.1228785631558478
+     },
+     "point source": {
+      "vs_rabbit_under_1.2": 1.3072610136529677,
+      "vs_rat_1.0": 1.568713216383561,
+      "x10_mm": 1.568713216383561
+     }
+    },
+    "k_clear_s": 0.0006,
+    "profile_check": {
+     "accepted": false,
+     "note": "rat comparison is largely calibrated-in for the ref set (passes by construction); rabbit is the independent one",
+     "planar_x10_mm": 2.1228785631558478,
+     "point_source_x10_mm": 1.568713216383561,
+     "ratio_planar_to_rabbit_bound": 1.76906546929654,
+     "ratio_planar_to_rat": 2.1228785631558478,
+     "ratio_point_to_rabbit_bound": 1.3072610136529677,
+     "ratio_point_to_rat": 1.568713216383561,
+     "within_1.5x_rabbit": false,
+     "within_1.5x_rat": false
+    },
+    "role": "secondary",
+    "sanity_floor_0.4_2.1": true
+   },
+   "low": {
+    "L_mm": 2.0615528128088303,
+    "decay_per_tick": 0.19426469812652034,
+    "diffuse_sigma_mm": 1.354990774876346,
+    "geometries": {
+     "planar (wafer experiments)": {
+      "vs_rabbit_under_1.2": 3.9557506459946308,
+      "vs_rat_1.0": 4.746900775193557,
+      "x10_mm": 4.746900775193557
+     },
+     "point source": {
+      "vs_rabbit_under_1.2": 1.8301059342321018,
+      "vs_rat_1.0": 2.196127121078522,
+      "x10_mm": 2.196127121078522
+     }
+    },
+    "k_clear_s": 0.00012,
+    "profile_check": {
+     "accepted": false,
+     "note": "rat comparison is largely calibrated-in for the ref set (passes by construction); rabbit is the independent one",
+     "planar_x10_mm": 4.746900775193557,
+     "point_source_x10_mm": 2.196127121078522,
+     "ratio_planar_to_rabbit_bound": 3.9557506459946308,
+     "ratio_planar_to_rat": 4.746900775193557,
+     "ratio_point_to_rabbit_bound": 1.8301059342321018,
+     "ratio_point_to_rat": 2.196127121078522,
+     "within_1.5x_rabbit": false,
+     "within_1.5x_rat": false
+    },
+    "role": "secondary",
+    "sanity_floor_0.4_2.1": true
+   },
+   "ref": {
+    "L_mm": 0.5049752469181039,
+    "decay_per_tick": 0.9726762775527075,
+    "diffuse_sigma_mm": 1.354990774876346,
+    "geometries": {
+     "planar (wafer experiments)": {
+      "vs_rabbit_under_1.2": 0.9689570632371779,
+      "vs_rat_1.0": 1.1627484758846134,
+      "x10_mm": 1.1627484758846134
+     },
+     "point source": {
+      "vs_rabbit_under_1.2": 1.0121382033562278,
+      "vs_rat_1.0": 1.2145658440274734,
+      "x10_mm": 1.2145658440274734
+     }
+    },
+    "k_clear_s": 0.002,
+    "profile_check": {
+     "accepted": true,
+     "note": "rat comparison is largely calibrated-in for the ref set (passes by construction); rabbit is the independent one",
+     "planar_x10_mm": 1.1627484758846134,
+     "point_source_x10_mm": 1.2145658440274734,
+     "ratio_planar_to_rabbit_bound": 0.9689570632371779,
+     "ratio_planar_to_rat": 1.1627484758846134,
+     "ratio_point_to_rabbit_bound": 1.0121382033562278,
+     "ratio_point_to_rat": 1.2145658440274734,
+     "within_1.5x_rabbit": true,
+     "within_1.5x_rat": true
+    },
+    "role": "primary",
+    "sanity_floor_0.4_2.1": true
+   }
+  }
+ },
+ "B": {
+  "shares": {
+   "high": {
+    "0.5mm": {
+     "largest_single_voxel_share_at_the_actual_placement": 0.01792634087278125,
+     "placement": "corner of 8 voxels",
+     "release_voxel_share_centred_source": 0.044521345046704984,
+     "table_radius_vox": 29
+    },
+    "1mm": {
+     "largest_single_voxel_share_at_the_actual_placement": 0.047586748897125,
+     "placement": "corner of 8 voxels",
+     "release_voxel_share_centred_source": 0.1434107846170828,
+     "table_radius_vox": 15
+    },
+    "2mm": {
+     "largest_single_voxel_share_at_the_actual_placement": 0.38069494476975,
+     "placement": "voxel centre",
+     "release_voxel_share_centred_source": 0.3806949398858112,
+     "table_radius_vox": 7
+    }
+   },
+   "low": {
+    "0.5mm": {
+     "largest_single_voxel_share_at_the_actual_placement": 0.004557112834275001,
+     "placement": "corner of 8 voxels",
+     "release_voxel_share_centred_source": 0.010069325911782704,
+     "table_radius_vox": 63
+    },
+    "1mm": {
+     "largest_single_voxel_share_at_the_actual_placement": 0.015002473070925003,
+     "placement": "corner of 8 voxels",
+     "release_voxel_share_centred_source": 0.036456906376771445,
+     "table_radius_vox": 31
+    },
+    "2mm": {
+     "largest_single_voxel_share_at_the_actual_placement": 0.12001981924350001,
+     "placement": "voxel centre",
+     "release_voxel_share_centred_source": 0.12001982479127414,
+     "table_radius_vox": 16
+    }
+   },
+   "ref": {
+    "0.5mm": {
+     "largest_single_voxel_share_at_the_actual_placement": 0.04249773382640625,
+     "placement": "corner of 8 voxels",
+     "release_voxel_share_centred_source": 0.12403669586734915,
+     "table_radius_vox": 17
+    },
+    "1mm": {
+     "largest_single_voxel_share_at_the_actual_placement": 0.08624105002125,
+     "placement": "corner of 8 voxels",
+     "release_voxel_share_centred_source": 0.33998252475241747,
+     "table_radius_vox": 8
+    },
+    "2mm": {
+     "largest_single_voxel_share_at_the_actual_placement": 0.6899388030000001,
+     "placement": "voxel centre",
+     "release_voxel_share_centred_source": 0.6899388038319603,
+     "table_radius_vox": 4
+    }
+   }
+  },
+  "stepper_ref": {
+   "closed_form_total_ratio": 0.10112861090613262,
+   "k_dt": 3.6,
+   "note": "Diagnostic only; nothing tuned. The analytic kernel is the scorer.",
+   "total_exposure_ratio_stepper_over_analytic": 0.10112861090613252
+  }
+ },
+ "C": {
+  "fitted": "ONLY the cavity volume. Declared volumes 4.2, 14.1 and 33.5 mL (radius 10, 15 and 20 mm, Phase A's geometry assumption), plus one continuous single-parameter fit reported as such.",
+  "k_cavity_per_h": 0.01,
+  "k_cavity_range_per_h": [
+   0.0086,
+   0.0113
+  ],
+  "model": "A cavity RESERVOIR: the wafer releases 61.6 mg (60% uniformly over the first 10 h, 40% uniformly over the next 120 h: the published law, Dang 1996 and Fleming & Saltzman 2002; the release tail is NOT extended) into a well-mixed cavity compartment that empties at k_cavity = 0.010 /h (every segment of the human series falls in 0.0086-0.0113 /h). The tissue sees the cavity as a boundary source (one-way coupling: the tissue does not draw the cavity down).",
+  "rows": {
+   "best_fit_volume": {
+    "auc_0_30d_umol_h_L": 358.08813826458294,
+    "note": "a single continuous fit of the volume to the five points; a volume of this size is not a resection cavity",
+    "predicted_umol_per_L": {
+     "168h": 0.992654905954461,
+     "1h": 0.21401958700686183,
+     "24h": 1.9355704865289907,
+     "336h": 0.18500504165775933,
+     "720h": 0.003976424612223632
+    },
+    "ratio_to_target": {
+     "1 h": 0.06572581434550757,
+     "day 1": 1.8832221029160476,
+     "day 14": 2.6577402125398244,
+     "day 30": 3.039834600880244,
+     "day 7": 1.207260128520184
+    },
+    "rms_log10_residual": 0.6142758411938166,
+    "volume_L": 80.27744577066576,
+    "volume_mL": 80277.44577066577
+   },
+   "declared_r10mm": {
+    "auc_0_30d_umol_h_L": 6862697.746907012,
+    "predicted_umol_per_L": {
+     "168h": 19024.06100231231,
+     "1h": 4101.648674161704,
+     "24h": 37094.87636551518,
+     "336h": 3545.589889417225,
+     "720h": 76.20749561631528
+    },
+    "ratio_to_target": {
+     "1 h": 1259.6239579688847,
+     "day 1": 36091.62857290238,
+     "day 14": 50935.13529058772,
+     "day 30": 58257.908702401015,
+     "day 7": 23136.933281505404
+    },
+    "volume_mL": 4.1887902047863905
+   },
+   "declared_r15mm": {
+    "auc_0_30d_umol_h_L": 2033391.9250094846,
+    "predicted_umol_per_L": {
+     "168h": 5636.758815499944,
+     "1h": 1215.3033108627271,
+     "24h": 10991.074478671166,
+     "336h": 1050.5451524199186,
+     "720h": 22.579998701130457
+    },
+    "ratio_to_target": {
+     "1 h": 373.2219134722622,
+     "day 1": 10693.81587345256,
+     "day 14": 15091.891937951917,
+     "day 30": 17261.602578489194,
+     "day 7": 6855.387638964563
+    },
+    "volume_mL": 14.137166941154067
+   },
+   "declared_r20mm": {
+    "auc_0_30d_umol_h_L": 857837.2183633765,
+    "predicted_umol_per_L": {
+     "168h": 2378.007625289039,
+     "1h": 512.706084270213,
+     "24h": 4636.859545689397,
+     "336h": 443.19873617715314,
+     "720h": 9.52593695203941
+    },
+    "ratio_to_target": {
+     "1 h": 157.4529947461106,
+     "day 1": 4511.4535716127975,
+     "day 14": 6366.891911323465,
+     "day 30": 7282.238587800127,
+     "day 7": 2892.1166601881755
+    },
+    "volume_mL": 33.510321638291124
+   }
+  },
+  "series": [
+   {
+    "kind": "point",
+    "label": "1 h",
+    "ng_per_mL": 697.0,
+    "t_h": 1.0,
+    "umol_per_L": 3.2562485400607333
+   },
+   {
+    "kind": "point",
+    "label": "day 1",
+    "ng_per_mL": 220.0,
+    "t_h": 24.0,
+    "umol_per_L": 1.0277972436346647
+   },
+   {
+    "kind": "lower",
+    "label": "day 7",
+    "ng_per_mL": 176.0,
+    "t_h": 168.0,
+    "umol_per_L": 0.8222377949077317
+   },
+   {
+    "kind": "point",
+    "label": "day 14",
+    "ng_per_mL": 14.9,
+    "t_h": 336.0,
+    "umol_per_L": 0.06960990422798412
+   },
+   {
+    "kind": "point",
+    "label": "day 30",
+    "ng_per_mL": 0.28,
+    "t_h": 720.0,
+    "umol_per_L": 0.0013081055828077553
+   }
+  ],
+  "shape": {
+   "mass_balance_first_hour": {
+    "mg_released": 3.696,
+    "umol_released": 17.266993693062368,
+    "volume_that_would_give_3.26_umol_per_L_L": 5.302725968436155
+   },
+   "measured_day14_over_day7_at_most": 0.0846590909090909,
+   "measured_day1_over_1h": 0.31563845050215206,
+   "model_day14_over_day7_any_volume": 0.18637397603940983,
+   "model_day1_over_1h_any_volume": 9.043894129498218
+  },
+  "tissue_note": "Human brain TISSUE concentrations after wafer implantation have never been measured, so there is no tissue series to check the tissue side against.",
+  "tissue_series_exists": false
+ },
+ "D": {
+  "definition": "depth (mm) at which the exposure falls to a threshold: x = L ln(wall exposure / threshold); planar wall, tissue at quasi-steady state (1/k is seconds to hours against a cavity series of days). A consequence of the model, not a measurement.",
+  "rows": {
+   "high": {
+    "L_mm": 0.9219544457292888,
+    "depth_mm": {
+     "clinical high (651)": {
+      "to_23.5": 3.0622801928856704,
+      "to_50": 2.3661837646845214,
+      "to_7": 4.178850253422966
+     },
+     "clinical low (55)": {
+      "to_23.5": 0.7839680721950042,
+      "to_50": 0.08787164399385525,
+      "to_7": 1.900538132732299
+     },
+     "clinical mean (262)": {
+      "to_23.5": 2.2231493971462095,
+      "to_50": 1.5270529689450607,
+      "to_7": 3.3397194576835045
+     }
+    }
+   },
+   "low": {
+    "L_mm": 2.0615528128088303,
+    "depth_mm": {
+     "clinical high (651)": {
+      "to_23.5": 6.847466677443527,
+      "to_50": 5.290947745090956,
+      "to_7": 9.344193234445974
+     },
+     "clinical low (55)": {
+      "to_23.5": 1.753005901617492,
+      "to_50": 0.19648696926492143,
+      "to_7": 4.249732458619938
+     },
+     "clinical mean (262)": {
+      "to_23.5": 4.971113176156601,
+      "to_50": 3.4145942438040313,
+      "to_7": 7.467839733159048
+     }
+    }
+   },
+   "ref": {
+    "L_mm": 0.5049752469181039,
+    "depth_mm": {
+     "clinical high (651)": {
+      "to_23.5": 1.6772799390447528,
+      "to_50": 1.2960122231202083,
+      "to_7": 2.288850548235938
+     },
+     "clinical low (55)": {
+      "to_23.5": 0.4293969975050424,
+      "to_50": 0.04812928158049787,
+      "to_7": 1.0409676066962277
+     },
+     "clinical mean (262)": {
+      "to_23.5": 1.21766907352099,
+      "to_50": 0.8364013575964457,
+      "to_7": 1.8292396827121755
+     }
+    }
+   }
+  }
+ },
+ "calibration": "k_ref is CALIBRATED to an external published measurement (carmustine's own wafer penetration profiles); it is not independently measured, and no carmustine tissue clearance constant has ever been measured directly. That is legitimate calibration and the opposite of what v4.1 did, which tuned a constant to widen our own result.",
+ "caveat": "CAVEAT, carried in every report: in the only human study reporting per-patient cavity exposure, exposure did NOT predict the timing or the location of recurrence (1849 vs 2457 ng*day/mL, p = 0.393; local vs non-local 2666 vs 1608, p = 0.185; n = 15). It is small and underpowered, so this is 'not shown', not 'shown false'. But we score voxels by a quantity that has never been shown to predict a patient outcome, and that belongs in the limitations of anything we publish.",
+ "clinical": {
+  "flag": "The clinically delivered exposure is MEASURED in human resection-cavity FLUID by mass spectrometry (Ohnishi 2022, Brain Sci 12:567, n = 14-15): mean 262 umol*h/L, range 55-651. It is cavity fluid, not tissue, so it is an upper reference for what the approved therapy produces where the wafer sits, not a tissue target and not a bar.",
+  "mean": 262.0,
+  "potency": "The clinically delivered exposure (262) is about ten times the one-log-kill level (23.5): potency is not the limitation; transport is.",
+  "range": [
+   55.0,
+   651.0
+  ]
+ },
+ "kill_band": {
+  "flag": "The kill band is DERIVED BY FITTING a single clonogenic series in C6 rat glioma (two 1 h exposures; Caballero Navarro 1992, Histol Histopathol 7:347-351) with -log10(survival) = 0.0426 x exposure (half-kill near 7, one log of kill at 23.5 umol*h/L). Single study, one rat line, and not cleanly proportional at the top dose. It is a band, never a line.",
+  "half": 7.0,
+  "one_log": 23.5,
+  "umol_h_L": [
+   7.0,
+   50.0
+  ]
+ },
+ "motion": "Entry and motion are still unphysical: squads walk through tissue one voxel per tick and arrive carrying their whole dose. Nothing here is a claim about delivery in a patient.",
+ "schema": "v431_a2_checks"
+}

@@ -79,3 +79,56 @@ def exposure_shares(dose: np.ndarray, brain: np.ndarray, surf_mm: np.ndarray, ve
     out: Dict[str, Optional[float]] = {"within_5mm_of_pia": float(dose[near_pia].sum() / tot)}
     out["within_10mm_of_ependyma_proxy"] = None if vent_mm is None else float(dose[vent_mm < EPENDYMA_SHARE_MM].sum() / tot)
     return out
+
+
+# --- distance from each tumour voxel to its nearest release ----------------------------------------------------------------------------------------------------
+# The length scale the whole problem turns on. 0.2 mm is the published design target for lethal coverage by distributed delivery (Hauert, Berman, Nagpal & Bhatia 2013,
+# Nano Today 8:566-576); 0.5 mm is the wafer-calibrated drug reach (L_ref = 0.505 mm). Measure only; no penalty.
+
+DISTANCE_BINS_MM = (0.0, 0.5, 1.0, 2.0, 3.0, 5.0, 7.5, 10.0, 15.0, 20.0, 30.0, 50.0, float("inf"))
+DESIGN_TARGET_MM, WAFER_REACH_MM = 0.2, 0.5
+FRACTION_RADII_MM = (0.2, 0.5, 1.0, 2.0)
+
+
+def tumour_release_distance_stats(wt: np.ndarray, releases_mm: np.ndarray, spacing_mm: float = 1.0, *, n_samples: int = 4000, seed: int = 0) -> Dict[str, object]:
+    """Distribution of each tumour voxel's distance to its nearest release point, and the fraction of TUMOUR VOLUME within given radii of any release.
+
+    ``wt``: boolean tumour mask on a ``spacing_mm`` lattice. ``releases_mm``: (N, 3) release positions in millimetres, in the lattice's voxel-EDGE coordinates (voxel j spans
+    [j, j+1] x spacing). The histogram and quantiles use voxel centres. The volume fractions are Monte Carlo: for each release, ``n_samples`` points uniform in the ball of the radius;
+    a point counts only if it lies in the tumour AND this release is its nearest (so overlapping balls are not double counted); the ball's volume times the counted share is the
+    tumour volume it owns. Seeded, hence deterministic. (A voxel centre is never within 0.2 or 0.5 mm of a release placed at a lattice corner, so centre distances cannot resolve those
+    scales; a regular sub-voxel grid has lattice artefacts at them: 8 points inside a 0.2 mm ball, half its volume.)"""
+    from scipy.spatial import cKDTree
+    idx = np.argwhere(wt)
+    n_vox = len(idx)
+    rel = np.unique(np.asarray(releases_mm, dtype=np.float64).reshape(-1, 3), axis=0)
+    out: Dict[str, object] = {"n_tumour_voxels": int(n_vox), "tumour_volume_mm3": float(n_vox * spacing_mm ** 3), "n_release_points": int(len(rel))}
+    if n_vox == 0 or len(rel) == 0:
+        return {**out, "hist_fraction": None, "quantiles_mm": None, "fraction_within_mm": {f"{r:g}": 0.0 for r in FRACTION_RADII_MM}}
+    tree = cKDTree(rel)
+    centres = (idx + 0.5) * spacing_mm
+    d, _ = tree.query(centres)
+    edges = np.asarray(DISTANCE_BINS_MM)
+    h, _ = np.histogram(d, bins=edges)
+    out["hist_fraction"] = (h / n_vox).tolist()
+    out["hist_bins_mm"] = [float(e) if np.isfinite(e) else None for e in edges]
+    out["quantiles_mm"] = {"median": float(np.median(d)), "p10": float(np.percentile(d, 10)), "p90": float(np.percentile(d, 90)), "mean": float(d.mean()), "min": float(d.min()), "max": float(d.max())}
+    rng = np.random.default_rng(seed)
+    shape = np.asarray(wt.shape)
+    fr: Dict[str, float] = {}
+    for r in FRACTION_RADII_MM:
+        v_ball = 4.0 / 3.0 * np.pi * r ** 3
+        owned = 0.0
+        for i, c in enumerate(rel):
+            u = rng.normal(size=(n_samples, 3))
+            u /= np.linalg.norm(u, axis=1, keepdims=True)
+            pts = c + u * (r * rng.random((n_samples, 1)) ** (1.0 / 3.0))
+            vi = np.floor(pts / spacing_mm).astype(int)
+            ok = np.all((vi >= 0) & (vi < shape), axis=1)
+            in_t = np.zeros(n_samples, dtype=bool)
+            in_t[ok] = wt[tuple(vi[ok].T)]
+            mine = tree.query(pts)[1] == i
+            owned += v_ball * float((in_t & mine).sum()) / n_samples
+        fr[f"{r:g}"] = owned / (n_vox * spacing_mm ** 3)
+    out["fraction_within_mm"] = fr
+    return out

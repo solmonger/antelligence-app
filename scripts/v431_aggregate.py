@@ -98,9 +98,9 @@ def scalar_block(rows: List[Dict[str, Any]], units: bool) -> Dict[str, Any]:
     return out
 
 
-def bound_curve(rows: List[Dict[str, Any]], k_set: str, thresholds: List[float]) -> Dict[str, Any]:
+def bound_curve(rows: List[Dict[str, Any]], k_set: str, thresholds: List[float], voxel_mm: float = 2.0) -> Dict[str, Any]:
     """Placement-free conservation bound, averaged over the cases (see the module docstring). Nominal mask, plain coverage."""
-    p = P.PhysicalParams.carmustine_wafer(k_set)
+    p = P.PhysicalParams.carmustine_wafer(k_set, voxel_mm=voxel_mm)
     e_total = p.budget_mg * p.exposure_to_umol_h_L / (p.k_clear_s * p.voxel_volume_mm3)        # umol*h/L summed over voxels
     per_case = {}
     for r in rows:
@@ -111,11 +111,11 @@ def bound_curve(rows: List[Dict[str, Any]], k_set: str, thresholds: List[float])
             "mean_exposure_per_truth_voxel_if_perfectly_spread": float(np.mean([e_total / n for n in per_case.values()]))}
 
 
-def conservation_check(rows: List[Dict[str, Any]], k_set: str, thresholds: List[float]) -> Dict[str, Any]:
+def conservation_check(rows: List[Dict[str, Any]], k_set: str, thresholds: List[float], voxel_mm: float = 2.0) -> Dict[str, Any]:
     """Validation of the whole field: the number of voxels at or above T can never exceed E_total / T, because the exposure summed over all space
     is at most M / k. For every run and every threshold, covered_voxels * T / E_total must be <= 1. Reports the largest value (the nearer to 1, the
     tighter the physics is packed) and the number of violations (must be 0)."""
-    p = P.PhysicalParams.carmustine_wafer(k_set)
+    p = P.PhysicalParams.carmustine_wafer(k_set, voxel_mm=voxel_mm)
     e_total = p.budget_mg * p.exposure_to_umol_h_L / (p.k_clear_s * p.voxel_volume_mm3)
     worst, viol, n = 0.0, 0, 0
     for r in rows:
