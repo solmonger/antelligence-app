@@ -157,6 +157,8 @@ def run_questions(runner: ft.Runner, qs: List[ft.Question], concurrency: int, ev
     status = "complete"
     try:
         asyncio.run(runner.run(qs, concurrency=concurrency, on_done=save))
+    except ft.OutOfCredits as exc:
+        status = f"STOPPED: {exc}"
     except ft.BrokenRun as exc:
         status = f"STOPPED, the model's replies are not usable: {exc}"
     except ft.SpendCap as exc:

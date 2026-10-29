@@ -204,6 +204,21 @@ def test_a_broken_provider_stops_the_run_fast_and_says_why(tmp_path):
     assert rows and all(row["error"] == "ProviderError" and "unknown parameter" in row["reason"] for row in rows)
 
 
+NO_CREDIT = ('HTTP 404: {"status":404,"message":"Model \'deepseek/deepseek-v4.1-flash\' requires available credits. '
+             'Your account balance is too low to use paid models"}')
+
+
+def test_an_empty_balance_stops_at_the_first_call_and_caches_nothing(tmp_path):
+    # The Oct 29 smoke check: the portal answered 404 "requires available credits" to every call.
+    prov = Scripted(_letter, error=ProviderError(NO_CREDIT, http_status=404))
+    r = ft.Runner(prov, tmp_path / "c.jsonl", max_usd=1, backoff=())
+    with pytest.raises(ft.OutOfCredits, match="Out of credits"):
+        asyncio.run(r.run([_exam(str(i)) for i in range(5)], concurrency=1))
+    assert prov.calls <= 15 and not (tmp_path / "c.jsonl").exists() and r.reserved == pytest.approx(0)
+    assert ft.out_of_credits(ProviderError("x", http_status=402))
+    assert not ft.out_of_credits(ProviderError("HTTP 404: model not found", http_status=404))
+
+
 def test_unparseable_replies_also_stop_the_run(tmp_path):
     prov = Replying(lambda req: _resp(req, content="I think the answer is A."))
     r = ft.Runner(prov, tmp_path / "c.jsonl", max_usd=1, backoff=())
@@ -377,6 +392,10 @@ def test_smoke_check(tmp_path, capsys, monkeypatch):
     assert cli.main(["smoke", "--live", "--data", str(data)]) == 2
     out = capsys.readouterr().out
     assert "SMOKE CHECK FAILED" in out and "no such model" in out
+    monkeypatch.setattr(cli, "live_provider", lambda: Scripted(_letter, error=ProviderError(NO_CREDIT, http_status=404)))
+    assert cli.main(["smoke", "--live", "--data", str(data)]) == 2
+    out = capsys.readouterr().out
+    assert "STOPPED: Out of credits" in out and "SMOKE CHECK FAILED" in out
 
 
 def test_cli_scores_forecasts_and_the_late_subset(tmp_path):

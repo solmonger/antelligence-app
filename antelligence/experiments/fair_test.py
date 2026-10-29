@@ -219,6 +219,19 @@ class BrokenRun(RuntimeError):
     measures the plumbing, not the swarm, so it must stop and say why instead of scoring empty answers."""
 
 
+class OutOfCredits(BrokenRun):
+    """The provider refused because the account has no credit left. No call can succeed until it is topped up, so
+    the run stops on the first such refusal instead of after a streak."""
+
+
+_NO_CREDIT = re.compile(r"requires available credits|balance is too low|insufficient (credits|balance|funds)|"
+                        r"out of credits|payment required", re.I)
+
+
+def out_of_credits(exc: ProviderError) -> bool:
+    return getattr(exc, "http_status", None) == 402 or bool(_NO_CREDIT.search(str(exc)))
+
+
 def served_ok(served: str, model: str = MODEL) -> bool:
     """Does the model name the provider reports name the model we asked for? Providers spell it differently
     (``deepseek/deepseek-v4.1-flash``, ``DeepSeek-V4.1-Flash``, a dated suffix), so compare the bare, lower-case
@@ -283,6 +296,12 @@ class Runner:
                 self.reserved -= self.max_call_usd
             raise
         except ProviderError as exc:  # refused before any reply: nothing billed
+            if out_of_credits(exc):  # nothing cached: once topped up, every call is asked again
+                async with self._lock:
+                    self.reserved -= self.max_call_usd
+                    self.broken = self.broken or ("Out of credits: the provider says the account balance is too low "
+                                                  "for this model. Add credits, then run the smoke check again.")
+                raise OutOfCredits(self.broken) from None
             row = {"request_hash": h, "content": "", "prompt_tokens": 0, "completion_tokens": 0,
                    "finish_reason": "error", "served_model": None, "cost_usd": 0.0, "error": type(exc).__name__,
                    "reason": scrub(str(exc))[:300], "http_status": getattr(exc, "http_status", None)}
@@ -499,6 +518,6 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-__all__ = ["BrokenRun", "K", "KINDS", "LENSES", "MODEL", "PASS", "PRICE", "Question", "Runner", "SpendCap", "arm_answers",
+__all__ = ["BrokenRun", "OutOfCredits", "K", "KINDS", "LENSES", "MODEL", "PASS", "PRICE", "Question", "Runner", "SpendCap", "arm_answers",
            "combine", "estimate", "lens_messages", "load_questions", "mean_prob", "parse_reply", "plain_messages",
-           "score", "score_item", "seen_messages", "served_ok", "sha256_file", "usable_share", "vote"]
+           "out_of_credits", "score", "score_item", "seen_messages", "served_ok", "sha256_file", "usable_share", "vote"]
