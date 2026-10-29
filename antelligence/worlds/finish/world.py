@@ -144,7 +144,7 @@ class FinishWorld:
         k = max(1, round(self.cfg.inspector_frac * self.cfg.n_ants))
         return set(self.order[-k:])
 
-    def run(self, arm: str, shortcut_share: float = 0.0) -> FinishResult:
+    def run(self, arm: str = "look", shortcut_share: float = 0.0) -> FinishResult:
         if arm not in ARMS:
             raise ValueError(f"arm must be one of {ARMS}")
         if not 0 <= shortcut_share < 0.5:

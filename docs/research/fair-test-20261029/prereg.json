@@ -1,0 +1,38 @@
+{
+ "code": {
+  "antelligence/experiments/fair_test.py": "28e13e65d69f5de86876e7e0a2d5c4518d64c7292b62feb1a1986cc926cb053d",
+  "scripts/fair_test.py": "0629bbcc627e34058adca13f35e802ea0ba8966457114d94412643e13c51fe72"
+ },
+ "files": {
+  "exam_answers.jsonl": "f50fdf39d5687938e936a637bcd41e38312eff51daa5cdf151128ab7a1b474ab",
+  "exam_questions.jsonl": "7a45f6c1f9d51a770f91f2be70402c287c3507002b816d3a934a4727ac029672",
+  "forecast_answers.jsonl": "d5df21d7f41d6eca30e7a232b2b30eeeac7fc9afb811d7fcbeb6c28488f1e895",
+  "forecast_questions.jsonl": "468fd41ac6333742d5861e9481fdbce8f97c92dd08b1bae76e122246c5a09962"
+ },
+ "k": 5,
+ "lenses": {
+  "exam": [
+   "Work it out directly, step by step, then pick.",
+   "First rule out every option you can show is wrong, then pick from what is left.",
+   "First name the rule, principle or definition the question turns on, then apply it.",
+   "Check each option against the facts given, one at a time, before you pick.",
+   "Find the most tempting wrong option and say why it is wrong, then pick."
+  ],
+  "forecast": [
+   "Start from the base rate: how often do events like this happen?",
+   "Focus on the specific situation: who decides, what has been said, what is scheduled.",
+   "Assume things stay as they are unless something specific changes them.",
+   "Imagine it resolved YES. What most likely made that happen? Then weigh how likely that is.",
+   "Imagine it resolved NO. What most likely made that happen? Then weigh how likely that is."
+  ]
+ },
+ "max_tokens": 500,
+ "model": "deepseek/deepseek-v4.1-flash",
+ "pass": {
+  "exam_min_gain": 0.01,
+  "forecast_min_brier_gain": 0.005
+ },
+ "primary": "swarm5 vs single5 (same model, same 5 calls per question)",
+ "single_samples": 10,
+ "temperature": 0.7
+}

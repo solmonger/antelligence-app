@@ -1,8 +1,10 @@
 # A smarter swarm: think alone, fade smartly
 
 Date: 2026-10-29 (revised several times the same day after Eshaan's steers). Status: **two ideas built and checked, plus a
-skipped-work test and a deep-thinker check, for review**. Nothing here is preregistered. No model call, no paid call, no chain write and no key were used. Every new
-measurement is $0: scripted ants, or replays of model answers saved by earlier runs.
+skipped-work test, a deep-thinker check and two ported tasks, for review**. Nothing in this file is preregistered: these
+are development runs. No model call, no paid call, no chain write and no key were used. Every new measurement is $0:
+scripted ants, or replays of model answers saved by earlier runs. The one paid test, against the best single model
+on outside tasks, is preregistered separately in `2026-10-29-fair-test.md` and has not been run.
 
 Base: `hermes/v4.31-a2-20261016` (the newest work). Every number below cites the file it comes from.
 
@@ -21,7 +23,7 @@ the earlier Antelligence runs that back that call). Both ideas are now built, wi
   information comes as a burst of strong wrong marks at 5% of the sites, or as 2% liars.
 - `scripts/fading_alone_check.py` runs the grid; `scripts/alone_vs_seen_check.py` does the same comparison on saved
   real model answers. Results: `docs/research/swarm-scale-20261029/fading_alone_*.json`, `alone_vs_seen.json`.
-  Tests: `tests/smarter_swarm/` (41 tests, counting the skipped-work world in 0.2 and the deep-thinker check in 0.3).
+  Tests: `tests/smarter_swarm/` (85 tests, counting the skipped-work world in 0.2, the deep-thinker check in 0.3, the two ports in 0.4 and the fair test harness).
 
 ### What got smarter (scripted world, 10 development seeds per cell, half-life 10 unless noted)
 
@@ -217,18 +219,109 @@ domain, 4 rotations each. "Split" means the three cheap answers were not unanimo
   crowd of one model splits less often, but its mistakes line up (section 0, the W2 table). That trade is the next thing to
   measure with a real deep thinker.
 
+### 0.4 Think alone is now the default, and it holds on two tasks we did not design (Eshaan's go-ahead)
+
+Every new ant now thinks alone first and calls something done only when it sees it done:
+`RumourWorld.run` defaults to `alone`, `FinishWorld.run` to `look`, and the two ported worlds get a `default_ant`.
+The pilot's recorded arms keep their own scripts, so its published numbers still reproduce (tested).
+
+**Colouring** (AgentsNet, arXiv 2507.08616; `antelligence/worlds/graph_coloring/think_alone.py`,
+`scripts/colouring_think_alone_check.py`, `colouring_n{64,256,1024}.json`). Each agent must pick a colour different
+from its neighbours'. Conditions: `base`, 30% of messages lost, 10% liars announcing random colours, and both.
+10 development seeds × 2 graph families per cell. Score: share of honest edges properly coloured (1.0 is perfect),
+then the share of honest agents that call themselves done while really clashing.
+
+| Agents, rounds | Condition | Pilot S (wait, then pick once) | Pilot S′ (resend, guess at the end) | **Think alone, look before done** |
+|---|---|---|---|---|
+| 64, 4 | base | 0.19 (61% never coloured) | 0.69, 56% "done" but clashing | **1.00**, 0% |
+| 64, 4 | lost messages + liars | 0.06 | 0.64, 65% | **0.99**, 2% |
+| 256, 4 | base | 0.17 | 0.65, 59% | **1.00**, 0% |
+| 256, 4 | lost messages + liars | 0.06 | 0.63, 67% | **0.99**, 1% |
+| 256, 8 | lost messages + liars | 0.07 | 0.76, 44% | **1.00**, 0% |
+| 1,024, 4 | base | 0.16 | 0.63, 61% | **1.00**, 0% |
+| 1,024, 4 | lost messages + liars | 0.05 | 0.60, 68% | **0.99**, 1% |
+| 1,024, 8 | lost messages + liars | 0.06 | 0.73, 46% | **1.00**, 0% |
+
+- Look-before-done beat S and S′ in every cell, on 16 to 20 of 20 paired runs (average gains +0.46 to +0.96 over S and
+  +0.19 to +0.44 over S′ across 64, 256 and 1,024 agents; every 95% interval above 0).
+- **The "done" result is the one that matters most.** S′ gets most agents coloured, but a third to three quarters of them
+  are sure they are finished while still clashing. The look-before-done ant almost never is (0 to 2%).
+- Honest caveats. Much of the gain is "act first, then look and repair" instead of waiting for permission: the pilot's S
+  was a weak, patient script, so this is not a win over a strong rival. The earned-trust gate added nothing here,
+  because this ant already avoids every colour it hears, liars' included. Telling it who the liars are (the oracle)
+  added nothing either.
+
+**Foraging** (SwarmBench, arXiv 2505.04364; `antelligence/worlds/foraging_sb/think_alone.py`,
+`scripts/foraging_think_alone_check.py`, `foraging.json`). Ants fetch food to a nest. 40 development seeds; food
+delivered per run:
+
+| Condition | Pilot S (trust the brief) | Pilot S′ (trust your eyes) | **Think alone, then compare** | Same, when ants also pass on old news |
+|---|---|---|---|---|
+| base | 16.0 | 16.2 | 16.2 | 16.2 |
+| food runs out | 5.4 | 16.7 | **16.6** (+11.3 over S, 40/40 seeds) | 16.3 |
+| sensors flip | 3.7 | 3.9 | 3.9 | 3.9 |
+
+- When food runs out, trusting your own eyes over the old plan triples deliveries. That is the whole gain:
+  "then compare" adds nothing here, because ants that say only what they see right now rarely have news a
+  listener needs (about one lead per run).
+- When ants also pass on what they remember, listeners follow about 12 leads per run and their own eyes throw out 11
+  of them as stale. Old news cost about 0.3 deliveries (not significant). This is the rumour world's lesson again, on a
+  task we did not build: second-hand news is mostly echo.
+- When the ants' own sensors are wrong (v2), think alone does not help. That needs a different fix (an ant can't
+  out-look a broken eye), so it stays open.
+
+### 0.5 Are we heading the right way? What we know, and what we only hope
+
+Eshaan asked whether the evidence supports the direction, and to check it on outside tasks we did not pick.
+
+**What we know** (measured, $0, scripted ants or saved model answers):
+
+1. In every world we have, ants that mark only what they saw themselves beat ants that pass on what they heard:
+   the rumour world (+0.10 to +0.13 right answers), the finish world (much less work left behind), and now
+   colouring and foraging, two tasks other people designed.
+2. Calling something done only when you see it done stops the swarm from faking "done". Trusting the tick-box let
+   20% shortcut-takers hide skipped work; looking caught it. In colouring, S′ claimed done while clashing for up to
+   74% of agents, the look-before-done ant for 2% at most.
+3. On saved real model answers (the W2 runs), answers given alone were worth more than answers given after seeing
+   the board, and a cheap crowd of one model has errors that line up (section 0).
+4. Earlier Antelligence runs where a checker or a teacher steered the swarm made it worse (section 0.1).
+
+**What we only hope** (not yet shown):
+
+1. That a swarm of **model** calls that think alone beats the best single model asked the same number of times on
+   real tasks. Every win above is against weaker swarms, not against one strong model. This is the test that decides
+   whether the swarm is worth building, so it is next, and its pass line is written down first (below).
+2. That the gains hold with real costs: looking costs time, and models charge per call.
+3. That smart fading pays off beyond being a safety layer: it helped the herd but added nothing once ants think alone.
+4. That a deep thinker asked only where the cheap ants split is worth its price (one stand-in model so far, 0.3).
+
+**The fair test** (`docs/plans/2026-10-29-fair-test.md`; the pass lines, files and code are frozen in
+`docs/research/fair-test-20261029/prereg.json` before any call). One model in the budget, DeepSeek V4.1 Flash on
+the Nous portal, so "the best single model" is that model asked the plain question 5 times with the majority (or
+average) taken, a strong baseline. The swarm is the same model, 5 calls, each told to look at the question a
+different way and answering alone. Two outside task sets: 240 exam questions from AGIEval (law-school logic,
+LogiQA, maths word problems) and real forecasting questions that resolved after the model was trained. About
+$1 to $2 in all, capped at $3. It needs a key that lives only on Eshaan's Mac, so it runs there, after his OK.
+
+**How the MIT team checks its huge simulation** (Large Population Models, Chopra, MIT, arXiv 2507.09901; the AgentTorch
+work behind the 8.4 million-agent New York City COVID-19 model). They do not check that each simulated person
+behaves faithfully. They check the crowd against the world: the simulator is differentiable, so they tune it by
+gradient until its predicted case numbers match the real case statistics. The paper names what is still open: its
+"Open Problems" section lists formal verification ("relies on empirical validation rather than formal guarantees")
+and reports "numerical instabilities and unexpected emergent behaviors" when economics, movement and disease are
+combined; it also names the gap between simulation and reality. Fitting to known data shows the model can match
+the past, not that it predicts. We borrow the part that works and add the part they leave open: we never score the
+swarm on what it says about itself, only on the world (work left, edges clashing, food delivered), and the fair test
+scores it on outcomes nobody knew when the answers were written, with the pass line fixed in advance.
+
 ### What next
 
-1. Make think-alone the default for every ant: ants mark only first-hand readings, never relays. That includes
-   "done": a piece is done when an ant sees it done, never because someone said so. Keep smart fading as a safety
-   layer for wrong information, not for accuracy.
+1. Run the fair test on Eshaan's Mac (about $1 to $2, cap $3) once he says yes. If it passes, build model ants
+   that answer alone and look before done. If it fails, say so plainly and work out why before building more.
 2. Make looking cheap: spot checks by peers, more often on claims from ants with a poor record (idea 1), and a stop
    rule that waits long enough. Score the swarm on work left in the world, never on what it reports.
-3. Port all of it into the colouring and foraging worlds, where the old marks were accurate but changed nothing, and
-   check the gain survives a real task.
-4. Then model ants: small models that write down their own answer before they see the board, with a deep thinker
-   asked only where they split and counted as one vote (0.3). That is also where SLM steering fits: steer for errors
-   that do not line up, and for honest "not done yet".
+3. Fix the case think alone cannot: an ant whose own eyes are wrong (foraging v2).
+4. Then SLM steering: steer small models for errors that do not line up, and for honest "not done yet".
 
 ## 1. The short answer
 

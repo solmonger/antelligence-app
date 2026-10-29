@@ -133,7 +133,7 @@ class RumourWorld:
             self.readings.append(row)
             self.moves.append(mv)
 
-    def run(self, policy: str, seed_kind: str = "none") -> RumourResult:
+    def run(self, policy: str = "alone", seed_kind: str = "none") -> RumourResult:
         if policy not in POLICIES:
             raise ValueError(f"policy must be one of {POLICIES}")
         if seed_kind not in SEEDS:
