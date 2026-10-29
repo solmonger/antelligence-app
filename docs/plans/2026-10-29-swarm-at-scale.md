@@ -1,10 +1,120 @@
-# A smarter swarm: what we learned, and five ideas to build
+# A smarter swarm: think alone, fade smartly
 
-Date: 2026-10-29 (revised the same day after Eshaan's steer). Status: **brainstorm for review**. Nothing here is
-preregistered. No model call, no paid call, no chain write and no key were used. The two new measurements (section 4)
-are $0: one replays saved model answers, one runs scripted ants.
+Date: 2026-10-29 (revised twice the same day after Eshaan's steers). Status: **two ideas built and checked, for
+review**. Nothing here is preregistered. No model call, no paid call, no chain write and no key were used. Every new
+measurement is $0: scripted ants, or replays of model answers saved by earlier runs.
 
 Base: `hermes/v4.31-a2-20261016` (the newest work). Every number below cites the file it comes from.
+
+## 0. Built: smart fading memory and think alone, then compare (Eshaan's pick)
+
+Eshaan picked ideas 4 and 5 and dropped anything with a checker or a teacher steering the swarm (section 0.1 lists
+the earlier Antelligence runs that back that call). Both ideas are now built, with tests, and checked for free:
+
+- `antelligence/kernel/fading.py`: a world-agnostic mark store where each mark has its own half-life. Under the smart
+  rule a reader whose own view disagrees with a mark halves its half-life; one who agrees stretches it by a quarter.
+  No checker: the feedback comes only from ordinary readers.
+- `antelligence/worlds/rumour/`: a scripted world to test both. Ants walk a site graph, get rare, noisy private
+  readings of one hidden yes/no fact (right 60% of the time), leave marks and read the marks where they stand.
+  *Herd* ants say what they now believe (what they heard becomes what they say). *Think-alone* ants commit to their
+  own reading first and only ever mark what they themselves saw; they still read and use the others' marks. Wrong
+  information comes as a burst of strong wrong marks at 5% of the sites, or as 2% liars.
+- `scripts/fading_alone_check.py` runs the grid; `scripts/alone_vs_seen_check.py` does the same comparison on saved
+  real model answers. Results: `docs/research/swarm-scale-20261029/fading_alone_*.json`, `alone_vs_seen.json`.
+  Tests: `tests/smarter_swarm/` (28 tests).
+
+### What got smarter (scripted world, 10 development seeds per cell, half-life 10 unless noted)
+
+Share of ants with the right answer at the end, no wrong marks planted:
+
+| Ants | Each ant alone (no marks) | Herd, fixed fading (the old way) | Herd, smart fading | **Think alone**, fixed | Think alone + smart |
+|---|---|---|---|---|---|
+| 64 | 0.613 | 0.725 | 0.803 | **0.830** | 0.820 |
+| 256 | 0.611 | 0.724 | 0.823 | **0.849** | 0.839 |
+| 1,024 | 0.613 | 0.716 | 0.804 | **0.845** | 0.825 |
+| 2,048 | 0.628 | 0.741 | 0.835 | **0.863** | 0.844 |
+
+- **Think alone is the big win**: +0.10 to +0.13 over the herd at every size (all 10 seeds at 256, 1,024 and 2,048; 95%
+  intervals well above 0). With longer-lived marks (half-life 20) the gap grows to +0.21; with noisier readings
+  (55% right) it is +0.08. The one place it loses is very short-lived marks (half-life 5: −0.03), where relaying
+  spreads news faster than the echo can build.
+- **Smart fading rescues a herd** (+0.05 to +0.10 everywhere) but adds nothing on top of think-alone (−0.01 to
+  −0.03): when marks only carry first-hand readings, cutting them short also throws away good evidence.
+- **The swarm is now much smarter than any one ant**: 0.85 against 0.61 for an ant on its own, with no queen, no
+  checker and no stronger model anywhere.
+
+How much damage wrong information did (extra wrong share over the same run with nothing planted, averaged over the
+60 ticks):
+
+| Ants | Wrong marks | Herd, fixed | Herd, smart | Think alone, fixed | **Both together** |
+|---|---|---|---|---|---|
+| 256 | burst at 5% of sites | 0.034 | 0.033 | 0.015 | **0.009** |
+| 256 | 2% liars | 0.030 | 0.032 | 0.015 | **0.010** |
+| 1,024 | burst at 5% of sites | 0.034 | 0.034 | 0.014 | **0.008** |
+| 1,024 | 2% liars | 0.032 | 0.035 | 0.015 | **0.009** |
+| 2,048 | burst at 5% of sites | 0.033 | 0.034 | 0.014 | **0.008** |
+| 2,048 | 2% liars | 0.034 | 0.037 | 0.017 | **0.012** |
+
+- Think alone halves the damage; adding smart fading cuts it to about a quarter (burst) or a third (liars) of the
+  herd's. Every one of the 10 seeds agrees at 256, 1,024 and 2,048.
+- Smart fading kills planted wrong marks about twice as fast **only when the ants think alone** (median tick 13 to
+  19 against 41 with fixed fading). Under herding, smart fading sometimes never kills them (1 to 5 runs in 10): the
+  herd's own beliefs keep confirming the lie. That is the teacher problem in miniature: when the readers' views come
+  from the crowd, the crowd's feedback protects the crowd's mistake.
+- A single wrong mark among 256 sites did almost nothing in any arm (extra wrong under 0.002); the burst is the
+  meaningful test.
+
+### Think alone on real model answers (saved W2 runs, $0)
+
+W2 ran the same three-agent teams on the same 60 questions and seeds, once blind (`independent_vote`: three answers,
+majority wins) and once after reading each other's answers (`signal_board`: two rounds of revising). No checker in
+either. Matched on question and seed:
+
+| Model | Team right, blind | Team right, after seeing each other | Seeing helped / hurt | When one agent is wrong, a teammate is wrong too (blind → seen) |
+|---|---|---|---|---|
+| Qwen3.8-27B | 0.767 | 0.744 | 3 / 7 | 0.55 → **0.90** |
+| Haiku | 0.883 | 0.822 | 0 / 11 | 0.87 → **0.97** |
+| Sonnet | 0.650 | 0.600 | 0 / 3 | 1.00 → 1.00 |
+
+- **Seeing each other's answers never paid**: 3 questions helped against 21 hurt across the three models (sign test
+  p < 0.001). Most of the harm (18 of 21) came from the seeing runs breaking more often (more rounds, longer prompts,
+  more format failures); where both runs finished, it was 2 helped and 3 hurt, so no measurable gain either way.
+- **Seeing each other made the mistakes line up**: for Qwen, the chance that a teammate shares a wrong answer went
+  from 0.55 to 0.90 (finance: 0.25 to 0.92). That is exactly what think-alone is meant to stop.
+- The other W2 pair (`evidence_isolated` against `evidence_exchange`) shows the flip side: when each agent holds
+  *different evidence*, sharing what you saw helps hugely (Qwen medical: 0.24 → 0.80 team right). But the isolated
+  arm also failed format checks very often, so treat that pair as a lead. Together they say the same thing as the
+  scripted world: **share what you saw, not what you concluded.**
+
+### 0.1 Earlier runs where a teacher or checker made the swarm worse
+
+- **v4 pilot, the queen** (`docs/research/v4-pilot-20261011/FINDINGS.md`): in colouring, workers with no queen scored
+  G 1.223; adding the queen dropped them to 0.926, and the queen plus escalation to 0.613. The likely cause: the queen
+  restricted whole groups and removed the move a worker needed.
+- **Oct 10 colony, the checker** (`docs/research/colony-v2-20261010/FINDINGS.md` on `hermes/track1-colony-experiment-20261010`):
+  verified admission zeroed every vote that failed its check, but those votes were still right 59% (Qwen) to 77%
+  (Haiku) of the time. Turning the check off took the local colony's finance score from 48% to 76%.
+- **v4 pilot, escalation and reports**: escalation fired on 99% of decisions, and only 2.4% of worker reports were
+  true; the oversight loop was mostly noise.
+- **v4.2 and v4.3, talk that could only veto**: asking a neighbour changed almost nothing (talk equalled marks), and
+  98% of the marks that tried to correct the scan were wrong.
+- **W2**: evidence exchange through a shared board cost 28 points against a single model, and (above) reading each
+  other's answers never helped.
+- **Research that agrees**: groups anchor on a leader's framing, with deference in about 61% of sessions and
+  pushback under 1% ("Diversity Collapse", 2026); peers flip correct agents to wrong more often than the reverse
+  ("Talk Isn't Always Cheap", 2025; "Herd Behavior", 2025).
+
+One honest caveat: the gains that *did* come in the past came from a model-free rule, not a model: the deterministic
+merge in E15 and W2 planning. Smart fading is that kind of rule. It has no judge; it only listens to the readers.
+
+### What next
+
+1. Make think-alone the default for every ant: ants mark only first-hand readings, never relays. Keep smart fading
+   as a safety layer for wrong information, not for accuracy.
+2. Port both into the colouring and foraging worlds, where the old marks were accurate but changed nothing, and check
+   the gain survives a real task.
+3. Then, and only then, model ants: small models that write down their own answer before they see the board, scored
+   against "best model × N samples". That is also where SLM steering fits: steer for errors that do not line up.
 
 ## 1. The short answer
 
@@ -22,11 +132,11 @@ a specific way, and each has a free first test.
 |---|---|---|---|---|
 | 1 | **Earned trust** | each ant's vote or mark counts by its track record | saved colony answers; liar probe | **run** (section 4) |
 | 2 | **Grow only for hard problems** | start with one ant; recruit more only when it is unsure | saved colony answers | **run** (section 4) |
-| 3 | **Roles that emerge** | ants switch between scout, worker and checker by what is missing nearby | scripted colouring and foraging | not yet |
-| 4 | **Memory that fades smartly** | marks fade fast when contradicted, slowly when confirmed | plant one wrong mark, watch it spread | not yet |
-| 5 | **Think alone, then compare** | every ant commits before it sees the others; the engine adds the randomness | scripted world with a "how alike are the errors" dial | not yet |
+| 3 | **Roles that emerge** | ants switch between scout, worker and checker by what is missing nearby | scripted colouring and foraging | dropped (has a checker) |
+| 4 | **Memory that fades smartly** | marks fade fast when contradicted, slowly when confirmed | plant wrong marks, watch them spread | **built** (section 0) |
+| 5 | **Think alone, then compare** | every ant commits before it sees the others and marks only what it saw | rumour world; saved W2 answers | **built** (section 0) |
 
-**Recommended first build: ideas 1 and 2 together, "grow on hard, trust by record".** The free check on the saved
+**First recommendation (superseded by Eshaan's pick of ideas 4 and 5): ideas 1 and 2 together.** The free check on the saved
 colony answers already points the right way: growing only on hard items matched the 3-call vote (within half a
 point) with 40% fewer calls on finance and 63% fewer on medical, and earned trust removed all the damage weak
 members did to the mixed vote. Neither beat the best single member, which matches every past result; what they win
