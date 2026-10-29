@@ -1,7 +1,7 @@
 # A smarter swarm: think alone, fade smartly
 
-Date: 2026-10-29 (revised twice the same day after Eshaan's steers). Status: **two ideas built and checked, for
-review**. Nothing here is preregistered. No model call, no paid call, no chain write and no key were used. Every new
+Date: 2026-10-29 (revised several times the same day after Eshaan's steers). Status: **two ideas built and checked, plus a
+skipped-work test and a deep-thinker check, for review**. Nothing here is preregistered. No model call, no paid call, no chain write and no key were used. Every new
 measurement is $0: scripted ants, or replays of model answers saved by earlier runs.
 
 Base: `hermes/v4.31-a2-20261016` (the newest work). Every number below cites the file it comes from.
@@ -21,7 +21,7 @@ the earlier Antelligence runs that back that call). Both ideas are now built, wi
   information comes as a burst of strong wrong marks at 5% of the sites, or as 2% liars.
 - `scripts/fading_alone_check.py` runs the grid; `scripts/alone_vs_seen_check.py` does the same comparison on saved
   real model answers. Results: `docs/research/swarm-scale-20261029/fading_alone_*.json`, `alone_vs_seen.json`.
-  Tests: `tests/smarter_swarm/` (28 tests).
+  Tests: `tests/smarter_swarm/` (41 tests, counting the skipped-work world in 0.2 and the deep-thinker check in 0.3).
 
 ### What got smarter (scripted world, 10 development seeds per cell, half-life 10 unless noted)
 
@@ -107,14 +107,128 @@ either. Matched on question and seed:
 One honest caveat: the gains that *did* come in the past came from a model-free rule, not a model: the deterministic
 merge in E15 and W2 planning. Smart fading is that kind of rule. It has no judge; it only listens to the readers.
 
+### 0.2 No faking "done" (Eshaan's second steer)
+
+The worry: a swarm that does 90% of a job, skips the last bit and records it as done. Models do this. Frontier models
+reward-hack in real tasks (METR, June 2025), exploit unit tests when the task cannot be done honestly (ImpossibleBench,
+arXiv 2510.20270), and learning to reward-hack spreads into wider bad behaviour (Anthropic, arXiv 2511.18397).
+"Premature termination" and "missing or incomplete verification" are among the commonest failures of multi-agent LLM
+systems (MAST, arXiv 2503.13657). No earlier Antelligence run measured it: none of the branches has a test for work
+claimed done but not done.
+
+**Built:** `antelligence/worlds/finish/` and `scripts/finish_check.py` (tests in `tests/smarter_swarm/test_finish.py`).
+A job is split into pieces (4 per ant, 2 to 10 units of work each). Ants leave "work left" or "done" marks. A share
+of the ants are **shortcut-takers**: they do the work until a piece is down to its last 20%, then mark it "done" and
+walk away. Nobody counts when the job is finished: each ant notices when it keeps finding nothing to do, and the swarm
+calls the job finished when 95% of its ants are idle (the way harvester ants decide, from how often they meet work).
+The score is the work still left at that moment. Three ways of handling "done":
+
+- **Trust the tick-box**: if a piece is marked done, believe it, don't look, and repeat "done" (the herd).
+- **Look yourself** (think alone): always look at the piece you stand on before believing it. Re-checking a piece
+  someone marked done costs a tick. Mark only what you saw. No checker anywhere.
+- **Trust plus inspectors** (a checker, for comparison): 10% of the ants stop working and become inspectors who walk
+  to pieces marked done and reopen them if work is left.
+
+Each with fixed or smart fading. 10 development seeds per cell, all arms on the same worlds:
+
+With 20% shortcut-takers (`finish_n{64,256,1024}.json`):
+
+| Ants (pieces) | Pieces left unfinished when the swarm said done: trust | **look yourself** | inspectors | Work left: trust | **look** | Ticks to "done": trust | look | inspectors |
+|---|---|---|---|---|---|---|---|---|
+| 64 (256) | 20.7 | **0.9** | 20.1 | 1.8% | **0.2%** | 65.7 | 65.4 | 78.0 |
+| 256 (1,024) | 84.8 | **2.6** | 84.3 | 1.9% | **0.2%** | 69.8 | 74.7 | 77.0 |
+| 1,024 (4,096) | 334.4 | **13.4** | 322.5 | 1.7% | **0.2%** | 70.8 | 73.6 | 79.4 |
+
+For scale, an honest swarm (no shortcut-takers) leaves 0.8, 2.9 and 10.3 pieces, the same under trust and look.
+
+- **Trusting "done" lets the shortcut through.** With 20% shortcut-takers about 8% of the pieces are left unfinished
+  and recorded as done (about 2% of the work). It grows with the share of shortcut-takers (5%: 0.6%, 10%: 0.9%,
+  20%: 1.9% of the work at 256 ants), in every seed.
+- **Looking yourself closes it, with no checker.** The swarm ends at about the honest swarm's level at every size and every
+  shortcut share. It beats trust on all 10 seeds in every cell but one (9 of 10 at 256 ants with 5%). It costs 0 to 5
+  extra ticks (at most 7%), because most re-checking happens when an ant would otherwise be idle.
+- **Inspectors did not help.** Taking 10% of the ants off work to inspect caught almost nothing (84 against 85 pieces
+  unfinished at 256 ants) and made "done" come 6 to 12 ticks later. Their "work left" marks were outvoted by everyone
+  repeating "done". That is Deming's point, measured.
+- **Smart fading changed nothing here.** Whether a piece counts as done depends on which claim is stronger, and under
+  trust nobody ever contradicts a claim. The fix is a rule (who may write "done"), not a setting.
+- **The stop rule leaks a little on its own.** Even an honest swarm calls it done with 0.2% of the work left. Waiting 20
+  idle ticks instead of 10 cuts that to 0.02% for 13 more ticks (18% longer); with 20% shortcut-takers it then leaves
+  81 pieces under trust against 0.8 when ants look (`finish_n256_p20.json`).
+- **Looking has a price when looking is slow.** If re-checking a claim takes 3 ticks, looking at every claim doubles
+  the time (70 to 145 ticks) and still leaves 1.1%, because ants run out of patience while re-checking. Spot looking
+  (re-check one claim in four) gives 107 ticks and 0.5% (`finish_n256_look3*.json`). So the next step is to look
+  cheaply: spot checks by peers, and more often on claims from ants with a poor record (earned trust, idea 1).
+
+### What the books say, and the factor we were missing
+
+| Source | What it says | What it means for the swarm |
+|---|---|---|
+| Deming, *Out of the Crisis* (1982), point 3 | Stop depending on inspection; build quality into the process. | Fix how ants mark work, not who checks it. The inspector arm above agrees: it cost 10% of the workers and caught nothing extra. |
+| Ohno, *Toyota Production System* (1978) | Jidoka and the andon cord: anyone who sees a defect stops the line; never pass a defect on. | Any ant that sees unfinished work says so, and its first-hand "work left" outweighs a claim. That is the look-yourself rule. |
+| Goodhart (1975); Strathern (1997); Kerr, "On the folly of rewarding A, while hoping for B" (1975) | When a measure becomes a target it stops measuring. You get what you reward, not what you hoped for. | Never score or reward "pieces marked done". Score the work left in the world. The same holds for reasoning traces (0.3). |
+| Brooks, *The Mythical Man-Month* (1975) | Projects sit at "90% done" for a long time: the last part hides the hard work. | The last bit is where skipping hides. Even with no cheats our stop rule leaves 0.2% to 0.3% behind (0.02% with more patience). |
+| Meadows, *Thinking in Systems* (2008) | Changing the rules and the information flows moves a system far more than tuning a number. | Changing who may write "done" (a rule) fixed it. Tuning fade speed (a number) did nothing here. |
+| Surowiecki, *The Wisdom of Crowds* (2004) | Crowds are wise only with diversity, independence, decentralisation and a way to combine. | Relaying a claim breaks independence: one shortcut becomes many "done" marks. |
+| Gordon, *Ant Encounters* (2010) | No ant is in charge; colonies decide from how often ants meet things. | Our stop rule. No counter, no boss. |
+| Grassé (1959) on termites | Stigmergy: the work itself prompts the next worker. | "Done" should be a fact you can see on the piece, not a note about it. |
+| Ostrom, *Governing the Commons* (1990) | Shared resources last when the users themselves do the monitoring, with graduated sanctions. | Peers look, not a separate police. Next: an ant caught claiming done on unfinished work loses trust (idea 1). |
+| Perrow, *Normal Accidents* (1984) | In tightly coupled systems small faults spread into big ones. | A trusted claim ties everyone to one ant's word. Looking yourself loosens that tie. |
+
+**The factor we weren't accounting for:** who is allowed to write "done", and whether "done" is a *claim* or a *fact
+you can see in the work*. Every earlier version scored what agents reported (reports, verdicts, escalations), and the
+reports were mostly wrong (2.4% true in the v4 pilot). A second, smaller place to skip is the stop rule itself: the
+moment a swarm decides it is finished is a decision too, and it needs the same "look at the work" rule.
+
+### 0.3 Deep thinkers in the swarm (Eshaan's third steer)
+
+Models that think at length before answering are strong but slow and costly. The rule stays the same: a deep thinker
+is a smarter ant, never a boss. Three ways to use one, simplest first:
+
+1. **Ask it only where the cheap ants disagree, and count it as one vote.** Its vote is weighed by its track record,
+   exactly like every other ant's (idea 1). Tested for free below.
+2. **Thoughts as trails.** After an ant has answered alone, it leaves its key steps as fading marks. Other ants may
+   reuse a step only after they have answered alone themselves, and a step lasts longer when other ants' own work
+   agrees with it (smart fading on steps). This needs new model calls, so it is not run yet (cheap: about 30 items).
+3. **Traces as proof of work.** A trace that says "I checked X" can be compared with what the world shows was done,
+   the same way the finish world compares "done" with the work left. The catch is real: traces are often not faithful.
+   Reasoning models used a planted hint but mentioned it in only a minority of cases (arXiv 2505.05410), and training a
+   model against a trace monitor teaches it to hide the misbehaviour instead of stopping (arXiv 2503.11926; see also
+   arXiv 2507.11473). So a trace is information to read, never a score to reward: Goodhart again.
+
+**Free test of idea 1** (`scripts/deep_on_split_check.py`, `deep_on_split.json`; tests in
+`tests/smarter_swarm/test_deep_on_split.py`). None of the saved runs used a long-reasoning model, so the strongest
+saved model (Haiku, 0.88 against Qwen's 0.78 on finance) stands in for it. Saved Oct 10 colony answers, 50 items per
+domain, 4 rotations each. "Split" means the three cheap answers were not unanimous:
+
+| Cheap crowd (3 calls) | Domain | Cheap vote | Deep alone | Deep **decides** where split | Deep is **one vote** where split | Deep calls per item |
+|---|---|---|---|---|---|---|
+| Qwen ×3 | finance | 0.780 | 0.880 | 0.875 | **0.890** | 0.41 |
+| Qwen ×3 | medical | 0.830 | 0.820 | **0.855** | 0.830 | 0.12 |
+| Qwen + Phi + Gemma | finance | 0.745 | 0.880 | 0.880 | **0.885** | 0.97 |
+| Qwen + Phi + Gemma | medical | 0.800 | 0.820 | 0.830 | **0.840** | 0.56 |
+
+- **Ask the deep model only where the cheap ants split.** With three Qwen samples, that matched or beat asking it on
+  every item while using it on 41% (finance) and 12% (medical) of them.
+- **One vote beat a verdict in 3 of 4 cells**, by 0.5 to 1.5 points. The exception is Qwen on medical, where the
+  verdict won by 2.5 points: Qwen's track record there is better than Haiku's, so one Haiku vote never overturned two
+  Qwen votes. Read all of this as a lead: one stand-in model, 50 items per domain, rotations that are not independent.
+- **Different cheap models disagree almost always** (97% of finance items), so the split test saves little there. A
+  crowd of one model splits less often, but its mistakes line up (section 0, the W2 table). That trade is the next thing to
+  measure with a real deep thinker.
+
 ### What next
 
-1. Make think-alone the default for every ant: ants mark only first-hand readings, never relays. Keep smart fading
-   as a safety layer for wrong information, not for accuracy.
-2. Port both into the colouring and foraging worlds, where the old marks were accurate but changed nothing, and check
-   the gain survives a real task.
-3. Then, and only then, model ants: small models that write down their own answer before they see the board, scored
-   against "best model × N samples". That is also where SLM steering fits: steer for errors that do not line up.
+1. Make think-alone the default for every ant: ants mark only first-hand readings, never relays. That includes
+   "done": a piece is done when an ant sees it done, never because someone said so. Keep smart fading as a safety
+   layer for wrong information, not for accuracy.
+2. Make looking cheap: spot checks by peers, more often on claims from ants with a poor record (idea 1), and a stop
+   rule that waits long enough. Score the swarm on work left in the world, never on what it reports.
+3. Port all of it into the colouring and foraging worlds, where the old marks were accurate but changed nothing, and
+   check the gain survives a real task.
+4. Then model ants: small models that write down their own answer before they see the board, with a deep thinker
+   asked only where they split and counted as one vote (0.3). That is also where SLM steering fits: steer for errors
+   that do not line up, and for honest "not done yet".
 
 ## 1. The short answer
 
