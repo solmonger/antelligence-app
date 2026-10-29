@@ -1,0 +1,83 @@
+{
+ "check": "cached_colony_check",
+ "results": {
+  "finance": {
+   "_n_replays": {
+    "items": 50,
+    "replays": 200
+   },
+   "best member once (qwen)": {
+    "accuracy": 0.765,
+    "calls_per_item": 1.0
+   },
+   "best member x3, vote": {
+    "accuracy": 0.78,
+    "calls_per_item": 3.0
+   },
+   "grow on hard: +2 qwen": {
+    "accuracy": 0.785,
+    "calls_per_item": 1.82
+   },
+   "grow on hard: ask haiku": {
+    "accuracy": 0.885,
+    "calls_per_item": 1.41
+   },
+   "haiku once": {
+    "accuracy": 0.88,
+    "calls_per_item": 1.0
+   },
+   "mixed colony, earned trust": {
+    "accuracy": 0.765,
+    "calls_per_item": 3.0
+   },
+   "mixed colony, equal votes": {
+    "accuracy": 0.745,
+    "calls_per_item": 3.0
+   }
+  },
+  "medical": {
+   "_n_replays": {
+    "items": 50,
+    "replays": 200
+   },
+   "best member once (qwen)": {
+    "accuracy": 0.825,
+    "calls_per_item": 1.0
+   },
+   "best member x3, vote": {
+    "accuracy": 0.83,
+    "calls_per_item": 3.0
+   },
+   "grow on hard: +2 qwen": {
+    "accuracy": 0.825,
+    "calls_per_item": 1.11
+   },
+   "grow on hard: ask haiku": {
+    "accuracy": 0.825,
+    "calls_per_item": 1.055
+   },
+   "haiku once": {
+    "accuracy": 0.82,
+    "calls_per_item": 1.0
+   },
+   "mixed colony, earned trust": {
+    "accuracy": 0.825,
+    "calls_per_item": 3.0
+   },
+   "mixed colony, equal votes": {
+    "accuracy": 0.8,
+    "calls_per_item": 3.0
+   }
+  }
+ },
+ "trust_weights": {
+  "gemma/finance": 0.0,
+  "gemma/medical": 0.8348,
+  "haiku/finance": 1.4028,
+  "haiku/medical": 0.9628,
+  "phi/finance": 0.0,
+  "phi/medical": 0.1054,
+  "qwen/finance": 1.2443,
+  "qwen/medical": 0.9628
+ }
+}

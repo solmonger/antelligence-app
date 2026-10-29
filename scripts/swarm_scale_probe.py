@@ -1,7 +1,6 @@
 """Swarm-at-scale probe: many liars, many agents, one model-free gate. No model calls, no network, $0.
 
-Groundwork check for direction D1 in ``docs/plans/2026-10-29-swarm-at-scale.md`` ("trusted gate, untrusted
-swarm"). It reuses the v4 pilot colouring world and its scripts, and changes only two things:
+Groundwork check for idea 1 ("earned trust") in ``docs/plans/2026-10-29-swarm-at-scale.md``, section 4.2. It reuses the v4 pilot colouring world and its scripts, and changes only two things:
 
 * **Many liars.** The pilot's v2 variant has one fixed liar (agent "1"). Here a seeded fraction ``f`` of the
   agents are liars. A liar announces a random colour to each neighbour every round. Only edges between two
