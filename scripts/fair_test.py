@@ -1,20 +1,25 @@
 """The fair test, end to end: freeze the plan, run the calls, then score. See docs/plans/2026-10-29-fair-test.md.
 
-Four steps, in this order:
+Five steps, in this order:
 
 1. ``freeze`` -- writes ``prereg.json`` next to the question files: the SHA-256 of every question and answer file
    and of the harness code, the model, the arms and the pass lines. Commit it before any paid call.
 2. ``plan`` -- prints what a run would cost (calls, tokens, dollars) and checks nothing changed since ``freeze``.
-3. ``run`` -- asks the model. ``--dry-run`` uses a fake model ($0, for checking the plumbing); ``--live`` uses
+3. ``smoke`` -- one question through every arm (20 calls, well under a cent). It prints the model name the portal
+   reports, how the replies finished, the first reply and any problem, and says whether to start the full run.
+4. ``run`` -- asks the model. ``--dry-run`` uses a fake model ($0, for checking the plumbing); ``--live`` uses
    DeepSeek V4.1 Flash on the Nous portal with the key from the Hermes env file (never printed). Live calls are
    also written to the repo's usage ledger and stop at the existing Nous budget stop, on top of ``--max-usd``.
-   Every reply is cached, so a stopped run resumes without paying twice. Answer files are never opened here.
-4. ``score`` -- only now reads the answer files, and gives the preregistered verdict.
+   Every usable reply is cached, so a stopped run resumes without paying twice; a failed call is asked again. The
+   run stops by itself after 5 unusable replies in a row and prints why. Answer files are never opened here.
+5. ``score`` -- only now reads the answer files, and gives the preregistered verdict, or "invalid run" when under
+   90% of the answers were usable (then nothing was measured).
 
 Usage::
 
     uv run python scripts/fair_test.py freeze
     uv run python scripts/fair_test.py plan
+    uv run python scripts/fair_test.py smoke --live
     uv run python scripts/fair_test.py run --live --max-usd 3
     uv run python scripts/fair_test.py score
 """
@@ -32,6 +37,7 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from antelligence.experiments import fair_test as ft
 from antelligence.providers.base import ChatRequest, ChatResponse
+from antelligence.providers.redact import scrub
 
 REPO = Path(__file__).resolve().parents[1]
 DATA = REPO / "docs/research/fair-test-20261029"
@@ -119,7 +125,7 @@ def cmd_plan(a: argparse.Namespace) -> int:
     return 0
 
 
-def live_provider() -> Any:
+def live_provider(*, ledger: Optional[Path] = None, transport: Any = None) -> Any:
     from antelligence.experiments.v41_prod import USAGE_LEDGER, BudgetGuard, GuardedChat, read_nous_key
     from antelligence.providers.decision_backends import NOUS_URL
     from antelligence.providers.ledger import LedgerWriter, LedgeredChat
@@ -128,11 +134,36 @@ def live_provider() -> Any:
 
     key = read_nous_key()
     register_secret(key)
+    # The provider must hand back every billed reply, so the runner can count its cost and judge it: the served
+    # model name (spelled differently by the portal) and the finish reason are checked in ft.Runner.ask instead of
+    # being raised here, where a refused reply's cost was lost.
+    ledger = Path(ledger or USAGE_LEDGER)
     chat = OpenAICompatProvider(NOUS_URL, api_key=key, allowed_models=[ft.MODEL], max_concurrency=4,
-                                extra_body=ft.THINKING_OFF)
-    ledgered = LedgeredChat(chat, LedgerWriter(USAGE_LEDGER, redact=[key]), role="worker",
-                            expected_model=ft.MODEL, backend="nous", prefix=True)
-    return GuardedChat(ledgered, BudgetGuard("nous"))
+                                extra_body=ft.THINKING_OFF, require_model_match=False, require_stop=False,
+                                transport=transport)
+    ledgered = LedgeredChat(chat, LedgerWriter(ledger, redact=[key]), role="worker",
+                            expected_model="", backend="nous", prefix=True, price=ft.PRICE)  # "" accepts any name
+    return GuardedChat(ledgered, BudgetGuard("nous", usage=ledger))
+
+
+def run_questions(runner: ft.Runner, qs: List[ft.Question], concurrency: int, every: int = 20):
+    done: Dict[str, Dict[str, Any]] = {}
+
+    def save(row: Dict[str, Any]) -> None:
+        done[row["id"]] = row
+        if len(done) % every == 0:
+            print(f"  {len(done)}/{len(qs)} questions, ${runner.spent:.4f} spent", flush=True)
+
+    status = "complete"
+    try:
+        asyncio.run(runner.run(qs, concurrency=concurrency, on_done=save))
+    except ft.BrokenRun as exc:
+        status = f"STOPPED, the model's replies are not usable: {exc}"
+    except ft.SpendCap as exc:
+        status = f"stopped at the cap: {exc}"
+    except Exception as exc:  # an outage or a budget stop: keep what is done, a rerun resumes from the cache
+        status = f"stopped: {type(exc).__name__}: {scrub(str(exc))[:300]}"
+    return [done[q.id] for q in qs if q.id in done], status
 
 
 def cmd_run(a: argparse.Namespace) -> int:
@@ -149,26 +180,41 @@ def cmd_run(a: argparse.Namespace) -> int:
     runner = ft.Runner(provider, cache, max_usd=a.max_usd)
     est = ft.estimate(qs)
     print(f"{len(qs)} questions, about {est['calls']} calls, about ${est['usd']}; cap ${a.max_usd:.2f}; "
-          f"already spent ${runner.spent:.4f} (cached)")
-    done: Dict[str, Dict[str, Any]] = {}
-
-    def save(row: Dict[str, Any]) -> None:
-        done[row["id"]] = row
-        if len(done) % 20 == 0:
-            print(f"  {len(done)}/{len(qs)} questions, ${runner.spent:.4f}", flush=True)
-
-    status = "complete"
-    try:
-        asyncio.run(runner.run(qs, concurrency=a.concurrency, on_done=save))
-    except ft.SpendCap as exc:
-        status = f"stopped at the cap: {exc}"
-    except Exception as exc:  # an outage or a budget stop: keep what is done, a rerun resumes from the cache
-        status = f"stopped: {type(exc).__name__}: {exc}"
-    rows = [done[q.id] for q in qs if q.id in done]
+          f"already spent ${runner.spent:.4f} on cached calls")
+    if runner.ignored:
+        print(f"  {runner.ignored} failed calls from an earlier run are in the cache; they will be asked again")
+    rows, status = run_questions(runner, qs, a.concurrency)
     out.write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in rows))
-    print(f"{status}. {len(rows)}/{len(qs)} questions, {runner.calls} new calls, {runner.failed} unusable, "
+    print(f"{status}\n{len(rows)}/{len(qs)} questions, {runner.calls} new calls ({runner.failed} failed), "
           f"${runner.spent:.4f} spent in total -> {out}")
     return 0 if status == "complete" else 2
+
+
+def cmd_smoke(a: argparse.Namespace) -> int:
+    """One question through every arm (20 calls, well under a cent), with what the model actually sent back."""
+    if a.live == a.dry_run:
+        raise SystemExit("say --live (paid, real model) or --dry-run (free, fake model)")
+    check_frozen(a.data)
+    qs = load_all(a.data, [a.kind])
+    if not qs:
+        raise SystemExit(f"no {a.kind} questions in {a.data}")
+    tag = "live" if a.live else "dry"
+    cache = a.data / f"cache_{tag}.jsonl"  # the full run reuses these replies; failed ones are asked again
+    runner = ft.Runner(live_provider() if a.live else FakeModel(), cache, max_usd=a.max_usd)
+    rows, status = run_questions(runner, qs[:1], concurrency=1, every=1)
+    new = [json.loads(line) for line in cache.read_text().splitlines()[-runner.calls:]] if runner.calls else []
+    served = sorted({r.get("served_model") or "none" for r in new})
+    finish = sorted({r.get("finish_reason") or "none" for r in new})
+    usable = sum(a is not None for r in rows for arm in ("single", "swarm", "seen") for a in r[arm])
+    print(f"question {qs[0].id}: {usable}/20 usable answers; served as {', '.join(served)}; "
+          f"finished: {', '.join(finish)}; ${runner.spent:.4f} spent so far in this cache")
+    if new:
+        print(f"first reply: {new[0].get('content', '')[:200]!r}")
+    for reason in dict.fromkeys(r.get("reason") for r in new if r.get("reason")):
+        print(f"problem: {reason}")
+    ok = status == "complete" and usable >= 18
+    print("SMOKE CHECK PASSED: start the full run." if ok else f"SMOKE CHECK FAILED: {status}. Do not start the full run.")
+    return 0 if ok else 2
 
 
 def read_key(data: Path) -> Dict[str, Any]:
@@ -231,7 +277,7 @@ def cmd_score(a: argparse.Namespace) -> int:
 def main(argv: Sequence[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("freeze", "plan", "run", "score"):
+    for name in ("freeze", "plan", "smoke", "run", "score"):
         p = sub.add_parser(name)
         p.add_argument("--data", type=Path, default=DATA)
         p.add_argument("--kinds", default="exam,forecast")
@@ -243,6 +289,11 @@ def main(argv: Sequence[str]) -> int:
     run.add_argument("--concurrency", type=int, default=4)
     run.add_argument("--cache", type=Path, default=None)
     run.add_argument("--out", type=Path, default=None)
+    sm = sub.choices["smoke"]
+    sm.add_argument("--live", action="store_true")
+    sm.add_argument("--dry-run", action="store_true")
+    sm.add_argument("--kind", choices=ft.KINDS, default="exam")
+    sm.add_argument("--max-usd", type=float, default=0.05)
     sc = sub.choices["score"]
     sc.add_argument("--rows", type=Path, default=None)
     sc.add_argument("--out", type=Path, default=None)
@@ -251,7 +302,7 @@ def main(argv: Sequence[str]) -> int:
     bad = set(a.kinds) - set(ft.KINDS)
     if bad:
         raise SystemExit(f"unknown kinds: {sorted(bad)}")
-    return {"freeze": cmd_freeze, "plan": cmd_plan, "run": cmd_run, "score": cmd_score}[a.cmd](a)
+    return {"freeze": cmd_freeze, "plan": cmd_plan, "smoke": cmd_smoke, "run": cmd_run, "score": cmd_score}[a.cmd](a)
 
 
 if __name__ == "__main__":

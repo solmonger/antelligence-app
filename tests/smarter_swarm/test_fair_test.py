@@ -166,10 +166,7 @@ def test_runner_stops_at_the_cap(tmp_path):
     assert r.spent <= 0.01
 
 
-def test_bad_reply_is_an_unusable_answer_but_an_outage_is_retried(tmp_path):
-    r = ft.Runner(Scripted(_letter, error=ProviderError("bad json")), tmp_path / "a.jsonl", max_usd=1, backoff=())
-    row = asyncio.run(r.run_question(_exam()))
-    assert row["single"] == [None] * 10 and r.failed == 20
+def test_outage_is_retried_and_a_lasting_one_caches_nothing(tmp_path):
     flaky = Scripted(_letter, outages=2)
     r2 = ft.Runner(flaky, tmp_path / "b.jsonl", max_usd=1, backoff=(0, 0))
     assert asyncio.run(r2.run_question(_exam()))["swarm"] == ["A"] * 5
@@ -177,7 +174,94 @@ def test_bad_reply_is_an_unusable_answer_but_an_outage_is_retried(tmp_path):
     r3 = ft.Runner(down, tmp_path / "c.jsonl", max_usd=1, backoff=(0,))
     with pytest.raises(ProviderUnavailable):
         asyncio.run(r3.run_question(_exam()))
-    assert not (tmp_path / "c.jsonl").exists() and r3.spent == pytest.approx(0)  # nothing cached or charged
+    assert not (tmp_path / "c.jsonl").exists() and r3.spent == pytest.approx(0) and r3.reserved == pytest.approx(0)
+
+
+class Replying:
+    """A fake provider that returns a full ChatResponse built by ``make(req)``."""
+
+    def __init__(self, make) -> None:
+        self.make, self.calls = make, 0
+
+    async def complete(self, req):
+        self.calls += 1
+        return self.make(req)
+
+
+def _resp(req, content='{"answer": "A"}', model=None, finish="stop", extra=None):
+    return ChatResponse(content=content, model=model or req.model, request_hash=req.request_hash,
+                        prompt_tokens=1000, completion_tokens=100, finish_reason=finish, extra=extra or {})
+
+
+def test_a_broken_provider_stops_the_run_fast_and_says_why(tmp_path):
+    # The Oct 29 failure: every call refused, 6,820 times, and the run still "completed" with nothing to score.
+    prov = Scripted(_letter, error=ProviderError("HTTP 400: unknown parameter"))
+    r = ft.Runner(prov, tmp_path / "c.jsonl", max_usd=1, backoff=(), max_fail_streak=5)
+    with pytest.raises(ft.BrokenRun, match="unknown parameter"):
+        asyncio.run(r.run([_exam(str(i)) for i in range(50)], concurrency=1))
+    assert prov.calls <= 15  # stops after the first question's batch, not after 1,000 calls
+    rows = [json.loads(line) for line in (tmp_path / "c.jsonl").read_text().splitlines()]
+    assert rows and all(row["error"] == "ProviderError" and "unknown parameter" in row["reason"] for row in rows)
+
+
+def test_unparseable_replies_also_stop_the_run(tmp_path):
+    prov = Replying(lambda req: _resp(req, content="I think the answer is A."))
+    r = ft.Runner(prov, tmp_path / "c.jsonl", max_usd=1, backoff=())
+    with pytest.raises(ft.BrokenRun, match="not in the asked format"):
+        asyncio.run(r.run_question(_exam()))
+    assert r.spent > 0  # those replies were billed, and counted
+
+
+def test_a_few_bad_replies_do_not_stop_the_run(tmp_path):
+    n = {"i": 0}
+
+    def make(req):
+        n["i"] += 1
+        return _resp(req, content="nonsense" if n["i"] % 4 == 0 else '{"answer": "B"}')
+    r = ft.Runner(Replying(make), tmp_path / "c.jsonl", max_usd=1, backoff=())
+    rows = asyncio.run(r.run([_exam(str(i)) for i in range(3)], concurrency=1))
+    assert len(rows) == 3 and sum(a is None for row in rows for a in row["single"]) > 0
+
+
+def test_failed_calls_in_the_cache_are_asked_again(tmp_path):
+    cache = tmp_path / "c.jsonl"
+    bad = ft.Runner(Scripted(_letter, error=ProviderError("refused")), cache, max_usd=1, backoff=(), max_fail_streak=99)
+    assert asyncio.run(bad.run_question(_exam()))["single"] == [None] * 10
+    good_prov = Scripted(_letter)
+    good = ft.Runner(good_prov, cache, max_usd=1, backoff=())
+    assert good.ignored == 20 and not good.cache
+    assert asyncio.run(good.run_question(_exam()))["single"] == ["A"] * 10
+    assert good_prov.calls == 20
+    again = Scripted(_letter)
+    assert asyncio.run(ft.Runner(again, cache, max_usd=1, backoff=()).run_question(_exam()))["swarm"] == ["A"] * 5
+    assert again.calls == 0  # usable replies are reused
+
+
+def test_served_model_names():
+    assert ft.served_ok("deepseek/deepseek-v4.1-flash")
+    assert ft.served_ok("DeepSeek-V4.1-Flash")
+    assert ft.served_ok("deepseek-v4.1-flash-20260910")
+    assert not ft.served_ok("deepseek/deepseek-v4.1-pro")
+    assert not ft.served_ok("qwen/qwen3-8b")
+    assert not ft.served_ok("")
+
+
+def test_reply_checks_keep_the_cost(tmp_path):
+    other = ft.Runner(Replying(lambda req: _resp(req, model="qwen/qwen3-8b")), tmp_path / "a.jsonl", max_usd=1,
+                      backoff=(), max_fail_streak=99)
+    assert asyncio.run(other.run_question(_exam()))["single"] == [None] * 10
+    assert other.failed == 20 and other.spent > 0
+    cut = ft.Runner(Replying(lambda req: _resp(req, finish="length")), tmp_path / "b.jsonl", max_usd=1, backoff=(),
+                    max_fail_streak=99)
+    asyncio.run(cut.run_question(_exam()))
+    rows = [json.loads(line) for line in (tmp_path / "b.jsonl").read_text().splitlines()]
+    assert {row["error"] for row in rows} == {"NotFinished"} and all(row["cost_usd"] > 0 for row in rows)
+    renamed = ft.Runner(Replying(lambda req: _resp(req, model="DeepSeek-V4.1-Flash", extra={"cost": 0.0001})),
+                        tmp_path / "c.jsonl", max_usd=1, backoff=())
+    assert asyncio.run(renamed.run_question(_exam()))["seen"] == ["A"] * 5
+    assert renamed.spent == pytest.approx(20 * 0.0001)  # the portal's own cost wins over our estimate
+    reloaded = ft.Runner(Replying(lambda req: _resp(req)), tmp_path / "b.jsonl", max_usd=1, backoff=())
+    assert reloaded.spent == pytest.approx(cut.spent)  # money already spent on failed replies still counts
 
 
 # ------------------------------------------------------------------- scoring
@@ -216,6 +300,15 @@ def test_mixed_verdict():
     rows = [_row(f"q{i}", "exam", ["B"] * 10, ["A"] * 5) for i in range(20)]
     rows += [_row(f"f{i}", "forecast", [0.9] * 10, [0.2] * 5) for i in range(20)]
     assert ft.score(rows, {**ek, **fk})["verdict"] == "mixed"
+
+
+def test_a_run_with_no_usable_answers_gets_no_verdict():
+    key = {f"q{i}": "A" for i in range(10)}
+    rows = [_row(f"q{i}", "exam", [None] * 10, [None] * 5) for i in range(10)]
+    res = ft.score(rows, key)
+    assert res["usable_share"] == 0 and res["verdict"].startswith("invalid run")
+    half = [_row(f"q{i}", "exam", ["A"] * 10, ["A", None, None, None, None]) for i in range(10)]
+    assert ft.score(half, key)["verdict"].startswith("invalid run")  # 80% usable is still too few
 
 
 def test_estimate_counts_twenty_calls():
@@ -272,6 +365,20 @@ def test_cli_freeze_dry_run_and_score(tmp_path, capsys):
         cli.main(["score", "--data", str(data), "--rows", str(data / "rows_dry.jsonl")])
 
 
+def test_smoke_check(tmp_path, capsys, monkeypatch):
+    prep = _agieval_like(tmp_path / "raw")
+    data = tmp_path / "data"
+    prep.main(["--out", str(data), "--per-task", "2", "--raw-dir", str(tmp_path / "raw")])
+    cli = _load("fair_test")
+    cli.main(["freeze", "--data", str(data)])
+    assert cli.main(["smoke", "--dry-run", "--data", str(data)]) == 0
+    assert "SMOKE CHECK PASSED" in capsys.readouterr().out
+    monkeypatch.setattr(cli, "live_provider", lambda: Scripted(_letter, error=ProviderError("HTTP 404: no such model")))
+    assert cli.main(["smoke", "--live", "--data", str(data)]) == 2
+    out = capsys.readouterr().out
+    assert "SMOKE CHECK FAILED" in out and "no such model" in out
+
+
 def test_cli_scores_forecasts_and_the_late_subset(tmp_path):
     data = tmp_path / "data"
     data.mkdir()
@@ -307,3 +414,63 @@ def test_committed_exam_set_matches_its_manifest():
         assert ft.sha256_file(DATA / name) == manifest[name]
     qs = ft.load_questions(DATA / "exam_questions.jsonl", "exam")
     assert len(qs) == 240 and {q.group for q in qs} == {"lsat-ar", "lsat-lr", "logiqa-en", "aqua-rat"}
+
+
+# ------------------------------------------------------------------- the live stack, against a fake portal
+
+def _portal(served="DeepSeek-V4.1-Flash", status=200, finish="stop", seen=None):
+    import httpx
+
+    def handler(request):
+        body = json.loads(request.content)
+        if seen is not None:
+            seen.append(body)
+        if status != 200:
+            return httpx.Response(status, json={"error": {"message": "reasoning is not a valid parameter"}})
+        text = body["messages"][-1]["content"]
+        content = '{"reason": "r", "answer": "A"}' if '"answer"' in text else '{"reason": "r", "probability": 0.7}'
+        return httpx.Response(200, json={"id": "x", "model": served, "choices": [
+            {"message": {"content": content}, "finish_reason": finish}],
+            "usage": {"prompt_tokens": 900, "completion_tokens": 60}})
+    return httpx.MockTransport(handler)
+
+
+def test_live_stack_accepts_the_portal_spelling_and_logs_spend(tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("NOUS_API_KEY=sk-test-not-real\n")
+    monkeypatch.setenv("ANTELLIGENCE_NOUS_ENV_FILE", str(env))
+    cli = _load("fair_test")
+    seen = []
+    ledger = tmp_path / "ledger.jsonl"
+    prov = cli.live_provider(ledger=ledger, transport=_portal(seen=seen))
+    r = ft.Runner(prov, tmp_path / "c.jsonl", max_usd=1, backoff=())
+    row = asyncio.run(r.run_question(_exam()))
+    assert row["single"] == ["A"] * 10 and r.failed == 0
+    assert seen[0]["reasoning"] == {"enabled": False} and seen[0]["model"] == ft.MODEL
+    logged = [json.loads(line) for line in ledger.read_text().splitlines()]
+    assert len(logged) == 20 and all(x["cost_usd"] > 0 and "error" not in x for x in logged)
+    assert r.spent == pytest.approx(sum(x["cost_usd"] for x in logged))
+    assert "sk-test-not-real" not in ledger.read_text() + (tmp_path / "c.jsonl").read_text()
+
+
+def test_the_old_provider_setup_refused_a_differently_spelled_model_name(tmp_path):
+    # The Oct 29 run's stack, checking the name exactly: a portal that spells the model differently fails every call
+    # while still billing it. The new stack accepts the spelling; a different model is still refused (above).
+    from antelligence.providers.openai_compat import OpenAICompatProvider
+
+    old = OpenAICompatProvider("https://portal.test/v1", api_key="k", allowed_models=[ft.MODEL],
+                               extra_body=ft.THINKING_OFF, transport=_portal())
+    r = ft.Runner(old, tmp_path / "c.jsonl", max_usd=1, backoff=())
+    with pytest.raises(ft.BrokenRun, match="differs from requested"):
+        asyncio.run(r.run_question(_exam()))
+
+
+def test_live_stack_reports_a_rejected_request(tmp_path, monkeypatch):
+    env = tmp_path / ".env"
+    env.write_text("NOUS_API_KEY=sk-test-not-real\n")
+    monkeypatch.setenv("ANTELLIGENCE_NOUS_ENV_FILE", str(env))
+    cli = _load("fair_test")
+    prov = cli.live_provider(ledger=tmp_path / "l.jsonl", transport=_portal(status=400))
+    r = ft.Runner(prov, tmp_path / "c.jsonl", max_usd=1, backoff=())
+    with pytest.raises(ft.BrokenRun, match="not a valid parameter"):
+        asyncio.run(r.run_question(_exam()))

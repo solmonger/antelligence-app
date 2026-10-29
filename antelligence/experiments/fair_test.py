@@ -35,6 +35,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from antelligence.providers.base import ChatRequest, ChatResponse, ProviderError, ProviderUnavailable
+from antelligence.providers.redact import scrub
 
 MODEL = "deepseek/deepseek-v4.1-flash"
 PRICE = (0.106, 0.513)          # $ per million tokens in / out on the Nous portal (providers/ledger.py)
@@ -213,55 +214,113 @@ class SpendCap(RuntimeError):
     """The run stopped because the next call could push spend over the cap."""
 
 
+class BrokenRun(RuntimeError):
+    """The run stopped because the last ``max_fail_streak`` calls in a row gave no usable answer. A run like that
+    measures the plumbing, not the swarm, so it must stop and say why instead of scoring empty answers."""
+
+
+def served_ok(served: str, model: str = MODEL) -> bool:
+    """Does the model name the provider reports name the model we asked for? Providers spell it differently
+    (``deepseek/deepseek-v4.1-flash``, ``DeepSeek-V4.1-Flash``, a dated suffix), so compare the bare, lower-case
+    name and allow a suffix, but never a different model."""
+    def bare(name: str) -> str:
+        return name.strip().lower().rsplit("/", 1)[-1].replace("_", "-").replace(" ", "-")
+    return bool(served) and bare(served).startswith(bare(model))
+
+
 class Runner:
     """Runs every arm for every question, caching each reply by request hash in ``cache_path`` (JSONL), so a stopped
-    run resumes without paying twice. Spend is counted from the token usage the provider reports."""
+    run resumes without paying twice. Spend is the provider's reported cost when it gives one, else the token count
+    times the price, and it is counted for every billed reply, usable or not.
+
+    A call that failed (no reply, or a reply we refuse) is cached with its reason but never reused: a rerun asks
+    again. After ``max_fail_streak`` unusable calls in a row the run stops with :class:`BrokenRun`."""
 
     def __init__(self, provider: Any, cache_path: Path, *, max_usd: float, price: Tuple[float, float] = PRICE,
-                 max_call_usd: float = 0.002, backoff: Sequence[float] = (2, 4, 8, 16)) -> None:
+                 max_call_usd: float = 0.002, backoff: Sequence[float] = (2, 4, 8, 16),
+                 max_fail_streak: int = 5) -> None:
         self.backoff = tuple(backoff)
         self.provider, self.cache_path, self.max_usd, self.price = provider, Path(cache_path), max_usd, price
         self.max_call_usd = max_call_usd  # worst case for one call: 3k tokens in, 500 out
+        self.max_fail_streak = max_fail_streak
         self.cache: Dict[str, Dict[str, Any]] = {}
+        self.ignored = 0
+        self.spent_before = 0.0
         if self.cache_path.exists():
             for line in self.cache_path.read_text().splitlines():
                 if line.strip():
                     row = json.loads(line)
+                    self.spent_before += row.get("cost_usd", 0.0)
+                    if row.get("error"):
+                        self.ignored += 1  # a failed call is asked again, never scored from the cache
+                        continue
                     self.cache[row["request_hash"]] = row
-        self.spent = sum(r.get("cost_usd", 0.0) for r in self.cache.values())
-        self.calls = self.failed = 0
+        # settled dollars, failed-but-billed calls from earlier runs included: that money is gone either way
+        self.spent = self.spent_before
+        self.reserved = 0.0                                                       # held for calls in flight
+        self.calls = self.failed = self.streak = 0
+        self.reasons: List[str] = []
+        self.broken: Optional[str] = None
         self._lock = asyncio.Lock()
 
     def cost(self, prompt_tokens: int, completion_tokens: int) -> float:
         return (prompt_tokens * self.price[0] + completion_tokens * self.price[1]) / 1_000_000
 
-    async def ask(self, req: ChatRequest) -> Dict[str, Any]:
+    async def ask(self, req: ChatRequest, kind: str) -> Dict[str, Any]:
         h = req.request_hash
         if h in self.cache:
             return self.cache[h]
         async with self._lock:
-            if self.spent + self.max_call_usd > self.max_usd:
+            if self.broken:
+                raise BrokenRun(self.broken)
+            if self.spent + self.reserved + self.max_call_usd > self.max_usd:
                 raise SpendCap(f"spent ${self.spent:.4f}; the cap is ${self.max_usd:.2f}")
-            self.spent += self.max_call_usd  # reserve; settled below
+            self.reserved += self.max_call_usd
         try:
             resp: ChatResponse = await self._complete(req)
-            row = {"request_hash": h, "content": resp.content, "prompt_tokens": resp.prompt_tokens,
-                   "completion_tokens": resp.completion_tokens, "finish_reason": resp.finish_reason,
-                   "cost_usd": self.cost(resp.prompt_tokens, resp.completion_tokens), "error": None}
         except ProviderUnavailable:
             async with self._lock:  # an outage that outlived the retries: release the reservation, cache nothing
-                self.spent -= self.max_call_usd
+                self.reserved -= self.max_call_usd
             raise
-        except ProviderError as exc:  # a truncated or refused reply is an unusable answer, recorded once
+        except ProviderError as exc:  # refused before any reply: nothing billed
             row = {"request_hash": h, "content": "", "prompt_tokens": 0, "completion_tokens": 0,
-                   "finish_reason": "error", "cost_usd": 0.0, "error": type(exc).__name__}
-            self.failed += 1
+                   "finish_reason": "error", "served_model": None, "cost_usd": 0.0, "error": type(exc).__name__,
+                   "reason": scrub(str(exc))[:300], "http_status": getattr(exc, "http_status", None)}
+        else:
+            reported = (resp.extra or {}).get("cost")
+            cost = float(reported) if isinstance(reported, (int, float)) else self.cost(resp.prompt_tokens,
+                                                                                         resp.completion_tokens)
+            row = {"request_hash": h, "content": resp.content, "prompt_tokens": resp.prompt_tokens,
+                   "completion_tokens": resp.completion_tokens, "finish_reason": resp.finish_reason,
+                   "served_model": resp.model, "cost_usd": cost, "error": None}
+            if not served_ok(resp.model, req.model):
+                row.update(error="ServedModelMismatch", reason=f"asked for {req.model!r}, served {resp.model!r}")
+            elif resp.finish_reason != "stop":
+                row.update(error="NotFinished", reason=f"reply stopped early ({resp.finish_reason}) after "
+                                                       f"{resp.completion_tokens} tokens")
+            elif parse_reply(kind, resp.content)[0] is None:
+                row["reason"] = f"reply not in the asked format: {resp.content[:160]!r}"
+        usable = _reply(kind, row)[0] is not None
         async with self._lock:
-            self.spent += row["cost_usd"] - self.max_call_usd
+            self.reserved -= self.max_call_usd
+            self.spent += row["cost_usd"]
             self.calls += 1
-            self.cache[h] = row
+            self.failed += row["error"] is not None
             with self.cache_path.open("a") as fh:
                 fh.write(json.dumps(row, sort_keys=True) + "\n")
+            if row["error"] is None:
+                self.cache[h] = row
+            if usable:
+                self.streak = 0
+            else:
+                self.streak += 1
+                if len(self.reasons) < 5:
+                    self.reasons.append(row.get("reason") or row["error"] or "unusable")
+                if self.streak >= self.max_fail_streak and not self.broken:
+                    self.broken = (f"{self.streak} calls in a row gave no usable answer. First reasons: "
+                                   + " | ".join(dict.fromkeys(self.reasons)))
+            if self.broken:
+                raise BrokenRun(self.broken)
         return row
 
     async def _complete(self, req: ChatRequest) -> ChatResponse:
@@ -278,15 +337,15 @@ class Runner:
     async def run_question(self, q: Question) -> Dict[str, Any]:
         single_reqs = [request(plain_messages(q), q.id, "single", i) for i in range(SINGLE_SAMPLES)]
         swarm_reqs = [request(lens_messages(q, i), q.id, "swarm", i) for i in range(K)]
-        first = await asyncio.gather(*(self.ask(r) for r in single_reqs + swarm_reqs))
-        single = [parse_reply(q.kind, r["content"]) for r in first[:SINGLE_SAMPLES]]
-        swarm = [parse_reply(q.kind, r["content"]) for r in first[SINGLE_SAMPLES:]]
+        first = await asyncio.gather(*(self.ask(r, q.kind) for r in single_reqs + swarm_reqs))
+        single = [_reply(q.kind, r) for r in first[:SINGLE_SAMPLES]]
+        swarm = [_reply(q.kind, r) for r in first[SINGLE_SAMPLES:]]
         seen_reqs = []
         for i in range(K):
             peers = [(j, _show(q.kind, swarm[j][0]), swarm[j][1]) for j in range(K) if j != i]
             seen_reqs.append(request(seen_messages(q, i, peers), q.id, "seen", i))
-        second = await asyncio.gather(*(self.ask(r) for r in seen_reqs))
-        seen = [parse_reply(q.kind, r["content"]) for r in second]
+        second = await asyncio.gather(*(self.ask(r, q.kind) for r in seen_reqs))
+        seen = [_reply(q.kind, r) for r in second]
         return {"id": q.id, "kind": q.kind, "group": q.group,
                 "single": [a for a, _ in single], "swarm": [a for a, _ in swarm], "seen": [a for a, _ in seen],
                 "tokens": sum(r["prompt_tokens"] + r["completion_tokens"] for r in first + second)}
@@ -305,6 +364,11 @@ class Runner:
 
         await asyncio.gather(*(one(q) for q in questions))
         return [results[q.id] for q in questions if q.id in results]
+
+
+def _reply(kind: str, row: Mapping[str, Any]) -> Tuple[Optional[Any], str]:
+    """A cached call's (answer, reason); a call we refused (wrong model, cut off, no reply) has no answer."""
+    return (None, "") if row.get("error") else parse_reply(kind, row["content"])
 
 
 def _show(kind: str, answer: Any) -> Optional[str]:
@@ -345,6 +409,13 @@ def paired_boot(diffs: Sequence[float], reps: int = 10000, seed: int = 20261029)
 
 # The preregistered pass lines (docs/plans/2026-10-29-fair-test.md). Changing these after a run voids the test.
 PASS = {"exam_min_gain": 0.01, "forecast_min_brier_gain": 0.005}
+# Below this share of usable answers a run measured the plumbing, not the swarm: it gets no verdict at all.
+MIN_USABLE = 0.9
+
+
+def usable_share(rows: Sequence[Mapping[str, Any]]) -> float:
+    answers = [a for r in rows for arm in ("single", "swarm", "seen") for a in r[arm]]
+    return sum(a is not None for a in answers) / len(answers) if answers else 0.0
 
 
 def score(rows: Sequence[Mapping[str, Any]], key: Mapping[str, Any],
@@ -399,7 +470,12 @@ def score(rows: Sequence[Mapping[str, Any]], key: Mapping[str, Any],
                                                               for r, _ in with_crowd), 4)}
         out["secondary"][kind] = sec
     passed = [v["pass"] for v in out["primary"].values()]
-    out["verdict"] = ("supported" if passed and all(passed) else "mixed" if any(passed) else "not supported")
+    out["usable_share"] = round(usable_share(rows), 4)
+    if out["usable_share"] < MIN_USABLE:
+        out["verdict"] = (f"invalid run: only {out['usable_share']:.0%} of answers were usable "
+                          f"(at least {MIN_USABLE:.0%} needed), so nothing was measured")
+    else:
+        out["verdict"] = ("supported" if passed and all(passed) else "mixed" if any(passed) else "not supported")
     return out
 
 
@@ -423,6 +499,6 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-__all__ = ["K", "KINDS", "LENSES", "MODEL", "PASS", "PRICE", "Question", "Runner", "SpendCap", "arm_answers",
+__all__ = ["BrokenRun", "K", "KINDS", "LENSES", "MODEL", "PASS", "PRICE", "Question", "Runner", "SpendCap", "arm_answers",
            "combine", "estimate", "lens_messages", "load_questions", "mean_prob", "parse_reply", "plain_messages",
-           "score", "score_item", "seen_messages", "sha256_file", "vote"]
+           "score", "score_item", "seen_messages", "served_ok", "sha256_file", "usable_share", "vote"]
