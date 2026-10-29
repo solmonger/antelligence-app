@@ -1,7 +1,12 @@
 {
  "code": {
-  "antelligence/experiments/fair_test.py": "9b0ac9b585096049cea854a7edf55e820f2c9f740a2633031dfed0912cbd1e6c",
-  "scripts/fair_test.py": "74d1f29b94547457ed7caad61b969c638e11951574006e3c3e2682c0e46bde80"
+  "antelligence/experiments/fair_test.py": "9795c2ed9d18959d6c2181cb3db8b524568c0b6f24730ca75f0ab9d2e70c43a8",
+  "scripts/fair_test.py": "ca62116d884dcc614ca0ef42ff2f3ab50f4784c7dd26e85c4498329018e63f50"
+ },
+ "extra_body": {
+  "reasoning": {
+   "effort": "low"
+  }
  },
  "files": {
   "exam_answers.jsonl": "f50fdf39d5687938e936a637bcd41e38312eff51daa5cdf151128ab7a1b474ab",
@@ -26,8 +31,8 @@
    "Imagine it resolved NO. What most likely made that happen? Then weigh how likely that is."
   ]
  },
- "max_tokens": 500,
- "model": "deepseek/deepseek-v4.1-flash",
+ "max_tokens": 4000,
+ "model": "stepfun/step-3.7-flash",
  "pass": {
   "exam_min_gain": 0.01,
   "forecast_min_brier_gain": 0.005

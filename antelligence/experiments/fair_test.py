@@ -4,11 +4,11 @@ Preregistered in ``docs/plans/2026-10-29-fair-test.md`` (the pass lines are fixe
 sets we did not design, with answers kept out of every prompt:
 
 * ``exam``: AGIEval English multiple choice (LSAT analytical and logical reasoning, LogiQA, AQuA-RAT maths).
-* ``forecast``: real yes/no forecasting questions that resolved between July and October 2026, after the model's
-  training data, so no model can have seen the answer.
+* ``forecast``: real yes/no forecasting questions that resolved between July and October 2026, after the model was
+  released (28 May 2026), so it cannot have seen the answer.
 
-One model (DeepSeek V4.1 Flash on the Nous portal, thinking off, the only model in the budget), so "the best single
-model" is that model asked again and again. Arms, per question:
+One model (StepFun Step 3.7 Flash on the Nous portal, free there, reasoning set to low; Amendment 2), so "the best
+single model" is that model asked again and again. Arms, per question:
 
 * ``single``: the same plain prompt sampled 10 times (temperature 0.7). The first 5 are the primary baseline
   ("best single model x 5", self-consistency); all 10 are the baseline for the 10-call secondary arm.
@@ -37,11 +37,13 @@ from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Seque
 from antelligence.providers.base import ChatRequest, ChatResponse, ProviderError, ProviderUnavailable
 from antelligence.providers.redact import scrub
 
-MODEL = "deepseek/deepseek-v4.1-flash"
-PRICE = (0.106, 0.513)          # $ per million tokens in / out on the Nous portal (providers/ledger.py)
-THINKING_OFF = {"reasoning": {"enabled": False}}
+# Amendment 2: the free Step 3.7 Flash replaces DeepSeek V4.1 Flash (which needed credit the account could not use).
+MODEL = "stepfun/step-3.7-flash"
+RELEASED = "2026-05-28"          # every forecast in the set resolved after this day
+PRICE = (0.0, 0.0)               # free on the Nous portal; a cost the portal reports is still counted, and capped
+REASONING = {"reasoning": {"effort": "low"}}   # a reasoning model; low is its lightest documented level
 TEMPERATURE = 0.7
-MAX_TOKENS = 500
+MAX_TOKENS = 4000                # room for its reasoning before the short JSON answer
 K = 5                            # calls per question for the primary comparison
 SINGLE_SAMPLES = 10
 KINDS = ("exam", "forecast")
@@ -207,7 +209,7 @@ def call_seed(qid: str, arm: str, index: int) -> int:
 
 def request(messages: Tuple[Dict[str, str], ...], qid: str, arm: str, index: int) -> ChatRequest:
     return ChatRequest(model=MODEL, messages=messages, max_tokens=MAX_TOKENS, temperature=TEMPERATURE,
-                       seed=call_seed(qid, arm, index), extra_body=THINKING_OFF)
+                       seed=call_seed(qid, arm, index), extra_body=REASONING)
 
 
 class SpendCap(RuntimeError):
@@ -234,7 +236,7 @@ def out_of_credits(exc: ProviderError) -> bool:
 
 def served_ok(served: str, model: str = MODEL) -> bool:
     """Does the model name the provider reports name the model we asked for? Providers spell it differently
-    (``deepseek/deepseek-v4.1-flash``, ``DeepSeek-V4.1-Flash``, a dated suffix), so compare the bare, lower-case
+    (``stepfun/step-3.7-flash``, ``stepfun-ai/Step-3.7-Flash``, a dated suffix), so compare the bare, lower-case
     name and allow a suffix, but never a different model."""
     def bare(name: str) -> str:
         return name.strip().lower().rsplit("/", 1)[-1].replace("_", "-").replace(" ", "-")
@@ -249,11 +251,12 @@ class Runner:
     A call that failed (no reply, or a reply we refuse) is cached with its reason but never reused: a rerun asks
     again. After ``max_fail_streak`` unusable calls in a row the run stops with :class:`BrokenRun`."""
 
-    def __init__(self, provider: Any, cache_path: Path, *, max_usd: float, price: Tuple[float, float] = PRICE,
-                 max_call_usd: float = 0.002, backoff: Sequence[float] = (2, 4, 8, 16),
+    def __init__(self, provider: Any, cache_path: Path, *, max_usd: float, price: Optional[Tuple[float, float]] = None,
+                 max_call_usd: float = 0.002, backoff: Sequence[float] = (2, 4, 8, 16, 32, 64),
                  max_fail_streak: int = 5) -> None:
         self.backoff = tuple(backoff)
-        self.provider, self.cache_path, self.max_usd, self.price = provider, Path(cache_path), max_usd, price
+        self.provider, self.cache_path, self.max_usd = provider, Path(cache_path), max_usd
+        self.price = PRICE if price is None else price
         self.max_call_usd = max_call_usd  # worst case for one call: 3k tokens in, 500 out
         self.max_fail_streak = max_fail_streak
         self.cache: Dict[str, Dict[str, Any]] = {}
@@ -518,6 +521,6 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-__all__ = ["BrokenRun", "OutOfCredits", "K", "KINDS", "LENSES", "MODEL", "PASS", "PRICE", "Question", "Runner", "SpendCap", "arm_answers",
+__all__ = ["BrokenRun", "OutOfCredits", "K", "KINDS", "LENSES", "MODEL", "PASS", "PRICE", "REASONING", "RELEASED", "Question", "Runner", "SpendCap", "arm_answers",
            "combine", "estimate", "lens_messages", "load_questions", "mean_prob", "parse_reply", "plain_messages",
            "out_of_credits", "score", "score_item", "seen_messages", "served_ok", "sha256_file", "usable_share", "vote"]

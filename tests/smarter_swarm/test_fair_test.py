@@ -17,6 +17,22 @@ REPO = Path(__file__).resolve().parents[2]
 DATA = REPO / "docs/research/fair-test-20261029"
 
 
+PAID = (0.106, 0.513)  # a nonzero price, so the tests can check spend accounting (the real model is free)
+
+
+@pytest.fixture(autouse=True)
+def _priced(monkeypatch):
+    monkeypatch.setattr(ft, "PRICE", PAID)
+
+
+def test_the_frozen_model_is_free_and_released_before_every_forecast():
+    source = (REPO / "antelligence/experiments/fair_test.py").read_text()
+    assert "\nPRICE = (0.0, 0.0)" in source  # the fixture above only prices the tests
+    assert ft.MODEL == "stepfun/step-3.7-flash" and ft.RELEASED == "2026-05-28"
+    answers = [json.loads(line) for line in (DATA / "forecast_answers.jsonl").read_text().splitlines()]
+    assert all(a["resolution_date"] > ft.RELEASED for a in answers)
+
+
 def _load(name: str):
     spec = importlib.util.spec_from_file_location(name, REPO / "scripts" / f"{name}.py")
     mod = importlib.util.module_from_spec(spec)
@@ -136,7 +152,7 @@ def test_requests_are_deterministic_and_distinct():
     assert a.request_hash == ft.request(ft.plain_messages(q), q.id, "single", 0).request_hash
     hashes = {ft.request(ft.plain_messages(q), q.id, "single", i).request_hash for i in range(ft.SINGLE_SAMPLES)}
     assert len(hashes) == ft.SINGLE_SAMPLES  # ten real samples, not one answer cached ten times
-    assert a.payload()["reasoning"] == {"enabled": False} and a.model == ft.MODEL
+    assert a.payload()["reasoning"] == {"effort": "low"} and a.model == ft.MODEL
 
 
 # ------------------------------------------------------------------- the runner
@@ -253,12 +269,14 @@ def test_failed_calls_in_the_cache_are_asked_again(tmp_path):
 
 
 def test_served_model_names():
-    assert ft.served_ok("deepseek/deepseek-v4.1-flash")
-    assert ft.served_ok("DeepSeek-V4.1-Flash")
-    assert ft.served_ok("deepseek-v4.1-flash-20260910")
-    assert not ft.served_ok("deepseek/deepseek-v4.1-pro")
+    assert ft.served_ok("stepfun/step-3.7-flash")
+    assert ft.served_ok("stepfun-ai/Step-3.7-Flash")
+    assert ft.served_ok("step-3.7-flash-0528")
+    assert not ft.served_ok("stepfun/step-5-preview")
     assert not ft.served_ok("qwen/qwen3-8b")
     assert not ft.served_ok("")
+    assert ft.served_ok("DeepSeek-V4.1-Flash", "deepseek/deepseek-v4.1-flash")
+    assert not ft.served_ok("deepseek/deepseek-v4.1-pro", "deepseek/deepseek-v4.1-flash")
 
 
 def test_reply_checks_keep_the_cost(tmp_path):
@@ -271,7 +289,7 @@ def test_reply_checks_keep_the_cost(tmp_path):
     asyncio.run(cut.run_question(_exam()))
     rows = [json.loads(line) for line in (tmp_path / "b.jsonl").read_text().splitlines()]
     assert {row["error"] for row in rows} == {"NotFinished"} and all(row["cost_usd"] > 0 for row in rows)
-    renamed = ft.Runner(Replying(lambda req: _resp(req, model="DeepSeek-V4.1-Flash", extra={"cost": 0.0001})),
+    renamed = ft.Runner(Replying(lambda req: _resp(req, model="stepfun-ai/Step-3.7-Flash", extra={"cost": 0.0001})),
                         tmp_path / "c.jsonl", max_usd=1, backoff=())
     assert asyncio.run(renamed.run_question(_exam()))["seen"] == ["A"] * 5
     assert renamed.spent == pytest.approx(20 * 0.0001)  # the portal's own cost wins over our estimate
@@ -406,7 +424,7 @@ def test_cli_scores_forecasts_and_the_late_subset(tmp_path):
         qs.append({"id": f"f{i}", "question": f"Will {i} happen?", "background": "b", "open_date": "2026-06-01",
                    "close_date": "2026-10-01", "field": "science"})
         ans.append({"id": f"f{i}", "outcome": "yes" if i % 2 else "no", "crowd_prob": 0.5,
-                    "resolution_date": "2026-08-01" if i < 3 else "2026-10-01", "source_url": "x"})
+                    "resolution_date": "2026-05-01" if i < 3 else "2026-10-01", "source_url": "x"})
     (data / "forecast_questions.jsonl").write_text("".join(json.dumps(r) + "\n" for r in qs))
     (data / "forecast_answers.jsonl").write_text("".join(json.dumps(r) + "\n" for r in ans))
     cli = _load("fair_test")
@@ -437,7 +455,7 @@ def test_committed_exam_set_matches_its_manifest():
 
 # ------------------------------------------------------------------- the live stack, against a fake portal
 
-def _portal(served="DeepSeek-V4.1-Flash", status=200, finish="stop", seen=None):
+def _portal(served="stepfun-ai/Step-3.7-Flash", status=200, finish="stop", seen=None):
     import httpx
 
     def handler(request):
@@ -465,7 +483,8 @@ def test_live_stack_accepts_the_portal_spelling_and_logs_spend(tmp_path, monkeyp
     r = ft.Runner(prov, tmp_path / "c.jsonl", max_usd=1, backoff=())
     row = asyncio.run(r.run_question(_exam()))
     assert row["single"] == ["A"] * 10 and r.failed == 0
-    assert seen[0]["reasoning"] == {"enabled": False} and seen[0]["model"] == ft.MODEL
+    assert seen[0]["reasoning"] == {"effort": "low"} and seen[0]["model"] == ft.MODEL == "stepfun/step-3.7-flash"
+    assert seen[0]["max_tokens"] == 4000
     logged = [json.loads(line) for line in ledger.read_text().splitlines()]
     assert len(logged) == 20 and all(x["cost_usd"] > 0 and "error" not in x for x in logged)
     assert r.spent == pytest.approx(sum(x["cost_usd"] for x in logged))
@@ -478,7 +497,7 @@ def test_the_old_provider_setup_refused_a_differently_spelled_model_name(tmp_pat
     from antelligence.providers.openai_compat import OpenAICompatProvider
 
     old = OpenAICompatProvider("https://portal.test/v1", api_key="k", allowed_models=[ft.MODEL],
-                               extra_body=ft.THINKING_OFF, transport=_portal())
+                               extra_body=ft.REASONING, transport=_portal())
     r = ft.Runner(old, tmp_path / "c.jsonl", max_usd=1, backoff=())
     with pytest.raises(ft.BrokenRun, match="differs from requested"):
         asyncio.run(r.run_question(_exam()))
@@ -493,3 +512,25 @@ def test_live_stack_reports_a_rejected_request(tmp_path, monkeypatch):
     r = ft.Runner(prov, tmp_path / "c.jsonl", max_usd=1, backoff=())
     with pytest.raises(ft.BrokenRun, match="not a valid parameter"):
         asyncio.run(r.run_question(_exam()))
+
+
+def test_models_lists_what_the_key_can_call(tmp_path, monkeypatch, capsys):
+    import httpx
+
+    env = tmp_path / ".env"
+    env.write_text("NOUS_API_KEY=sk-test-not-real\n")
+    monkeypatch.setenv("ANTELLIGENCE_NOUS_ENV_FILE", str(env))
+    cli = _load("fair_test")
+    listing = {"data": [{"id": "stepfun/step-3.7-flash", "pricing": {"prompt": "0", "completion": "0"}},
+                        {"id": "deepseek/deepseek-v4.1-flash"}]}
+    monkeypatch.setattr(httpx, "get", lambda url, **kw: httpx.Response(200, json=listing))
+    assert cli.main(["models"]) == 0
+    out = capsys.readouterr().out
+    assert "stepfun/step-3.7-flash" in out and "the fair test uses this" in out
+    monkeypatch.setattr(httpx, "get", lambda url, **kw: httpx.Response(200, json={"data": [{"id": "x/other"}]}))
+    cli.main(["models"])
+    assert "is not in this list" in capsys.readouterr().out
+    monkeypatch.setattr(httpx, "get", lambda url, **kw: httpx.Response(401, text="bad key sk-test-not-real"))
+    assert cli.main(["models"]) == 2
+    out = capsys.readouterr().out
+    assert "HTTP 401" in out and "sk-test-not-real" not in out

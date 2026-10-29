@@ -296,12 +296,12 @@ Eshaan asked whether the evidence supports the direction, and to check it on out
 4. That a deep thinker asked only where the cheap ants split is worth its price (one stand-in model so far, 0.3).
 
 **The fair test** (`docs/plans/2026-10-29-fair-test.md`; the pass lines, files and code are frozen in
-`docs/research/fair-test-20261029/prereg.json` before any call). One model in the budget, DeepSeek V4.1 Flash on
-the Nous portal, so "the best single model" is that model asked the plain question 5 times with the majority (or
+`docs/research/fair-test-20261029/prereg.json` before any call). One model, Step 3.7 Flash, free on the Nous portal
+(DeepSeek V4.1 Flash was the first pick; see the test's Amendment 2), so "the best single model" is that model asked the plain question 5 times with the majority (or
 average) taken, a strong baseline. The swarm is the same model, 5 calls, each told to look at the question a
 different way and answering alone. Two outside task sets: 240 exam questions from AGIEval (law-school logic,
-LogiQA, maths word problems) and real forecasting questions that resolved after the model was trained. About
-$1 to $2 in all, capped at $3. It needs a key that lives only on Eshaan's Mac, so it runs there, after his OK.
+LogiQA, maths word problems) and real forecasting questions that resolved after the model was released. Free,
+with a $3 cap in case the portal ever charges. It needs a key that lives only on Eshaan's Mac, so it runs there.
 
 **How the MIT team checks its huge simulation** (Large Population Models, Chopra, MIT, arXiv 2507.09901; the AgentTorch
 work behind the 8.4 million-agent New York City COVID-19 model). They do not check that each simulated person
@@ -316,7 +316,7 @@ scores it on outcomes nobody knew when the answers were written, with the pass l
 
 ### What next
 
-1. Run the fair test on Eshaan's Mac (about $1 to $2, cap $3) once he says yes. If it passes, build model ants
+1. Run the fair test on Eshaan's Mac (free model, cap $3). If it passes, build model ants
    that answer alone and look before done. If it fails, say so plainly and work out why before building more.
 2. Make looking cheap: spot checks by peers, more often on claims from ants with a poor record (idea 1), and a stop
    rule that waits long enough. Score the swarm on work left in the world, never on what it reports.

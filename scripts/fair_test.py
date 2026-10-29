@@ -8,7 +8,7 @@ Five steps, in this order:
 3. ``smoke`` -- one question through every arm (20 calls, well under a cent). It prints the model name the portal
    reports, how the replies finished, the first reply and any problem, and says whether to start the full run.
 4. ``run`` -- asks the model. ``--dry-run`` uses a fake model ($0, for checking the plumbing); ``--live`` uses
-   DeepSeek V4.1 Flash on the Nous portal with the key from the Hermes env file (never printed). Live calls are
+   Step 3.7 Flash (free) on the Nous portal with the key from the Hermes env file (never printed). Live calls are
    also written to the repo's usage ledger and stop at the existing Nous budget stop, on top of ``--max-usd``.
    Every usable reply is cached, so a stopped run resumes without paying twice; a failed call is asked again. The
    run stops by itself after 5 unusable replies in a row and prints why. Answer files are never opened here.
@@ -19,6 +19,7 @@ Usage::
 
     uv run python scripts/fair_test.py freeze
     uv run python scripts/fair_test.py plan
+    uv run python scripts/fair_test.py models --grep step     # which models this key can call (free, no model call)
     uv run python scripts/fair_test.py smoke --live
     uv run python scripts/fair_test.py run --live --max-usd 3
     uv run python scripts/fair_test.py score
@@ -43,7 +44,7 @@ REPO = Path(__file__).resolve().parents[1]
 DATA = REPO / "docs/research/fair-test-20261029"
 FILES = {"exam": ("exam_questions.jsonl", "exam_answers.jsonl"),
          "forecast": ("forecast_questions.jsonl", "forecast_answers.jsonl")}
-LATE_FROM = "2026-09-10"   # DeepSeek V4.1 Flash came out on this day: no training data can hold what resolved after it
+LATE_FROM = ft.RELEASED  # the model came out on this day: no training data can hold what resolved after it
 CODE = (REPO / "antelligence/experiments/fair_test.py", Path(__file__).resolve())
 
 
@@ -80,7 +81,7 @@ def fingerprint(data: Path) -> Dict[str, Any]:
                 files[name] = ft.sha256_file(data / name)
     code = {str(p.relative_to(REPO)): ft.sha256_file(p) for p in CODE}
     return {"files": files, "code": code, "model": ft.MODEL, "temperature": ft.TEMPERATURE,
-            "max_tokens": ft.MAX_TOKENS, "k": ft.K, "single_samples": ft.SINGLE_SAMPLES,
+            "max_tokens": ft.MAX_TOKENS, "extra_body": ft.REASONING, "k": ft.K, "single_samples": ft.SINGLE_SAMPLES,
             "lenses": {k: list(v) for k, v in ft.LENSES.items()}, "pass": dict(ft.PASS),
             "primary": "swarm5 vs single5 (same model, same 5 calls per question)"}
 
@@ -138,8 +139,8 @@ def live_provider(*, ledger: Optional[Path] = None, transport: Any = None) -> An
     # model name (spelled differently by the portal) and the finish reason are checked in ft.Runner.ask instead of
     # being raised here, where a refused reply's cost was lost.
     ledger = Path(ledger or USAGE_LEDGER)
-    chat = OpenAICompatProvider(NOUS_URL, api_key=key, allowed_models=[ft.MODEL], max_concurrency=4,
-                                extra_body=ft.THINKING_OFF, require_model_match=False, require_stop=False,
+    chat = OpenAICompatProvider(NOUS_URL, api_key=key, allowed_models=[ft.MODEL], max_concurrency=6,
+                                extra_body=ft.REASONING, require_model_match=False, require_stop=False,
                                 transport=transport)
     ledgered = LedgeredChat(chat, LedgerWriter(ledger, redact=[key]), role="worker",
                             expected_model="", backend="nous", prefix=True, price=ft.PRICE)  # "" accepts any name
@@ -190,6 +191,31 @@ def cmd_run(a: argparse.Namespace) -> int:
     print(f"{status}\n{len(rows)}/{len(qs)} questions, {runner.calls} new calls ({runner.failed} failed), "
           f"${runner.spent:.4f} spent in total -> {out}")
     return 0 if status == "complete" else 2
+
+
+def cmd_models(a: argparse.Namespace) -> int:
+    """Lists the models this key can call on the Nous portal, with any price the portal states. Free, no model call."""
+    import httpx
+
+    from antelligence.experiments.v41_prod import read_nous_key
+    from antelligence.providers.decision_backends import NOUS_URL
+
+    key = read_nous_key()
+    resp = httpx.get(f"{NOUS_URL}/models", headers={"Authorization": f"Bearer {key}"}, timeout=30)
+    if resp.status_code != 200:
+        print(f"the portal said HTTP {resp.status_code}: {scrub(resp.text, [key])[:300]}")
+        return 2
+    rows = resp.json().get("data") or []
+    for m in sorted(rows, key=lambda m: str(m.get("id"))):
+        mid = str(m.get("id"))
+        if a.grep and a.grep.lower() not in mid.lower():
+            continue
+        price = m.get("pricing") or {}
+        mark = " <- the fair test uses this" if ft.served_ok(mid) else ""
+        print(f"{mid}  {json.dumps(price) if price else ''}{mark}")
+    if not any(ft.served_ok(str(m.get("id"))) for m in rows):
+        print(f"{ft.MODEL} is not in this list: tell Claude which free model to use instead")
+    return 0
 
 
 def cmd_smoke(a: argparse.Namespace) -> int:
@@ -279,7 +305,7 @@ def cmd_score(a: argparse.Namespace) -> int:
 def main(argv: Sequence[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("freeze", "plan", "smoke", "run", "score"):
+    for name in ("freeze", "plan", "models", "smoke", "run", "score"):
         p = sub.add_parser(name)
         p.add_argument("--data", type=Path, default=DATA)
         p.add_argument("--kinds", default="exam,forecast")
@@ -291,6 +317,7 @@ def main(argv: Sequence[str]) -> int:
     run.add_argument("--concurrency", type=int, default=4)
     run.add_argument("--cache", type=Path, default=None)
     run.add_argument("--out", type=Path, default=None)
+    sub.choices["models"].add_argument("--grep", default="")
     sm = sub.choices["smoke"]
     sm.add_argument("--live", action="store_true")
     sm.add_argument("--dry-run", action="store_true")
@@ -304,7 +331,7 @@ def main(argv: Sequence[str]) -> int:
     bad = set(a.kinds) - set(ft.KINDS)
     if bad:
         raise SystemExit(f"unknown kinds: {sorted(bad)}")
-    return {"freeze": cmd_freeze, "plan": cmd_plan, "smoke": cmd_smoke, "run": cmd_run, "score": cmd_score}[a.cmd](a)
+    return {"freeze": cmd_freeze, "plan": cmd_plan, "models": cmd_models, "smoke": cmd_smoke, "run": cmd_run, "score": cmd_score}[a.cmd](a)
 
 
 if __name__ == "__main__":
