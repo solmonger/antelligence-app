@@ -1,0 +1,20 @@
+{
+ "reader": "mlx-community/gemma-4-12B-it-4bit",
+ "ants": [
+  ["mlx-community/gemma-4-e2b-it-4bit", "gemma", 0],
+  ["mlx-community/gemma-4-e2b-it-4bit", "gemma", 1],
+  ["mlx-community/Qwen3.5-4B-MLX-4bit", "qwen", 0],
+  ["mlx-community/Qwen3.5-4B-MLX-4bit", "qwen", 1],
+  ["ibm-granite/granite-4.2-3b-q4-mlx", "granite", 0],
+  ["ibm-granite/granite-4.2-3b-q4-mlx", "granite", 1],
+  ["LiquidAI/LFM2.5-1.2B-Instruct-MLX-4bit", "lfm", 0],
+  ["LiquidAI/LFM2.5-1.2B-Instruct-MLX-4bit", "lfm", 1]
+ ],
+ "families": ["gemma", "gemma", "qwen", "qwen", "granite", "granite", "lfm", "lfm"],
+ "items": 240,
+ "base_url": "http://localhost:11434/v1",
+ "dry_run": false,
+ "new_calls": 4048,
+ "failed_calls": 409,
+ "seconds": 5483
+}

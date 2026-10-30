@@ -1,0 +1,20 @@
+{
+ "about": "Models for the shared-read test, as run 1 actually ran them (2026-10-30, Eshaan's Mac Studio, 36 GB): 4-bit MLX builds from Hugging Face served by mlx_lm.server behind an Ollama-shaped stand-in on port 11434 (see the plan, 'How run 1 ran'). Thinking is turned off with chat_template_kwargs.enable_thinking=false, which MLX reads from the chat template. gb is a rough in-memory size for the memory guard. Change models here, not in code, then run `scripts/shared_read.py freeze` before the next run.",
+ "reader": {"tag": "mlx-community/gemma-4-12B-it-4bit", "family": "gemma", "gb": 10,
+            "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+            "note": "The preregistered fallback reader. Qwen3.8 27B (the first choice) left too little room: the guard saw 19.6 to 22.9 GB free against about 23 GB needed."},
+ "ants": [
+  {"tag": "mlx-community/gemma-4-e2b-it-4bit", "family": "gemma", "gb": 4,
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "note": "Gemma 4 E2B. Often writes LaTeX like \\cap inside its JSON answers, which parser 1 rejects."},
+  {"tag": "mlx-community/Qwen3.5-4B-MLX-4bit", "family": "qwen", "gb": 4,
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "note": "Qwen 3.5 4B."},
+  {"tag": "ibm-granite/granite-4.2-3b-q4-mlx", "family": "granite", "gb": 3,
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "note": "IBM Granite 4.2 3B."},
+  {"tag": "LiquidAI/LFM2.5-1.2B-Instruct-MLX-4bit", "family": "lfm", "gb": 2,
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "note": "Replaced LFM3 1.7B, which no released mlx-lm can run yet. LFM2.5 2.6B was passed over because its thinking can't be turned off."}
+ ]
+}
