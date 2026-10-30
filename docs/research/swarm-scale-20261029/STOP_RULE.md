@@ -54,8 +54,25 @@ Curve at 256 ants, slow looking, 20% shortcut-takers (work left @ ticks to "done
 Look around at patience 20 matches the current rule at patience 30 (0.093%) 26 ticks sooner.
 
 **Reading.** This is the harvester-ant rule done properly: a colony decides from how often ants *meet* work, so an ant
-should be meeting new places, not the same empty one. It fixes the leak that earned trust could not. Not yet the
-default (`ticks` stays the default so every recorded result regenerates); switching it is one line once agreed.
+should be meeting new places, not the same empty one. It fixes the leak that earned trust could not.
+
+## Now the default
+
+`FinishConfig.idle_rule` defaults to `places` (patience stays 10, which on the curves above is both sooner and leaves
+less than the old rule at 10). Every result recorded before keeps its rule: `scripts/finish_check.py` takes
+`--idle-rule` (default `ticks`, so the recorded `finish_*.json` files regenerate) and `scripts/earned_trust_check.py`
+pins `ticks`. Tests check both.
+
+The section 0.2 check re-run under the new default (`finish_n256_places.json`, 256 ants, seeds 0 to 9, cheap looking):
+
+| shortcut-takers | arm | old rule: work left, pieces unfinished, ticks | new rule |
+|---|---|---|---|
+| none | look | 0.215%, 2.9, 70.7 | **0.186%, 2.1, 64.9** |
+| 20% | trust the tick-box | 1.885%, 84.8, 69.8 | 1.641%, 83.8, 64.3 |
+| 20% | look yourself | 0.170%, 2.6, 74.7 | **0.130%, 1.6, 66.9** |
+
+The finding of section 0.2 holds: trusting "done" still lets the shortcut through, and looking yourself still closes
+it. A better stop rule cannot rescue the tick-box.
 
 ## Reproduce
 

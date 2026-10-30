@@ -40,7 +40,8 @@ PAIRS = (("record@p", "look@p"), ("gossip@p", "look@p"), ("record@p", "look@1"))
 def run_one(job: Tuple[int, int, float, int, float, int, str]) -> Dict[str, Any]:
     n, seed, share, patience, look_p, cost, arm = job
     name, p = arm.split("@")
-    cfg = FinishConfig(n_ants=n, look_cost=cost, patience=patience, look_p=look_p if p == "p" else 1.0)
+    cfg = FinishConfig(n_ants=n, look_cost=cost, patience=patience, look_p=look_p if p == "p" else 1.0,
+                       idle_rule="ticks")  # the stop rule this check was run with (before places became the default)
     r = FinishWorld(cfg, seed).run(name, share)
     return {"n": n, "seed": seed, "shortcut_share": share, "patience": patience, "arm": arm,
             "skipped_pct": round(100 * r.skipped_share, 5), "stop_tick": r.stop_tick or cfg.max_ticks,

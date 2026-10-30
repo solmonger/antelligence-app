@@ -125,19 +125,23 @@ def main(argv: Sequence[str]) -> int:
     ap.add_argument("--look-cost", type=int, default=1)
     ap.add_argument("--look-p", type=float, default=1.0)
     ap.add_argument("--max-ticks", type=int, default=600)
+    ap.add_argument("--idle-rule", default="ticks",
+                    help="stop rule; the recorded finish_*.json files used ticks, the world's default is now places")
     ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args(argv)
     ns = [int(x) for x in a.ns.split(",")]
     seeds = [int(x) for x in a.seeds.split(",")]
     shares = [float(x) for x in a.shares.split(",")]
     base = FinishConfig(patience=a.patience, sites_per_ant=a.sites_per_ant, tail=a.tail, look_cost=a.look_cost,
-                        look_p=a.look_p, max_ticks=a.max_ticks)
+                        look_p=a.look_p, max_ticks=a.max_ticks, idle_rule=a.idle_rule)
     rows = run_grid(ns, seeds, shares, base)
     summary = summarise(rows, ns, shares, base.max_ticks)
     print_tables(summary)
     if a.out:
         a.out.parent.mkdir(parents=True, exist_ok=True)
         cfg = {k: v for k, v in base.__dict__.items() if k not in ("n_ants", "smart")}
+        if cfg["idle_rule"] == "ticks":  # the rule every recorded file used; left out so they regenerate byte for byte
+            del cfg["idle_rule"]
         a.out.write_text(json.dumps({"check": "finish_check", "config": cfg, "ns": ns, "seeds": seeds, "shares": shares,
                                      "summary": summary, "rows": rows}, indent=1, sort_keys=True) + "\n")
     return 0

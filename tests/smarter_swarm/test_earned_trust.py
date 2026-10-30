@@ -64,7 +64,7 @@ def test_gossip_spreads_names_further_than_a_private_record():
 def test_look_arm_still_matches_its_recorded_results():
     """The new arms leave ``look`` untouched: the recorded spot-looking runs regenerate exactly."""
     rec = json.loads((REPO / "docs/research/swarm-scale-20261029/finish_n256_look3_spot25.json").read_text())
-    cfg = FinishConfig(**rec["config"])
+    cfg = FinishConfig(**rec["config"], idle_rule="ticks")  # recorded with the old stop rule
     rows = [r for r in rec["rows"] if r["arm"] == "look" and r["fade"] == "fixed" and r["shortcut_share"] == 0.2][:2]
     assert rows
     for row in rows:

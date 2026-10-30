@@ -39,10 +39,11 @@ def test_every_rule_is_deterministic_and_accounts_for_all_work(rule):
         assert a.work_ticks + a.left_at_stop == a.total_work
 
 
-def test_default_rule_is_ticks_and_recorded_runs_regenerate():
-    assert FinishConfig().idle_rule == "ticks"
+def test_default_rule_is_places_and_recorded_ticks_runs_still_regenerate():
+    assert FinishConfig().idle_rule == "places"
     rec = json.loads((REPO / "docs/research/swarm-scale-20261029/finish_n256.json").read_text())
-    cfg = FinishConfig(**rec["config"])
+    assert "idle_rule" not in rec["config"]  # recorded before the stop rule existed: ticks
+    cfg = FinishConfig(**rec["config"], idle_rule="ticks")
     rows = [r for r in rec["rows"] if r["fade"] == "fixed" and r["shortcut_share"] == 0.2
             and r["arm"] in ("trust", "look")][:4]
     assert rows
@@ -75,3 +76,12 @@ def test_stop_rule_check_refuses_reused_seeds():
     src = _load("stop_rule_check")
     with pytest.raises(SystemExit):
         src.main(["--dev-seeds", "0-9", "--seeds", "5-20", "--workers", "1"])
+
+
+def test_default_rule_beats_the_old_one_at_the_same_patience():
+    """At the default patience, the new default leaves less work and is no slower, summed over a few seeds."""
+    cfg = FinishConfig(n_ants=64, sites_per_ant=4, max_ticks=400, look_cost=3, look_p=0.25)
+    new = [FinishWorld(cfg, s).run("look", 0.2) for s in range(1, 9)]
+    old = [FinishWorld(replace(cfg, idle_rule="ticks"), s).run("look", 0.2) for s in range(1, 9)]
+    assert sum(r.left_at_stop for r in new) < sum(r.left_at_stop for r in old)
+    assert sum(r.stop_tick for r in new) <= sum(r.stop_tick for r in old)

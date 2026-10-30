@@ -22,8 +22,9 @@ found nothing to do; at ``patience`` ticks it is idle. The swarm calls the job f
 working ants are idle (the encounter-rate rule harvester ants use, Gordon 2010). The score is the share of the job's
 work still left at that moment, which is work the swarm called done but never did.
 
-**Stop rules** (``idle_rule``). ``ticks`` (the default, as above): an ant is idle after ``patience`` ticks in a row
-with nothing to do, wherever it spent them. ``places`` ("look around before you rest"): an ant is idle only after it
+**Stop rules** (``idle_rule``). ``ticks`` (the rule above, used by every result recorded before 2026-10-30): an ant
+is idle after ``patience`` ticks in a row with nothing to do, wherever it spent them. ``places`` ("look around before
+you rest", the default since 2026-10-30, see ``STOP_RULE.md``): an ant is idle only after it
 has found nothing to do at ``patience`` *different* sites since it last worked, and while it is looking it walks to
 next-door sites it has not yet found empty, when there are any. Ticks spent re-checking or standing on a site it already
 found empty do not count. Still no counter and no boss: each ant only knows where it has been. ``walk`` is the
@@ -86,7 +87,7 @@ class FinishConfig:
     inspector_amount: float = 3.0
     max_ticks: int = 600
     family: str = "ws"
-    idle_rule: str = "ticks"       # "ticks": patience ticks idle; "places": patience different empty sites; "walk": ablation
+    idle_rule: str = "places"      # "places": patience different empty sites (default); "ticks": the old rule; "walk": ablation
 
     def __post_init__(self) -> None:
         if self.n_ants < 8:
