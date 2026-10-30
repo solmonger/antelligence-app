@@ -201,7 +201,8 @@ class ForagingSBWorld:
             if m["from"] == agent_id or max(abs(sx - pos[0]), abs(sy - pos[1])) > MSG_RADIUS:
                 continue
             dx, dy = sx - pos[0], sy - pos[1]
-            heard.append({"from": m["from"], "text": m["text"], "dx": -dx if flip else dx, "dy": dy})
+            heard.append({"from": m["from"], "text": m["text"], "dx": -dx if flip else dx, "dy": dy,
+                          **({"strength": m["strength"]} if "strength" in m else {})})
         heard.sort(key=lambda m: (abs(m["dx"]) + abs(m["dy"]), m["from"]))
         data = {
             "agent": agent_id, "tick": tick, "pos": list(pos), "view": rows, "carrying": self.carrying[agent_id],

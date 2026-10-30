@@ -222,7 +222,8 @@ domain, 4 rotations each. "Split" means the three cheap answers were not unanimo
 ### 0.4 Think alone is now the default, and it holds on two tasks we did not design (Eshaan's go-ahead)
 
 Every new ant now thinks alone first and calls something done only when it sees it done:
-`RumourWorld.run` defaults to `alone`, `FinishWorld.run` to `look`, and the two ported worlds get a `default_ant`.
+`RumourWorld.run` defaults to `alone`, `FinishWorld.run` to `look`, and the two ported worlds get a `default_ant`. (Since 2026-10-30 the foraging `default_ant` is steady eyes: think alone plus a check of its own eyes, identical to
+think alone while its eyes are fine; see `STEADY_EYES.md`.)
 The pilot's recorded arms keep their own scripts, so its published numbers still reproduce (tested).
 
 **Colouring** (AgentsNet, arXiv 2507.08616; `antelligence/worlds/graph_coloring/think_alone.py`,
@@ -269,6 +270,10 @@ delivered per run:
   task we did not build: second-hand news is mostly echo.
 - When the ants' own sensors are wrong (v2), think alone does not help. That needs a different fix (an ant can't
   out-look a broken eye), so it stays open.
+  **Update 2026-10-30:** fixed by steady eyes, an ant that checks what it sees against walls it already knows and
+  reads its eyes mirrored when that fits better. 15.4 deliveries against think alone's 3.9 on 80 fresh layouts, nearly
+  as many as a script told the flip tick, and identical to think alone when eyes are fine
+  (`docs/research/swarm-scale-20261029/STEADY_EYES.md`).
 
 ### 0.5 Are we heading the right way? What we know, and what we only hope
 
@@ -320,7 +325,10 @@ scores it on outcomes nobody knew when the answers were written, with the pass l
    that answer alone and look before done. If it fails, say so plainly and work out why before building more.
 2. Make looking cheap: spot checks by peers, more often on claims from ants with a poor record (idea 1), and a stop
    rule that waits long enough. Score the swarm on work left in the world, never on what it reports.
-3. Fix the case think alone cannot: an ant whose own eyes are wrong (foraging v2).
+   2026-10-30: earned trust gave no gain (`EARNED_TRUST.md`); a better stop rule did. "Look around before you rest"
+   leaves 57% to 85% less work at the same time to "done" (`STOP_RULE.md`).
+3. Fix the case think alone cannot: an ant whose own eyes are wrong (foraging v2). Done 2026-10-30: steady eyes,
+   see `STEADY_EYES.md`.
 4. Then SLM steering: steer small models for errors that do not line up, and for honest "not done yet".
 
 ## 1. The short answer
@@ -376,6 +384,9 @@ idea 3 is the most ant-like.
 - **Free test:** (a) saved colony answers, weights from the development split (done, section 4.1); (b) the liar probe,
   where a flip gate is the simplest form of earned trust (done, section 4.2). Next: ants that are *sometimes* right,
   not pure liars, so trust has to be graded.
+- **Tested 2026-10-30 in the finish world (no gain):** re-checking claims from ants caught skipping work, privately or
+  by word of mouth, left as much work as plain spot looking. Ants rarely meet the same cheat twice, and most leftover
+  work comes from the stop rule, not lies (`docs/research/swarm-scale-20261029/EARNED_TRUST.md`).
 
 ### Idea 2. Grow only for hard problems
 

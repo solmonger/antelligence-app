@@ -22,6 +22,14 @@ found nothing to do; at ``patience`` ticks it is idle. The swarm calls the job f
 working ants are idle (the encounter-rate rule harvester ants use, Gordon 2010). The score is the share of the job's
 work still left at that moment, which is work the swarm called done but never did.
 
+**Stop rules** (``idle_rule``). ``ticks`` (the rule above, used by every result recorded before 2026-10-30): an ant
+is idle after ``patience`` ticks in a row with nothing to do, wherever it spent them. ``places`` ("look around before
+you rest", the default since 2026-10-30, see ``STOP_RULE.md``): an ant is idle only after it
+has found nothing to do at ``patience`` *different* sites since it last worked, and while it is looking it walks to
+next-door sites it has not yet found empty, when there are any. Ticks spent re-checking or standing on a site it already
+found empty do not count. Still no counter and no boss: each ant only knows where it has been. ``walk`` is the
+ablation: the same walk to sites not yet found empty, but idle after ``patience`` ticks as in ``ticks``.
+
 Arms:
 
 * ``trust`` (the tick-box): an ant reads the marks where it stands; if "done" outweighs "work left" it believes the
@@ -30,6 +38,13 @@ Arms:
   ``look_cost`` ticks (the price of not taking a colleague's word for it). With ``look_p < 1`` it re-checks only
   that share of the time (spot looking) and otherwise walks on without leaving a mark. It marks only what it saw: "work left"
   if the piece is unfinished, "done" only if it really is. Claims are never relayed.
+* ``record`` (earned trust, plan idea 1): ``look`` with spot looking, plus a memory of who was caught. When an ant
+  re-checks a piece marked done and finds work left, it remembers every ant whose "done" mark was on that piece. From
+  then on it always re-checks a claim from any of them, and spot-checks everyone else at ``look_p``. It only trusts
+  what it saw itself: nobody tells it who to suspect. With ``look_p = 1`` it is exactly ``look``.
+* ``gossip`` (earned trust, shared): ``record``, plus ants standing on the same site at the end of a tick pool the
+  names they have caught (word of mouth among peers, as in Ostrom's commons). A name passed on is a claim too, so this
+  arm only helps when nobody lies about others; the shortcut-takers here do not.
 * ``inspect`` (the checker, for comparison): ``trust`` ants plus a share ``inspector_frac`` of the ants turned into
   inspectors. Inspectors do no work; they walk towards pieces marked done, look, and if work is left leave a strong
   "work left" mark (``inspector_amount``). Inspectors are not counted in the stop rule.
@@ -47,8 +62,9 @@ from typing import Any, Dict, List, Optional, Set
 from antelligence.kernel.fading import FadeRule, FadingMemory
 from antelligence.worlds.graph_coloring.graphs import make_graph
 
-ARMS = ("trust", "look", "inspect")
+ARMS = ("trust", "look", "inspect", "record", "gossip")
 OPEN, DONE = 1, -1
+IDLE_RULES = ("ticks", "places", "walk")
 
 
 @dataclass(frozen=True)
@@ -71,6 +87,7 @@ class FinishConfig:
     inspector_amount: float = 3.0
     max_ticks: int = 600
     family: str = "ws"
+    idle_rule: str = "places"      # "places": patience different empty sites (default); "ticks": the old rule; "walk": ablation
 
     def __post_init__(self) -> None:
         if self.n_ants < 8:
@@ -85,6 +102,8 @@ class FinishConfig:
             raise ValueError("stop_share and follow_p are shares")
         if self.patience < 1 or self.look_cost < 0:
             raise ValueError("patience must be >= 1 and look_cost >= 0")
+        if self.idle_rule not in IDLE_RULES:
+            raise ValueError(f"idle_rule must be one of {IDLE_RULES}")
 
     @property
     def n_sites(self) -> int:
@@ -112,6 +131,8 @@ class FinishResult:
     look_ticks: int                   # ant-ticks spent re-checking pieces someone marked done
     lies: int                         # times a shortcut-taker marked an unfinished piece "done"
     left_by_tick: List[int] = field(default_factory=list)
+    caught: int = 0                   # record and gossip: (ant, name) pairs held at the end, i.e. who suspects whom
+    caught_wrongly: int = 0           # ... of which the name is not a shortcut-taker (should stay 0)
 
     @property
     def said_done_early(self) -> bool:
@@ -157,7 +178,23 @@ class FinishWorld:
         cheats = self.shortcut_ants(shortcut_share)
         inspectors = self.inspector_ants() if arm == "inspect" else set()
         workers = [a for a in range(n) if a not in inspectors]
-        look = arm == "look"
+        look = arm in ("look", "record", "gossip")
+        caught: List[Set[str]] = [set() for _ in range(n)]  # record and gossip: authors this ant caught claiming done
+        places = cfg.idle_rule in ("places", "walk")  # track the sites found empty since last work, and walk to new ones
+        empty: List[Set[int]] = [set() for _ in range(n)]
+
+        def rest(a: int, site: int) -> None:
+            if cfg.idle_rule != "places":
+                if places:
+                    empty[a].add(site)
+                idle[a] += 1
+            elif site not in empty[a]:
+                empty[a].add(site)
+                idle[a] += 1
+
+        def wake(a: int) -> None:
+            idle[a] = 0
+            empty[a].clear()
         pos = list(self.start)
         busy = [0] * n          # ticks still to spend re-checking (look arm)
         idle = [0] * n
@@ -200,12 +237,15 @@ class FinishWorld:
                     continue
 
                 if look:
+                    # Earned trust: a claim from an ant this one has caught before is always re-checked.
+                    look_p = 1.0 if caught[a] and any(m.author in caught[a] for m in marks if m.value == DONE) \
+                        else cfg.look_p
                     if claimed and cfg.look_cost > 0 and checked[a] != s and cfg.look_p < 1 \
-                            and rngs[a].random() >= cfg.look_p:
+                            and rngs[a].random() >= look_p:
                         # Spot looking: this time the ant takes the claim at face value, but it saw nothing, so it
                         # leaves no mark and repeats nothing.
                         checked[a] = s
-                        idle[a] += 1
+                        rest(a, s)
                         continue
                     if claimed and cfg.look_cost > 0 and checked[a] != s:
                         checked[a] = s
@@ -214,12 +254,14 @@ class FinishWorld:
                         view = OPEN if work[s] > 0 else DONE
                         for m in marks:
                             memory.feedback(m, agrees=(m.value == view), tick=t)
+                        if view == OPEN and arm in ("record", "gossip"):
+                            caught[a].update(m.author for m in marks if m.value == DONE)
                         memory.deposit(s, str(a), view, tick=t)
                         stay[a] = view == OPEN or busy[a] > 0
                         if view == OPEN:
-                            idle[a] = 0
+                            wake(a)
                         else:
-                            idle[a] += 1
+                            rest(a, s)
                         continue
                     believes_open = work[s] > 0
                 else:
@@ -231,16 +273,16 @@ class FinishWorld:
                         memory.feedback(m, agrees=(m.value == DONE), tick=t)
                     memory.deposit(s, str(a), DONE, tick=t)
                     lies += 1
-                    idle[a] += 1
+                    rest(a, s)
                     continue
 
                 if believes_open:
                     work[s] -= 1
                     left -= 1
                     work_ticks += 1
-                    idle[a] = 0
+                    wake(a)
                 else:
-                    idle[a] += 1
+                    rest(a, s)
                 view = OPEN if believes_open and work[s] > 0 else DONE
                 if look or not claimed:
                     # What the ant itself saw (look arm, or a trust ant on an unclaimed piece).
@@ -269,8 +311,19 @@ class FinishWorld:
                     top = [v for v in nbs if score[v] == best]
                     pos[a] = top[r.randrange(len(top))]
                 else:
-                    pos[a] = nbs[r.randrange(len(nbs))]
+                    fresh = [v for v in nbs if v not in empty[a]] if places else nbs
+                    pick = fresh or nbs
+                    pos[a] = pick[r.randrange(len(pick))]
                 checked[a] = None
+            if arm == "gossip":
+                here: Dict[int, List[int]] = {}
+                for a in workers:
+                    here.setdefault(pos[a], []).append(a)
+                for group in here.values():
+                    if len(group) > 1:
+                        pooled = set().union(*(caught[a] for a in group))
+                        for a in group:
+                            caught[a] = set(pooled)
             if t % 20 == 0:
                 memory.prune(t)
             left_by_tick.append(left)
@@ -285,6 +338,9 @@ class FinishWorld:
         if stop_tick is None:
             left_at_stop = left
             open_at_stop = sum(w > 0 for w in work)
+        cheat_names = {str(c) for c in cheats}
+        held = sum(len(c) for c in caught)
+        wrongly = sum(len(c - cheat_names) for c in caught)
         return FinishResult(arm, shortcut_share, self.seed, asdict(cfg), total, stop_tick, left_at_stop,
                             round(left_at_stop / total, 6), open_at_stop, finished, work_ticks, look_ticks, lies,
-                            left_by_tick)
+                            left_by_tick, held, wrongly)

@@ -13,17 +13,31 @@ can see right now. Two pieces test what that rule is worth and what an ant gains
   no target of its own does it compare with others: it heads for the nearest peer that says food is near, and
   drops that lead as soon as its own view shows the spot with no food.
 
+Waggle-dance marks (from the rumour world's ``graded`` policy): :class:`RelayForagingWorld` tags each message with how
+sure its sender is (first-hand ``cap``, relayed 1; with ``shout=True`` relayed memories claim ``cap`` too, the liar
+case), and :class:`GradedForager` follows the surest lead rather than just the nearest.
+
+Steady eyes (:class:`SelfCheckingSensor`, used by :class:`SteadyEyesForager`): the one case think alone could not
+handle is an ant whose own eyes go wrong (``v2``: the view is mirrored west-east from some tick on). The ant is not
+told when, or whether, that happens. Every tick it checks its eyes against the walls it already knows: if the view
+read as mirrored fits its own map better than the view read as is, over the last few ticks, it reads its view
+mirrored. It keeps its own map, built only from views that fit, and stops listening to peers while it reads mirrored
+(it can't tell which way their words point). No checker, no teacher: the ant's own record is the evidence.
+
 The pilot's S trusts its brief and ignores what it hears; the pilot's S' (``ExploreWhenEmpty``) trusts its eyes
 but ignores what it hears. ``LookForager`` adds "then compare" on top of S'.
 """
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any, Dict, List, Optional, Tuple
 
 from antelligence.kernel.types import Intent, LocalView
-from antelligence.worlds.foraging_sb.nav import RADIUS, compass, plan_route, unstick
-from antelligence.worlds.foraging_sb.scripts import ExploreWhenEmpty, _t
+from antelligence.kernel.decision import SensedState
+from antelligence.worlds.foraging_sb.nav import RADIUS, MapMemory, compass, plan_route, unstick
+from antelligence.worlds.foraging_sb.scripts import ExploreWhenEmpty, _mismatch, _t
+from antelligence.worlds.foraging_sb.sensing import ForagingSensor
 from antelligence.worlds.foraging_sb.world import HEIGHT, MSG_MAX, WIDTH, ForagingSBWorld
 
 Cell = Tuple[int, int]
@@ -35,18 +49,32 @@ LEAD_TICKS = 12     # a lead not confirmed by the ant's own eyes within this man
 class RelayForagingWorld(ForagingSBWorld):
     """The pilot foraging world; with ``relay=True`` agents also broadcast remembered (possibly stale) spots."""
 
-    def __init__(self, seed: int, condition: str = "base", *, relay: bool = False, **kw: Any) -> None:
+    def __init__(self, seed: int, condition: str = "base", *, relay: bool = False, shout: bool = False, cap: int = 2,
+                 **kw: Any) -> None:
         super().__init__(seed, condition, **kw)
-        self.relay = relay
+        if cap < 1:
+            raise ValueError("cap must be at least 1")
+        self.relay, self.shout, self.cap = relay, shout, cap
         self.relayed = 0
+        self._strength = 1
 
     def describe(self) -> Dict[str, Any]:
-        return {**super().describe(), "world": "foraging_sb_relay", "relay": self.relay}
+        return {**super().describe(), "world": "foraging_sb_relay", "relay": self.relay, "shout": self.shout,
+                "cap": self.cap}
+
+    def _perceive(self, agent_id: str, tick: int) -> Dict[str, Any]:
+        posted = len(self._outbox)
+        data = super()._perceive(agent_id, tick)
+        if len(self._outbox) > posted:  # this agent just posted: say how sure it is (listeners may ignore it)
+            self._outbox[-1]["strength"] = self._strength
+        return data
 
     def _message(self, agent_id: str, rows: List[str]) -> Optional[str]:
         seen = super()._message(agent_id, rows)
+        self._strength = self.cap  # first-hand: seen right now
         if seen or not self.relay:
             return seen
+        self._strength = self.cap if self.shout else 1  # a remembered spot, maybe stale (shouted at the cap if shout)
         mem = self.memory[agent_id]
         target = mem.nest_at if self.carrying[agent_id] else mem.food_at
         if target is None:
@@ -59,8 +87,11 @@ class RelayForagingWorld(ForagingSBWorld):
         return f"{'nest' if self.carrying[agent_id] else 'food'} is {word} of me"[:MSG_MAX]
 
 
-def lead_from(heard: List[Dict[str, Any]], pos: Cell, want: str = "food") -> Optional[Cell]:
-    """The cell the nearest peer's "<want> is <direction> of me" points at, or None."""
+def lead_from(heard: List[Dict[str, Any]], pos: Cell, want: str = "food", graded: bool = False) -> Optional[Cell]:
+    """The cell the nearest peer's "<want> is <direction> of me" points at, or None. With ``graded``, the surest
+    peer's (highest ``strength``), nearest first among equally sure peers."""
+    if graded:
+        heard = sorted(heard, key=lambda m: -m.get("strength", 1))  # stable: nearest first within a strength
     for m in heard:  # already sorted nearest first
         text = m["text"]
         if not text.startswith(f"{want} is ") or not text.endswith(" of me"):
@@ -81,6 +112,8 @@ def lead_from(heard: List[Dict[str, Any]], pos: Cell, want: str = "food") -> Opt
 
 class LookForager(ExploreWhenEmpty):
     """Trust your own eyes first; use what peers say only when you have nothing of your own. See module doc."""
+
+    graded = False
 
     def __init__(self, sensor=None, *, use_heard: bool = True) -> None:
         super().__init__(sensor)
@@ -110,7 +143,7 @@ class LookForager(ExploreWhenEmpty):
                 st["lead"], lead = None, None   # my own eyes reached it and showed no food, or it went cold
                 st["dead_leads"] += 1
             if lead is None:
-                lead = lead_from(f["heard"], pos)
+                lead = lead_from(f["heard"], pos, graded=self.graded)
                 if lead is not None and lead != st["stale"]:
                     st["lead"], st["lead_tick"] = lead, tick
                     st["leads"] += 1
@@ -132,9 +165,93 @@ class LookForager(ExploreWhenEmpty):
                 "dead_leads": sum(s.get("dead_leads", 0) for s in self._state.values())}
 
 
-def default_ant() -> LookForager:
-    """The default ant for new swarm runs in this world (the pilot's recorded arms keep their own scripts)."""
-    return LookForager()
+class GradedForager(LookForager):
+    """:class:`LookForager` that follows the surest lead it hears (waggle-dance marks), not just the nearest."""
+
+    graded = True
+
+    def describe(self) -> Dict[str, Any]:
+        return {**super().describe(), "policy": "foraging_sb.graded"}
 
 
-__all__ = ["LookForager", "RelayForagingWorld", "default_ant", "lead_from"]
+class SelfCheckingSensor(ForagingSensor):
+    """A foraging sensor that checks the ant's eyes against its own map and un-mirrors them when they fit better that
+    way. See the module docstring. While the eyes look right it reports exactly what :class:`ForagingSensor` reports
+    (tested), so it changes nothing in ``base`` or ``v1``.
+
+    ``score`` is a leaky running sum of (wall disagreements reading the view as is) minus (reading it mirrored); the
+    ant switches to reading mirrored at ``+switch`` and back at ``-switch``. It learns a view into its map only when
+    that view does not argue against how it is reading its eyes.
+    """
+
+    def __init__(self, switch: float = 2.0, leak: float = 0.8, bound: float = 4.0) -> None:
+        self.switch, self.leak, self.bound = switch, leak, bound
+        self._state: Dict[str, Dict[str, Any]] = {}
+
+    def describe(self) -> Dict[str, Any]:
+        return {**super().describe(), "self_check": {"switch": self.switch, "leak": self.leak, "bound": self.bound}}
+
+    def mirrored(self, agent: str) -> bool:
+        st = self._state.get(agent)
+        return bool(st and st["mirrored"])
+
+    def sense(self, view: LocalView) -> SensedState:
+        obs = dict(view.observation)
+        agent, tick, pos = obs["agent"], obs["tick"], (obs["pos"][0], obs["pos"][1])
+        st = self._state.get(agent)
+        if st is None or tick <= st["tick"]:  # a new run reuses the sensor
+            st = self._state[agent] = {"mem": MapMemory(*obs["grid"]), "score": 0.0, "mirrored": False, "tick": 0,
+                                       "switches": 0, "mirrored_ticks": 0, "switch_ticks": []}
+        st["tick"] = tick
+        mem: MapMemory = st["mem"]
+        mem.food_at, mem.nest_at = _t(obs["food_at"]), _t(obs["nest_at"])  # set by real pickups and drops only
+        plain = list(obs["view"])
+        flipped = [r[::-1] for r in plain]
+        evidence = _mismatch(mem, pos, plain) - _mismatch(mem, pos, flipped)  # > 0: the mirrored reading fits better
+        st["score"] = max(-self.bound, min(self.bound, self.leak * st["score"] + evidence))
+        if not st["mirrored"] and st["score"] >= self.switch or st["mirrored"] and st["score"] <= -self.switch:
+            st["mirrored"] = not st["mirrored"]
+            st["switches"] += 1
+            st["switch_ticks"].append(tick)
+        st["mirrored_ticks"] += st["mirrored"]
+        rows = flipped if st["mirrored"] else plain
+        prev_food, prev_nest = mem.food_at, mem.nest_at
+        seen_food = seen_nest = None
+        if evidence == 0 or (evidence > 0) == st["mirrored"]:  # this view does not argue against my reading
+            seen_food, seen_nest = mem.update(pos, rows)
+        obs.update(view=rows, map=mem.as_rows(),
+                   food_seen=list(seen_food) if seen_food else None, nest_seen=list(seen_nest) if seen_nest else None,
+                   food_prev=list(prev_food) if prev_food else None, nest_prev=list(prev_nest) if prev_nest else None,
+                   heard=[] if st["mirrored"] else obs["heard"])
+        return super().sense(replace(view, observation=obs))
+
+    def stats(self) -> Dict[str, Any]:
+        """Over the agents of the latest run: how often they switched reading, for how many ticks they read mirrored,
+        and the tick of each switch."""
+        return {"switches": sum(s["switches"] for s in self._state.values()),
+                "mirrored_ticks": sum(s["mirrored_ticks"] for s in self._state.values()),
+                "switch_ticks": sorted(t for s in self._state.values() for t in s["switch_ticks"])}
+
+
+class SteadyEyesForager(LookForager):
+    """:class:`LookForager` that checks its own eyes (:class:`SelfCheckingSensor`); it is not told about any flip."""
+
+    def __init__(self, *, use_heard: bool = True, **sensor_kw: Any) -> None:
+        super().__init__(SelfCheckingSensor(**sensor_kw), use_heard=use_heard)
+
+    def describe(self) -> Dict[str, Any]:
+        return {**super().describe(), "policy": "foraging_sb.steady_eyes"}
+
+
+def default_ant() -> SteadyEyesForager:
+    """The default ant for new swarm runs in this world (the pilot's recorded arms keep their own scripts).
+
+    Steady eyes: think alone (:class:`LookForager`) plus the eye check. While its eyes are right it plays exactly as
+    think alone does (tested), so think alone stays the behaviour whenever nothing is wrong; it only differs once its
+    own map says the view is mirrored (``STEADY_EYES.md``: 15.4 deliveries against 3.9 after a flip, 80 fresh maps).
+    """
+    return SteadyEyesForager()
+
+
+__all__ = ["GradedForager", "LookForager", "RelayForagingWorld", "SelfCheckingSensor", "SteadyEyesForager",
+           "default_ant", "lead_from"]
