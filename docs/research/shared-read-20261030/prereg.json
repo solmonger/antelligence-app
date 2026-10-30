@@ -1,0 +1,34 @@
+{
+ "ants": [
+  "qwen3:4b",
+  "llama3.2:3b",
+  "gemma3:4b",
+  "phi4-mini:3.8b"
+ ],
+ "arms": [
+  "alone",
+  "notes",
+  "both"
+ ],
+ "date": "2026-10-30",
+ "files": {
+  "answers": "f50fdf39d5687938e936a637bcd41e38312eff51daa5cdf151128ab7a1b474ab",
+  "harness": "b0283ea22afff664862e8268ab9ec7a6df092f171e6e53c320af87619733a2dc",
+  "plan": "b08cd1cf8c37d927be494797b737b6068e4eaaba6c279a05718c416c137ba39e",
+  "questions": "7a45f6c1f9d51a770f91f2be70402c287c3507002b816d3a934a4727ac029672",
+  "script": "d54b5ff3c0c4e496afd494c96b974139775a5e5fefa5b3130352ff6c8674d1bf"
+ },
+ "lenses": [
+  0,
+  1
+ ],
+ "min_usable": 0.9,
+ "pass": {
+  "alike_min_rise": 0.05,
+  "beats_reader_min_gain": 0.02,
+  "helps_min_gain": 0.02,
+  "max_leak_share": 0.1
+ },
+ "reader": "qwen3:14b",
+ "temperature": 0.7
+}
