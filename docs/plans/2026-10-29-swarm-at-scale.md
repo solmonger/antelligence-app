@@ -325,6 +325,8 @@ scores it on outcomes nobody knew when the answers were written, with the pass l
    that answer alone and look before done. If it fails, say so plainly and work out why before building more.
 2. Make looking cheap: spot checks by peers, more often on claims from ants with a poor record (idea 1), and a stop
    rule that waits long enough. Score the swarm on work left in the world, never on what it reports.
+   2026-10-30: earned trust gave no gain (`EARNED_TRUST.md`); a better stop rule did. "Look around before you rest"
+   leaves 57% to 85% less work at the same time to "done" (`STOP_RULE.md`).
 3. Fix the case think alone cannot: an ant whose own eyes are wrong (foraging v2). Done 2026-10-30: steady eyes,
    see `STEADY_EYES.md`.
 4. Then SLM steering: steer small models for errors that do not line up, and for honest "not done yet".
