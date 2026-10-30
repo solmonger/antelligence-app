@@ -603,6 +603,14 @@ def test_the_drop_in_prompt_names_the_real_commands_and_rules():
     assert "memory_pressure" in text and "Never stop, kill or restart any process you didn't start" in text
 
 
+def test_the_checks_prompt_reads_saved_answers_only():
+    text = (REPO / "docs/research/shared-read-20261030/CHECKS_PROMPT.md").read_text()
+    for cmd in ("score --models $M", "explore --models $M", "run --models $M --parser 2 --offline --seed-cache",
+                "score --models $M --parser 2"):
+        assert f"scripts/shared_read.py {cmd}" in text
+    assert "claude/project-thread-zif8rm" in text and "push nothing" in text and "worktree" in text
+
+
 def test_the_committed_plan_is_frozen_and_unchanged():
     """prereg.json fingerprints the questions, answers, harness, script, plan and pass lines. Any change after the
     freeze must be a deliberate re-freeze (and, after a real run, a new test)."""

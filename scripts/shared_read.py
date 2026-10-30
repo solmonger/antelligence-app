@@ -395,6 +395,7 @@ def cmd_run(a: argparse.Namespace) -> int:
     print(f"Done: {len(got)} questions, {runner.calls} new calls ({runner.failed} unusable; {runner.reused} kept "
           f"unusable replies used again) in "
           f"{meta['seconds'] / 60:.0f} min. Next: `uv run python scripts/shared_read.py score"
+          f"{f' --models {a.models}' if a.models else ''}{f' --parser {a.parser}' if a.parser else ''}"
           f"{f' --out {a.out}' if a.out else ' --dry-run' if a.dry_run else ''}`.")
     return 0
 
