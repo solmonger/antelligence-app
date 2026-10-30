@@ -269,6 +269,10 @@ delivered per run:
   task we did not build: second-hand news is mostly echo.
 - When the ants' own sensors are wrong (v2), think alone does not help. That needs a different fix (an ant can't
   out-look a broken eye), so it stays open.
+  **Update 2026-10-30:** fixed by steady eyes, an ant that checks what it sees against walls it already knows and
+  reads its eyes mirrored when that fits better. 15.4 deliveries against think alone's 3.9 on 80 fresh layouts, nearly
+  as many as a script told the flip tick, and identical to think alone when eyes are fine
+  (`docs/research/swarm-scale-20261029/STEADY_EYES.md`).
 
 ### 0.5 Are we heading the right way? What we know, and what we only hope
 
@@ -320,7 +324,8 @@ scores it on outcomes nobody knew when the answers were written, with the pass l
    that answer alone and look before done. If it fails, say so plainly and work out why before building more.
 2. Make looking cheap: spot checks by peers, more often on claims from ants with a poor record (idea 1), and a stop
    rule that waits long enough. Score the swarm on work left in the world, never on what it reports.
-3. Fix the case think alone cannot: an ant whose own eyes are wrong (foraging v2).
+3. Fix the case think alone cannot: an ant whose own eyes are wrong (foraging v2). Done 2026-10-30: steady eyes,
+   see `STEADY_EYES.md`.
 4. Then SLM steering: steer small models for errors that do not line up, and for honest "not done yet".
 
 ## 1. The short answer
