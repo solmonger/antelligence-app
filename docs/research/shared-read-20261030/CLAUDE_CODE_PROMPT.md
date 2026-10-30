@@ -13,6 +13,14 @@ Hard rules:
   Ollama included, and don't change Ollama's global settings. If something else is using the memory you need, stop
   and tell me what it is.
 - Never delete the run folder docs/research/shared-read-20261030/run/. Its cache is what lets a stopped run resume.
+  Run 1's results are in it; a new run goes in a new folder (`--out`), never over it.
+
+If Ollama isn't installed (run 1 on this Mac had none), don't install it. Serve the models with `mlx_lm.server` from
+4-bit MLX builds on Hugging Face, behind a small stand-in on port 11434 that passes `/v1` calls through and restarts
+`mlx_lm.server` when the script sends its unload call (`POST /api/generate` with `keep_alive: 0`). The plan
+explains it under "How run 1 ran". models.json already holds run 1's MLX names and turns thinking off with
+`"extra_body": {"chat_template_kwargs": {"enable_thinking": false}}`. Where the steps below say `ollama pull`,
+`ollama ps` or `ollama stop`, do the same thing for the MLX models you serve.
 
 Steps:
 1. Get the code. In antelligence-fairtest, run `git status`. If there are uncommitted changes, or a fair test is
@@ -44,13 +52,16 @@ Steps:
    by more than 2 GB during the run, stop the run process you started (it resumes from its cache), run
    `ollama stop <model>` for the test's own models only, wait for pressure to go back to normal, and resume. If it
    gets tight twice, stop and tell me the numbers. The script also refuses to load a model without room for it plus
-   6 GB. If it stops with "MemoryTight", treat that the same way.
+   6 GB. If it stops with "MemoryTight", treat that the same way. If it stops after 8 unusable replies in a row and
+   the replies hold a clear answer letter (Gemma 4 E2B writes LaTeX in its JSON), add `--max-fail-streak 100` and
+   tell me you did.
 9. When the quick pass finishes, run `uv run python scripts/shared_read.py score` and show me the output. Don't
    treat it as the verdict yet.
 10. Full run: start `uv run python scripts/shared_read.py run` the same way, with the same memory watch. It reuses the
     60 questions already done. If it stops for any reason other than memory, read the reason it prints, fix only
     what's needed (no change to questions, prompts, arms or pass lines), and resume.
-11. Run `uv run python scripts/shared_read.py score` once more. Then give me, in plain words: the score output as is,
+11. Run `uv run python scripts/shared_read.py score` once more, then `uv run python scripts/shared_read.py explore`.
+    Then give me, in plain words: the score output as is,
     how long the run took, peak memory pressure, any model you swapped and why, and anything that went wrong. End
-    with a short block I can paste back to Claude in Duet, holding the full score output and
+    with a short block I can paste back to Claude in Duet, holding the full score and explore output and
     docs/research/shared-read-20261030/run/meta.json.

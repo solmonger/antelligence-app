@@ -12,12 +12,12 @@ OpenAI-compatible server on the user's own machine), so it costs nothing.
 
 Per exam question (the frozen 240 AGIEval questions of the fair test):
 
-* the **reader** (a bigger model; the models are set in ``docs/research/shared-read-20261030/models.json``, by
-  default Qwen3.8 27B, about 18 GB at 4-bit) writes short notes once: what is asked, the key facts and rules, the
+* the **reader** (a bigger model; the models are set in ``docs/research/shared-read-20261030/models.json``. Run 1
+  used Gemma 4 12B, the preregistered fallback for Qwen3.8 27B) writes short notes once: what is asked, the key facts and rules, the
   traps. It is told never to say which option is right; notes that name a winning option anyway are flagged as leaks
   and scored both with and without.
 * the reader also answers the question itself once (``reader``): the "thinker alone" line the swarm has to beat.
-* **8 ants** = 4 small models from 4 families (by default Gemma 4 E2B, Qwen3.5 4B, Granite 4.2 3B, LFM3 1.7B)
+* **8 ants** = 4 small models from 4 families (run 1: Gemma 4 E2B, Qwen3.5 4B, Granite 4.2 3B, LFM2.5 1.2B)
   x 2 ways of looking (lenses), each answering on its own, in 3 arms:
 
   - ``alone``: the ant reads the full question itself (our current default, think alone).
@@ -41,6 +41,7 @@ import json
 import re
 import statistics as st
 from dataclasses import dataclass
+from functools import partial
 from itertools import combinations
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
@@ -73,10 +74,26 @@ class ModelSpec:
 MODELS_FILE = Path(__file__).resolve().parents[2] / "docs/research/shared-read-20261030/models.json"
 
 
-def load_models(path: Path = MODELS_FILE) -> Tuple[ModelSpec, Tuple[ModelSpec, ...]]:
-    """(reader, ants) from a JSON file: {"reader": {...}, "ants": [{...}, ...]}. Ants must come from different
-    families, because the test is about a mixed swarm."""
+# How replies are read. 1 is what run 1 used (the fair test's JSON reader). 2 also reads a JSON answer whose reason
+# holds LaTeX such as "\cap" (invalid JSON escapes), and as a last resort takes the "answer" letter when every
+# "answer" key in the reply names the same one. A run states its parser in the model file, so it is frozen with it.
+PARSERS = (1, 2)
+
+
+@dataclass(frozen=True)
+class Config:
+    reader: ModelSpec
+    ants: Tuple[ModelSpec, ...]
+    parser: int = 1
+
+
+def load_config(path: Path = MODELS_FILE) -> Config:
+    """The run's set-up from a JSON file: {"reader": {...}, "ants": [{...}, ...], "parser": 1}. Ants must come from
+    different families, because the test is about a mixed swarm. ``parser`` defaults to 1."""
     cfg = json.loads(Path(path).read_text())
+    unknown = set(cfg) - {"about", "reader", "ants", "parser"}
+    if unknown:
+        raise ValueError(f"unknown keys {sorted(unknown)} in the model file")
     reader = ModelSpec.from_json(cfg["reader"])
     ants = tuple(ModelSpec.from_json(a) for a in cfg["ants"])
     if not ants:
@@ -85,10 +102,20 @@ def load_models(path: Path = MODELS_FILE) -> Tuple[ModelSpec, Tuple[ModelSpec, .
         raise ValueError("each ant model must come from a different family")
     if len({a.tag for a in ants} | {reader.tag}) != len(ants) + 1:
         raise ValueError("the reader and every ant must be different models")
-    return reader, ants
+    parser = cfg.get("parser", 1)
+    if parser not in PARSERS:
+        raise ValueError(f"parser must be one of {PARSERS}, not {parser!r}")
+    return Config(reader, ants, parser)
 
 
-READER, ANTS = load_models()
+def load_models(path: Path = MODELS_FILE) -> Tuple[ModelSpec, Tuple[ModelSpec, ...]]:
+    """(reader, ants) from the model file (see :func:`load_config`)."""
+    cfg = load_config(path)
+    return cfg.reader, cfg.ants
+
+
+CONFIG = load_config()
+READER, ANTS, PARSER = CONFIG.reader, CONFIG.ants, CONFIG.parser
 LENS_IDS = (0, 1)                 # the fair test's first two exam lenses: work it out / rule options out
 ARMS = ("alone", "notes", "both")
 TEMPERATURE = 0.7
@@ -183,10 +210,7 @@ def strip_think(text: str) -> str:
     return text.strip()
 
 
-def parse_answer(text: str) -> Tuple[Optional[str], str]:
-    """(letter A-E or None, reason). Reads the whole reply first, then each flat JSON object from the last one back,
-    so stray braces in a reason or a leftover reasoning block don't hide the answer."""
-    clean = strip_think(text)
+def _read_json(clean: str) -> Tuple[Optional[str], str]:
     ans, reason = ft.parse_reply("exam", clean)
     if ans is not None:
         return ans, reason
@@ -195,6 +219,31 @@ def parse_answer(text: str) -> Tuple[Optional[str], str]:
         if ans is not None:
             return ans, reason
     return None, ""
+
+
+_ESCAPE = re.compile(r'\\(u[0-9a-fA-F]{4}|["\\/bfnrt]|.?)', re.S)
+_ANSWER_KEY = re.compile(r'"answer"\s*:\s*"\s*\(?\s*([A-Ea-e])\s*\)?\s*"')
+
+
+def _fix_escapes(text: str) -> str:
+    """Make a backslash that isn't a JSON escape (LaTeX's \\cap, \\underline) a literal backslash."""
+    return _ESCAPE.sub(lambda m: m.group(0) if m.group(1) and (m.group(1)[0] in '"\\/bfnrt' or len(m.group(1)) == 5)
+                       else "\\\\" + m.group(1), text)
+
+
+def parse_answer(text: str, parser: int = 1) -> Tuple[Optional[str], str]:
+    """(letter A-E or None, reason). Reads the whole reply first, then each flat JSON object from the last one back,
+    so stray braces in a reason or a leftover reasoning block don't hide the answer. ``parser=2`` (see
+    :data:`PARSERS`) also mends LaTeX backslashes, then falls back to the "answer" key when every one agrees."""
+    clean = strip_think(text)
+    ans, reason = _read_json(clean)
+    if ans is not None or parser < 2:
+        return ans, reason
+    ans, reason = _read_json(_fix_escapes(clean))
+    if ans is not None:
+        return ans, reason
+    letters = {m.upper() for m in _ANSWER_KEY.findall(clean)}
+    return (letters.pop(), "") if len(letters) == 1 else (None, "")
 
 
 _L = r"(?<![A-Za-z])\(?(?-i:[A-E])\)?(?![A-Za-z])"   # an option letter, capital, standing alone or in brackets
@@ -241,22 +290,37 @@ _MISSING = re.compile(r"model ['\"]?[^'\"]*['\"]? not found|not found, try pulli
 
 class Runner:
     """Asks one call at a time per slot, caching each usable reply by request hash in ``cache_path`` (JSONL) so a
-    stopped run resumes where it was. A failed call is logged but never reused: a rerun asks again. After
-    ``max_fail_streak`` unusable replies in a row the run stops with :class:`BrokenRun`."""
+    stopped run resumes where it was. After ``max_fail_streak`` unusable replies in a row the run stops with
+    :class:`BrokenRun`.
+
+    A reply that came back but wasn't in the asked form ("Unusable") is kept and, on a rerun, used again rather than
+    asked again: every call has a fixed seed, so asking again mostly returns the same reply (run 1 lost about 20
+    minutes per resume re-asking 25 looping reader answers). ``retry_unusable=True`` asks them again. If the reader
+    of replies has changed (``usable`` now accepts the kept reply), the kept reply counts as usable, with no call.
+    Transport errors and wrong served models are always asked again. ``seed_paths`` are other runs' caches, read
+    only, so a run with another parser can re-read an earlier run's replies without asking a model."""
 
     def __init__(self, provider: Any, cache_path: Path, *, max_fail_streak: int = 8, concurrency: int = 2,
-                 backoff: Sequence[float] = (2, 5, 10), check_names: bool = True) -> None:
+                 backoff: Sequence[float] = (2, 5, 10), check_names: bool = True, retry_unusable: bool = False,
+                 seed_paths: Sequence[Path] = ()) -> None:
         self.provider, self.cache_path, self.check_names = provider, Path(cache_path), check_names
-        self.max_fail_streak, self.backoff = max_fail_streak, tuple(backoff)
+        self.max_fail_streak, self.backoff, self.retry_unusable = max_fail_streak, tuple(backoff), retry_unusable
         self.sem = asyncio.Semaphore(concurrency)
         self.cache: Dict[str, Dict[str, Any]] = {}
-        if self.cache_path.exists():
-            for line in self.cache_path.read_text().splitlines():
+        self.unusable: Dict[str, Dict[str, Any]] = {}
+        for path in [*map(Path, seed_paths), self.cache_path]:
+            if not path.exists():
+                continue
+            for line in path.read_text().splitlines():
                 if line.strip():
                     row = json.loads(line)
+                    h = row["request_hash"]
                     if not row.get("error"):
-                        self.cache[row["request_hash"]] = row
-        self.calls = self.failed = self.streak = 0
+                        self.cache[h] = row
+                        self.unusable.pop(h, None)
+                    elif row["error"] == "Unusable" and h not in self.cache:
+                        self.unusable[h] = row
+        self.calls = self.failed = self.streak = self.reused = 0
         self.seconds = 0.0
         self.reasons: List[str] = []
         self.broken: Optional[str] = None
@@ -266,6 +330,13 @@ class Runner:
         h = req.request_hash
         if h in self.cache:
             return self.cache[h]
+        if h in self.unusable and not self.retry_unusable:
+            old = self.unusable[h]
+            self.reused += 1
+            if usable(old.get("content") or ""):   # readable now: kept in memory only, so the file still says
+                self.cache[h] = {**old, "error": None, "reason": None}   # what the run's own parser made of it
+                return self.cache[h]
+            return old
         if self.broken:
             raise BrokenRun(self.broken)
         async with self.sem:
@@ -325,30 +396,32 @@ def same_model(served: str, asked: str) -> bool:
     return norm(served) == norm(asked)
 
 
-def _usable_answer(text: str) -> bool:
-    return parse_answer(text)[0] is not None
+def _usable_answer(text: str, parser: int = 1) -> bool:
+    return parse_answer(text, parser)[0] is not None
 
 
 def _usable_notes(text: str) -> bool:
     return len(clean_notes(text).split()) >= 5
 
 
-def _answer(row: Mapping[str, Any]) -> Optional[str]:
-    return None if row.get("error") else parse_answer(row["content"])[0]
+def _answer(row: Mapping[str, Any], parser: int = 1) -> Optional[str]:
+    return None if row.get("error") else parse_answer(row["content"], parser)[0]
 
 
 async def run_reader(runner: Runner, items: Sequence[Item], reader: ModelSpec = READER,
-                     on_done: Optional[Callable[[str], None]] = None) -> Dict[str, Dict[str, Any]]:
+                     on_done: Optional[Callable[[str], None]] = None, parser: int = PARSER
+                     ) -> Dict[str, Dict[str, Any]]:
     """Phase 1 (one model loaded): the reader's notes and its own answer for every item."""
     out: Dict[str, Dict[str, Any]] = {}
+    usable = partial(_usable_answer, parser=parser)
 
     async def one(item: Item) -> None:
         n = await runner.ask(make_request(reader, notes_messages(item, reader), item.id, "notes", 0,
                                           READER_MAX_TOKENS), _usable_notes)
         a = await runner.ask(make_request(reader, reader_answer_messages(item, reader), item.id, "reader", 0,
-                                          ft.MAX_TOKENS), _usable_answer)
+                                          ft.MAX_TOKENS), usable)
         notes = clean_notes(n["content"]) if not n.get("error") else ""
-        out[item.id] = {"notes": notes, "leak": leaks(notes), "reader": _answer(a)}
+        out[item.id] = {"notes": notes, "leak": leaks(notes), "reader": _answer(a, parser)}
         if on_done:
             on_done(item.id)
 
@@ -364,11 +437,12 @@ def ant_roster(ants: Sequence[ModelSpec] = ANTS, lenses: Sequence[int] = LENS_ID
 async def run_ants(runner: Runner, items: Sequence[Item], reading: Mapping[str, Mapping[str, Any]],
                    ants: Sequence[ModelSpec] = ANTS, lenses: Sequence[int] = LENS_IDS,
                    on_model: Optional[Callable[[ModelSpec], None]] = None,
-                   after_model: Optional[Callable[[ModelSpec], None]] = None
+                   after_model: Optional[Callable[[ModelSpec], None]] = None, parser: int = PARSER
                    ) -> Dict[str, Dict[str, List[Optional[str]]]]:
     """Phase 2, one ant model at a time: every ant answers every item in every arm. An item whose notes failed gets
     no ``notes``/``both`` answers (None), which the usable-share check counts."""
     roster = ant_roster(ants, lenses)
+    usable = partial(_usable_answer, parser=parser)
     out: Dict[str, Dict[str, List[Optional[str]]]] = {i.id: {arm: [None] * len(roster) for arm in ARMS}
                                                        for i in items}
     for spec in ants:
@@ -389,7 +463,7 @@ async def run_ants(runner: Runner, items: Sequence[Item], reading: Mapping[str, 
 
         async def one(job):
             qid, arm, col, req = job
-            out[qid][arm][col] = _answer(await runner.ask(req, _usable_answer))
+            out[qid][arm][col] = _answer(await runner.ask(req, usable), parser)
 
         await asyncio.gather(*(one(j) for j in jobs))
         if after_model:
@@ -544,6 +618,62 @@ def score(rs: Sequence[Mapping[str, Any]], key: Mapping[str, str], families: Seq
     return out
 
 
+# ---------------------------------------------------------------- exploring
+
+def explore(rs: Sequence[Mapping[str, Any]], key: Mapping[str, str], families: Sequence[str],
+            *, boot_reps: int = 10000) -> Dict[str, Any]:
+    """Other swarm shapes read off a finished run's saved answers, with no new call. **Exploratory**: these were
+    chosen after run 1 (the plan's "helps but alike" and "doesn't beat the reader" next steps), so they suggest the
+    next test rather than settle anything. Every shape is compared with the reader answering alone (paired bootstrap
+    over questions).
+
+    * the reader alone, and the 8 ants alone / with notes / with both, as scored;
+    * the reader as one voter among the ants (listed first, so a tie goes its way), with ants alone or with notes;
+    * half the ants get the notes and half answer alone, averaged over every way to choose the half (each ant's
+      answers in each arm are separate calls, so this is what that swarm would have answered);
+    * the same as the scored arms with the weakest ant family (lowest score alone) left out."""
+    rs = [r for r in rs if r["id"] in key]
+    if not rs:
+        raise ValueError("no scored rows")
+    truths = [key[r["id"]] for r in rs]
+    n_ants = len(rs[0]["alone"])
+    alone_by_fam: Dict[str, List[float]] = {}
+    for k, f in enumerate(families):
+        alone_by_fam.setdefault(f, []).append(st.mean(_right(r["alone"][k], t) for r, t in zip(rs, truths)))
+    weakest = min(alone_by_fam, key=lambda f: st.mean(alone_by_fam[f]))
+    keep = [k for k, f in enumerate(families) if f != weakest]
+    halves = [set(c) for c in combinations(range(n_ants), n_ants // 2)]
+
+    def mixed(r: Mapping[str, Any], half: set) -> List[Optional[str]]:
+        return [r["notes"][k] if k in half else r["alone"][k] for k in range(n_ants)]
+
+    shapes: Dict[str, Callable[[Mapping[str, Any]], List[Optional[str]]]] = {
+        "reader alone": lambda r: [r["reader"]],
+        **{f"ants {arm}": (lambda r, arm=arm: r[arm]) for arm in ARMS},
+        "reader + ants alone": lambda r: [r["reader"], *r["alone"]],
+        "reader + ants notes": lambda r: [r["reader"], *r["notes"]],
+        **{f"ants {arm}, no {weakest}": (lambda r, arm=arm: [r[arm][k] for k in keep]) for arm in ARMS},
+    }
+    reader = [_right(r["reader"], t) for r, t in zip(rs, truths)]
+    out: Dict[str, Any] = {}
+    for name, ans in shapes.items():
+        right = [_right(ft.vote(ans(r)), t) for r, t in zip(rs, truths)]
+        entry: Dict[str, Any] = {"accuracy": round(st.mean(right), 4)}
+        if name != "reader alone":
+            g, lo, hi = ft.paired_boot([a - b for a, b in zip(right, reader)], reps=boot_reps)
+            entry["vs_reader"] = {"gain": round(g, 4), "ci95": [round(lo, 4), round(hi, 4)]}
+        if name.startswith("ants"):
+            entry["error_alikeness"] = round(error_alikeness([ans(r) for r in rs], truths), 4)
+        out[name] = entry
+    right = [st.mean(_right(ft.vote(mixed(r, h)), t) for h in halves) for r, t in zip(rs, truths)]
+    g, lo, hi = ft.paired_boot([a - b for a, b in zip(right, reader)], reps=boot_reps)
+    out["half the ants get notes"] = {
+        "accuracy": round(st.mean(right), 4), "vs_reader": {"gain": round(g, 4), "ci95": [round(lo, 4), round(hi, 4)]},
+        "error_alikeness": round(st.mean(error_alikeness([mixed(r, h) for r in rs], truths) for h in halves), 4),
+        "splits": len(halves)}
+    return {"exploratory": True, "n": len(rs), "weakest_family": weakest, "shapes": out}
+
+
 # --------------------------------------------------------------------- sizing
 
 def plan(n_items: int, ants: Sequence[ModelSpec] = ANTS, lenses: Sequence[int] = LENS_IDS) -> Dict[str, int]:
@@ -553,7 +683,8 @@ def plan(n_items: int, ants: Sequence[ModelSpec] = ANTS, lenses: Sequence[int] =
             "calls": reader_calls + ant_calls}
 
 
-__all__ = ["ANTS", "ARMS", "BrokenRun", "Item", "LENS_IDS", "MODELS_FILE", "MissingModel", "ModelSpec", "PASS", "READER", "Runner",
-           "ant_messages", "ant_roster", "clean_notes", "error_alikeness", "leaks", "load_items", "load_models", "notes_messages",
-           "parse_answer", "plan", "reader_answer_messages", "rows", "run_ants", "run_reader", "same_model", "same_wrong", "score",
-           "strip_think", "usable_share"]
+__all__ = ["ANTS", "ARMS", "BrokenRun", "CONFIG", "Config", "Item", "LENS_IDS", "MODELS_FILE", "MissingModel",
+           "ModelSpec", "PARSER", "PARSERS", "PASS", "READER", "Runner", "ant_messages", "ant_roster", "clean_notes",
+           "error_alikeness", "explore", "leaks", "load_config", "load_items", "load_models", "notes_messages",
+           "parse_answer", "plan", "reader_answer_messages", "rows", "run_ants", "run_reader", "same_model",
+           "same_wrong", "score", "strip_think", "usable_share"]

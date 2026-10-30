@@ -1,11 +1,20 @@
 {
- "about": "Models for the shared-read test, newest open weights on Ollama as of 2026-10-30, sized for a 36 GB Mac with one model loaded at a time. gb is roughly the memory once loaded (file size plus room for the context). Change models here, not in code, then run `scripts/shared_read.py freeze` before the first real run.",
- "reader": {"tag": "qwen3.8:27b", "family": "qwen", "gb": 21, "extra_body": {"reasoning_effort": "none"},
-            "note": "Newest Qwen (Aug 2026); only size on Ollama is 27B, ~18 GB file at 4-bit. Thinks by default; 'none' asks it not to. Fallback if it won't fit or is too slow: gemma4:12b (~8 GB)."},
+ "about": "Models for the shared-read test, as run 1 actually ran them (2026-10-30, Eshaan's Mac Studio, 36 GB): 4-bit MLX builds from Hugging Face served by mlx_lm.server behind an Ollama-shaped stand-in on port 11434 (see the plan, 'How run 1 ran'). Thinking is turned off with chat_template_kwargs.enable_thinking=false, which MLX reads from the chat template. gb is a rough in-memory size for the memory guard. Change models here, not in code, then run `scripts/shared_read.py freeze` before the next run.",
+ "reader": {"tag": "mlx-community/gemma-4-12B-it-4bit", "family": "gemma", "gb": 10,
+            "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+            "note": "The preregistered fallback reader. Qwen3.8 27B (the first choice) left too little room: the guard saw 19.6 to 22.9 GB free against about 23 GB needed."},
  "ants": [
-  {"tag": "gemma4:e2b", "family": "gemma", "gb": 6, "note": "Gemma 4, 2.3B effective; thinks only when asked."},
-  {"tag": "qwen3.5:4b", "family": "qwen", "gb": 5, "extra_body": {"reasoning_effort": "none"}, "note": "Qwen 3.5 (Mar 2026), the newest small Qwen; same family as the reader on purpose, to see if a same-family ant gains more."},
-  {"tag": "granite4.2:3b", "family": "granite", "gb": 4, "extra_body": {"reasoning_effort": "none"}, "note": "IBM Granite 4.2 (2026); thinks by default."},
-  {"tag": "lfm3:1.7b", "family": "lfm", "gb": 3, "note": "Liquid LFM3, 1.7B, a non-transformer hybrid: adds a different kind of mind to the swarm."}
+  {"tag": "mlx-community/gemma-4-e2b-it-4bit", "family": "gemma", "gb": 4,
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "note": "Gemma 4 E2B. Often writes LaTeX like \\cap inside its JSON answers, which parser 1 rejects."},
+  {"tag": "mlx-community/Qwen3.5-4B-MLX-4bit", "family": "qwen", "gb": 4,
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "note": "Qwen 3.5 4B."},
+  {"tag": "ibm-granite/granite-4.2-3b-q4-mlx", "family": "granite", "gb": 3,
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "note": "IBM Granite 4.2 3B."},
+  {"tag": "LiquidAI/LFM2.5-1.2B-Instruct-MLX-4bit", "family": "lfm", "gb": 2,
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "note": "Replaced LFM3 1.7B, which no released mlx-lm can run yet. LFM2.5 2.6B was passed over because its thinking can't be turned off."}
  ]
 }

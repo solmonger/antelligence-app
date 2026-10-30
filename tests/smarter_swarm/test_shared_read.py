@@ -6,6 +6,7 @@ import asyncio
 import importlib.util
 import json
 import random
+import re
 import sys
 from pathlib import Path
 
@@ -86,12 +87,41 @@ def test_reader_is_told_never_to_pick(items):
 
 
 def test_default_models_come_from_the_config_fit_36gb_and_cover_four_families():
+    """Whatever the model file names (Ollama tags or Hugging Face MLX names), the code takes it from there."""
     cfg = json.loads(sr.MODELS_FILE.read_text())
-    assert sr.READER.tag == cfg["reader"]["tag"] == "qwen3.8:27b"
+    assert sr.READER.tag == cfg["reader"]["tag"]
     assert [s.tag for s in sr.ANTS] == [a["tag"] for a in cfg["ants"]]
     assert len({s.family for s in sr.ANTS}) == 4 and len(sr.ant_roster()) == 8
     assert all(0 < s.gb <= 21 for s in (sr.READER, *sr.ANTS))  # one at a time, with headroom, on 36 GB
-    assert sr.READER.extra_body == {"reasoning_effort": "none"}
+    assert sr.READER.extra_body == cfg["reader"].get("extra_body")
+    assert sr.PARSER == cfg.get("parser", 1)
+
+
+def test_run_1_is_on_record():
+    """Run 1 (2026-10-30) ran 4-bit MLX builds: the fallback Gemma 4 12B reader and LFM2.5 1.2B for LFM3. Its freeze
+    (run1-prereg.json, parser 1, from before the parser key existed) and its meta.json name the same models."""
+    here = REPO / "docs/research/shared-read-20261030"
+    meta = json.loads((here / "run1-meta.json").read_text())
+    run1 = json.loads((here / "run1-prereg.json").read_text())
+    assert meta["reader"] == run1["reader"] == "mlx-community/gemma-4-12B-it-4bit"
+    assert [t for t, _, _ in meta["ants"]][::2] == run1["ants"] and len(meta["families"]) == 8
+    assert "parser" not in run1 and meta["items"] == 240
+    assert (here / "RESULTS.md").read_text().count("63.3%") >= 1
+
+
+def test_the_parser_is_set_in_the_model_file(tmp_path):
+    base = {"reader": {"tag": "r", "family": "x"}, "ants": [{"tag": "a", "family": "y"}]}
+    path = tmp_path / "m.json"
+    path.write_text(json.dumps(base))
+    assert sr.load_config(path).parser == 1
+    path.write_text(json.dumps({**base, "parser": 2}))
+    assert sr.load_config(path) == sr.Config(sr.ModelSpec("r", "x"), (sr.ModelSpec("a", "y"),), 2)
+    path.write_text(json.dumps({**base, "parser": 3}))
+    with pytest.raises(ValueError, match="parser"):
+        sr.load_config(path)
+    path.write_text(json.dumps({**base, "parsr": 2}))
+    with pytest.raises(ValueError, match="unknown keys"):
+        sr.load_config(path)
 
 
 @pytest.mark.parametrize("cfg,msg", [
@@ -121,6 +151,23 @@ def test_bad_model_files_are_refused(tmp_path, cfg, msg):
 ])
 def test_parse_answer(text, want):
     assert sr.parse_answer(text)[0] == want
+    assert sr.parse_answer(text, 2)[0] == want   # parser 2 reads everything parser 1 reads, the same way
+
+
+@pytest.mark.parametrize("text,want", [
+    # Gemma 4 E2B in run 1: LaTeX in the reason makes the JSON invalid, though the letter is plain
+    (r'{"reason": "A \cap B is empty, so x \in C", "answer": "C"}', "C"),
+    (r'{"reason": "\underline{x} \geq 2 and \frac{1}{2}", "answer": "(d)"}', "D"),
+    (r'{"reason": "already escaped \\cap and raw \cup", "answer": "B"}', "B"),
+    (r'```json' "\n" r'{"reason": "the set \{1, 2\}", "answer": "E"}' "\n```", "E"),
+    # the JSON is broken some other way: the "answer" key decides, if it is the only letter given
+    ('{"reason": "he said "no" twice", "answer": "A"}', "A"),
+    ('{"reason": "a "b"", "answer": "A"} or {"reason": "c "d"", "answer": "B"}', None),   # two that disagree
+    (r'The answer is \cap C.', None),
+])
+def test_parser_2_reads_latex_that_parser_1_refuses(text, want):
+    assert sr.parse_answer(text, 2)[0] == want
+    assert sr.parse_answer(text, 1)[0] is None    # parser 1 (run 1) is unchanged: these stay unusable there
 
 
 @pytest.mark.parametrize("notes,flag", [
@@ -211,6 +258,27 @@ def test_score_refuses_a_broken_run_and_warns_on_leaky_notes():
     assert "warning" in res["verdict"] and res["no_leaks"]["n"] == 150
 
 
+def test_explore_reads_other_swarm_shapes_off_the_same_answers():
+    """Notes make every ant right, alone they scatter: half the ants with notes still win every vote; the reader
+    as a voter breaks ties its way; the weakest family is found from the data, not named."""
+    key, rows = {}, []
+    for i in range(40):
+        key[f"q{i}"] = "A"
+        alone = ["B", "C", "D", "E", "B", "C", "D", "E"] if i % 2 else ["A", "C", "D", "E", "A", "C", "D", "E"]
+        rows.append({"id": f"q{i}", "group": "g", "reader_notes": "n", "leak": False, "reader": "A" if i < 30 else "B",
+                     "alone": alone, "notes": ["A"] * 8, "both": ["A"] * 4 + ["B"] * 4})
+    fam = ["a", "a", "b", "b", "c", "c", "d", "d"]
+    res = sr.explore(rows, key, fam, boot_reps=200)
+    sh = res["shapes"]
+    assert res["exploratory"] and res["n"] == 40 and res["shapes"]["half the ants get notes"]["splits"] == 70
+    assert sh["reader alone"]["accuracy"] == 0.75 and "vs_reader" not in sh["reader alone"]
+    assert sh["ants alone"]["accuracy"] == 0.5 and sh["ants notes"]["accuracy"] == 1.0
+    assert sh["half the ants get notes"]["accuracy"] == 1.0
+    assert sh["reader + ants alone"]["accuracy"] == 0.5                       # reader first: it wins the 1-1 ties
+    assert sh["ants notes"]["vs_reader"]["gain"] == pytest.approx(0.25)
+    assert res["weakest_family"] in {"b", "c", "d"} and "ants alone, no " + res["weakest_family"] in sh
+
+
 def test_plan_counts_calls():
     p = sr.plan(240)
     assert p == {"items": 240, "ants": 8, "reader_calls": 480, "ant_calls": 5760, "calls": 6240}
@@ -259,21 +327,72 @@ def test_runs_one_model_at_a_time_and_resumes_from_the_cache(items, tmp_path):
 
 
 def test_a_failed_call_is_asked_again_and_a_streak_stops_the_run(items, tmp_path):
-    flaky = Fake(fail=lambda req: ProviderError("bad reply") if req.model == "granite4.2:3b" else None)
+    third = sr.ANTS[2].tag
+    flaky = Fake(fail=lambda req: ProviderError("bad reply") if req.model == third else None)
     with pytest.raises(sr.BrokenRun, match="in a row"):
         _go(sr.Runner(flaky, tmp_path / "c.jsonl", concurrency=1), items[:3])
     fixed = Fake()
     rows = _go(sr.Runner(fixed, tmp_path / "c.jsonl"), items[:3])
-    assert "granite4.2:3b" in fixed.log and sr.READER.tag not in fixed.log  # only the failed part is asked again
+    assert third in fixed.log and sr.READER.tag not in fixed.log  # only the failed part is asked again
     assert all(a is not None for r in rows for a in r["both"])
 
 
 def test_a_missing_model_stops_at_once_with_the_pull_command(items, tmp_path):
-    gone = Fake(fail=lambda req: ProviderError('HTTP 404: {"error":"model \\"lfm3:1.7b\\" not found, try '
+    last = sr.ANTS[-1].tag
+    gone = Fake(fail=lambda req: ProviderError(f'HTTP 404: {{"error":"model \\"{last}\\" not found, try '
                                                'pulling it first"}', http_status=404)
-                if req.model.startswith("lfm3") else None)
-    with pytest.raises(sr.MissingModel, match="ollama pull lfm3:1.7b"):
+                if req.model == last else None)
+    with pytest.raises(sr.MissingModel, match=re.escape(f"ollama pull {last}")):
         _go(sr.Runner(gone, tmp_path / "c.jsonl"), items[:2])
+
+
+class Latex(Fake):
+    """One ant model answers in valid letters but with LaTeX in its JSON, as Gemma 4 E2B did in run 1."""
+
+    def __init__(self, model):
+        super().__init__()
+        self.model = model
+
+    async def complete(self, req):
+        r = await super().complete(req)
+        if req.model != self.model or '"answer"' not in req.messages[-1]["content"]:
+            return r
+        return ChatResponse(content=r'{"reason": "A \cap B", "answer": "C"}', model=r.model,
+                            request_hash=r.request_hash, prompt_tokens=10, completion_tokens=10,
+                            finish_reason="stop", elapsed_s=0.5)
+
+
+def test_kept_unusable_replies_are_used_again_not_asked_again(items, tmp_path):
+    its, latex = items[:2], sr.ANTS[0].tag
+    cache = tmp_path / "run" / "cache.jsonl"
+    cache.parent.mkdir()
+    first = _go(sr.Runner(Latex(latex), cache, max_fail_streak=100), its)
+    assert all(r["alone"][0] is None and r["alone"][1] is None for r in first)   # parser 1 can't read them
+    again = Fake()
+    runner = sr.Runner(again, cache, max_fail_streak=100)
+    assert _go(runner, its) == first and again.log == [] and runner.reused == 2 * 2 * 3   # 2 items x 2 lenses x 3 arms
+    retry = Fake()
+    _go(sr.Runner(retry, cache, retry_unusable=True), its)
+    assert set(retry.log) == {latex} and len(retry.log) == 12                  # --retry-unusable asks only those
+
+
+def test_parser_2_rereads_an_earlier_run_without_asking_a_model(items, tmp_path):
+    its, latex = items[:2], sr.ANTS[0].tag
+    old = tmp_path / "run" / "cache.jsonl"
+    old.parent.mkdir()
+    _go(sr.Runner(Latex(latex), old, max_fail_streak=100), its)
+    before = old.read_text()
+    fresh = Fake()
+    runner = sr.Runner(fresh, tmp_path / "run-p2" / "cache.jsonl", seed_paths=[old])
+
+    async def go():
+        reading = await sr.run_reader(runner, its, parser=2)
+        return sr.rows(its, reading, await sr.run_ants(runner, its, reading, parser=2))
+
+    (tmp_path / "run-p2").mkdir()
+    rows = asyncio.run(go())
+    assert fresh.log == [] and all(r["alone"][0] == "C" for r in rows)       # read again, not asked again
+    assert old.read_text() == before and not (tmp_path / "run-p2" / "cache.jsonl").exists()   # run 1 untouched
 
 
 def test_a_different_served_model_is_refused(items, tmp_path):
@@ -329,6 +448,68 @@ def test_script_dry_run_end_to_end(tmp_path, capsys):
     assert score["n"] == 8 and set(score["by_group"]) == {"aqua-rat", "logiqa-en", "lsat-ar", "lsat-lr"}
     meta = json.loads((tmp_path / "dry" / "meta.json").read_text())
     assert meta["dry_run"] and len(meta["families"]) == 8
+    assert meta["parser"] == sr.PARSER and meta["max_fail_streak"] == 8 and meta["reused_unusable"] == 0
+    assert mod.main(["explore", "--out", out]) == 0
+    assert "EXPLORATORY" in capsys.readouterr().out
+    assert json.loads((tmp_path / "dry" / "explore.json").read_text())["exploratory"] is True
+
+
+def test_a_parser_2_run_writes_to_its_own_folder(tmp_path, monkeypatch):
+    mod = _script()
+    monkeypatch.setattr(mod, "OUT", tmp_path)
+    cfg = json.loads(sr.MODELS_FILE.read_text())
+    path = tmp_path / "m.json"
+    path.write_text(json.dumps({**cfg, "parser": 2}))
+    assert mod.out_dir(mod.argparse.Namespace(models=str(path), out="", dry_run=False)) == tmp_path / "run-p2"
+    assert mod.out_dir(mod.argparse.Namespace(models="", out="", dry_run=False, parser=2)) == tmp_path / "run-p2"
+    assert mod.out_dir(mod.argparse.Namespace(models="", out="", dry_run=False)) == tmp_path / "run"
+
+
+def test_a_parser_2_reread_of_a_finished_run_asks_no_model(tmp_path, monkeypatch, capsys):
+    mod = _script()
+    latex = sr.ANTS[0].tag
+
+    class Gemma(mod.FakeModel):
+        async def complete(self, req):
+            r = await super().complete(req)
+            if req.model == latex and '"answer"' in req.messages[-1]["content"]:
+                return ChatResponse(content=r'{"reason": "A \cap B", "answer": "C"}', model=r.model,
+                                    request_hash=r.request_hash, prompt_tokens=1, completion_tokens=1,
+                                    finish_reason="stop", elapsed_s=0.0)
+            return r
+
+    monkeypatch.setattr(mod, "FakeModel", Gemma)
+    one, two = str(tmp_path / "run"), str(tmp_path / "run-p2")
+    assert mod.main(["run", "--dry-run", "--limit", "4", "--out", one, "--max-fail-streak", "100"]) == 0
+    first = [json.loads(l) for l in (tmp_path / "run" / "rows.jsonl").read_text().splitlines()]
+    assert all(r["alone"][0] is None for r in first)
+    assert mod.main(["run", "--parser", "2", "--offline", "--seed-cache", str(tmp_path / "run" / "cache.jsonl"),
+                     "--limit", "4", "--out", two]) == 0
+    capsys.readouterr()
+    rows = [json.loads(l) for l in (tmp_path / "run-p2" / "rows.jsonl").read_text().splitlines()]
+    meta = json.loads((tmp_path / "run-p2" / "meta.json").read_text())
+    assert len(rows) == 4 and meta["parser"] == 2 and meta["new_calls"] == 0 and meta["reused_unusable"] == 4 * 2 * 3
+    assert [r["id"] for r in rows] == [r["id"] for r in first] and all(r["alone"][0] == "C" for r in rows)
+    # a question the first run never asked is left unanswered, never sent to a model
+    assert mod.main(["run", "--parser", "2", "--offline", "--limit", "5", "--out", str(tmp_path / "p")]) == 0
+    mod.main(["score", "--parser", "2", "--out", two])
+    assert "replies read with parser 2" in capsys.readouterr().out
+
+
+def test_max_fail_streak_is_a_flag(tmp_path, monkeypatch):
+    mod = _script()
+
+    class Bad(mod.FakeModel):
+        async def complete(self, req):
+            r = await super().complete(req)
+            return ChatResponse(content="no json here", model=r.model, request_hash=r.request_hash,
+                                prompt_tokens=1, completion_tokens=1, finish_reason="stop", elapsed_s=0.0)
+
+    monkeypatch.setattr(mod, "FakeModel", Bad)
+    out = str(tmp_path / "o")
+    assert mod.main(["run", "--dry-run", "--limit", "1", "--out", out]) == 2           # 8 in a row stops it
+    assert mod.main(["run", "--dry-run", "--limit", "1", "--out", out, "--max-fail-streak", "1000",
+                     "--retry-unusable"]) == 0
 
 
 def test_pick_takes_tasks_in_turn(items):
@@ -355,25 +536,27 @@ def test_check_says_what_to_pull_and_which_models_think(monkeypatch, capsys):
     assert mod.main(["check"]) == 1
     out = capsys.readouterr().out
     assert f"ollama pull {sr.ANTS[-1].tag}" in out
-    assert 'a thinking model; we send {"reasoning_effort": "none"}' in out
+    assert f"a thinking model; we send {json.dumps(sr.READER.extra_body)}" in out
 
 
 def test_memory_guard_stops_before_loading_a_model_that_does_not_fit(items, tmp_path, monkeypatch):
     mod = _script()
-    monkeypatch.setattr(mod, "free_gb", lambda: 20.0)   # room for an ant, not for the 21 GB reader plus 6 GB
+    big, small = sr.ModelSpec("big-reader", "x", gb=21), sr.ModelSpec("small-ant", "y", gb=4)
+    monkeypatch.setattr(mod, "free_gb", lambda: 20.0)   # room for an ant, not for a 21 GB reader plus 6 GB
     posts = []
     monkeypatch.setattr(httpx, "post", lambda url, **kw: posts.append((url, kw["json"])) or
                         httpx.Response(200, json={}, request=httpx.Request("POST", url)))
     args = mod.argparse.Namespace(dry_run=False, headroom_gb=6.0, base_url="http://localhost:11434/v1")
-    with pytest.raises(mod.MemoryTight, match="Only 20.0 GB free before loading qwen3.8:27b"):
-        mod.guard(args, sr.READER)
-    mod.guard(args, sr.ANTS[0])                           # an ant fits
-    mod.unload(args, sr.ANTS[0])
-    assert posts == [("http://localhost:11434/api/generate", {"model": sr.ANTS[0].tag, "keep_alive": 0})]
-    mod.unload(mod.argparse.Namespace(dry_run=False, base_url="http://localhost:8080/v1"), sr.ANTS[0])
-    assert len(posts) == 1                                # not Ollama: no unload call
+    with pytest.raises(mod.MemoryTight, match="Only 20.0 GB free before loading big-reader"):
+        mod.guard(args, big)
+    mod.guard(args, small)                                # an ant fits
+    mod.unload(args, small)
+    # the unload call goes to port 11434, Ollama or the MLX stand-in run 1 used there
+    assert posts == [("http://localhost:11434/api/generate", {"model": "small-ant", "keep_alive": 0})]
+    mod.unload(mod.argparse.Namespace(dry_run=False, base_url="http://localhost:8080/v1"), small)
+    assert len(posts) == 1                                # not port 11434: no unload call
     off = mod.argparse.Namespace(dry_run=False, headroom_gb=0.0, base_url="http://localhost:11434/v1")
-    mod.guard(off, sr.READER)                             # 0 turns the guard off
+    mod.guard(off, big)                                   # 0 turns the guard off
 
 
 def test_free_gb_reads_this_machine():

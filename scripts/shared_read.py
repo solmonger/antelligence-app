@@ -16,12 +16,27 @@ Steps, in this order::
     uv run python scripts/shared_read.py run --limit 60 # a quick pass: 15 questions from each of the 4 tasks
     uv run python scripts/shared_read.py run            # all 240 (resumes; nothing done is asked again)
     uv run python scripts/shared_read.py score          # only now reads the answers, prints the verdict
+    uv run python scripts/shared_read.py explore        # other swarm shapes from the same answers (exploratory)
 
 On Ollama the script unloads each model when its phase ends and won't load the next one unless there is room for it
 plus ``--headroom-gb`` (default 6) of free memory; if not, it stops and says so, and a rerun resumes. ``--dry-run``
-on ``bench`` and ``run`` uses a fake model, for checking the plumbing without a server. ``--base-url`` points at
-another OpenAI-compatible server (for MLX: ``mlx_lm.server``, then ``--base-url http://localhost:8080/v1
---loose-names``, since MLX reports a file path as the model name). ``--models`` reads another model file.
+on ``bench`` and ``run`` uses a fake model, for checking the plumbing without a server. ``--models`` reads another
+model file.
+
+MLX instead of Ollama (how run 1 ran): ``mlx_lm.server`` can't unload a model, so run 1 put a small Ollama-shaped
+stand-in on port 11434 in front of it. The stand-in passes ``/v1`` calls through, lists the models at ``/v1/models``,
+and restarts ``mlx_lm.server`` when it gets the unload call (``POST /api/generate`` with ``keep_alive: 0``), so the
+memory guard sees the memory come back. Without a stand-in, point ``--base-url`` at ``mlx_lm.server`` itself
+(``http://localhost:8080/v1``); the guard then can't free memory between models, so keep ``--headroom-gb`` and
+restart the server yourself between models if memory gets tight. MLX turns thinking off through the chat template:
+``"extra_body": {"chat_template_kwargs": {"enable_thinking": false}}`` in the model file.
+
+A reply that came back in the wrong form is kept and used again on a rerun instead of being asked again (each call
+has a fixed seed, so it would mostly come back the same); ``--retry-unusable`` asks them again. ``--max-fail-streak``
+sets how many unusable replies in a row stop the run (default 8; run 1 needed 100 for Gemma 4 E2B's LaTeX).
+``--seed-cache`` reads another run's cache too, so ``run --parser 2 --offline --seed-cache .../run/cache.jsonl``
+re-reads run 1's replies with parser 2 without asking any model (output in ``run-p2/``, never over run 1's; then
+``score --parser 2`` and ``explore --parser 2``).
 """
 
 from __future__ import annotations
@@ -59,7 +74,7 @@ def fingerprint() -> Dict[str, Any]:
     return {"files": {k: hashlib.sha256(p.read_bytes()).hexdigest() for k, p in FROZEN.items()},
             "pass": sr.PASS, "min_usable": sr.MIN_USABLE, "reader": sr.READER.tag,
             "ants": [s.tag for s in sr.ANTS], "lenses": list(sr.LENS_IDS), "arms": list(sr.ARMS),
-            "temperature": sr.TEMPERATURE}
+            "temperature": sr.TEMPERATURE, "parser": sr.PARSER}
 
 
 def frozen_changes() -> List[str]:
@@ -89,8 +104,35 @@ class FakeModel:
                             completion_tokens=len(body) // 4, finish_reason="stop", elapsed_s=0.0)
 
 
+def config(a: argparse.Namespace) -> sr.Config:
+    cfg = sr.load_config(Path(a.models)) if getattr(a, "models", "") else sr.CONFIG
+    parser = getattr(a, "parser", None)
+    if parser is not None and parser != cfg.parser:
+        if parser not in sr.PARSERS:
+            raise SystemExit(f"--parser must be one of {sr.PARSERS}")
+        cfg = sr.Config(cfg.reader, cfg.ants, parser)
+    return cfg
+
+
 def setup(a: argparse.Namespace) -> Tuple[sr.ModelSpec, Tuple[sr.ModelSpec, ...]]:
-    return sr.load_models(Path(a.models)) if a.models else (sr.READER, sr.ANTS)
+    cfg = config(a)
+    return cfg.reader, cfg.ants
+
+
+def make_runner(a: argparse.Namespace, d: Path) -> sr.Runner:
+    return sr.Runner(provider(a), d / "cache.jsonl", concurrency=a.concurrency, check_names=not a.loose_names,
+                     max_fail_streak=10 ** 9 if a.offline else a.max_fail_streak, retry_unusable=a.retry_unusable,
+                     seed_paths=[Path(p) for p in a.seed_cache or ()])
+
+
+class OfflineModel:
+    """``--offline``: answers nothing. With ``--seed-cache`` a run then only re-reads replies it already has; any call
+    it would have to ask is left unanswered (counted as unusable) instead of reaching a model."""
+
+    async def complete(self, req: ChatRequest) -> ChatResponse:
+        from antelligence.providers.base import ProviderError
+
+        raise ProviderError("offline: not asked")
 
 
 # ---------------------------------------------------------------- memory guard
@@ -136,7 +178,7 @@ def ollama_root(base_url: str) -> Optional[str]:
 def unload(a: argparse.Namespace, spec: sr.ModelSpec) -> None:
     """Ask Ollama to drop the model from memory now (keep_alive 0) instead of holding it for minutes."""
     root = ollama_root(a.base_url)
-    if a.dry_run or root is None:
+    if a.dry_run or getattr(a, "offline", False) or root is None:
         return
     import httpx
 
@@ -148,7 +190,7 @@ def unload(a: argparse.Namespace, spec: sr.ModelSpec) -> None:
 
 def guard(a: argparse.Namespace, spec: sr.ModelSpec) -> None:
     """Stop before loading ``spec`` unless there is room for it plus ``--headroom-gb``."""
-    if a.dry_run or not a.headroom_gb:
+    if a.dry_run or getattr(a, "offline", False) or not a.headroom_gb:
         return
     have = free_gb()
     need = spec.gb + a.headroom_gb
@@ -161,6 +203,8 @@ def guard(a: argparse.Namespace, spec: sr.ModelSpec) -> None:
 def provider(a: argparse.Namespace) -> Any:
     if a.dry_run:
         return FakeModel()
+    if getattr(a, "offline", False):
+        return OfflineModel()
     from antelligence.providers.openai_compat import OpenAICompatProvider
 
     # the runner checks the served name itself (allowing Ollama's ":latest"), so the client doesn't
@@ -186,7 +230,10 @@ def pick(items: Sequence[sr.Item], limit: int) -> List[sr.Item]:
 
 
 def out_dir(a: argparse.Namespace) -> Path:
-    d = Path(a.out) if a.out else OUT / ("dry-run" if getattr(a, "dry_run", False) else "run")
+    """The run folder: ``run/`` (parser 1), ``run-p2/`` (parser 2), ``dry-run/`` for a fake model, or ``--out``."""
+    parser = config(a).parser
+    name = "dry-run" if getattr(a, "dry_run", False) else "run" if parser == 1 else f"run-p{parser}"
+    d = Path(a.out) if a.out else OUT / name
     d.mkdir(parents=True, exist_ok=True)
     return d
 
@@ -203,8 +250,9 @@ async def _run(a: argparse.Namespace, items: Sequence[sr.Item], runner: sr.Runne
 
     if not quiet:
         print(f"Phase 1: the reader ({reader.tag}) writes notes and answers on its own", flush=True)
+    parser = config(a).parser
     guard(a, reader)
-    reading = await sr.run_reader(runner, items, reader, on_done=tick)
+    reading = await sr.run_reader(runner, items, reader, on_done=tick, parser=parser)
     unload(a, reader)
 
     def model(spec: sr.ModelSpec) -> None:
@@ -213,7 +261,8 @@ async def _run(a: argparse.Namespace, items: Sequence[sr.Item], runner: sr.Runne
             print(f"Phase 2: ant model {spec.tag} answers alone, from notes, and both "
                   f"({time.monotonic() - start:.0f}s)", flush=True)
 
-    answers = await sr.run_ants(runner, items, reading, ants, on_model=model, after_model=lambda s: unload(a, s))
+    answers = await sr.run_ants(runner, items, reading, ants, on_model=model, after_model=lambda s: unload(a, s),
+                                parser=parser)
     return sr.rows(items, reading, answers)
 
 
@@ -273,7 +322,7 @@ def cmd_bench(a: argparse.Namespace) -> int:
     reader, ants = setup(a)
     items = pick(sr.load_items(QUESTIONS), 4)[2:]   # one LSAT analytical and one LSAT logical question (both have passages)
     d = out_dir(a)
-    runner = sr.Runner(provider(a), d / "cache.jsonl", concurrency=a.concurrency, check_names=not a.loose_names)
+    runner = make_runner(a, d)
     t0 = time.monotonic()
     try:
         got = asyncio.run(_run(a, items, runner, reader, ants))
@@ -327,7 +376,7 @@ def cmd_run(a: argparse.Namespace) -> int:
     reader, ants = setup(a)
     items = pick(sr.load_items(QUESTIONS), a.limit)
     d = out_dir(a)
-    runner = sr.Runner(provider(a), d / "cache.jsonl", concurrency=a.concurrency, check_names=not a.loose_names)
+    runner = make_runner(a, d)
     p = sr.plan(len(items), ants)
     print(f"{p['items']} questions, {p['calls']} calls ({len(runner.cache)} already done). Output: {d}", flush=True)
     t0 = time.monotonic()
@@ -339,10 +388,12 @@ def cmd_run(a: argparse.Namespace) -> int:
     meta = {"reader": reader.tag, "ants": [[s.tag, s.family, lens] for s, lens in sr.ant_roster(ants)],
             "families": [s.family for s, _ in sr.ant_roster(ants)], "items": len(got), "base_url": a.base_url,
             "dry_run": bool(a.dry_run), "new_calls": runner.calls, "failed_calls": runner.failed,
-            "seconds": round(time.monotonic() - t0)}
+            "reused_unusable": runner.reused, "parser": config(a).parser, "max_fail_streak": a.max_fail_streak,
+            "retry_unusable": bool(a.retry_unusable), "seconds": round(time.monotonic() - t0)}
     (d / "rows.jsonl").write_text("".join(json.dumps(r, sort_keys=True) + "\n" for r in got))
     (d / "meta.json").write_text(json.dumps(meta, indent=1) + "\n")
-    print(f"Done: {len(got)} questions, {runner.calls} new calls ({runner.failed} unusable) in "
+    print(f"Done: {len(got)} questions, {runner.calls} new calls ({runner.failed} unusable; {runner.reused} kept "
+          f"unusable replies used again) in "
           f"{meta['seconds'] / 60:.0f} min. Next: `uv run python scripts/shared_read.py score"
           f"{f' --out {a.out}' if a.out else ' --dry-run' if a.dry_run else ''}`.")
     return 0
@@ -360,6 +411,8 @@ def cmd_score(a: argparse.Namespace) -> int:
     res = sr.score(rows, key, meta["families"])
     res["meta"] = meta
     changed = frozen_changes()
+    if meta.get("parser", 1) != sr.PARSER:
+        changed.append(f"replies read with parser {meta['parser']}")
     res["frozen_plan_unchanged"] = not changed
     if changed:
         print("WARNING: the test changed since it was frozen (" + ", ".join(changed) + "). This score is a new test, "
@@ -384,10 +437,33 @@ def cmd_score(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_explore(a: argparse.Namespace) -> int:
+    d = out_dir(a)
+    rows_path = d / "rows.jsonl"
+    if not rows_path.exists():
+        print(f"No rows at {rows_path}: run first.")
+        return 2
+    rows = [json.loads(l) for l in rows_path.read_text().splitlines() if l.strip()]
+    meta = json.loads((d / "meta.json").read_text())
+    key = {r["id"]: r["label"] for r in map(json.loads, ANSWERS.read_text().splitlines()) if r}
+    res = sr.explore(rows, key, meta["families"])
+    res["meta"] = meta
+    (d / "explore.json").write_text(json.dumps(res, indent=1) + "\n")
+    print(f"EXPLORATORY (chosen after run 1, not preregistered): other swarm shapes from the same {res['n']} "
+          "questions' answers, no new calls.")
+    for name, v in res["shapes"].items():
+        vs = v.get("vs_reader")
+        cmp_ = f"   vs reader {vs['gain']:+.1%} ({vs['ci95'][0]:+.1%} to {vs['ci95'][1]:+.1%})" if vs else ""
+        alike = f"   alike {v['error_alikeness']:+.2f}" if "error_alikeness" in v else ""
+        print(f"  {name:32s} {v['accuracy']:6.1%}{cmp_}{alike}")
+    print(f"Full numbers: {d / 'explore.json'}")
+    return 0
+
+
 def main(argv: Sequence[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("freeze", "check", "plan", "bench", "run", "score"):
+    for name in ("freeze", "check", "plan", "bench", "run", "score", "explore"):
         p = sub.add_parser(name)
         p.add_argument("--base-url", default=OLLAMA)
         p.add_argument("--models", default="", help="model config JSON (default: the frozen models.json)")
@@ -399,8 +475,17 @@ def main(argv: Sequence[str]) -> int:
         p.add_argument("--timeout", type=float, default=600.0)
         p.add_argument("--loose-names", action="store_true", help="don't check the served model name (MLX)")
         p.add_argument("--limit", type=int, default=0, help="this many questions, taken evenly from the 4 tasks")
+        p.add_argument("--max-fail-streak", type=int, default=8, help="unusable replies in a row that stop the run")
+        p.add_argument("--retry-unusable", action="store_true",
+                       help="ask again calls whose kept reply was unusable (default: use the kept reply)")
+        p.add_argument("--seed-cache", action="append", default=[],
+                       help="another run's cache.jsonl to read replies from (read only; repeatable)")
+        p.add_argument("--parser", type=int, default=None, help="how replies are read (default: the model file's)")
+        p.add_argument("--offline", action="store_true",
+                       help="ask no model: only reuse replies from the caches (for re-reading a run)")
     a = ap.parse_args(argv)
-    return {"freeze": cmd_freeze, "check": cmd_check, "plan": cmd_plan, "bench": cmd_bench, "run": cmd_run, "score": cmd_score}[a.cmd](a)
+    return {"freeze": cmd_freeze, "check": cmd_check, "plan": cmd_plan, "bench": cmd_bench, "run": cmd_run,
+            "score": cmd_score, "explore": cmd_explore}[a.cmd](a)
 
 
 if __name__ == "__main__":

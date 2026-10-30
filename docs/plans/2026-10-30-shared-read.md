@@ -1,7 +1,9 @@
 # The shared-read test: does one bigger reader help a swarm of small ants? (preregistered)
 
-Date: 2026-10-30. Status: **written and frozen before any model call.** Nothing has been measured against a real
-model yet. The question and answer files, harness, script, this plan and the pass lines are fingerprinted in
+Date: 2026-10-30. Status: **run 1 done** (all 240 questions, 2026-10-30). Verdict: the shared read helps, the ants
+think alike, and the swarm does not beat the reader alone. Numbers and what they mean:
+`docs/research/shared-read-20261030/RESULTS.md`. How run 1 differed from the set-up below is under "How run 1 ran".
+Everything above "How run 1 ran" was written and frozen before any model call. The question and answer files, harness, script, this plan and the pass lines are fingerprinted in
 `docs/research/shared-read-20261030/prereg.json`; `score` warns, and marks the result as a new test, if any of them
 changed since.
 Harness: `antelligence/experiments/shared_read.py`. Script: `scripts/shared_read.py`. Tests:
@@ -129,3 +131,50 @@ this machine with a time estimate for the full run, and stops with a warning if 
 it stops by itself, saying why, after 8 unusable replies in a row, when a model isn't pulled, or when memory is
 too tight to load the next model. The verdict is only
 taken from the full 240; `--limit 60` is a quick look. Output goes to `docs/research/shared-read-20261030/run/`.
+
+## How run 1 ran (2026-10-30)
+
+Claude Code ran it on Eshaan's Mac Studio from `docs/research/shared-read-20261030/CLAUDE_CODE_PROMPT.md`. What
+differed from the set-up above, all allowed by it:
+
+- **No Ollama on the Mac, so MLX.** Every model was a 4-bit MLX build from Hugging Face, served by `mlx_lm.server`
+  0.32.2. `models.json` now holds those names, so it records what ran; `run1-meta.json` is the run's own meta file.
+- **The Ollama-shaped stand-in on port 11434.** `mlx_lm.server` can't unload a model, so the memory guard saw the
+  last model still in memory at every model change and stopped the run. The fix was a small stand-in on port 11434,
+  where the script expects Ollama. It passes `/v1` calls through to `mlx_lm.server`, and when the script sends its
+  unload call (`POST /api/generate` with `keep_alive: 0`), it restarts `mlx_lm.server`, so the memory really comes
+  back before the guard checks for the next model. The stand-in lives on the Mac, not in this repo. Any server can
+  join the test this way: answer `/v1/chat/completions` and `/v1/models`, and free the memory on the unload call.
+- **Thinking off through the chat template**: `"extra_body": {"chat_template_kwargs": {"enable_thinking": false}}`
+  for every model, since MLX ignores Ollama's `reasoning_effort`. `bench` showed no model still thinking.
+- **Reader: Gemma 4 12B** (`mlx-community/gemma-4-12B-it-4bit`), the preregistered fallback. The guard saw 19.6 to
+  22.9 GB free against about 23 GB needed for Qwen3.8 27B.
+- **One ant swapped: LFM2.5 1.2B Instruct for LFM3 1.7B.** No released mlx-lm runs LFM3 yet. LFM2.5 2.6B was
+  passed over because its thinking can't be turned off.
+- `models.json` was changed and frozen again before any scored call, as the Models section allows;
+  `run1-prereg.json` is that freeze as rebuilt here, and `score` on the Mac reported the plan unchanged.
+- **The 8-in-a-row stop was raised to 100 for the run only.** Gemma 4 E2B often writes LaTeX such as `\cap` inside
+  its JSON answer, which the frozen parser rejects even when the letter is plain. Those replies still count as
+  unusable. Usable answers: 93%, above the 90% line.
+- 25 of the reader's own answers looped until the token cap, and were asked again on every resume (about 20 minutes
+  each time) with the same result. They count as wrong for the reader.
+- Time: about 4 hours 10 minutes in all. Memory: lowest free 28%, never critical; swap flat at 2 GB.
+
+## After run 1: changes for the next run
+
+None of these change run 1's answers or score. `run1-prereg.json` keeps run 1's freeze; `prereg.json` is frozen
+again for the next run.
+
+- **Parser 2.** It also reads a JSON answer with LaTeX in it (backslashes that aren't JSON escapes are read as plain
+  backslashes), and as a last resort takes the `"answer"` letter when every `"answer"` key in the reply agrees. It is
+  chosen in the model file (`"parser": 2`) or with `--parser 2`; without either, a run uses parser 1, as run 1 did.
+  A parser 2 run writes to `run-p2/`, never over `run/`. `run --parser 2 --offline --seed-cache
+  docs/research/shared-read-20261030/run/cache.jsonl` re-reads run 1's own replies and asks no model, which shows
+  how much the LaTeX losses mattered; `score` labels that as a re-read.
+- **Kept unusable replies are used again on a rerun** instead of being asked again (each call has a fixed seed, so
+  asking again mostly returns the same reply). `--retry-unusable` asks them again.
+- **`--max-fail-streak`** sets the in-a-row stop (default 8), and `meta.json` records it, with the parser.
+- **`explore`** reads other swarm shapes off a finished run's answers, with no new call: the reader as one voter
+  among the ants, half the ants given the notes (averaged over all 70 ways to pick the half), and each arm without
+  the weakest ant family. It is exploratory, since the shapes were picked after seeing run 1, and writes
+  `explore.json` next to `score.json`.
