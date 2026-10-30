@@ -104,3 +104,13 @@ def test_check_script_grid_smoke(tmp_path):
     table = json.loads(out.read_text())["table"]
     assert len(table) == len(sec.GRID["switch"]) * len(sec.GRID["leak"])
     assert all(set(c) == {"switch", "leak", "base", "v2"} for c in table)
+
+
+def test_default_foraging_ant_is_think_alone_when_eyes_are_fine_and_steady_when_they_flip():
+    from antelligence.worlds.foraging_sb.think_alone import default_ant
+    for seed in (205, 206):
+        for condition in ("base", "v1"):
+            assert _forage(seed, condition, default_ant(), relay=True).deliveries == \
+                _forage(seed, condition, LookForager(), relay=True).deliveries
+        assert _forage(seed, "v2", default_ant()).deliveries == _forage(seed, "v2", SteadyEyesForager()).deliveries
+        assert _forage(seed, "v2", default_ant()).deliveries > _forage(seed, "v2", LookForager()).deliveries

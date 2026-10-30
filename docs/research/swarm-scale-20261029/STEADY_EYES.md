@@ -14,6 +14,10 @@ no talk: one ant checking itself against its own past.
 Code: `SelfCheckingSensor` and `SteadyEyesForager` in `antelligence/worlds/foraging_sb/think_alone.py`. While the eyes
 are right it reports exactly what the plain sensor reports (tested), so nothing changes in ``base`` or ``v1``.
 
+**Now the default.** `default_ant()` in the foraging world returns steady eyes. With fine eyes it is think alone,
+move for move (tested), so think alone stays the fallback; the eye check only acts once the ant's own map says the
+view is mirrored.
+
 ## The fair test
 
 Fresh seeds 200 to 279 (80 layouts, 10 ants each; earlier checks used 100 to 139), paired by seed, bootstrap 95%

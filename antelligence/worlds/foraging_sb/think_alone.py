@@ -243,9 +243,14 @@ class SteadyEyesForager(LookForager):
         return {**super().describe(), "policy": "foraging_sb.steady_eyes"}
 
 
-def default_ant() -> LookForager:
-    """The default ant for new swarm runs in this world (the pilot's recorded arms keep their own scripts)."""
-    return LookForager()
+def default_ant() -> SteadyEyesForager:
+    """The default ant for new swarm runs in this world (the pilot's recorded arms keep their own scripts).
+
+    Steady eyes: think alone (:class:`LookForager`) plus the eye check. While its eyes are right it plays exactly as
+    think alone does (tested), so think alone stays the behaviour whenever nothing is wrong; it only differs once its
+    own map says the view is mirrored (``STEADY_EYES.md``: 15.4 deliveries against 3.9 after a flip, 80 fresh maps).
+    """
+    return SteadyEyesForager()
 
 
 __all__ = ["GradedForager", "LookForager", "RelayForagingWorld", "SelfCheckingSensor", "SteadyEyesForager",

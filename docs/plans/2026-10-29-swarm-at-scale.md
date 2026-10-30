@@ -222,7 +222,8 @@ domain, 4 rotations each. "Split" means the three cheap answers were not unanimo
 ### 0.4 Think alone is now the default, and it holds on two tasks we did not design (Eshaan's go-ahead)
 
 Every new ant now thinks alone first and calls something done only when it sees it done:
-`RumourWorld.run` defaults to `alone`, `FinishWorld.run` to `look`, and the two ported worlds get a `default_ant`.
+`RumourWorld.run` defaults to `alone`, `FinishWorld.run` to `look`, and the two ported worlds get a `default_ant`. (Since 2026-10-30 the foraging `default_ant` is steady eyes: think alone plus a check of its own eyes, identical to
+think alone while its eyes are fine; see `STEADY_EYES.md`.)
 The pilot's recorded arms keep their own scripts, so its published numbers still reproduce (tested).
 
 **Colouring** (AgentsNet, arXiv 2507.08616; `antelligence/worlds/graph_coloring/think_alone.py`,

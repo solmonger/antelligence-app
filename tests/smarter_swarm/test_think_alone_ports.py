@@ -149,4 +149,6 @@ def test_think_alone_is_the_default_ant_everywhere():
     assert RumourWorld(RumourConfig(n_ants=16, ticks=5), 0).run().policy == "alone"
     assert FinishWorld(FinishConfig(n_ants=8, sites_per_ant=2, max_ticks=50), 0).run().arm == "look"
     assert isinstance(colour_default(0), LookBeforeDone)
-    assert isinstance(forage_default(), LookForager)
+    assert isinstance(forage_default(), LookForager)  # think alone underneath ...
+    from antelligence.worlds.foraging_sb.think_alone import SteadyEyesForager
+    assert isinstance(forage_default(), SteadyEyesForager)  # ... with the eye check on top
