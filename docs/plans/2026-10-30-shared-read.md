@@ -42,21 +42,29 @@ the cache version is worth paying for. If text notes make ants alike, a richer s
 - **Questions:** the fair test's frozen 240 AGIEval multiple-choice questions (LSAT analytical, LSAT logical,
   LogiQA, AQuA maths; 60 each), files and hashes in `docs/research/fair-test-20261029/`. Answers are opened only by
   `score`.
-- **Reader:** Qwen3 14B (`qwen3:14b`, ~9 GB at 4-bit), answering without hidden reasoning (`/no_think`), temperature
-  0.7, fixed seed per call. Per question it (a) writes notes of at most 200 words: what is asked, the key facts, rules
-  or numbers, and traps, and is told never to say or hint by letter which option is right; and (b) answers the
-  question itself once (the "thinker alone" line).
-- **Ants:** 4 small models from 4 families, each with the fair test's first two exam lenses ("work it out directly",
-  "rule out what you can"), so 8 ants: `qwen3:4b` (no hidden reasoning), `llama3.2:3b`, `gemma3:4b`,
-  `phi4-mini:3.8b`. Temperature 0.7, fixed seed per call, the fair test's JSON answer format.
+- **Models** live in `docs/research/shared-read-20261030/models.json` (part of the freeze), all open weights on
+  Ollama, the newest that fit a 36 GB Mac one at a time (checked on ollama.com on 2026-10-30):
+  - **Reader:** Qwen3.8 27B (`qwen3.8:27b`, Aug 2026, ~18 GB at 4-bit; the only Qwen3.8 size on Ollama), with its
+    hidden reasoning asked off (`reasoning_effort: none`). Fallback if it won't fit or is too slow: Gemma 4 12B
+    (`gemma4:12b`, ~8 GB). Per question it (a) writes notes of at most 200 words: what is asked, the key facts,
+    rules or numbers, and traps, and is told never to say or hint by letter which option is right; and (b) answers
+    the question itself once (the "thinker alone" line).
+  - **Ants:** 4 small models from 4 families, each with the fair test's first two exam lenses ("work it out
+    directly", "rule out what you can"), so 8 ants: Gemma 4 E2B (`gemma4:e2b`), Qwen3.5 4B (`qwen3.5:4b`; same
+    family as the reader on purpose, to see if a same-family ant gains more), IBM Granite 4.2 3B (`granite4.2:3b`)
+    and Liquid LFM3 1.7B (`lfm3:1.7b`, a non-transformer hybrid). No 2026 Llama or Phi model this small is on Ollama.
+  - All at temperature 0.7, a fixed seed per call, hidden reasoning off where a model has it, the fair test's JSON
+    answer format. If `bench` shows a model still thinking, the way it is turned off may be changed in the model
+    file before the first real run, then re-frozen; that is the only allowed change.
 - **Arms** (every ant, every question; ants never see each other):
   - `alone`: the full question. This is the fair test's own lens prompt, unchanged.
   - `notes`: the reader's notes in place of the passage, then the question and options (the receiver never reads
     the document, as in the paper). AQuA items have no passage, so there `notes` and `both` differ only in order.
   - `both`: the full question plus the reader's notes.
 - **Swarm answer:** plain vote of the 8 ants (ties to the first tied letter given), as in the fair test.
-- **Order:** all reader calls first, then each ant model's calls in one block, so one or two models are in memory
-  at a time (peak about 14 GB).
+- **Order:** all reader calls first, then each ant model's calls in one block. On Ollama each model is unloaded when
+  its block ends, and the next is loaded only if there is room for it plus 6 GB, so one model is in memory at a
+  time (peak about 21 GB, the reader).
 - **Calls:** 240 x (2 reader + 8 ants x 3 arms) = 6,240. Free.
 
 ## What is measured
@@ -105,7 +113,7 @@ the cache version is worth paying for. If text notes make ants alike, a richer s
 ## How to run (on the Mac)
 
 ```
-ollama pull qwen3:14b && ollama pull qwen3:4b && ollama pull llama3.2:3b && ollama pull gemma3:4b && ollama pull phi4-mini:3.8b
+ollama pull qwen3.8:27b && ollama pull gemma4:e2b && ollama pull qwen3.5:4b && ollama pull granite4.2:3b && ollama pull lfm3:1.7b
 uv run python scripts/shared_read.py check
 uv run python scripts/shared_read.py bench
 uv run python scripts/shared_read.py run --limit 60
@@ -113,7 +121,11 @@ uv run python scripts/shared_read.py run
 uv run python scripts/shared_read.py score
 ```
 
-`bench` puts 2 questions through everything, shows the reader's first notes, and prints seconds per call on this
-machine with a time estimate for the full run. `run` resumes where it stopped and never asks a finished call again;
-it stops by itself, saying why, after 8 unusable replies in a row or when a model isn't pulled. The verdict is only
+Or paste `docs/research/shared-read-20261030/CLAUDE_CODE_PROMPT.md` into Claude Code on the Mac and it does all of
+this, watching memory as it goes.
+
+`bench` puts 2 questions through everything, shows the reader's first notes, prints seconds and tokens per call on
+this machine with a time estimate for the full run, and stops with a warning if a model is still thinking. `run` resumes where it stopped and never asks a finished call again;
+it stops by itself, saying why, after 8 unusable replies in a row, when a model isn't pulled, or when memory is
+too tight to load the next model. The verdict is only
 taken from the full 240; `--limit 60` is a quick look. Output goes to `docs/research/shared-read-20261030/run/`.

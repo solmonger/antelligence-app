@@ -1,9 +1,9 @@
 {
  "ants": [
-  "qwen3:4b",
-  "llama3.2:3b",
-  "gemma3:4b",
-  "phi4-mini:3.8b"
+  "gemma4:e2b",
+  "qwen3.5:4b",
+  "granite4.2:3b",
+  "lfm3:1.7b"
  ],
  "arms": [
   "alone",
@@ -13,10 +13,11 @@
  "date": "2026-10-30",
  "files": {
   "answers": "f50fdf39d5687938e936a637bcd41e38312eff51daa5cdf151128ab7a1b474ab",
-  "harness": "b0283ea22afff664862e8268ab9ec7a6df092f171e6e53c320af87619733a2dc",
-  "plan": "b08cd1cf8c37d927be494797b737b6068e4eaaba6c279a05718c416c137ba39e",
+  "harness": "766519eddc8b0142704020c35285dc35abfdc33da567c12ee6479c9818a56e18",
+  "models": "4c1ea614fd0cf882438293d87311224d68f4d8faf92706f6d41cbc71ced1513d",
+  "plan": "1c99bc91df568d5f1c93757c3d90919a89a43ac6b9134ede0c885e1a1490e06a",
   "questions": "7a45f6c1f9d51a770f91f2be70402c287c3507002b816d3a934a4727ac029672",
-  "script": "d54b5ff3c0c4e496afd494c96b974139775a5e5fefa5b3130352ff6c8674d1bf"
+  "script": "a4e5d2170d56557c2667aaccf151a50386f540cf2bcecc544550c1e3edce8ce0"
  },
  "lenses": [
   0,
@@ -29,6 +30,6 @@
   "helps_min_gain": 0.02,
   "max_leak_share": 0.1
  },
- "reader": "qwen3:14b",
+ "reader": "qwen3.8:27b",
  "temperature": 0.7
 }

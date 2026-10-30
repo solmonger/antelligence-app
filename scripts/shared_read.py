@@ -1,23 +1,27 @@
 """The shared-read test on your own machine: one bigger reader, eight small mixed ants. See docs/plans/2026-10-30-shared-read.md.
 
 Free: every call goes to a local model server (Ollama by default, at http://localhost:11434/v1). Nothing is sent
-anywhere else, and the answer file is opened only by ``score``.
+anywhere else, and the answer file is opened only by ``score``. The models are listed in
+``docs/research/shared-read-20261030/models.json``; change them there, not here. To have Claude Code on the Mac run
+all of this with memory guards, paste ``docs/research/shared-read-20261030/CLAUDE_CODE_PROMPT.md`` into it.
 
 Steps, in this order::
 
-    # once: get the five models (about 20 GB of downloads in all)
-    ollama pull qwen3:14b && ollama pull qwen3:4b && ollama pull llama3.2:3b \\
-      && ollama pull gemma3:4b && ollama pull phi4-mini:3.8b
+    # once: get the five models (about 30 GB of downloads in all)
+    ollama pull qwen3.8:27b && ollama pull gemma4:e2b && ollama pull qwen3.5:4b \\
+      && ollama pull granite4.2:3b && ollama pull lfm3:1.7b
 
-    uv run python scripts/shared_read.py check          # is the server up, are the models there (no model call)
-    uv run python scripts/shared_read.py bench          # 2 questions through everything: speed, and a look at the notes
+    uv run python scripts/shared_read.py check          # server up, models there, which ones think (no model call)
+    uv run python scripts/shared_read.py bench          # 2 questions through everything: speed, thinking, the notes
     uv run python scripts/shared_read.py run --limit 60 # a quick pass: 15 questions from each of the 4 tasks
     uv run python scripts/shared_read.py run            # all 240 (resumes; nothing done is asked again)
     uv run python scripts/shared_read.py score          # only now reads the answers, prints the verdict
 
-``--dry-run`` on ``bench`` and ``run`` uses a fake model, for checking the plumbing without a server. ``--base-url``
-points at another OpenAI-compatible server (for MLX: ``mlx_lm.server``, then ``--base-url http://localhost:8080/v1
---loose-names``, since MLX reports a file path as the model name). ``--reader`` and ``--ants`` swap models.
+On Ollama the script unloads each model when its phase ends and won't load the next one unless there is room for it
+plus ``--headroom-gb`` (default 6) of free memory; if not, it stops and says so, and a rerun resumes. ``--dry-run``
+on ``bench`` and ``run`` uses a fake model, for checking the plumbing without a server. ``--base-url`` points at
+another OpenAI-compatible server (for MLX: ``mlx_lm.server``, then ``--base-url http://localhost:8080/v1
+--loose-names``, since MLX reports a file path as the model name). ``--models`` reads another model file.
 """
 
 from __future__ import annotations
@@ -42,8 +46,11 @@ ANSWERS = REPO / "docs/research/fair-test-20261029/exam_answers.jsonl"
 OUT = REPO / "docs/research/shared-read-20261030"
 OLLAMA = "http://localhost:11434/v1"
 PREREG = OUT / "prereg.json"
+THINK_TOKENS_ANT = 350      # a JSON answer with a 60-word reason is ~100 tokens; far more means hidden reasoning
+THINK_TOKENS_READER = 700   # 200-word notes are ~270 tokens
 FROZEN = {"questions": QUESTIONS, "answers": ANSWERS, "harness": REPO / "antelligence/experiments/shared_read.py",
-          "script": Path(__file__).resolve(), "plan": REPO / "docs/plans/2026-10-30-shared-read.md"}
+          "script": Path(__file__).resolve(), "plan": REPO / "docs/plans/2026-10-30-shared-read.md",
+          "models": sr.MODELS_FILE}
 
 
 def fingerprint() -> Dict[str, Any]:
@@ -82,19 +89,73 @@ class FakeModel:
                             completion_tokens=len(body) // 4, finish_reason="stop", elapsed_s=0.0)
 
 
-def parse_specs(text: str) -> Tuple[sr.ModelSpec, ...]:
-    """``tag=family`` items, comma separated; a Qwen3 tag gets the no-think switch."""
-    out = []
-    for part in [p.strip() for p in text.split(",") if p.strip()]:
-        tag, _, family = part.partition("=")
-        out.append(sr.ModelSpec(tag, family or tag.split(":")[0], no_think=tag.lower().startswith("qwen3")))
-    return tuple(out)
-
-
 def setup(a: argparse.Namespace) -> Tuple[sr.ModelSpec, Tuple[sr.ModelSpec, ...]]:
-    reader = parse_specs(a.reader)[0] if a.reader else sr.READER
-    ants = parse_specs(a.ants) if a.ants else sr.ANTS
-    return reader, ants
+    return sr.load_models(Path(a.models)) if a.models else (sr.READER, sr.ANTS)
+
+
+# ---------------------------------------------------------------- memory guard
+#
+# Only one model is ever asked at a time. On Ollama the script also unloads each model when its phase ends and checks
+# there is room before the next one loads, so a 36 GB Mac never holds two big models or starts swapping.
+
+class MemoryTight(sr.BrokenRun):
+    """Not enough free memory to load the next model safely. Nothing is lost: free some memory and rerun."""
+
+
+def free_gb() -> Optional[float]:
+    """Memory the system can hand out now, in GB: macOS from ``vm_stat`` (free + inactive + speculative + purgeable
+    pages), Linux from MemAvailable. None when it can't tell."""
+    import platform
+    import re
+    import subprocess
+
+    try:
+        if platform.system() == "Darwin":
+            out = subprocess.run(["vm_stat"], capture_output=True, text=True, timeout=10).stdout
+            page = int(re.search(r"page size of (\d+) bytes", out).group(1))
+            pages = 0
+            for name in ("Pages free", "Pages inactive", "Pages speculative", "Pages purgeable"):
+                m = re.search(rf"{name}:\s+(\d+)", out)
+                pages += int(m.group(1)) if m else 0
+            return pages * page / 1e9
+        for line in Path("/proc/meminfo").read_text().splitlines():
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) * 1024 / 1e9
+    except Exception:
+        return None
+    return None
+
+
+def ollama_root(base_url: str) -> Optional[str]:
+    """The Ollama server's own address (for its unload call), or None when the base URL isn't Ollama's port."""
+    root = base_url.rstrip("/")
+    root = root[: -len("/v1")] if root.endswith("/v1") else root
+    return root if root.rsplit(":", 1)[-1] == "11434" else None
+
+
+def unload(a: argparse.Namespace, spec: sr.ModelSpec) -> None:
+    """Ask Ollama to drop the model from memory now (keep_alive 0) instead of holding it for minutes."""
+    root = ollama_root(a.base_url)
+    if a.dry_run or root is None:
+        return
+    import httpx
+
+    try:
+        httpx.post(f"{root}/api/generate", json={"model": spec.tag, "keep_alive": 0}, timeout=60, trust_env=False)
+    except httpx.HTTPError:
+        pass  # a model that wasn't loaded, or a server that went away: the next call will say so
+
+
+def guard(a: argparse.Namespace, spec: sr.ModelSpec) -> None:
+    """Stop before loading ``spec`` unless there is room for it plus ``--headroom-gb``."""
+    if a.dry_run or not a.headroom_gb:
+        return
+    have = free_gb()
+    need = spec.gb + a.headroom_gb
+    if have is not None and have < need:
+        raise MemoryTight(f"Only {have:.1f} GB free before loading {spec.tag} (needs about {spec.gb:.0f} GB plus "
+                          f"{a.headroom_gb:.0f} GB headroom). Close other apps or unload other models "
+                          "(`ollama ps`, `ollama stop <model>`), then rerun; finished calls are kept.")
 
 
 def provider(a: argparse.Namespace) -> Any:
@@ -142,14 +203,17 @@ async def _run(a: argparse.Namespace, items: Sequence[sr.Item], runner: sr.Runne
 
     if not quiet:
         print(f"Phase 1: the reader ({reader.tag}) writes notes and answers on its own", flush=True)
+    guard(a, reader)
     reading = await sr.run_reader(runner, items, reader, on_done=tick)
+    unload(a, reader)
 
-    def model(tag: str) -> None:
+    def model(spec: sr.ModelSpec) -> None:
+        guard(a, spec)
         if not quiet:
-            print(f"Phase 2: ant model {tag} answers alone, from notes, and both ({time.monotonic() - start:.0f}s)",
-                  flush=True)
+            print(f"Phase 2: ant model {spec.tag} answers alone, from notes, and both "
+                  f"({time.monotonic() - start:.0f}s)", flush=True)
 
-    answers = await sr.run_ants(runner, items, reading, ants, on_model=model)
+    answers = await sr.run_ants(runner, items, reading, ants, on_model=model, after_model=lambda s: unload(a, s))
     return sr.rows(items, reading, answers)
 
 
@@ -176,8 +240,19 @@ def cmd_check(a: argparse.Namespace) -> int:
         return 2
     have = {str(m.get("id")) for m in resp.json().get("data") or []}
     missing = [t for t in need if not any(sr.same_model(h, t) for h in have)]
+    root = ollama_root(a.base_url)
+    specs = {s.tag: s for s in (reader, *ants)}
     for t in need:
-        print(f"  {'ok     ' if t not in missing else 'MISSING'} {t}")
+        extra = ""
+        if root and t not in missing:
+            try:  # Ollama's own model card: does this model think, and what will we send to stop it?
+                caps = httpx.post(f"{root}/api/show", json={"model": t}, timeout=30, trust_env=False).json()
+                if "thinking" in (caps.get("capabilities") or []):
+                    how = specs[t].extra_body or ({"suffix": specs[t].suffix} if specs[t].suffix else None)
+                    extra = f"  (a thinking model; we send {json.dumps(how) if how else 'nothing to turn it off'})"
+            except (httpx.HTTPError, ValueError):
+                pass
+        print(f"  {'ok     ' if t not in missing else 'MISSING'} {t}{extra}")
     if missing:
         print("Pull the missing ones, then check again:\n  " + "\n  ".join(f"ollama pull {t}" for t in missing))
         return 1
@@ -209,10 +284,12 @@ def cmd_bench(a: argparse.Namespace) -> int:
     rows = [json.loads(l) for l in (d / "cache.jsonl").read_text().splitlines() if l.strip()]
     hashes = set()
     per: Dict[str, List[float]] = defaultdict(list)
+    toks: Dict[str, List[int]] = defaultdict(list)
     for r in rows:
         if r.get("elapsed_s") and r["request_hash"] not in hashes:
             hashes.add(r["request_hash"])
             per[r["model"]].append(r["elapsed_s"])
+            toks[r["model"]].append(int(r.get("completion_tokens") or 0))
     first = got[0] if got else None
     if first:
         print(f"\nReader notes for {first['id']} (leak flag: {first['leak']}):\n{first['reader_notes']}\n")
@@ -222,16 +299,25 @@ def cmd_bench(a: argparse.Namespace) -> int:
         print("No timings recorded (a dry run, or every call came from the cache; delete cache.jsonl in the output "
               "folder to time again).")
         return 0
-    print("\nSeconds per call on this machine (median):")
+    print("\nPer call on this machine (median seconds, median tokens written):")
     est = 0.0
+    thinking = []
     for spec in (reader, *ants):
         if per.get(spec.tag):
-            sec = st.median(per[spec.tag])
+            sec, tok = st.median(per[spec.tag]), st.median(toks[spec.tag])
             calls = full["reader_calls"] if spec is reader else full["ant_calls"] // len(ants)
             est += sec * calls / max(1, min(a.concurrency, 2))
-            print(f"  {spec.tag:18s} {sec:6.1f}s")
+            long = tok > (THINK_TOKENS_READER if spec is reader else THINK_TOKENS_ANT)
+            if long:
+                thinking.append(spec.tag)
+            print(f"  {spec.tag:18s} {sec:6.1f}s {tok:6.0f} tokens{'   <- LONG: probably still thinking' if long else ''}")
     print(f"\nRough time for all 240 questions: {est / 3600:.1f} hours; for --limit 60: {est / 3600 / 4:.1f} hours. "
           f"(This bench took {wall:.0f}s, model loading included.)")
+    if thinking:
+        print(f"WARNING: {', '.join(thinking)} wrote far more than a short answer needs, so its hidden reasoning is "
+              "probably still on. That makes the run slow and can cut answers off. Change how models.json turns "
+              "thinking off for it (see the notes there), rerun bench, and freeze again before the real run.")
+        return 3
     print("Read the notes above: they should explain the question without picking an option. If they look right, "
           "start with `run --limit 60`.")
     return 0
@@ -304,8 +390,9 @@ def main(argv: Sequence[str]) -> int:
     for name in ("freeze", "check", "plan", "bench", "run", "score"):
         p = sub.add_parser(name)
         p.add_argument("--base-url", default=OLLAMA)
-        p.add_argument("--reader", default="", help="tag=family, e.g. qwen3:8b=qwen")
-        p.add_argument("--ants", default="", help="comma-separated tag=family list")
+        p.add_argument("--models", default="", help="model config JSON (default: the frozen models.json)")
+        p.add_argument("--headroom-gb", type=float, default=6.0,
+                       help="free memory to keep on top of each model before loading it (0 turns the guard off)")
         p.add_argument("--out", default="", help="output folder (default docs/research/shared-read-20261030/run)")
         p.add_argument("--dry-run", action="store_true", help="fake model, no server")
         p.add_argument("--concurrency", type=int, default=2)

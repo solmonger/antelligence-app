@@ -43,7 +43,7 @@ def test_loads_the_frozen_240_and_shows_exactly_what_the_fair_test_shows(items):
         assert it.full == qs[it.id].text
     # the "alone" arm is the fair test's own lens prompt, so the two tests' ants are the same ants
     it = items[0]
-    plain = sr.ModelSpec("llama3.2:3b", "llama")
+    plain = sr.ModelSpec("lfm3:1.7b", "lfm")
     assert sr.ant_messages(it, "alone", 1, plain) == ft.lens_messages(qs[it.id], 1)
 
 
@@ -71,11 +71,13 @@ def test_notes_arm_hides_the_passage_and_both_arm_keeps_it(items):
         sr.ant_messages(it, "nonsense", 0, spec, notes)
 
 
-def test_qwen_gets_the_no_think_switch_and_others_do_not(items):
-    q = sr.ant_messages(items[0], "alone", 0, sr.ModelSpec("qwen3:4b", "qwen", no_think=True))[1]["content"]
-    g = sr.ant_messages(items[0], "alone", 0, sr.ModelSpec("gemma3:4b", "gemma"))[1]["content"]
-    assert q.endswith("/no_think") and not g.endswith("/no_think")
-    assert sr.notes_messages(items[0])[1]["content"].endswith("/no_think")  # the default reader is Qwen3 14B
+def test_a_model_suffix_and_extra_body_reach_the_request(items):
+    q = sr.ant_messages(items[0], "alone", 0, sr.ModelSpec("qwen3:4b", "qwen", suffix="/no_think"))[1]["content"]
+    g = sr.ant_messages(items[0], "alone", 0, sr.ModelSpec("gemma4:e2b", "gemma"))[1]["content"]
+    assert q.endswith(" /no_think") and not g.endswith("/no_think")
+    spec = sr.ModelSpec("granite4.2:3b", "granite", extra_body={"reasoning_effort": "none"})
+    req = sr.make_request(spec, sr.ant_messages(items[0], "alone", 0, spec), items[0].id, "alone", 0, 100)
+    assert req.payload()["reasoning_effort"] == "none" and req.payload()["model"] == "granite4.2:3b"
 
 
 def test_reader_is_told_never_to_pick(items):
@@ -83,9 +85,27 @@ def test_reader_is_told_never_to_pick(items):
     assert "Do not say which option is correct" in text and items[0].full in text
 
 
-def test_default_models_fit_36gb_and_cover_four_families():
-    assert sr.READER.tag == "qwen3:14b"
+def test_default_models_come_from_the_config_fit_36gb_and_cover_four_families():
+    cfg = json.loads(sr.MODELS_FILE.read_text())
+    assert sr.READER.tag == cfg["reader"]["tag"] == "qwen3.8:27b"
+    assert [s.tag for s in sr.ANTS] == [a["tag"] for a in cfg["ants"]]
     assert len({s.family for s in sr.ANTS}) == 4 and len(sr.ant_roster()) == 8
+    assert all(0 < s.gb <= 21 for s in (sr.READER, *sr.ANTS))  # one at a time, with headroom, on 36 GB
+    assert sr.READER.extra_body == {"reasoning_effort": "none"}
+
+
+@pytest.mark.parametrize("cfg,msg", [
+    ({"reader": {"tag": "r", "family": "x"}, "ants": []}, "no ants"),
+    ({"reader": {"tag": "r", "family": "x"}, "ants": [{"tag": "a", "family": "y"}, {"tag": "b", "family": "y"}]},
+     "different family"),
+    ({"reader": {"tag": "a", "family": "x"}, "ants": [{"tag": "a", "family": "y"}]}, "different models"),
+    ({"reader": {"tag": "r", "family": "x", "colour": 1}, "ants": [{"tag": "a", "family": "y"}]}, "unknown"),
+])
+def test_bad_model_files_are_refused(tmp_path, cfg, msg):
+    path = tmp_path / "m.json"
+    path.write_text(json.dumps(cfg))
+    with pytest.raises(ValueError, match=msg):
+        sr.load_models(path)
 
 
 # -------------------------------------------------------------------- parsing
@@ -239,25 +259,25 @@ def test_runs_one_model_at_a_time_and_resumes_from_the_cache(items, tmp_path):
 
 
 def test_a_failed_call_is_asked_again_and_a_streak_stops_the_run(items, tmp_path):
-    flaky = Fake(fail=lambda req: ProviderError("bad reply") if req.model == "gemma3:4b" else None)
+    flaky = Fake(fail=lambda req: ProviderError("bad reply") if req.model == "granite4.2:3b" else None)
     with pytest.raises(sr.BrokenRun, match="in a row"):
         _go(sr.Runner(flaky, tmp_path / "c.jsonl", concurrency=1), items[:3])
     fixed = Fake()
     rows = _go(sr.Runner(fixed, tmp_path / "c.jsonl"), items[:3])
-    assert "gemma3:4b" in fixed.log and sr.READER.tag not in fixed.log  # only the failed part is asked again
+    assert "granite4.2:3b" in fixed.log and sr.READER.tag not in fixed.log  # only the failed part is asked again
     assert all(a is not None for r in rows for a in r["both"])
 
 
 def test_a_missing_model_stops_at_once_with_the_pull_command(items, tmp_path):
-    gone = Fake(fail=lambda req: ProviderError('HTTP 404: {"error":"model \\"phi4-mini:3.8b\\" not found, try '
+    gone = Fake(fail=lambda req: ProviderError('HTTP 404: {"error":"model \\"lfm3:1.7b\\" not found, try '
                                                'pulling it first"}', http_status=404)
-                if req.model.startswith("phi4") else None)
-    with pytest.raises(sr.MissingModel, match="ollama pull phi4-mini:3.8b"):
+                if req.model.startswith("lfm3") else None)
+    with pytest.raises(sr.MissingModel, match="ollama pull lfm3:1.7b"):
         _go(sr.Runner(gone, tmp_path / "c.jsonl"), items[:2])
 
 
 def test_a_different_served_model_is_refused(items, tmp_path):
-    wrong = Fake(served="llama3.2:1b")
+    wrong = Fake(served="gemma4:e4b")
     with pytest.raises(sr.BrokenRun, match="served"):
         _go(sr.Runner(wrong, tmp_path / "c.jsonl", concurrency=1), items[:3])
     loose = Fake(served="/models/mlx/whatever")
@@ -318,16 +338,86 @@ def test_pick_takes_tasks_in_turn(items):
     assert mod.pick(items, 0) == list(items)
 
 
-def test_check_says_what_to_pull(monkeypatch, capsys):
+def test_check_says_what_to_pull_and_which_models_think(monkeypatch, capsys):
     mod = _script()
+    have = [sr.READER.tag] + [s.tag for s in sr.ANTS[:-1]]
 
     def fake_get(url, **kw):
-        return httpx.Response(200, json={"data": [{"id": "qwen3:14b"}, {"id": "qwen3:4b"}, {"id": "llama3.2:3b"},
-                                                  {"id": "gemma3:4b"}]}, request=httpx.Request("GET", url))
+        return httpx.Response(200, json={"data": [{"id": t} for t in have]}, request=httpx.Request("GET", url))
+
+    def fake_post(url, **kw):
+        assert url == "http://localhost:11434/api/show"
+        caps = ["completion", "thinking"] if kw["json"]["model"] == sr.READER.tag else ["completion"]
+        return httpx.Response(200, json={"capabilities": caps}, request=httpx.Request("POST", url))
 
     monkeypatch.setattr(httpx, "get", fake_get)
+    monkeypatch.setattr(httpx, "post", fake_post)
     assert mod.main(["check"]) == 1
-    assert "ollama pull phi4-mini:3.8b" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert f"ollama pull {sr.ANTS[-1].tag}" in out
+    assert 'a thinking model; we send {"reasoning_effort": "none"}' in out
+
+
+def test_memory_guard_stops_before_loading_a_model_that_does_not_fit(items, tmp_path, monkeypatch):
+    mod = _script()
+    monkeypatch.setattr(mod, "free_gb", lambda: 20.0)   # room for an ant, not for the 21 GB reader plus 6 GB
+    posts = []
+    monkeypatch.setattr(httpx, "post", lambda url, **kw: posts.append((url, kw["json"])) or
+                        httpx.Response(200, json={}, request=httpx.Request("POST", url)))
+    args = mod.argparse.Namespace(dry_run=False, headroom_gb=6.0, base_url="http://localhost:11434/v1")
+    with pytest.raises(mod.MemoryTight, match="Only 20.0 GB free before loading qwen3.8:27b"):
+        mod.guard(args, sr.READER)
+    mod.guard(args, sr.ANTS[0])                           # an ant fits
+    mod.unload(args, sr.ANTS[0])
+    assert posts == [("http://localhost:11434/api/generate", {"model": sr.ANTS[0].tag, "keep_alive": 0})]
+    mod.unload(mod.argparse.Namespace(dry_run=False, base_url="http://localhost:8080/v1"), sr.ANTS[0])
+    assert len(posts) == 1                                # not Ollama: no unload call
+    off = mod.argparse.Namespace(dry_run=False, headroom_gb=0.0, base_url="http://localhost:11434/v1")
+    mod.guard(off, sr.READER)                             # 0 turns the guard off
+
+
+def test_free_gb_reads_this_machine():
+    mod = _script()
+    got = mod.free_gb()
+    assert got is None or got > 0
+
+
+def test_unload_and_guard_run_around_every_model(items, tmp_path, monkeypatch, capsys):
+    """The run checks memory before, and unloads after, the reader and each ant model, in that order."""
+    mod = _script()
+    events = []
+    monkeypatch.setattr(mod, "guard", lambda a, spec: events.append(("guard", spec.tag)))
+    monkeypatch.setattr(mod, "unload", lambda a, spec: events.append(("unload", spec.tag)))
+    mod.main(["run", "--dry-run", "--limit", "2", "--out", str(tmp_path / "o")])
+    want = []
+    for spec in (sr.READER, *sr.ANTS):
+        want += [("guard", spec.tag), ("unload", spec.tag)]
+    assert events == want
+
+
+def test_bench_flags_a_model_that_is_still_thinking(tmp_path, monkeypatch, capsys):
+    mod = _script()
+
+    class Thinker(mod.FakeModel):
+        async def complete(self, req):
+            r = await super().complete(req)
+            slow = req.model == sr.ANTS[1].tag
+            return ChatResponse(content=r.content, model=r.model, request_hash=r.request_hash,
+                                prompt_tokens=r.prompt_tokens, completion_tokens=900 if slow else 60,
+                                finish_reason="stop", elapsed_s=2.0)
+
+    monkeypatch.setattr(mod, "FakeModel", Thinker)
+    assert mod.main(["bench", "--dry-run", "--out", str(tmp_path / "b")]) == 3
+    out = capsys.readouterr().out
+    assert f"WARNING: {sr.ANTS[1].tag} wrote far more" in out and "Rough time for all 240" in out
+
+
+def test_the_drop_in_prompt_names_the_real_commands_and_rules():
+    text = (REPO / "docs/research/shared-read-20261030/CLAUDE_CODE_PROMPT.md").read_text()
+    for cmd in ("check", "bench", "run --limit 60", "score", "freeze"):
+        assert f"scripts/shared_read.py {cmd}" in text
+    assert "claude/project-thread-zif8rm" in text and "Push nothing" in text and "Spend nothing" in text
+    assert "memory_pressure" in text and "Never stop, kill or restart any process you didn't start" in text
 
 
 def test_the_committed_plan_is_frozen_and_unchanged():

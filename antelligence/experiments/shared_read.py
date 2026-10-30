@@ -12,11 +12,13 @@ OpenAI-compatible server on the user's own machine), so it costs nothing.
 
 Per exam question (the frozen 240 AGIEval questions of the fair test):
 
-* the **reader** (default Qwen3 14B, about 9 GB at 4-bit) writes short notes once: what is asked, the key facts and
-  rules, the traps. It is told never to say which option is right; notes that name a winning option anyway are
-  flagged as leaks and scored both with and without.
+* the **reader** (a bigger model; the models are set in ``docs/research/shared-read-20261030/models.json``, by
+  default Qwen3.8 27B, about 18 GB at 4-bit) writes short notes once: what is asked, the key facts and rules, the
+  traps. It is told never to say which option is right; notes that name a winning option anyway are flagged as leaks
+  and scored both with and without.
 * the reader also answers the question itself once (``reader``): the "thinker alone" line the swarm has to beat.
-* **8 ants** = 4 small models from 4 families x 2 ways of looking (lenses), each answering on its own, in 3 arms:
+* **8 ants** = 4 small models from 4 families (by default Gemma 4 E2B, Qwen3.5 4B, Granite 4.2 3B, LFM3 1.7B)
+  x 2 ways of looking (lenses), each answering on its own, in 3 arms:
 
   - ``alone``: the ant reads the full question itself (our current default, think alone).
   - ``notes``: the ant gets the reader's notes in place of the passage, plus the question and options. This is the
@@ -25,7 +27,7 @@ Per exam question (the frozen 240 AGIEval questions of the fair test):
   - ``both``: the full question plus the reader's notes.
 
 Ants never see each other. The swarm answer is a plain vote. Calls run one model at a time (all the reader's calls,
-then each ant model's), so at most one or two models are loaded at once.
+then each ant model's), so only one model needs to be in memory at a time.
 
 Everything here is pure (prompts, parsing, combining, scoring). Calls go through any object with the provider
 contract (``complete(ChatRequest) -> ChatResponse``), so tests use a fake model and no network.
@@ -54,17 +56,39 @@ from antelligence.providers.redact import scrub
 class ModelSpec:
     tag: str                      # the name the local server knows it by, e.g. "qwen3:4b"
     family: str                   # model family, for the per-family lift
-    no_think: bool = False        # append Qwen3's "/no_think" switch so it answers without a long hidden reasoning
+    gb: float = 0.0               # roughly how much memory it takes once loaded (for the memory guard)
+    suffix: str = ""              # text appended to every user message, e.g. Qwen's "/no_think" switch
+    extra_body: Optional[Mapping[str, Any]] = None   # extra request keys, e.g. {"reasoning_effort": "none"}
+
+    @classmethod
+    def from_json(cls, d: Mapping[str, Any]) -> "ModelSpec":
+        unknown = set(d) - {"tag", "family", "gb", "suffix", "extra_body", "note", "about"}
+        if unknown:
+            raise ValueError(f"unknown model keys {sorted(unknown)} in {d.get('tag')!r}")
+        return cls(str(d["tag"]), str(d["family"]), float(d.get("gb") or 0.0), str(d.get("suffix") or ""),
+                   dict(d["extra_body"]) if d.get("extra_body") else None)
 
 
-# Defaults sized for a 36 GB Mac: the reader is ~9 GB at 4-bit, each ant 2-3 GB. Tags are Ollama's.
-READER = ModelSpec("qwen3:14b", "qwen", no_think=True)
-ANTS: Tuple[ModelSpec, ...] = (
-    ModelSpec("qwen3:4b", "qwen", no_think=True),
-    ModelSpec("llama3.2:3b", "llama"),
-    ModelSpec("gemma3:4b", "gemma"),
-    ModelSpec("phi4-mini:3.8b", "phi"),
-)
+# The models live in a config file, so they can change without touching code. The file is part of the frozen plan.
+MODELS_FILE = Path(__file__).resolve().parents[2] / "docs/research/shared-read-20261030/models.json"
+
+
+def load_models(path: Path = MODELS_FILE) -> Tuple[ModelSpec, Tuple[ModelSpec, ...]]:
+    """(reader, ants) from a JSON file: {"reader": {...}, "ants": [{...}, ...]}. Ants must come from different
+    families, because the test is about a mixed swarm."""
+    cfg = json.loads(Path(path).read_text())
+    reader = ModelSpec.from_json(cfg["reader"])
+    ants = tuple(ModelSpec.from_json(a) for a in cfg["ants"])
+    if not ants:
+        raise ValueError("no ants in the model file")
+    if len({a.family for a in ants}) != len(ants):
+        raise ValueError("each ant model must come from a different family")
+    if len({a.tag for a in ants} | {reader.tag}) != len(ants) + 1:
+        raise ValueError("the reader and every ant must be different models")
+    return reader, ants
+
+
+READER, ANTS = load_models()
 LENS_IDS = (0, 1)                 # the fair test's first two exam lenses: work it out / rule options out
 ARMS = ("alone", "notes", "both")
 TEMPERATURE = 0.7
@@ -112,7 +136,7 @@ def load_items(path: Path) -> List[Item]:
 # -------------------------------------------------------------------- prompts
 
 def _user(spec: ModelSpec, text: str) -> str:
-    return f"{text} /no_think" if spec.no_think else text
+    return f"{text} {spec.suffix}" if spec.suffix else text
 
 
 def notes_messages(item: Item, spec: ModelSpec = READER) -> Tuple[Dict[str, str], ...]:
@@ -200,7 +224,7 @@ def seed(qid: str, role: str, index: int) -> int:
 def make_request(spec: ModelSpec, messages: Tuple[Dict[str, str], ...], qid: str, role: str, index: int,
                  max_tokens: int) -> ChatRequest:
     return ChatRequest(model=spec.tag, messages=messages, max_tokens=max_tokens, temperature=TEMPERATURE,
-                       seed=seed(qid, role, index))
+                       seed=seed(qid, role, index), extra_body=spec.extra_body)
 
 
 class BrokenRun(RuntimeError):
@@ -339,7 +363,9 @@ def ant_roster(ants: Sequence[ModelSpec] = ANTS, lenses: Sequence[int] = LENS_ID
 
 async def run_ants(runner: Runner, items: Sequence[Item], reading: Mapping[str, Mapping[str, Any]],
                    ants: Sequence[ModelSpec] = ANTS, lenses: Sequence[int] = LENS_IDS,
-                   on_model: Optional[Callable[[str], None]] = None) -> Dict[str, Dict[str, List[Optional[str]]]]:
+                   on_model: Optional[Callable[[ModelSpec], None]] = None,
+                   after_model: Optional[Callable[[ModelSpec], None]] = None
+                   ) -> Dict[str, Dict[str, List[Optional[str]]]]:
     """Phase 2, one ant model at a time: every ant answers every item in every arm. An item whose notes failed gets
     no ``notes``/``both`` answers (None), which the usable-share check counts."""
     roster = ant_roster(ants, lenses)
@@ -347,7 +373,7 @@ async def run_ants(runner: Runner, items: Sequence[Item], reading: Mapping[str, 
                                                        for i in items}
     for spec in ants:
         if on_model:
-            on_model(spec.tag)
+            on_model(spec)
         jobs = []
         for col, (s, lens) in enumerate(roster):
             if s is not spec:
@@ -366,6 +392,8 @@ async def run_ants(runner: Runner, items: Sequence[Item], reading: Mapping[str, 
             out[qid][arm][col] = _answer(await runner.ask(req, _usable_answer))
 
         await asyncio.gather(*(one(j) for j in jobs))
+        if after_model:
+            after_model(spec)
     return out
 
 
@@ -525,7 +553,7 @@ def plan(n_items: int, ants: Sequence[ModelSpec] = ANTS, lenses: Sequence[int] =
             "calls": reader_calls + ant_calls}
 
 
-__all__ = ["ANTS", "ARMS", "BrokenRun", "Item", "LENS_IDS", "MissingModel", "ModelSpec", "PASS", "READER", "Runner",
-           "ant_messages", "ant_roster", "clean_notes", "error_alikeness", "leaks", "load_items", "notes_messages",
+__all__ = ["ANTS", "ARMS", "BrokenRun", "Item", "LENS_IDS", "MODELS_FILE", "MissingModel", "ModelSpec", "PASS", "READER", "Runner",
+           "ant_messages", "ant_roster", "clean_notes", "error_alikeness", "leaks", "load_items", "load_models", "notes_messages",
            "parse_answer", "plan", "reader_answer_messages", "rows", "run_ants", "run_reader", "same_model", "same_wrong", "score",
            "strip_think", "usable_share"]
