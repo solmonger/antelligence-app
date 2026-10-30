@@ -1,6 +1,6 @@
 # Decision models plus LLMs: scope and first test
 
-Date: 2026-10-30. Status: **plan only. Nothing built, nothing spent.**
+Date: 2026-10-30. Status: **the first test is built and frozen** (`docs/plans/2026-10-30-dm-addon.md`); nothing spent.
 
 Eshaan's idea: Antelligence should prove that a mix of decision models (models that only pick from a fixed list and
 give a probability for each option, such as Jev) and LLMs, in a well-built harness, gives the best accuracy. This
@@ -110,13 +110,11 @@ on the other half, which is the fix for the v4 escalation failure.
 Once the fair test finishes on the Mac, its cache holds every ant's answer and reason for all 341 questions. Every new
 arm above except `llm1` then needs **decision-model calls only, and no new LLM calls**.
 
-- **Model, one of:**
-  - **Jev** through the existing `JevBackend` and Eshaan's TypeSafe key (used in v4). Questions average about 220
-    tokens (exams) and 90 (forecasts); with the 5 ants' reasons, about 650. All arms together come to well under a
-    million input tokens, at $0.042 per million: **under 5 cents**.
-  - **Kev-4B or lev** (4B, Apache 2.0, a 3 GB file), free and local through llama.cpp's `/v1/systemone`, once the Mac
-    is free of the shared-read test. No published accuracy numbers exist for these yet, so this also tells us whether
-    they are any good.
+- **Models** (Eshaan picked Jev or Perplexity, 30 October, and asked for the open ones too):
+  - **Jev** through the existing `JevBackend` and Eshaan's TypeSafe key (used in v4). The whole fair test is about
+    682 calls and 200,000 input tokens, about **1 cent**, capped at 5 cents. This is the primary model.
+  - **Liquid d1-3B and d1-2B**, free and local on the Mac (section 8).
+  - **Perplexity Decider Flash**, only if a runtime that speaks its protocol runs on the Mac (section 8).
 - **Freeze first.** A separate preregistration (the fair test stays frozen as it is), with the pass lines, the seed
   that splits the questions, and the prompt text.
 - **What it shows.** Whether a decision model adds anything on top of the LLM ants, on which kinds of question, and
@@ -124,8 +122,46 @@ arm above except `llm1` then needs **decision-model calls only, and no new LLM c
   If it helps, the next step is the colouring world and then training a small open decision model on the swarm's own
   saved answers, which is where this meets the plan to fine-tune small models.
 
-## 7. What this needs
+## 7. Are Jev and Perplexity "best in benchmarks"?
 
-- The fair test to finish on the Mac (in progress).
-- A choice of decision model for the first test: Jev (under 5 cents, his key) or local Kev-4B (free, after the
-  shared-read test).
+Partly. Checked 30 October 2026:
+
+- **Artificial Analysis Decision Index v1.0** (independent, 13 October): Jev 1.13 was first at launch with 58, ahead
+  of GLiDE and Microsoft-Decision-1 at 54, and top on HLE multiple choice. Perplexity is not in the top three. The
+  index gives no Brier score, so it says nothing direct about forecasts.
+- **Jev Decision Index 0.2** (third party, systemonemodels.org): Jev leads with 51.67. Perplexity is not listed.
+- **Perplexity's own card** gives its Decider v1.2 a Decision Index 0.3 of 68.09 and a Brier score of 0.134. That is
+  the maker's own number on a newer edition, so it can't be set next to the others.
+- **Hugging Face vision board**: Perplexity v1.2 is fifth at 71.72.
+
+So Jev is the best-supported pick. "Best" on these boards is not "best on our questions", which is what the test
+measures.
+
+## 8. Open models on the Mac
+
+| Model | Size | Licence | Runs on the Mac? |
+|---|---|---|---|
+| Perplexity Decider v1.2 | 26B, 52 GB | Apache 2.0 | No: CUDA only, and too big |
+| Perplexity Decider Flash v1.2 | 5B, 5.2 GB file | Apache 2.0 | Not yet: its Python package is CUDA only, and its file needs a server that speaks its newer protocol; stock llama.cpp doesn't |
+| Liquid d1-3B | 3.1B | LFM Open License v1.0 | Yes: the repo's shim (`scripts/v41_d1_server.py`) on Apple's GPU |
+| Liquid d1-2B, 4-bit MLX | 1.9B, 1.7 GB | LFM Open License v1.0 | Yes: `optiq serve` (mlx-optiq 0.7.9+) |
+
+d1-3B, d1-2B and, where it runs, Perplexity Flash are in the first test as free arms next to Jev. The Mac prompt is
+`docs/research/dm-addon-20261030/CLAUDE_CODE_PROMPT.md`.
+
+## 9. Test 2: does ant size matter?
+
+Eshaan's question: could very small ants (about 1B) leave room for a bigger reader, and does that help?
+
+- **Room is not the limit.** The shared-read harness loads one model at a time, so the reader can already be as big
+  as fits alone (27B). Smaller ants make the run faster, not the reader bigger.
+- **What the quick pass says** (60 questions): the 1.7B ant (LFM3) got 27% right alone and 33% with the reader's
+  notes, close to the 20 to 25% that guessing gives. The 4B Qwen got 58% and 73%. An ant near chance adds noise to a
+  plain vote.
+- **The test.** Same 240 questions, same reader, same harness (`scripts/shared_read.py --models <file> --out
+  <folder>`). Compare two families at two sizes, so size is the only change: Qwen 3.5 at 0.8B and 4B, Gemma 4 at E2B
+  and E4B. Measure each ant alone and with notes, the vote of the tiny pair against the small pair, and the
+  same with a decision model as one more voter. Then ask the question that matters for scale: at the same compute,
+  do many tiny ants beat a few small ones?
+- **When.** After the full shared-read score. If the reader's notes don't help small ants, the sweep only needs the
+  "alone" arm, which is a quarter of the work.
