@@ -382,6 +382,9 @@ idea 3 is the most ant-like.
 - **Free test:** (a) saved colony answers, weights from the development split (done, section 4.1); (b) the liar probe,
   where a flip gate is the simplest form of earned trust (done, section 4.2). Next: ants that are *sometimes* right,
   not pure liars, so trust has to be graded.
+- **Tested 2026-10-30 in the finish world (no gain):** re-checking claims from ants caught skipping work, privately or
+  by word of mouth, left as much work as plain spot looking. Ants rarely meet the same cheat twice, and most leftover
+  work comes from the stop rule, not lies (`docs/research/swarm-scale-20261029/EARNED_TRUST.md`).
 
 ### Idea 2. Grow only for hard problems
 
