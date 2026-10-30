@@ -19,6 +19,7 @@ Usage::
 
     uv run python scripts/fair_test.py freeze
     uv run python scripts/fair_test.py plan
+    uv run python scripts/fair_test.py account                # which key and account the script uses (no model call)
     uv run python scripts/fair_test.py models --grep step     # which models this key can call (free, no model call)
     uv run python scripts/fair_test.py smoke --live
     uv run python scripts/fair_test.py run --live --max-usd 3
@@ -211,10 +212,54 @@ def cmd_models(a: argparse.Namespace) -> int:
         if a.grep and a.grep.lower() not in mid.lower():
             continue
         price = m.get("pricing") or {}
-        mark = " <- the fair test uses this" if ft.served_ok(mid) else ""
+        mark = " <- the fair test calls this" if mid == ft.MODEL else ""
         print(f"{mid}  {json.dumps(price) if price else ''}{mark}")
-    if not any(ft.served_ok(str(m.get("id"))) for m in rows):
+    if not any(str(m.get("id")) == ft.MODEL for m in rows):
         print(f"{ft.MODEL} is not in this list: tell Claude which free model to use instead")
+    return 0
+
+
+ACCOUNT_PATHS = ("/key", "/auth/key", "/credits", "/me", "/account", "/balance")
+
+
+def cmd_account(a: argparse.Namespace) -> int:
+    """Which key the script reads, and what the portal says about its account. No model call, nothing billed.
+
+    The portal's docs do not name an account or balance endpoint, so this asks the usual OpenAI- and OpenRouter-style
+    paths and prints what answers. It also checks that the model the test calls is listed at price 0."""
+    import os
+
+    import httpx
+
+    from antelligence.experiments.v41_prod import HERMES_ENV, NOUS_ENV_FILE_VAR, read_nous_key
+    from antelligence.providers.decision_backends import NOUS_URL
+
+    path = Path(os.environ.get(NOUS_ENV_FILE_VAR) or HERMES_ENV).expanduser()
+    key = read_nous_key()
+    print(f"key: NOUS_API_KEY from {path}, starts {key[:6]}..., {len(key)} characters "
+          f"(match the start against the keys listed in the portal account that shows your balance)")
+    headers = {"Authorization": f"Bearer {key}"}
+    answered = False
+    for sub in ACCOUNT_PATHS:
+        try:
+            resp = httpx.get(f"{NOUS_URL}{sub}", headers=headers, timeout=30)
+        except httpx.HTTPError as exc:
+            print(f"GET {sub}: no answer ({type(exc).__name__})")
+            continue
+        if resp.status_code == 200:
+            answered = True
+            print(f"GET {sub}: {scrub(resp.text, [key])[:400]}")
+    if not answered:
+        print("no account or balance endpoint answered; the portal's own page shows the balance")
+    resp = httpx.get(f"{NOUS_URL}/models", headers=headers, timeout=30)
+    rows = (resp.json().get("data") or []) if resp.status_code == 200 else []
+    listed = next((m for m in rows if str(m.get("id")) == ft.MODEL), None)
+    if listed is None:
+        print(f"{ft.MODEL}: not listed for this key")
+    else:
+        price = listed.get("pricing") or {}
+        free = all(str(v).strip() in ("0", "0.0", "") for v in price.values()) if price else False
+        print(f"{ft.MODEL}: listed, {'free' if free else 'NOT free: ' + json.dumps(price)}")
     return 0
 
 
@@ -305,7 +350,7 @@ def cmd_score(a: argparse.Namespace) -> int:
 def main(argv: Sequence[str]) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    for name in ("freeze", "plan", "models", "smoke", "run", "score"):
+    for name in ("freeze", "plan", "account", "models", "smoke", "run", "score"):
         p = sub.add_parser(name)
         p.add_argument("--data", type=Path, default=DATA)
         p.add_argument("--kinds", default="exam,forecast")
@@ -331,7 +376,7 @@ def main(argv: Sequence[str]) -> int:
     bad = set(a.kinds) - set(ft.KINDS)
     if bad:
         raise SystemExit(f"unknown kinds: {sorted(bad)}")
-    return {"freeze": cmd_freeze, "plan": cmd_plan, "models": cmd_models, "smoke": cmd_smoke, "run": cmd_run, "score": cmd_score}[a.cmd](a)
+    return {"freeze": cmd_freeze, "plan": cmd_plan, "account": cmd_account, "models": cmd_models, "smoke": cmd_smoke, "run": cmd_run, "score": cmd_score}[a.cmd](a)
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 {
  "code": {
-  "antelligence/experiments/fair_test.py": "9795c2ed9d18959d6c2181cb3db8b524568c0b6f24730ca75f0ab9d2e70c43a8",
-  "scripts/fair_test.py": "ca62116d884dcc614ca0ef42ff2f3ab50f4784c7dd26e85c4498329018e63f50"
+  "antelligence/experiments/fair_test.py": "0fabecf4d57013501a89a208878854b70a72b49b80546fcb689bd6a733f408ed",
+  "scripts/fair_test.py": "9840ba328202be165942f124234fae007c1b24b890f141113a8328e86011f9e2"
  },
  "extra_body": {
   "reasoning": {
@@ -32,7 +32,7 @@
   ]
  },
  "max_tokens": 4000,
- "model": "stepfun/step-3.7-flash",
+ "model": "stepfun/step-3.7-flash:free",
  "pass": {
   "exam_min_gain": 0.01,
   "forecast_min_brier_gain": 0.005

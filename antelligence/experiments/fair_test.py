@@ -38,7 +38,7 @@ from antelligence.providers.base import ChatRequest, ChatResponse, ProviderError
 from antelligence.providers.redact import scrub
 
 # Amendment 2: the free Step 3.7 Flash replaces DeepSeek V4.1 Flash (which needed credit the account could not use).
-MODEL = "stepfun/step-3.7-flash"
+MODEL = "stepfun/step-3.7-flash:free"   # the free route; plain "stepfun/step-3.7-flash" is the paid one
 RELEASED = "2026-05-28"          # every forecast in the set resolved after this day
 PRICE = (0.0, 0.0)               # free on the Nous portal; a cost the portal reports is still counted, and capped
 REASONING = {"reasoning": {"effort": "low"}}   # a reasoning model; low is its lightest documented level
@@ -236,10 +236,11 @@ def out_of_credits(exc: ProviderError) -> bool:
 
 def served_ok(served: str, model: str = MODEL) -> bool:
     """Does the model name the provider reports name the model we asked for? Providers spell it differently
-    (``stepfun/step-3.7-flash``, ``stepfun-ai/Step-3.7-Flash``, a dated suffix), so compare the bare, lower-case
-    name and allow a suffix, but never a different model."""
+    (``stepfun/step-3.7-flash``, ``stepfun-ai/Step-3.7-Flash``, a dated suffix), and a route tag such as ``:free``
+    names how it is billed, not which model it is. So compare the bare, lower-case name without the tag and allow a
+    suffix, but never a different model."""
     def bare(name: str) -> str:
-        return name.strip().lower().rsplit("/", 1)[-1].replace("_", "-").replace(" ", "-")
+        return name.strip().lower().split(":", 1)[0].rsplit("/", 1)[-1].replace("_", "-").replace(" ", "-")
     return bool(served) and bare(served).startswith(bare(model))
 
 
@@ -302,8 +303,9 @@ class Runner:
             if out_of_credits(exc):  # nothing cached: once topped up, every call is asked again
                 async with self._lock:
                     self.reserved -= self.max_call_usd
-                    self.broken = self.broken or ("Out of credits: the provider says the account balance is too low "
-                                                  "for this model. Add credits, then run the smoke check again.")
+                    self.broken = self.broken or (f"Out of credits: the provider refused {req.model} because the "
+                                                  "account balance is too low. Run `fair_test.py account` to see "
+                                                  "which account the key belongs to.")
                 raise OutOfCredits(self.broken) from None
             row = {"request_hash": h, "content": "", "prompt_tokens": 0, "completion_tokens": 0,
                    "finish_reason": "error", "served_model": None, "cost_usd": 0.0, "error": type(exc).__name__,

@@ -28,7 +28,7 @@ def _priced(monkeypatch):
 def test_the_frozen_model_is_free_and_released_before_every_forecast():
     source = (REPO / "antelligence/experiments/fair_test.py").read_text()
     assert "\nPRICE = (0.0, 0.0)" in source  # the fixture above only prices the tests
-    assert ft.MODEL == "stepfun/step-3.7-flash" and ft.RELEASED == "2026-05-28"
+    assert ft.MODEL == "stepfun/step-3.7-flash:free" and ft.RELEASED == "2026-05-28"
     answers = [json.loads(line) for line in (DATA / "forecast_answers.jsonl").read_text().splitlines()]
     assert all(a["resolution_date"] > ft.RELEASED for a in answers)
 
@@ -269,7 +269,8 @@ def test_failed_calls_in_the_cache_are_asked_again(tmp_path):
 
 
 def test_served_model_names():
-    assert ft.served_ok("stepfun/step-3.7-flash")
+    assert ft.served_ok("stepfun/step-3.7-flash")      # the portal may report the free route without its tag
+    assert ft.served_ok("stepfun/step-3.7-flash:free")
     assert ft.served_ok("stepfun-ai/Step-3.7-Flash")
     assert ft.served_ok("step-3.7-flash-0528")
     assert not ft.served_ok("stepfun/step-5-preview")
@@ -483,7 +484,7 @@ def test_live_stack_accepts_the_portal_spelling_and_logs_spend(tmp_path, monkeyp
     r = ft.Runner(prov, tmp_path / "c.jsonl", max_usd=1, backoff=())
     row = asyncio.run(r.run_question(_exam()))
     assert row["single"] == ["A"] * 10 and r.failed == 0
-    assert seen[0]["reasoning"] == {"effort": "low"} and seen[0]["model"] == ft.MODEL == "stepfun/step-3.7-flash"
+    assert seen[0]["reasoning"] == {"effort": "low"} and seen[0]["model"] == ft.MODEL == "stepfun/step-3.7-flash:free"
     assert seen[0]["max_tokens"] == 4000
     logged = [json.loads(line) for line in ledger.read_text().splitlines()]
     assert len(logged) == 20 and all(x["cost_usd"] > 0 and "error" not in x for x in logged)
@@ -521,12 +522,15 @@ def test_models_lists_what_the_key_can_call(tmp_path, monkeypatch, capsys):
     env.write_text("NOUS_API_KEY=sk-test-not-real\n")
     monkeypatch.setenv("ANTELLIGENCE_NOUS_ENV_FILE", str(env))
     cli = _load("fair_test")
-    listing = {"data": [{"id": "stepfun/step-3.7-flash", "pricing": {"prompt": "0", "completion": "0"}},
+    # The Oct 30 listing: the paid route and the free route of the same model. Only the free one is the test's.
+    listing = {"data": [{"id": "stepfun/step-3.7-flash", "pricing": {"prompt": "0.0000002000", "completion": "0.0000011500"}},
+                        {"id": "stepfun/step-3.7-flash:free", "pricing": {"prompt": "0", "completion": "0"}},
                         {"id": "deepseek/deepseek-v4.1-flash"}]}
     monkeypatch.setattr(httpx, "get", lambda url, **kw: httpx.Response(200, json=listing))
     assert cli.main(["models"]) == 0
-    out = capsys.readouterr().out
-    assert "stepfun/step-3.7-flash" in out and "the fair test uses this" in out
+    lines = capsys.readouterr().out.splitlines()
+    marked = [line for line in lines if "the fair test calls this" in line]
+    assert len(marked) == 1 and marked[0].startswith("stepfun/step-3.7-flash:free ")
     monkeypatch.setattr(httpx, "get", lambda url, **kw: httpx.Response(200, json={"data": [{"id": "x/other"}]}))
     cli.main(["models"])
     assert "is not in this list" in capsys.readouterr().out
@@ -534,3 +538,30 @@ def test_models_lists_what_the_key_can_call(tmp_path, monkeypatch, capsys):
     assert cli.main(["models"]) == 2
     out = capsys.readouterr().out
     assert "HTTP 401" in out and "sk-test-not-real" not in out
+
+
+def test_account_shows_key_and_free_route_without_a_model_call(tmp_path, monkeypatch, capsys):
+    import httpx
+
+    env = tmp_path / ".env"
+    env.write_text("NOUS_API_KEY=sk-nous-abcdefghijklmnop\n")
+    monkeypatch.setenv("ANTELLIGENCE_NOUS_ENV_FILE", str(env))
+    cli = _load("fair_test")
+    asked = []
+
+    def get(url, **kw):
+        asked.append(url)
+        if url.endswith("/models"):
+            return httpx.Response(200, json={"data": [{"id": "stepfun/step-3.7-flash:free",
+                                                       "pricing": {"prompt": "0", "completion": "0"}}]})
+        if url.endswith("/key"):
+            return httpx.Response(200, json={"data": {"label": "sk-nous-abcdefghijklmnop", "usage": 0, "limit": None,
+                                                      "is_free_tier": True}})
+        return httpx.Response(404, text="not found")
+    monkeypatch.setattr(httpx, "get", get)
+    monkeypatch.setattr(httpx, "post", lambda *a, **k: pytest.fail("account must not call a model"))
+    assert cli.main(["account"]) == 0
+    out = capsys.readouterr().out
+    assert str(env) in out and "starts sk-nou..." in out and "sk-nous-abcdefghijklmnop" not in out
+    assert "is_free_tier" in out and "stepfun/step-3.7-flash:free: listed, free" in out
+    assert not any("chat/completions" in u for u in asked)
