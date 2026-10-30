@@ -30,3 +30,7 @@ Numbers (share of honest ants right, fixed fade, graded vs think alone tuned to 
 Verdict: beats best (about 2 points over a fairly tuned think alone).
 
 Next: port to colouring and foraging; decide cap 2 or 3; then the fair test with models.
+
+Follow-up, same day: ported to colouring and foraging (cap 2) on fresh seeds. No gain in either; slightly worse under
+liars in colouring. Waggle-dance marks are a rumour-world idea, not a default for every world. Branch
+claude/dream-2026-10-30, docs/research/swarm-scale-20261029/GRADED_MARKS.md.
