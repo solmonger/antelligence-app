@@ -22,6 +22,9 @@ Two pieces, both built on the pilot world and sensor unchanged:
   for no reason it can see (the earned-trust rule from the liar probe: an honest ant only moves when it clashes,
   so a neighbour that keeps changing for no visible reason stops being believed).
 
+Waggle-dance marks (:class:`GradedColouringWorld` and :class:`GradedLook`, from the rumour world's ``graded``
+policy): each announcement also says how sure its sender is, and on a clash the less sure ant gives way.
+
 ``done_claims`` reports, after a run, how many honest agents considered themselves done while really clashing
 with an honest neighbour: for S every coloured agent counts itself done; for this ant only one whose last look
 showed no clash.
@@ -33,7 +36,7 @@ import random
 from typing import Any, Dict, FrozenSet, Iterable, List, Optional, Set, Tuple
 
 from antelligence.kernel.decision import Sensor
-from antelligence.kernel.types import NOOP, Intent, LocalView
+from antelligence.kernel.types import NOOP, Intent, LocalView, Observation
 from antelligence.worlds.graph_coloring.sensing import ColoringSensor
 from antelligence.worlds.graph_coloring.world import GraphColoringWorld, colour_action
 
@@ -135,7 +138,7 @@ class LookBeforeDone:
             rng = random.Random(f"look:{self.seed}:{me}")
             self.seen_done[me] = False
             return rng.randrange(f["palette"])
-        clash = [u for u, c in held.items() if c == mine and int(u) < int(me)]
+        clash = [u for u, c in held.items() if c == mine and self._yields_to(u, me, heard)]
         if clash:
             self.seen_done[me] = False
             taken = set(held.values())
@@ -144,6 +147,91 @@ class LookBeforeDone:
         if any(heard[u]["ack"] != mine for u in nbrs):
             return mine  # not everyone has heard my colour yet: say it again
         return None
+
+    def _yields_to(self, u: str, me: str, heard: Dict[str, Dict[str, Any]]) -> bool:
+        """On a clash, does this ant give way to neighbour ``u``? Here: to any neighbour with priority (a lower id)."""
+        return int(u) < int(me)
+
+
+class GradedColouringWorld(SwarmColouringWorld):
+    """The swarm colouring world where each announcement also carries how sure its sender is (waggle-dance marks).
+
+    A colour action may pass ``params={"strength": k}``; the strength is clamped to ``[1, cap]`` and sent with every
+    later announcement of that agent until it sets a new one (default 1). Liars always claim ``cap``. Listeners see it
+    as ``heard[u]["strength"]``. Nothing else changes, so an ant that ignores strength plays exactly as in
+    :class:`SwarmColouringWorld` (tested).
+    """
+
+    def __init__(self, seed: int, *, cap: int = 2, **kw: Any) -> None:
+        super().__init__(seed, **kw)
+        if cap < 1:
+            raise ValueError("cap must be at least 1")
+        self.cap = cap
+        self.strength: Dict[str, int] = {a: 1 for a in self.agents()}
+
+    def describe(self) -> Dict[str, Any]:
+        return {**super().describe(), "world": "graph_coloring_swarm_graded", "cap": self.cap}
+
+    def apply(self, agent_id: str, intent: Intent, tick: int):
+        out = super().apply(agent_id, intent, tick)
+        if out.accepted and intent.action != NOOP:
+            self.strength[agent_id] = max(1, min(self.cap, int(intent.params.get("strength", 1))))
+        return out
+
+    def step_environment(self, tick: int) -> None:
+        super().step_environment(tick)
+        for v, senders in self.fresh.items():
+            for u in senders:
+                self.known[v][u]["strength"] = self.cap if u in self.liars else self.strength[u]
+
+    def observe(self, agent_id: str, tick: int) -> Observation:
+        obs = super().observe(agent_id, tick)
+        data = dict(obs.data)
+        for u, h in data["heard"].items():
+            msg = self.known[agent_id].get(u)
+            h["strength"] = msg.get("strength") if msg else None
+        return Observation(data=data, sense=obs.sense)
+
+
+class GradedLook(LookBeforeDone):
+    """Waggle-dance marks for colouring: think alone, then compare, and say how sure you are.
+
+    An ant's strength is 1 plus the number of rounds in a row its own look showed no clash, capped at ``cap``. It sends
+    its strength with its colour, and says it again when the strength changes. On a clash it gives way to a neighbour
+    that is surer than it is; between equally sure ants, the lower id keeps its colour, as in :class:`LookBeforeDone`.
+    With ``cap=1`` every ant is equally sure and it plays exactly as :class:`LookBeforeDone` (tested).
+    """
+
+    name = "graded_look"
+
+    def __init__(self, sensor: Sensor, seed: int, *, cap: int = 2, **kw: Any) -> None:
+        super().__init__(sensor, seed, **kw)
+        self.cap = cap
+        self.streak: Dict[str, int] = {}
+        self.said: Dict[str, int] = {}
+
+    def describe(self) -> Dict[str, Any]:
+        return {**super().describe(), "policy": self.name, "cap": self.cap}
+
+    def strength_of(self, me: str) -> int:
+        return min(self.cap, 1 + self.streak.get(me, 0))
+
+    def decide(self, view: LocalView) -> Intent:
+        f = self._sensor.sense(view).fields
+        me = f["agent"]
+        choice = self.choose(f)
+        self.streak[me] = self.streak.get(me, 0) + 1 if self.seen_done.get(me) else 0
+        s = self.strength_of(me)
+        if choice is None and f["colour"] is not None and self.cap > 1 and self.said.get(me) != s:
+            choice = f["colour"]  # my evidence changed: say my colour again, with the new strength
+        if choice is None:
+            return Intent(NOOP)
+        self.said[me] = s
+        return Intent(colour_action(choice), params={"strength": s})
+
+    def _yields_to(self, u: str, me: str, heard: Dict[str, Dict[str, Any]]) -> bool:
+        theirs, mine = heard[u].get("strength") or 1, self.strength_of(me)
+        return theirs > mine or (theirs == mine and int(u) < int(me))
 
 
 def default_ant(seed: int) -> LookBeforeDone:
@@ -155,7 +243,7 @@ def default_ant(seed: int) -> LookBeforeDone:
 def done_claims(world: SwarmColouringWorld, policy: Any) -> Dict[str, int]:
     """How many honest agents count themselves done, and how many of those really clash."""
     clashing = world.clashing()
-    if isinstance(policy, LookBeforeDone):
+    if isinstance(policy, LookBeforeDone):  # GradedLook included
         done = {a for a in world.honest() if policy.seen_done.get(a)}
     else:
         done = {a for a in world.honest() if world.colour[a] is not None}
@@ -163,4 +251,4 @@ def done_claims(world: SwarmColouringWorld, policy: Any) -> Dict[str, int]:
             "clashing": len(clashing & set(world.honest()))}
 
 
-__all__ = ["LookBeforeDone", "SwarmColouringWorld", "default_ant", "done_claims"]
+__all__ = ["GradedColouringWorld", "GradedLook", "LookBeforeDone", "SwarmColouringWorld", "default_ant", "done_claims"]

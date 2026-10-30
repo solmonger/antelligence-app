@@ -13,6 +13,10 @@ can see right now. Two pieces test what that rule is worth and what an ant gains
   no target of its own does it compare with others: it heads for the nearest peer that says food is near, and
   drops that lead as soon as its own view shows the spot with no food.
 
+Waggle-dance marks (from the rumour world's ``graded`` policy): :class:`RelayForagingWorld` tags each message with how
+sure its sender is (first-hand ``cap``, relayed 1; with ``shout=True`` relayed memories claim ``cap`` too, the liar
+case), and :class:`GradedForager` follows the surest lead rather than just the nearest.
+
 The pilot's S trusts its brief and ignores what it hears; the pilot's S' (``ExploreWhenEmpty``) trusts its eyes
 but ignores what it hears. ``LookForager`` adds "then compare" on top of S'.
 """
@@ -35,18 +39,32 @@ LEAD_TICKS = 12     # a lead not confirmed by the ant's own eyes within this man
 class RelayForagingWorld(ForagingSBWorld):
     """The pilot foraging world; with ``relay=True`` agents also broadcast remembered (possibly stale) spots."""
 
-    def __init__(self, seed: int, condition: str = "base", *, relay: bool = False, **kw: Any) -> None:
+    def __init__(self, seed: int, condition: str = "base", *, relay: bool = False, shout: bool = False, cap: int = 2,
+                 **kw: Any) -> None:
         super().__init__(seed, condition, **kw)
-        self.relay = relay
+        if cap < 1:
+            raise ValueError("cap must be at least 1")
+        self.relay, self.shout, self.cap = relay, shout, cap
         self.relayed = 0
+        self._strength = 1
 
     def describe(self) -> Dict[str, Any]:
-        return {**super().describe(), "world": "foraging_sb_relay", "relay": self.relay}
+        return {**super().describe(), "world": "foraging_sb_relay", "relay": self.relay, "shout": self.shout,
+                "cap": self.cap}
+
+    def _perceive(self, agent_id: str, tick: int) -> Dict[str, Any]:
+        posted = len(self._outbox)
+        data = super()._perceive(agent_id, tick)
+        if len(self._outbox) > posted:  # this agent just posted: say how sure it is (listeners may ignore it)
+            self._outbox[-1]["strength"] = self._strength
+        return data
 
     def _message(self, agent_id: str, rows: List[str]) -> Optional[str]:
         seen = super()._message(agent_id, rows)
+        self._strength = self.cap  # first-hand: seen right now
         if seen or not self.relay:
             return seen
+        self._strength = self.cap if self.shout else 1  # a remembered spot, maybe stale (shouted at the cap if shout)
         mem = self.memory[agent_id]
         target = mem.nest_at if self.carrying[agent_id] else mem.food_at
         if target is None:
@@ -59,8 +77,11 @@ class RelayForagingWorld(ForagingSBWorld):
         return f"{'nest' if self.carrying[agent_id] else 'food'} is {word} of me"[:MSG_MAX]
 
 
-def lead_from(heard: List[Dict[str, Any]], pos: Cell, want: str = "food") -> Optional[Cell]:
-    """The cell the nearest peer's "<want> is <direction> of me" points at, or None."""
+def lead_from(heard: List[Dict[str, Any]], pos: Cell, want: str = "food", graded: bool = False) -> Optional[Cell]:
+    """The cell the nearest peer's "<want> is <direction> of me" points at, or None. With ``graded``, the surest
+    peer's (highest ``strength``), nearest first among equally sure peers."""
+    if graded:
+        heard = sorted(heard, key=lambda m: -m.get("strength", 1))  # stable: nearest first within a strength
     for m in heard:  # already sorted nearest first
         text = m["text"]
         if not text.startswith(f"{want} is ") or not text.endswith(" of me"):
@@ -81,6 +102,8 @@ def lead_from(heard: List[Dict[str, Any]], pos: Cell, want: str = "food") -> Opt
 
 class LookForager(ExploreWhenEmpty):
     """Trust your own eyes first; use what peers say only when you have nothing of your own. See module doc."""
+
+    graded = False
 
     def __init__(self, sensor=None, *, use_heard: bool = True) -> None:
         super().__init__(sensor)
@@ -110,7 +133,7 @@ class LookForager(ExploreWhenEmpty):
                 st["lead"], lead = None, None   # my own eyes reached it and showed no food, or it went cold
                 st["dead_leads"] += 1
             if lead is None:
-                lead = lead_from(f["heard"], pos)
+                lead = lead_from(f["heard"], pos, graded=self.graded)
                 if lead is not None and lead != st["stale"]:
                     st["lead"], st["lead_tick"] = lead, tick
                     st["leads"] += 1
@@ -132,9 +155,18 @@ class LookForager(ExploreWhenEmpty):
                 "dead_leads": sum(s.get("dead_leads", 0) for s in self._state.values())}
 
 
+class GradedForager(LookForager):
+    """:class:`LookForager` that follows the surest lead it hears (waggle-dance marks), not just the nearest."""
+
+    graded = True
+
+    def describe(self) -> Dict[str, Any]:
+        return {**super().describe(), "policy": "foraging_sb.graded"}
+
+
 def default_ant() -> LookForager:
     """The default ant for new swarm runs in this world (the pilot's recorded arms keep their own scripts)."""
     return LookForager()
 
 
-__all__ = ["LookForager", "RelayForagingWorld", "default_ant", "lead_from"]
+__all__ = ["GradedForager", "LookForager", "RelayForagingWorld", "default_ant", "lead_from"]

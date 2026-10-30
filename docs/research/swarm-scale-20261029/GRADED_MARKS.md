@@ -47,10 +47,32 @@ harm than tuned alone (about -0.003).
 - Turning think alone up from weight 1 to its best is itself worth about 4 points. That is free and worth taking
   whatever happens to graded marks.
 - Cap 2 looks like the safer default if liars are a real worry.
-- One scripted world only. Next: port to colouring and foraging, then the fair test with models, where "how sure am I"
+- It does not carry over to colouring or foraging (below). Next: the fair test with models, where "how sure am I"
   would come from the model's own stated confidence.
+
+## Ported to colouring and foraging (cap 2): no gain
+
+The same idea in the two worlds we did not design, against think alone in the same world, on fresh seeds 200 and up
+(`graded_ports.json`, `scripts/graded_ports_check.py`).
+
+- **Colouring** (AgentsNet): each colour announcement says how sure the sender is (1 plus its clean looks in a row,
+  cap 2); on a clash the less sure ant moves. 20 seeds x 2 graph families, 256 and 1,024 agents, 3 and 4 rounds
+  (at 8 rounds think alone is already at the ceiling). No seed condition improves: base is identical, lost messages
+  is within -0.0010 to +0.0003, and **liars make it slightly worse** (-0.0003 to -0.0018 of edges coloured, every
+  interval at or below 0; liars plus lost messages at 1,024 agents and 4 rounds too, -0.0014), because liars claim
+  the cap and unsure honest ants give way to them.
+- **Foraging** (SwarmBench): first-hand "food is north of me" is strength 2, a relayed memory strength 1, and the
+  graded forager follows the surest lead. 80 seeds. Deliveries are unchanged everywhere (relayed talk under v1:
+  17.00 vs 17.07, interval -0.375 to +0.212). It does halve the dead-end leads it chases (9.3 to 4.9 per run), but that
+  does not turn into more food; and when relayed memories shout at the cap, it is exactly think alone again.
+
+**Reading.** Think alone leaves almost no room in these two worlds (colouring is at 98.3 to 99.98% of edges after
+only 3 or 4 rounds; foraging look ties the pilot's best script). Waggle-dance marks help where many weak,
+noisy readings are pooled (the rumour world), not where one first-hand look settles the question. They should stay a
+rumour-world (and model-confidence) idea, not a default for every world.
 
 ## Reproduce
 
     uv run python scripts/graded_marks_check.py --out docs/research/swarm-scale-20261029/graded_marks.json
     uv run python scripts/graded_marks_check.py --cap 2 --test 256:100-119 --out docs/research/swarm-scale-20261029/graded_marks_cap2.json
+    uv run python scripts/graded_ports_check.py --out docs/research/swarm-scale-20261029/graded_ports.json

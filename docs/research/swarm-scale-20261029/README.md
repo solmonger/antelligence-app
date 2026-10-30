@@ -23,6 +23,7 @@ know and the fair test, section 4 for the probe and the cached colony). The fair
 | `colouring_n{64,256,1024}.json` | `uv run python scripts/colouring_think_alone_check.py --ns 256 --rounds 4,8 --out docs/research/swarm-scale-20261029/colouring_n256.json` (one N per file; seeds 100 to 109, two graph families, four conditions) |
 | `foraging.json` | `uv run python scripts/foraging_think_alone_check.py --out docs/research/swarm-scale-20261029/foraging.json` (seeds 100 to 139; three conditions; first-hand talk and relayed talk) |
 | `graded_marks.json`, `graded_marks_cap2.json` | `uv run python scripts/graded_marks_check.py --out docs/research/swarm-scale-20261029/graded_marks.json` (and `--cap 2 --test 256:100-119`). Waggle-dance marks vs think alone, each arm's listening weight tuned on seeds 0 to 9, tested on fresh seeds 100 to 119 (256 ants) and 100 to 109 (1,024 ants). Write-up: `GRADED_MARKS.md` |
+| `graded_ports.json` | `uv run python scripts/graded_ports_check.py --out docs/research/swarm-scale-20261029/graded_ports.json`. Waggle-dance marks (cap 2) ported to colouring (256 and 1,024 agents, 3 and 4 rounds, seeds 200 to 219, ws and dt) and foraging (seeds 200 to 279, seen, relayed and shouted talk), against think alone. |
 
 The probe files hold a `summary` (one entry per N and liar share) and every `row` (one per N, liar share, graph family,
 seed and policy). Timings (`s_per_agent_decision`) were measured on a shared cloud container and are indicative only.
