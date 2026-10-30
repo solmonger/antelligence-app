@@ -22,6 +22,7 @@ know and the fair test, section 4 for the probe and the cached colony). The fair
 | `deep_on_split.json` | `uv run python scripts/deep_on_split_check.py <cells dir> --out docs/research/swarm-scale-20261029/deep_on_split.json` (same cells as `cached_colony.json`) |
 | `colouring_n{64,256,1024}.json` | `uv run python scripts/colouring_think_alone_check.py --ns 256 --rounds 4,8 --out docs/research/swarm-scale-20261029/colouring_n256.json` (one N per file; seeds 100 to 109, two graph families, four conditions) |
 | `foraging.json` | `uv run python scripts/foraging_think_alone_check.py --out docs/research/swarm-scale-20261029/foraging.json` (seeds 100 to 139; three conditions; first-hand talk and relayed talk) |
+| `graded_marks.json`, `graded_marks_cap2.json` | `uv run python scripts/graded_marks_check.py --out docs/research/swarm-scale-20261029/graded_marks.json` (and `--cap 2 --test 256:100-119`). Waggle-dance marks vs think alone, each arm's listening weight tuned on seeds 0 to 9, tested on fresh seeds 100 to 119 (256 ants) and 100 to 109 (1,024 ants). Write-up: `GRADED_MARKS.md` |
 
 The probe files hold a `summary` (one entry per N and liar share) and every `row` (one per N, liar share, graph family,
 seed and policy). Timings (`s_per_agent_decision`) were measured on a shared cloud container and are indicative only.

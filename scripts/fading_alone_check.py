@@ -129,7 +129,7 @@ def main(argv: Sequence[str]) -> int:
     print_tables(summary)
     if a.out:
         a.out.parent.mkdir(parents=True, exist_ok=True)
-        cfg = {k: v for k, v in base.__dict__.items() if k not in ("n_ants", "smart")}
+        cfg = {k: v for k, v in base.__dict__.items() if k not in ("n_ants", "smart", "grade_cap")}
         a.out.write_text(json.dumps({"check": "fading_alone_check", "config": cfg, "ns": ns, "seeds": seeds,
                                      "summary": summary, "rows": rows}, indent=1, sort_keys=True) + "\n")
     return 0

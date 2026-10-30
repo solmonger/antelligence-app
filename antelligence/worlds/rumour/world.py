@@ -14,13 +14,17 @@ The question every ant must answer is one hidden yes/no fact (the truth is drawn
 3. **Leave a mark** at its site (replacing its own older mark there), then move to a random neighbour with
    probability ``move_p``.
 
-Two policies, the 2 x 2 with the fade rule:
+Policies (each crossed with the fade rule):
 
 * ``herd`` ("seen each other"): the ant's view is its answer ``B``; it leaves a mark saying ``sign(B)``. What it heard
   becomes what it says, so a wrong mark can be relayed.
 * ``alone`` ("think alone, then compare"): the ant's view is its private ``P``, committed before it reads anything; it
   leaves a mark saying ``sign(P)``, and only when it has private evidence. It still *answers* with ``B``. What it heard
   never becomes what it says, so a wrong mark cannot be relayed. No checker is involved.
+* ``graded`` ("waggle-dance marks"): think alone, but the mark's strength grows with the ant's own evidence. Its
+  amount is the ant's net number of private readings (``|P| / LLR``), at least 1 and capped at ``grade_cap``, like a
+  honeybee scout that dances longer for a better site. Liars shout at the cap. With ``grade_cap = 1`` it is exactly
+  ``alone``.
 
 Seeds (what is planted at tick 0):
 
@@ -43,7 +47,7 @@ from typing import Any, Dict, List, Optional
 from antelligence.kernel.fading import FadeRule, FadingMemory
 from antelligence.worlds.graph_coloring.graphs import make_graph
 
-POLICIES = ("solo", "herd", "alone")
+POLICIES = ("solo", "herd", "alone", "graded")
 SEEDS = ("none", "planted", "burst", "liars")
 PLANTED = "planted"
 
@@ -63,6 +67,7 @@ class RumourConfig:
     planted_amount: float = 8.0
     burst_frac: float = 0.05
     liar_frac: float = 0.02
+    grade_cap: float = 3.0      # graded policy only: the strongest mark, in private readings
     family: str = "ws"
 
     def __post_init__(self) -> None:
@@ -72,6 +77,8 @@ class RumourConfig:
             raise ValueError("accuracy must be in (0.5, 1)")
         if not 0 <= self.q <= 1 or not 0 <= self.move_p <= 1:
             raise ValueError("q and move_p are probabilities")
+        if not self.grade_cap >= 1:
+            raise ValueError("grade_cap must be at least 1 (one reading)")
 
     @property
     def llr(self) -> float:
@@ -133,6 +140,13 @@ class RumourWorld:
             self.readings.append(row)
             self.moves.append(mv)
 
+    def _amount(self, policy: str, p: float, llr: float) -> float:
+        """How strong a mark is. 1 for every policy but ``graded``, where it is the ant's net count of private readings
+        (rounded: ``|P| / LLR`` is a whole number up to float residue), at least 1 and at most ``grade_cap``."""
+        if policy != "graded":
+            return 1.0
+        return float(min(self.cfg.grade_cap, max(1, round(abs(p) / llr))))
+
     def run(self, policy: str = "alone", seed_kind: str = "none") -> RumourResult:
         if policy not in POLICIES:
             raise ValueError(f"policy must be one of {POLICIES}")
@@ -156,7 +170,7 @@ class RumourWorld:
         gone: Optional[int] = None
         for t in range(1, cfg.ticks + 1):
             # Views are committed before anyone reads (synchronous update).
-            view = [(_sign(private[a]) if policy == "alone" else _sign(answer[a])) for a in range(n)]
+            view = [(_sign(private[a]) if policy in ("alone", "graded") else _sign(answer[a])) for a in range(n)]
             new_answer = list(answer)
             for a in range(n):
                 if a in liars:
@@ -176,11 +190,12 @@ class RumourWorld:
             if policy != "solo":
                 for a in range(n):
                     if a in liars:
-                        memory.deposit(pos[a], str(a), -self.truth, tick=t)
+                        memory.deposit(pos[a], str(a), -self.truth, tick=t,
+                                       amount=cfg.grade_cap if policy == "graded" else 1.0)
                         continue
                     said = _sign(answer[a]) if policy == "herd" else _sign(private[a])
                     if said != 0:
-                        memory.deposit(pos[a], str(a), said, tick=t)
+                        memory.deposit(pos[a], str(a), said, tick=t, amount=self._amount(policy, private[a], llr))
             for a in range(n):
                 if self.moves[a][t - 1] < cfg.move_p and self.adj[pos[a]]:
                     nb = self.adj[pos[a]]
