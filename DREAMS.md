@@ -20,7 +20,7 @@ Branch claude/dream-2026-10-30, commit 2e437b8. Write-up: docs/research/swarm-sc
 
 Note: the night's own run could not push (the fork was not in its session's repos), so its code was lost. This entry
 is from the rebuild the same morning, re-tested from scratch on new fresh seeds (100 to 119 at 256 ants, 100 to 109
-at 1,024). The rebuild's numbers match the night's within a few tenths of a point.
+at 1,024). The rebuild picked the same weights and its gains are within about half a point of the night's.
 
 Numbers (share of honest ants right, fixed fade, graded vs think alone tuned to its best loudness):
 - No seed: +0.018 (256 ants), +0.022 (1,024). Burst: same. Liars: +0.010 (256), +0.015 (1,024). Every 95% CI above 0.
