@@ -1,0 +1,48 @@
+{
+ "caps": {
+  "dm": 0.01,
+  "leak": 0.015
+ },
+ "code": {
+  "antelligence/experiments/dm_addon.py": "7d6179edf143e50d96a4be94a777eef12f3fbfd8e81726c729668df11940274d",
+  "antelligence/experiments/dm_leak.py": "70ea1197308dca1707849de0907e43631512cf27ddb2b59116d8ff812766d7d1",
+  "antelligence/experiments/fresh_questions.py": "950e5ac121a1914050657192dc1db64a2ce49b18514031aa8b09b6b21ab62027",
+  "antelligence/experiments/shared_read.py": "f14410f6ca163c75433e19260a0e6f83e0e166d80512bb2338d03520de4ddc17",
+  "antelligence/kernel/decision.py": "54519a933bfb75952da15b5fdd84c491fb75412f79e8804ebba770570fae3002",
+  "docs/research/fresh-20261031/models.json": "6bea833ed56c350e12dad8cfafa15b0efba5c7b3c1b1873377bd360fb3914bc7",
+  "scripts/dm_addon.py": "28e66e52e0d0e1919c43973d892ab315440736dcb998018dd8d6a035f882f164",
+  "scripts/fresh_test.py": "e3ec3c033ed4b0cfe21301d6420ca6d0676d2c4c8d06f4890d82b4d3d1f3946b",
+  "scripts/mlx_standin.py": "c9ab19d40736680e421a2ebfbf50275a78d0d81ca422d335d3e186e599bbee63",
+  "scripts/shared_read.py": "d95e71d69cdfd87a869872f67e0474acbf5b880eacb8fe10dcb6a0ef280c2fd1"
+ },
+ "dms": {
+  "d1-3b": "LiquidAI/d1-3B",
+  "jev": "jev-1.13.0"
+ },
+ "lead_lines": {
+  "gone": 0.1,
+  "holds": 0.1
+ },
+ "leak_lines": {
+  "blind_above_chance": 0.25,
+  "clean_above_chance": 0.1,
+  "clean_drop": 0.05,
+  "relabel_drop": 0.1
+ },
+ "per_task": 40,
+ "run1": {
+  "d1-3b:dm1": 0.471,
+  "d1-3b:vote": 0.488,
+  "jev:dm1": 0.817,
+  "jev:read": 0.775,
+  "jev:vote": 0.538,
+  "notes8": 0.575,
+  "reader": 0.633
+ },
+ "tasks": [
+  "order",
+  "assign",
+  "arith",
+  "syllogism"
+ ]
+}
