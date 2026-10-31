@@ -27,7 +27,7 @@ Steps:
 1. `F=$(find ~ -maxdepth 4 -type d -name antelligence-fairtest 2>/dev/null)`. There must be exactly one. In `$F`, find
    the remote for solmonger/antelligence-app (`git remote -v`; call it R), run `git fetch R claude/project-thread-fly2s6`,
    then `git worktree add ../antelligence-night --detach R/claude/project-thread-fly2s6`. Do everything below in
-   antelligence-night (N). Run `uv sync --extra test` and `uv run python -m pytest tests/smarter_swarm/test_night.py
+   antelligence-night (N). Run `uv run --extra test python -m pytest tests/smarter_swarm/test_night.py
    tests/smarter_swarm/test_fresh.py tests/smarter_swarm/test_shared_read.py tests/smarter_swarm/test_dm_addon.py -q`.
    All must pass.
 2. Check that nothing listens on ports 11434, 8091 or 8520 (`lsof -nP -iTCP:<port> -sTCP:LISTEN`). If something does,
