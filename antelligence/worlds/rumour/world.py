@@ -26,6 +26,13 @@ Policies (each crossed with the fade rule):
   honeybee scout that dances longer for a better site. Liars shout at the cap. With ``grade_cap = 1`` it is exactly
   ``alone``.
 
+Option ``notebook`` ("field notebook", any policy but ``solo``): each honest ant keeps, for every other author whose mark
+it has read anywhere, only that author's latest reading (value, strength as read, tick read). Marks at its current site
+update the entries (latest overwrites), and it answers ``B = P + social_weight * LLR * sum(value * strength_read *
+0.5 ** ((t - t_read) / notebook_half_life))`` over the notebook, so what it heard at earlier sites is not forgotten and
+each source counts once, wherever it was met. What it says is unchanged (private evidence only), so nothing heard is
+relayed. Feedback to memory is unchanged. ``notebook_half_life = 0`` means "use ``half_life``". Off by default (bit-identical).
+
 Seeds (what is planted at tick 0):
 
 * ``none``: the control.
@@ -68,6 +75,8 @@ class RumourConfig:
     burst_frac: float = 0.05
     liar_frac: float = 0.02
     grade_cap: float = 3.0      # graded policy only: the strongest mark, in private readings
+    notebook: bool = False      # field notebook: remember each author's latest mark read anywhere (see module docstring)
+    notebook_half_life: float = 0.0  # 0.0 means use half_life
     family: str = "ws"
 
     def __post_init__(self) -> None:
@@ -79,6 +88,8 @@ class RumourConfig:
             raise ValueError("q and move_p are probabilities")
         if not self.grade_cap >= 1:
             raise ValueError("grade_cap must be at least 1 (one reading)")
+        if self.notebook_half_life < 0:
+            raise ValueError("notebook_half_life must be 0 (use half_life) or positive")
 
     @property
     def llr(self) -> float:
@@ -160,6 +171,9 @@ class RumourWorld:
         pos = list(self.start)
         private = [0.0] * n
         answer = [0.0] * n
+        nb_half = cfg.notebook_half_life or cfg.half_life
+        # Per ant: author -> (value, strength as read, tick read). Kept on the world so tests can look at it.
+        self.notebooks: List[Dict[str, tuple]] = [dict() for _ in range(n)]
         planted = None
         if seed_kind == "planted":
             planted = memory.deposit(self.planted_site, PLANTED, -self.truth, tick=0, amount=cfg.planted_amount)
@@ -183,8 +197,12 @@ class RumourWorld:
                             continue
                         s = m.strength(t)
                         social += s if m.value > 0 else -s
+                        if cfg.notebook:
+                            self.notebooks[a][m.author] = (m.value, s, t)
                         if view[a] != 0:
                             memory.feedback(m, agrees=(m.value == view[a]), tick=t)
+                if cfg.notebook and policy != "solo":
+                    social = sum(v * s * 0.5 ** ((t - tr) / nb_half) for v, s, tr in self.notebooks[a].values())
                 new_answer[a] = private[a] + cfg.social_weight * llr * social
             answer = new_answer
             if policy != "solo":
