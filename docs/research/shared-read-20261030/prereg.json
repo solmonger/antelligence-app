@@ -1,0 +1,36 @@
+{
+ "ants": [
+  "mlx-community/gemma-4-e2b-it-4bit",
+  "mlx-community/Qwen3.5-4B-MLX-4bit",
+  "ibm-granite/granite-4.2-3b-q4-mlx",
+  "LiquidAI/LFM2.5-1.2B-Instruct-MLX-4bit"
+ ],
+ "arms": [
+  "alone",
+  "notes",
+  "both"
+ ],
+ "date": "2026-10-30",
+ "files": {
+  "answers": "f50fdf39d5687938e936a637bcd41e38312eff51daa5cdf151128ab7a1b474ab",
+  "harness": "f14410f6ca163c75433e19260a0e6f83e0e166d80512bb2338d03520de4ddc17",
+  "models": "b590dadd2583f51b072f052342f174d332d6ae0b92b993c01505f216a84ea85d",
+  "plan": "21e10a2f0d2b7f50d38df7958aeb8f6f513d516ab31cec5af4c078360631668e",
+  "questions": "7a45f6c1f9d51a770f91f2be70402c287c3507002b816d3a934a4727ac029672",
+  "script": "d95e71d69cdfd87a869872f67e0474acbf5b880eacb8fe10dcb6a0ef280c2fd1"
+ },
+ "lenses": [
+  0,
+  1
+ ],
+ "min_usable": 0.9,
+ "parser": 1,
+ "pass": {
+  "alike_min_rise": 0.05,
+  "beats_reader_min_gain": 0.02,
+  "helps_min_gain": 0.02,
+  "max_leak_share": 0.1
+ },
+ "reader": "mlx-community/gemma-4-12B-it-4bit",
+ "temperature": 0.7
+}

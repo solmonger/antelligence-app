@@ -303,6 +303,14 @@ different way and answering alone. Two outside task sets: 240 exam questions fro
 LogiQA, maths word problems) and real forecasting questions that resolved after the model was released. Free,
 with a $3 cap in case the portal ever charges. It needs a key that lives only on Eshaan's Mac, so it runs there.
 
+**The shared-read test** (`docs/plans/2026-10-30-shared-read.md`, frozen in
+`docs/research/shared-read-20261030/prereg.json`). The Swarm Telepathy paper (MIT CSAIL and MIT-IBM, arXiv
+2610.15095) hands one model's reading of a document to a smaller model of another family and beats a written summary
+by 15 to 19 points, but only ever with one receiver. This asks the swarm's version first, in plain text and free on
+local models: one reader (Qwen3 14B) writes notes on each of the same 240 exam questions, and 8 small ants from 4
+families answer alone, from the notes, or both. It measures whether the shared reading makes the vote smarter or
+just makes the ants' mistakes alike, and whether the swarm beats the reader answering alone.
+
 **How the MIT team checks its huge simulation** (Large Population Models, Chopra, MIT, arXiv 2507.09901; the AgentTorch
 work behind the 8.4 million-agent New York City COVID-19 model). They do not check that each simulated person
 behaves faithfully. They check the crowd against the world: the simulator is differentiable, so they tune it by
