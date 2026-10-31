@@ -1,0 +1,31 @@
+{
+ "code": {
+  "antelligence/experiments/notebook_exam.py": "3c4ec7a91820593c91e17dd552408a5e45c8aa8f50399ed1404ef0bae8a3fd49",
+  "antelligence/experiments/route.py": "b6f5f9614c23029447601002ced1a538d83a272e6b5e1218dc91958dd81c1479",
+  "docs/research/fresh-20261031/prereg.json": "ba629715c5b8c45193a407c957908bd4c3b6976e613f599f3f40c90bb39a7cba",
+  "scripts/night_run.py": "6eb95384d0fd453ea47fba17d20b96c84cd2b1ecf45476f96e680536f769aa00"
+ },
+ "jev_night_cap": 0.05,
+ "mlx_port": 8091,
+ "notebook_lines": {
+  "copy_drop": 0.05,
+  "helps": 0.03
+ },
+ "route_lines": {
+  "helps": 0.05,
+  "no_gain": 0.05
+ },
+ "route_prefer": [
+  "reader",
+  "notes8",
+  "both8",
+  "alone8",
+  "d1-3b:dm1",
+  "d1-3b:read",
+  "d1-3b:vote",
+  "jev:dm1",
+  "jev:read",
+  "jev:vote"
+ ],
+ "swap_growth_gb": 2.0
+}
