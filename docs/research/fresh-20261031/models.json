@@ -1,0 +1,61 @@
+{
+ "about": "Models for the fresh-question test: exactly run 1's (docs/research/shared-read-20261030/models.json), 4-bit MLX builds served by mlx_lm.server behind scripts/mlx_standin.py on port 11434, with thinking off. One change: parser 2, which also reads Gemma 4 E2B's JSON answers that hold LaTeX, so its unusable replies don't stop the run.",
+ "parser": 2,
+ "reader": {
+  "tag": "mlx-community/gemma-4-12B-it-4bit",
+  "family": "gemma",
+  "gb": 10,
+  "extra_body": {
+   "chat_template_kwargs": {
+    "enable_thinking": false
+   }
+  },
+  "note": "The preregistered fallback reader. Qwen3.8 27B (the first choice) left too little room: the guard saw 19.6 to 22.9 GB free against about 23 GB needed."
+ },
+ "ants": [
+  {
+   "tag": "mlx-community/gemma-4-e2b-it-4bit",
+   "family": "gemma",
+   "gb": 4,
+   "extra_body": {
+    "chat_template_kwargs": {
+     "enable_thinking": false
+    }
+   },
+   "note": "Gemma 4 E2B. Often writes LaTeX like \\cap inside its JSON answers, which parser 1 rejects."
+  },
+  {
+   "tag": "mlx-community/Qwen3.5-4B-MLX-4bit",
+   "family": "qwen",
+   "gb": 4,
+   "extra_body": {
+    "chat_template_kwargs": {
+     "enable_thinking": false
+    }
+   },
+   "note": "Qwen 3.5 4B."
+  },
+  {
+   "tag": "ibm-granite/granite-4.2-3b-q4-mlx",
+   "family": "granite",
+   "gb": 3,
+   "extra_body": {
+    "chat_template_kwargs": {
+     "enable_thinking": false
+    }
+   },
+   "note": "IBM Granite 4.2 3B."
+  },
+  {
+   "tag": "LiquidAI/LFM2.5-1.2B-Instruct-MLX-4bit",
+   "family": "lfm",
+   "gb": 2,
+   "extra_body": {
+    "chat_template_kwargs": {
+     "enable_thinking": false
+    }
+   },
+   "note": "Replaced LFM3 1.7B, which no released mlx-lm can run yet. LFM2.5 2.6B was passed over because its thinking can't be turned off."
+  }
+ ]
+}

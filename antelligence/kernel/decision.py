@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
-from typing import Any, Dict, Mapping, Optional, Protocol, Tuple, runtime_checkable
+from typing import Any, ClassVar, Dict, Mapping, Optional, Protocol, Tuple, runtime_checkable
 
 from antelligence.kernel.canonical import content_hash, plain
 from antelligence.kernel.types import LocalView
@@ -104,6 +104,10 @@ class Question:
 class DecisionRequest:
     """A state plus named questions. ``model`` is the backend's pinned model id."""
 
+    # The longest state a request may carry. Laya's limit sets the default; a subclass whose backend reads more (Jev
+    # takes 32k tokens a question) may raise it. A class attribute, not a field: it is never hashed or sent.
+    MAX_STATE: ClassVar[int] = MAX_STATE_CHARS
+
     model: str
     state: str
     questions: Mapping[str, Question]
@@ -119,8 +123,8 @@ class DecisionRequest:
     def __post_init__(self) -> None:
         if not self.model:
             raise ValueError("model is required")
-        if not self.state or len(self.state) > MAX_STATE_CHARS:
-            raise ValueError(f"state must be 1..{MAX_STATE_CHARS} characters")
+        if not self.state or len(self.state) > self.MAX_STATE:
+            raise ValueError(f"state must be 1..{self.MAX_STATE} characters")
         if not self.questions:
             raise ValueError("at least one question is required")
         questions = dict(self.questions)
