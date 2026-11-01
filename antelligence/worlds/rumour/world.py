@@ -33,6 +33,15 @@ update the entries (latest overwrites), and it answers ``B = P + social_weight *
 each source counts once, wherever it was met. What it says is unchanged (private evidence only), so nothing heard is
 relayed. Feedback to memory is unchanged. ``notebook_half_life = 0`` means "use ``half_life``". Off by default (bit-identical).
 
+Two notebook options, both off by default (bit-identical when off):
+
+* ``notebook_one_voice`` ("one source, one voice"): a remembered source counts for at most what one ant can say, the
+  strongest honest mark (``grade_cap`` under ``graded``, 1 otherwise). A mark planted as strong as many ants is then
+  remembered as one ant's word. Marks read at the current site are unchanged; only the notebook clips.
+* ``notebook_consolidate`` ("seen twice to stick"): a source whose marks the ant has seen from only one writing (one
+  deposit tick) fades with this short half-life; once it has seen the same author write at two different ticks, the
+  entry fades with the long ``notebook_half_life``. Like short-term memory becoming long-term on a second exposure.
+
 Seeds (what is planted at tick 0):
 
 * ``none``: the control.
@@ -77,6 +86,8 @@ class RumourConfig:
     grade_cap: float = 3.0      # graded policy only: the strongest mark, in private readings
     notebook: bool = False      # field notebook: remember each author's latest mark read anywhere (see module docstring)
     notebook_half_life: float = 0.0  # 0.0 means use half_life
+    notebook_one_voice: bool = False  # notebook only: one source counts for at most one ant's strongest mark
+    notebook_consolidate: float = 0.0  # notebook only: half-life for sources seen writing once (0.0 = off)
     family: str = "ws"
 
     def __post_init__(self) -> None:
@@ -90,6 +101,8 @@ class RumourConfig:
             raise ValueError("grade_cap must be at least 1 (one reading)")
         if self.notebook_half_life < 0:
             raise ValueError("notebook_half_life must be 0 (use half_life) or positive")
+        if self.notebook_consolidate < 0:
+            raise ValueError("notebook_consolidate must be 0 (off) or a positive half-life")
 
     @property
     def llr(self) -> float:
@@ -174,6 +187,10 @@ class RumourWorld:
         nb_half = cfg.notebook_half_life or cfg.half_life
         # Per ant: author -> (value, strength as read, tick read). Kept on the world so tests can look at it.
         self.notebooks: List[Dict[str, tuple]] = [dict() for _ in range(n)]
+        # Per ant: author -> (first deposit tick seen, seen writing at two ticks). Only used by notebook_consolidate.
+        self.writings: List[Dict[str, tuple]] = [dict() for _ in range(n)]
+        voice = (cfg.grade_cap if policy == "graded" else 1.0) if cfg.notebook_one_voice else math.inf
+        short_half = cfg.notebook_consolidate
         planted = None
         if seed_kind == "planted":
             planted = memory.deposit(self.planted_site, PLANTED, -self.truth, tick=0, amount=cfg.planted_amount)
@@ -198,11 +215,19 @@ class RumourWorld:
                         s = m.strength(t)
                         social += s if m.value > 0 else -s
                         if cfg.notebook:
-                            self.notebooks[a][m.author] = (m.value, s, t)
+                            self.notebooks[a][m.author] = (m.value, min(s, voice), t)
+                            if short_half:
+                                first, twice = self.writings[a].get(m.author, (m.deposited, False))
+                                self.writings[a][m.author] = (first, twice or m.deposited != first)
                         if view[a] != 0:
                             memory.feedback(m, agrees=(m.value == view[a]), tick=t)
                 if cfg.notebook and policy != "solo":
-                    social = sum(v * s * 0.5 ** ((t - tr) / nb_half) for v, s, tr in self.notebooks[a].values())
+                    if short_half:
+                        w = self.writings[a]
+                        social = sum(v * s * 0.5 ** ((t - tr) / (nb_half if w[k][1] else short_half))
+                                     for k, (v, s, tr) in self.notebooks[a].items())
+                    else:
+                        social = sum(v * s * 0.5 ** ((t - tr) / nb_half) for v, s, tr in self.notebooks[a].values())
                 new_answer[a] = private[a] + cfg.social_weight * llr * social
             answer = new_answer
             if policy != "solo":
