@@ -6,9 +6,15 @@ probe renames each planted mark to its own author and re-runs the tuned arms fro
 seeds, paired by seed, scored as in ``notebook_check.py`` (share right at the end; extra honest ants wrong over the run
 against the same world with nothing planted).
 
+``--one-voice`` turns on ``notebook_one_voice`` for the notebook arms (each remembered source counts as at most one ant's
+strongest mark), to see whether it also cuts the harm of a burst from many authors.
+
 Usage::
 
     uv run python scripts/notebook_burst_probe.py --out docs/research/swarm-scale-20261029/notebook_burst_probe.json
+    uv run python scripts/notebook_burst_probe.py --one-voice \
+        --baseline docs/research/swarm-scale-20261029/notebook_burst_probe.json \
+        --out docs/research/swarm-scale-20261029/one_voice_burst_probe.json
 """
 
 from __future__ import annotations
@@ -63,6 +69,9 @@ def boot_ci(diffs: Sequence[float], reps: int = 4000, seed: int = 0) -> Tuple[fl
 def main(argv: Optional[Sequence[str]] = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--picks", type=Path, default=REPO / "docs/research/swarm-scale-20261029/notebook.json")
+    ap.add_argument("--one-voice", action="store_true", help="notebook arms remember each source as one ant's word")
+    ap.add_argument("--baseline", type=Path, default=None,
+                    help="an earlier probe JSON: pair each notebook arm here against the same arm there, by seed")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--out", type=Path, default=None)
     a = ap.parse_args(argv)
@@ -74,7 +83,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     for n, seeds in plan:
         for arm, pk in picks.items():
             cfg = replace(base, n_ants=n, social_weight=pk["social_weight"], notebook=pk["notebook_half_life"] > 0,
-                          notebook_half_life=pk["notebook_half_life"])
+                          notebook_half_life=pk["notebook_half_life"],
+                          notebook_one_voice=a.one_voice and pk["notebook_half_life"] > 0)
             for seed in seeds:
                 for many in (False, True):
                     jobs.append((cfg, seed, arm.split("+")[0], many))
@@ -101,6 +111,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                     mean, lo, hi = boot_ci(diffs)
                     comps.append({"n": n, "many_authors": many, "a": x, "b": y, "metric": m, "mean_diff": mean,
                                   "ci95": [lo, hi], "a_higher": sum(d > 0 for d in diffs), "seeds": len(diffs)})
+    if a.baseline:
+        base_rows = json.loads(a.baseline.read_text())["rows"]
+        for n, seeds in plan:
+            for many in (False, True):
+                for arm in (x for x in picks if x.endswith("+nb")):
+                    for m in ("right", "extra_wrong_mean"):
+                        key = lambda r: (r["n"], r["arm"], r["many_authors"]) == (n, arm, many)
+                        rx = {r["seed"]: r[m] for r in rows if key(r)}
+                        ry = {r["seed"]: r[m] for r in base_rows if key(r)}
+                        diffs = [rx[s] - ry[s] for s in seeds]
+                        mean, lo, hi = boot_ci(diffs)
+                        comps.append({"n": n, "many_authors": many, "a": arm, "b": f"{arm} (baseline)", "metric": m,
+                                      "mean_diff": mean, "ci95": [lo, hi], "a_higher": sum(d > 0 for d in diffs),
+                                      "a_lower": sum(d < 0 for d in diffs), "seeds": len(diffs)})
     for c in cells:
         print(f"  n={c['n']:>5} {'many authors' if c['many_authors'] else 'one author  '} {c['arm']:>10}: "
               f"right {c['right']:.4f}  extra wrong {c['extra_wrong_mean']:.4f}")
@@ -109,7 +133,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
               f"{c['a']} - {c['b']} = {c['mean_diff']:+.4f} [{c['ci95'][0]:+.4f}, {c['ci95'][1]:+.4f}] "
               f"higher {c['a_higher']}/{c['seeds']}")
     if a.out:
-        a.out.write_text(json.dumps({"check": "notebook_burst_probe", "cells": cells, "comparisons": comps,
+        a.out.write_text(json.dumps({"check": "notebook_burst_probe", "one_voice": a.one_voice, "cells": cells, "comparisons": comps,
                                      "rows": rows}, indent=1, sort_keys=True) + "\n")
     return 0
 
