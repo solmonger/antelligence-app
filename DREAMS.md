@@ -67,3 +67,40 @@ session; the fair check re-ran from scratch and matched to the last digit. That 
 burst from many authors: the gain holds (+0.079 to +0.082) and burst damage rises to about 0.07.
 
 Next: let notebooks fade wrong sources faster (cut the burst cost); port to colouring and foraging; then the model fair test.
+
+
+## 2026-11-01
+
+Ideas:
+1. One source, one voice: the notebook remembers any source as at most one ant's strongest word (one person, one vote;
+   clipping outliers in robust statistics).
+2. Seen twice to stick: a source seen writing once fades fast, seen writing twice it fades slowly (short-term memory
+   becoming long-term on a second exposure).
+3. Quorum of places: trust a claim more when agreeing sources were met at several different sites (independent
+   replication in science).
+4. Date the evidence: age a remembered mark from when it was written, not when it was read (carbon dating).
+5. Warm-up before trusting: lean on the notebook only once an ant has some evidence of its own (immune self-tolerance
+   training).
+
+Picked: 1, the plainest fix for last night's cost (wrong marks lingering in notebooks). Tested 2 in the same check.
+
+Built: rumour world options `notebook_one_voice` and `notebook_consolidate` (off by default, bit-identical when off).
+Fair check `scripts/one_voice_check.py`: every arm, the current best included, tuned on seeds 0 to 9, tested on fresh
+seeds 400 to 419 (256 ants) and 400 to 409 (1,024). Branch claude/dream-2026-11-01, draft PR 26 (on top of PR 24).
+Write-up: docs/research/swarm-scale-20261029/ONE_VOICE.md. Tests: 266 passed in tests/smarter_swarm (73 new); 282 in smarter_swarm and swarm_scale after the rebuild.
+
+Numbers (one voice vs the current best, waggle marks + notebook, both tuned; picks the same, weight 3, half-life 80):
+- Burst harm: 0.056 to 0.044 at both sizes (-0.012 [-0.013, -0.011]), lower on 30 of 30 seeds.
+- Share right: same with no seed and with liars (exactly), a hair higher under a burst (+0.0004), never lower on any seed.
+- Seen twice: cuts burst harm to 0.047 but loses a little right under liars and at 1,024 ants; tuning pushed it toward
+  off. Both together: harm 0.038, same small accuracy cost. Not worth it yet.
+
+Verdict: beats best (same answers, a fifth less harm from a burst of misinformation). Small, clean win.
+
+Push: refused again (the fork is not in this run's repos). Rebuilt the same day from this run's record by a daytime
+session; the fair check re-ran from scratch and matched. That session also checked one voice on PR 24's seeds with a
+burst from one author and from many: burst harm down 0.012 and 0.015 to 0.016, every seed lower, never fewer right.
+
+Next: what harm is left comes from the first ticks; try the warm-up idea (5). Then port the notebook to colouring and
+foraging, then the model fair test.
+
