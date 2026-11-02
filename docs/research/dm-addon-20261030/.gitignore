@@ -1,0 +1,4 @@
+# Raw reply caches stay local (they let a stopped run resume; reproducible from a rerun); dry runs use a fake model.
+run/cache_*.jsonl
+run/*_dry.jsonl
+run/*_dry.json

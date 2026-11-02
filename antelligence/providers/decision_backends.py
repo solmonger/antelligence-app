@@ -250,6 +250,20 @@ class LayaBackend(_TypedHTTPBackend):
         return None
 
 
+class SystemOneBackend(_TypedHTTPBackend):
+    """Any local server that speaks ``POST /v1/systemone``: llama.cpp (``llama serve``), mlx-optiq, or the d1 shim
+    (``scripts/v41_d1_server.py``). Whatever model name it reports is recorded, not checked: the caller names the
+    model it started, and the served name is kept in every reply for the record."""
+
+    name = "system_one"
+
+    def __init__(self, base_url: str, *, model: str, api_key: Optional[str] = None, **kw: Any) -> None:
+        super().__init__(base_url, model=model, api_key=api_key, **kw)
+
+    def _check_served(self, served: str) -> None:
+        return None
+
+
 # --- SLM -------------------------------------------------------------------
 
 _SLM_SYSTEM = (

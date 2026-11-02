@@ -1,0 +1,76 @@
+{
+ "bars": [
+  0.0,
+  0.05,
+  0.1,
+  0.15,
+  0.2,
+  0.25,
+  0.3,
+  0.35,
+  0.4,
+  0.45,
+  0.5,
+  0.55,
+  0.6,
+  0.65,
+  0.7,
+  0.75,
+  0.8,
+  0.85,
+  0.9,
+  0.95,
+  1.0,
+  1.01
+ ],
+ "clip": [
+  0.01,
+  0.99
+ ],
+ "code": {
+  "antelligence/experiments/dm_addon.py": "7d6179edf143e50d96a4be94a777eef12f3fbfd8e81726c729668df11940274d",
+  "antelligence/kernel/decision.py": "54519a933bfb75952da15b5fdd84c491fb75412f79e8804ebba770570fae3002",
+  "scripts/dm_addon.py": "28e66e52e0d0e1919c43973d892ab315440736dcb998018dd8d6a035f882f164"
+ },
+ "dms": {
+  "d1-2b": {
+   "hosted": false,
+   "model": "mlx-community/d1-2B-OptiQ-4bit"
+  },
+  "d1-3b": {
+   "hosted": false,
+   "model": "LiquidAI/d1-3B"
+  },
+  "jev": {
+   "hosted": true,
+   "model": "jev-1.13.0"
+  },
+  "pplx-flash": {
+   "hosted": false,
+   "model": "pplx-decider-flash-v1.2"
+  }
+ },
+ "fair_test_prereg": "1d71f41d7e6aecd7b8bf8d34cdf05a1cb0296425e22b0f05ddd9f54ab6d1d3a8",
+ "instructions": {
+  "exam:dm1": "Which option correctly answers the question?",
+  "exam:read": "Weigh the question and the answers these people gave, as evidence. Which option correctly answers the question?",
+  "forecast:dm1": "Will this question resolve YES?",
+  "forecast:read": "Weigh the question and the forecasts these people gave, as evidence. Will this question resolve YES?"
+ },
+ "min_usable": 0.9,
+ "pass": {
+  "exam_min_gain": 0.01,
+  "forecast_min_brier_gain": 0.005
+ },
+ "primary": {
+  "arm": "vote",
+  "dm": "jev",
+  "rivals": [
+   "single5",
+   "swarm5"
+  ],
+  "source": "fair-test"
+ },
+ "reason_chars": 300,
+ "split_seed": 20261030
+}
