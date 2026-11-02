@@ -1,0 +1,33 @@
+{
+ "code": {
+  "antelligence/experiments/fair_test.py": "0fabecf4d57013501a89a208878854b70a72b49b80546fcb689bd6a733f408ed",
+  "antelligence/experiments/forecast_local.py": "a0f975bedf0e5ed38932a4c71b5a0efb87366ade066e4d8c8c94a3202a383fef",
+  "scripts/forecast_local.py": "3de0c1942ca42ed7d141b302f0056eac28a41a62dede145a4f28c655386ba698"
+ },
+ "files": {
+  "forecast_answers.jsonl": "d5df21d7f41d6eca30e7a232b2b30eeeac7fc9afb811d7fcbeb6c28488f1e895",
+  "forecast_questions.jsonl": "468fd41ac6333742d5861e9481fdbce8f97c92dd08b1bae76e122246c5a09962"
+ },
+ "k": 5,
+ "late_from": "2026-08-25",
+ "lenses": [
+  "Start from the base rate: how often do events like this happen?",
+  "Focus on the specific situation: who decides, what has been said, what is scheduled.",
+  "Assume things stay as they are unless something specific changes them.",
+  "Imagine it resolved YES. What most likely made that happen? Then weigh how likely that is.",
+  "Imagine it resolved NO. What most likely made that happen? Then weigh how likely that is."
+ ],
+ "max_tokens": 800,
+ "models": "cedf1aba93f03138021cecc92a8817dade7e3f4c1d06b090750ef0f4ab93db71",
+ "pass": {
+  "ci95_low_above": 0.0,
+  "min_brier_gain": 0.005,
+  "min_usable": 0.9
+ },
+ "single_samples": 10,
+ "temperature": 0.7,
+ "tests": {
+  "A": "swarm5 vs single5, the local reader, all forecasts",
+  "B": "mix5 (reader single 1 + one plain answer from each ant) vs single5, forecasts resolved on or after 2026-08-25"
+ }
+}

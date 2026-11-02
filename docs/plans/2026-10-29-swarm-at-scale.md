@@ -318,6 +318,9 @@ scores it on outcomes nobody knew when the answers were written, with the pass l
 
 1. Run the fair test on Eshaan's Mac (free model, cap $3). If it passes, build model ants
    that answer alone and look before done. If it fails, say so plainly and work out why before building more.
+   (2026-11-02: the Nous route never ran. On exams, three local runs found the swarm under one good reader. The
+   forecast half now runs free on the Mac with local models, asking whether a mixed crowd adds what the reader
+   can't: `docs/plans/2026-11-02-forecast-local.md`.)
 2. Make looking cheap: spot checks by peers, more often on claims from ants with a poor record (idea 1), and a stop
    rule that waits long enough. Score the swarm on work left in the world, never on what it reports.
 3. Fix the case think alone cannot: an ant whose own eyes are wrong (foraging v2).

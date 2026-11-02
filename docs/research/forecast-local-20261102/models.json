@@ -1,0 +1,20 @@
+{
+ "about": "The night run's local reader and four ants (docs/research/fresh-20261031/models.json), unchanged, plus each model's public release day. 4-bit MLX builds served one at a time by mlx_lm.server, thinking off. LATE_FROM in antelligence/experiments/forecast_local.py must equal the newest release day here.",
+ "reader": {"tag": "mlx-community/gemma-4-12B-it-4bit", "family": "gemma", "gb": 10, "released": "2026-06-03",
+            "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+            "source": "ai.google.dev/gemma/docs/releases: June 3, 2026, Gemma 4 12B"},
+ "ants": [
+  {"tag": "mlx-community/gemma-4-e2b-it-4bit", "family": "gemma", "gb": 4, "released": "2026-03-31",
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "source": "ai.google.dev/gemma/docs/releases: March 31, 2026, Gemma 4 E2B"},
+  {"tag": "mlx-community/Qwen3.5-4B-MLX-4bit", "family": "qwen", "gb": 4, "released": "2026-03-02",
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "source": "llm-stats.com says Mar 2, 2026; apxml.com says Feb 24, 2026 (the later day is kept)"},
+  {"tag": "ibm-granite/granite-4.2-3b-q4-mlx", "family": "granite", "gb": 3, "released": "2026-08-25",
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "source": "datanorth.ai and llmreference.com: 25 August 2026"},
+  {"tag": "LiquidAI/LFM2.5-1.2B-Instruct-MLX-4bit", "family": "lfm", "gb": 2, "released": "2026-01-20",
+   "extra_body": {"chat_template_kwargs": {"enable_thinking": false}},
+   "source": "openrouter.ai: Jan 20, 2026"}
+ ]
+}
