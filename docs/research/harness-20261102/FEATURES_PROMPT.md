@@ -18,23 +18,27 @@ Hard rules:
 - This Mac runs my trading. Never stop a process you didn't start. Leave port 8090 alone. No sudo.
 
 Steps:
-1. Go to the antelligence-harness worktree (next to antelligence-fairtest). Find the remote for
-   solmonger/antelligence-app (`git remote -v`; call it R), run `git fetch R claude/project-thread-avftf7`, then
-   `git checkout --detach R/claude/project-thread-avftf7`. Leave docs/research/harness-20261102/run and replay in
-   place.
+1. `F=$(find ~ -maxdepth 4 -type d -name antelligence-fairtest 2>/dev/null)`. There must be exactly one. In `$F`,
+   find the remote for solmonger/antelligence-app (`git remote -v`; call it R), run
+   `git fetch R claude/project-thread-avftf7`, then
+   `git worktree add ../antelligence-features --detach R/claude/project-thread-avftf7` (if that folder already exists,
+   go into it and run `git checkout --detach R/claude/project-thread-avftf7` instead). Work in antelligence-features.
+   It's its own folder so it never disturbs antelligence-harness.
 2. Run `uv run --extra test python -m pytest tests/harness -q`. All must pass.
 3. Run `uv run python scripts/harness_features.py mac --dry-run --out /tmp/features-dry`. Its block must say
    "answer odds readable: yes" and have no "failed:" line.
 4. Checks, and stop and tell me if one fails:
-   - nothing listens on ports 11534 or 8097 (`lsof -nP -iTCP:<port> -sTCP:LISTEN`);
+   - no other harness run is going: `pgrep -fl mlx_standin.py` finds nothing (if it finds one, wait until it's gone,
+     checking every 10 minutes, then go on);
+   - nothing listens on ports 11544 or 8099 (`lsof -nP -iTCP:<port> -sTCP:LISTEN`);
    - `memory_pressure -Q` says free 20% or more;
    - the model drive answers: `ls ~/.cache/huggingface/hub | head -3` returns within a few seconds;
-   - these exist: `../antelligence-dmaddon/.venv-optiq/bin/mlx_lm.server`, and
+   - these exist (from antelligence-features): `../antelligence-dmaddon/.venv-optiq/bin/mlx_lm.server`, and
      `../antelligence-night/docs/research/night-20261031/set1/run/rows.jsonl` (also set2 and set3).
 5. Start it. If `command -v uvx` finds uvx, add `--odds-server "uvx --from mlx-lm==0.32.2 mlx_lm.server"` to the
    command below. It's used only if the first server sends no answer odds, and then only for this run: uvx keeps
    that copy of Apple's mlx-lm in its own cache and changes no other venv. Without uvx, leave it out.
-   `uv run python scripts/harness_features.py mac --night ../antelligence-night/docs/research/night-20261031 --mlx-server ../antelligence-dmaddon/.venv-optiq/bin/mlx_lm.server --drive ~/.cache/huggingface/hub --out docs/research/harness-20261102/features 2>&1 | tee features.log`
+   `uv run python scripts/harness_features.py mac --night ../antelligence-night/docs/research/night-20261031 --mlx-server ../antelligence-dmaddon/.venv-optiq/bin/mlx_lm.server --drive ~/.cache/huggingface/hub --port 11544 --mlx-port 8099 --out docs/research/harness-20261102/features 2>&1 | tee features.log`
    If the drive or a model server stalls, the script waits and retries by itself. If it stops with an error, read
    the end of features.log, fix only plain setup problems (a path, a busy port), and rerun the same command once; it
    reuses every finished call.
