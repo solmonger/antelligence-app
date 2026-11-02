@@ -514,6 +514,16 @@ def test_mac_dry_run_imports_learns_and_smokes(tmp_path, capsys):
     assert "DEV NUMBERS ONLY" in text
     assert (out / "saved" / "policy.json").exists() and (out / "smoke" / "steps.json").exists()
 
+    # diagnose explains the same run from its saved files, replaying the code checker with no model calls
+    saved = (out / "smoke" / "cache.jsonl").read_text()
+    assert s.main(["diagnose", "--run", str(out)]) == 0
+    diag = (out / "DIAGNOSE.txt").read_text()
+    assert diag.startswith("HARNESS DIAGNOSE")
+    assert "failed replies by model" in diag and "blank answers by tool" in diag
+    assert "code checker, try by try" in diag and "missing from the saved calls" not in diag
+    assert "settled on" in diag or "marked" in diag
+    assert (out / "smoke" / "cache.jsonl").read_text() == saved   # the run's own files are left alone
+
 
 def test_learn_command_writes_a_policy(tmp_path):
     night = tmp_path / "night"

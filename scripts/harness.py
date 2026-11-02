@@ -22,8 +22,11 @@ import asyncio
 import importlib.util
 import json
 import random
+import shutil
 import sys
+import tempfile
 import time
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
@@ -32,6 +35,7 @@ sys.path.insert(0, str(REPO))
 
 from antelligence.experiments import fresh_questions as fq  # noqa: E402
 from antelligence.experiments import shared_read as sr  # noqa: E402
+from antelligence.providers.base import ChatRequest  # noqa: E402
 from antelligence.harness import learner as ln  # noqa: E402
 from antelligence.harness import scorecard as sc  # noqa: E402
 from antelligence.harness.core import Step, Task, bucket, load_key, load_tasks  # noqa: E402
@@ -467,6 +471,100 @@ def smoke(a: argparse.Namespace) -> List[str]:
     return lines
 
 
+# --------------------------------------------------------------------- diagnose
+
+class _SavedOnly:
+    """A provider for replays: every call must already be in the saved call log."""
+
+    async def complete(self, request: ChatRequest) -> Any:
+        from antelligence.providers.base import ProviderError
+
+        raise ProviderError("not in the saved calls")
+
+    def describe(self) -> Dict[str, Any]:
+        return {"provider": "saved calls only"}
+
+
+def _tail(text: str, n: int = 110) -> str:
+    t = " ".join(sr.strip_think(text or "").split()) or " ".join((text or "").split())
+    return (t[-n:] if len(t) > n else t) or "(empty)"
+
+
+def diagnose(run: Path, models: Path) -> List[str]:
+    """Explain a smoke run from its saved files, with no model calls: which replies failed and why, which tools
+    came back blank, and what each code-checker try ran into (replayed from the saved programs)."""
+    d = run / "smoke"
+    tasks, key, steps, roster, meta = load_bundle(d)
+    cfg = sr.load_config(models)
+    names = {cfg.reader.tag: "reader"}
+    for info in roster:
+        names.setdefault(info.tag, f"ant{info.index}")
+    rows = [json.loads(line) for line in (d / "cache.jsonl").read_text().splitlines() if line.strip()]
+    lines = ["HARNESS DIAGNOSE (paste this back to Claude in Duet)",
+             f"saved calls: {len(rows)}, failed: {sum(1 for r in rows if r.get('error'))}"]
+
+    per_model: Dict[str, List[Dict[str, Any]]] = {}
+    for r in rows:
+        per_model.setdefault(r.get("model") or "?", []).append(r)
+    lines.append("failed replies by model:")
+    for model, rs in sorted(per_model.items()):
+        bad = [r for r in rs if r.get("error")]
+        if not bad:
+            lines.append(f"  {model}: 0 of {len(rs)}")
+            continue
+        kinds = Counter(f"{r['error']} (stop {r.get('finish_reason') or '-'})" for r in bad)
+        toks = [int(r.get("completion_tokens") or 0) for r in bad if r.get("completion_tokens")]
+        lines.append(f"  {model}: {len(bad)} of {len(rs)}; " + ", ".join(f"{k} x{n}" for k, n in kinds.most_common())
+                     + (f"; reply length up to {max(toks)} tokens" if toks else ""))
+        for r in bad[:2]:
+            lines.append(f"    e.g. ...{_tail(r.get('content') or r.get('reason') or '')}")
+
+    blank = Counter(t for per in steps.values() for t, s in per.items() if s.answer is None and t not in ("code", "notes"))
+    lines.append("blank answers by tool (of %d puzzles): " % len(tasks)
+                 + (", ".join(f"{t} {n}" for t, n in sorted(blank.items())) or "none"))
+
+    by_kind: Dict[str, List[int]] = {}
+    for t in tasks:
+        per = steps.get(t.id, {})
+        got = [s for name, s in per.items() if name not in ("code", "notes")]
+        by_kind.setdefault(t.kind, [0, 0])
+        by_kind[t.kind][0] += sum(1 for s in got if s.answer is None)
+        by_kind[t.kind][1] += len(got)
+    lines.append("blank answers by kind: " + "; ".join(f"{k} {b}/{n}" for k, (b, n) in sorted(by_kind.items())))
+
+    tmp = Path(tempfile.mkdtemp(prefix="harness-diag-")) / "cache.jsonl"
+    shutil.copyfile(d / "cache.jsonl", tmp)
+    runner = sr.Runner(_SavedOnly(), tmp, check_names=False, max_fail_streak=10 ** 6)
+    box = LiveBox(runner, cfg.reader, cfg.ants, parser=cfg.parser, code=True,
+                  patience=Patience(waits=()))
+    lines.append("code checker, try by try (replayed from the saved programs):")
+    for t in tasks:
+        if "code" not in steps.get(t.id, {}):
+            continue
+        before = runner.calls
+        step = asyncio.run(box._code(t))
+        gone = " (a try was missing from the saved calls)" if runner.calls > before else ""
+        mark = "right" if step.answer == key.get(t.id) else ("wrong" if step.answer else "unsettled")
+        tries = " | ".join(p[:120] for p in box.code_trace.get(t.id, []))
+        lines.append(f"  {t.kind} (answer {key.get(t.id)}): {mark}; {tries}{gone}")
+    shutil.rmtree(tmp.parent, ignore_errors=True)
+
+    tok: Dict[str, List[int]] = {}
+    for per in steps.values():
+        for name, s in per.items():
+            tok.setdefault(name.split(":")[0] if name.startswith("ant") else name, []).append(s.tokens)
+    lines.append("average tokens a call by tool: " + ", ".join(
+        f"{t} {sum(v) / len(v):.0f}" for t, v in sorted(tok.items())))
+    return lines
+
+
+def cmd_diagnose(a: argparse.Namespace) -> int:
+    text = "\n".join(diagnose(a.run, a.models))
+    print(text)
+    (a.run / "DIAGNOSE.txt").write_text(text + "\n")
+    return 0
+
+
 # ------------------------------------------------------------------------- main
 
 def main(argv: Sequence[str]) -> int:
@@ -514,6 +612,9 @@ def main(argv: Sequence[str]) -> int:
     s.add_argument("--out", type=Path, required=True)
     s.add_argument("--explore", type=float, default=0.1)
     live_args(s)
+    s = sub.add_parser("diagnose", help="explain a smoke run from its saved files; no model calls")
+    s.add_argument("--run", type=Path, required=True, help="the --out folder of a mac run")
+    s.add_argument("--models", type=Path, default=MODELS)
     s = sub.add_parser("mac")
     s.add_argument("--night", type=Path, default=None, help="the night run's folder (holds set1/run, set2/run, ...)")
     s.add_argument("--mlx-server", default="")
@@ -527,7 +628,8 @@ def main(argv: Sequence[str]) -> int:
     if a.cmd == "mac" and a.smoke and not a.dry_run and not a.mlx_server:
         raise SystemExit("mac needs --mlx-server for the live smoke run (or --smoke 0, or --dry-run)")
     return {"selftest": cmd_selftest, "make-dev": cmd_make_dev, "import": cmd_import, "learn": cmd_learn,
-            "sweep": cmd_sweep, "run": cmd_run, "mac": cmd_mac}[a.cmd](a)
+            "sweep": cmd_sweep, "run": cmd_run, "mac": cmd_mac,
+            "diagnose": cmd_diagnose}[a.cmd](a)
 
 
 if __name__ == "__main__":

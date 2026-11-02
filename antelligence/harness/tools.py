@@ -160,6 +160,7 @@ class LiveBox:
         self.dms = dict(dms or {})
         self.patience = patience or Patience()
         self.sandbox_python = sandbox_python
+        self.code_trace: Dict[str, List[str]] = {}   # task id -> what happened on each code try, for diagnose
         self.specs = [s for s, _ in sr.ant_roster(ants, lenses)]
         self.roster = tuple(AntInfo(i, s.tag, s.family, lens, s.gb)
                             for i, (s, lens) in enumerate(sr.ant_roster(ants, lenses)))
@@ -238,6 +239,7 @@ class LiveBox:
             secs += result.seconds
             passes = read_passes(result.stdout, task.letters) if result.ok else None
             problem = code_problem(result, passes, code)
+            self.code_trace.setdefault(task.id, []).append(problem or f"settled on {passes[0]}")
             if not problem:
                 return Step("code", passes[0], ti, to, secs, calls=attempt + 1, weight=self.coder.gb, sure=1.0,
                             passes=passes, note=f"settled on try {attempt + 1}")
