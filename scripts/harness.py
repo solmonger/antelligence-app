@@ -158,8 +158,16 @@ def learn_report(tasks: Sequence[Task], key: Mapping[str, str], steps, roster, *
         for label, rows in (("reader", table["reader"].values()), ("harness", routed)):
             got = [o.right for o in rows if kind_of.get(o.task) == k and o.right is not None]
             by_kind.setdefault(k, {})[label] = round(sum(got) / len(got), 3) if got else None
+    test_ids = {t.id for t in scored}
+    cost_by_kind: Dict[str, Dict[str, List[float]]] = {}
+    for k in sorted({t.kind for t in scored if t.kind}):
+        for label, rows in (("reader", table["reader"].values()), ("harness", routed)):
+            got = [o for o in rows if o.task in test_ids and kind_of.get(o.task) == k]
+            if got:
+                cost_by_kind.setdefault(k, {})[label] = [round(sum(o.tokens for o in got) / len(got)),
+                                                         round(sum(o.seconds for o in got) / len(got), 1)]
     return {"how": how, "n": len(scored), "recipes": len(names), "policy": policy.to_json(), "summary": summ,
-            "values": vals, "pareto": sc.pareto(summ), "by_kind": by_kind,
+            "values": vals, "pareto": sc.pareto(summ), "by_kind": by_kind, "cost_by_kind": cost_by_kind,
             "buckets": {b: sum(1 for t in scored if bucket(t) == b) for b in sorted({bucket(t) for t in scored})}}
 
 
@@ -187,8 +195,9 @@ def learn_lines(rep: Mapping[str, Any], label: str) -> str:
     if h and c.get("n"):
         lo, hi = c["accuracy_ci95"]
         lines.append(f"  harness {pct(h['accuracy'])} vs reader {pct(r['accuracy'])}: {c['accuracy_gain'] * 100:+.1f} "
-                     f"points (range {lo * 100:+.1f} to {hi * 100:+.1f}); tokens x{c['tokens_ratio']}, time "
-                     f"x{c['seconds_ratio']}, size-weighted tokens x{c['weighted_tokens_ratio']}; VERDICT {c['verdict']}")
+                     f"points (range {lo * 100:+.1f} to {hi * 100:+.1f}); tokens x{c['tokens_ratio']}{ci(c, 'tokens')}, time "
+                     f"x{c['seconds_ratio']}{ci(c, 'seconds')}, size-weighted tokens x{c['weighted_tokens_ratio']}; "
+                     f"VERDICT {c['verdict']}")
     pol = rep["policy"]
     lines.append(f"  policy: default {pol['default']}; by kind of request {json.dumps(pol['buckets'], sort_keys=True)}")
     best = sorted(rep["values"].items(), key=lambda kv: -kv[1])[:5]
@@ -198,7 +207,15 @@ def learn_lines(rep: Mapping[str, Any], label: str) -> str:
     if rep.get("by_kind"):
         lines.append("  by dev kind (reader vs harness): " + "; ".join(
             f"{k} " + " vs ".join(pct(v) for v in d.values()) for k, d in rep["by_kind"].items()))
+    if rep.get("cost_by_kind"):
+        lines.append("  cost by dev kind (reader vs harness, tokens/seconds): " + "; ".join(
+            f"{k} " + " vs ".join(f"{v[0]}/{v[1]}s" for v in d.values()) for k, d in rep["cost_by_kind"].items()))
     return "\n".join(lines)
+
+
+def ci(c: Mapping[str, Any], what: str) -> str:
+    r = c.get(f"{what}_ratio_ci95")
+    return f" (range x{r[0]} to x{r[1]})" if r else ""
 
 
 def tuned_report(tasks: Sequence[Task], key: Mapping[str, str], steps, roster, train: Sequence[str],
@@ -216,12 +233,18 @@ def tuned_report(tasks: Sequence[Task], key: Mapping[str, str], steps, roster, t
 
 def tuned_lines(rep: Mapping[str, Any], train: Sequence[str]) -> str:
     grid = rep["tuning"]["grid"]
-    tried = "; ".join(f"{r['weight']}: {pct(r['accuracy'])}, tokens x{r['tokens_ratio']}, time x{r['seconds_ratio']}"
-                      for r in grid)
+    def row(r: Mapping[str, Any]) -> str:
+        g = r.get("gain_ci95") or [0, 0]
+        return (f"{r['weight']}: {pct(r['accuracy'])} ({(r['gain'] or 0) * 100:+.1f}, range {g[0] * 100:+.1f} to "
+                f"{g[1] * 100:+.1f}), tokens x{r['tokens_ratio']}{ci(r, 'tokens')}, time x{r['seconds_ratio']}"
+                f"{ci(r, 'seconds')}")
+    why = next((r["why"] for r in grid if r.get("picked")), None)
     lines = [f"cost-tuned: the cost weight was picked by 5-fold on {'+'.join(train)} only (the test set unseen); "
-             f"picked {rep['tuning']['picked']}", f"  tried on the training sets: {tried}"]
+             f"picked {rep['tuning']['picked']}" + (f" ({why})" if why else ""),
+             "  tried on the training sets (points vs reader):"] + [f"    {row(r)}" for r in grid]
     full = learn_lines(rep, "cost-tuned").splitlines()
     lines += [x for x in full[1:3]]          # the harness-vs-reader line and the policy
+    lines += [x for x in full if x.startswith(("  by dev kind", "  cost by dev kind"))]
     return "\n".join(lines)
 
 

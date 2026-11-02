@@ -8,6 +8,7 @@ import importlib.util
 import json
 import random
 import sys
+from collections import Counter
 from pathlib import Path
 
 import pytest
@@ -757,5 +758,41 @@ def test_tune_picks_a_cost_weight_on_training_questions_that_is_cheaper_on_both(
     assert w.tokens > 0.02 and w.tokens == w.seconds
     picked = next(r for r in rows if r["weight"] == w.tokens)
     assert picked["tokens_ratio"] < 1 and picked["seconds_ratio"] < 1
+    assert picked["why"] and picked["tokens_ratio_ci95"][1] < 1 and picked["seconds_ratio_ci95"][1] < 1
     assert all(r["accuracy"] <= picked["accuracy"] for r in rows if (r["tokens_ratio"] or 9) < 1
                and (r["seconds_ratio"] or 9) < 1)
+
+
+def test_ratio_ranges_tell_a_sure_saving_from_a_lucky_one():
+    tasks, _ = dev(seed=5, per_task=10)
+    base = [sc.Outcome(t.id, t.kind, bucket(t), "reader", "A", 1.0, 100, 100.0, 10.0, 0.0, 1) for t in tasks]
+    sure = [sc.Outcome(t.id, t.kind, bucket(t), "x", "A", 1.0, 60 + j % 3, 60.0, 4.0, 0.0, 1)
+            for j, t in enumerate(tasks)]
+    lucky = [sc.Outcome(t.id, t.kind, bucket(t), "y", "A", 1.0, 40 if j % 2 else 158, 99.0, 3.0 if j % 2 else 16.8,
+                        0.0, 1) for j, t in enumerate(tasks)]
+    a, b = sc.compare(sure, base), sc.compare(lucky, base)
+    assert a["tokens_ratio_ci95"][1] < 1 and a["seconds_ratio_ci95"][1] < 1
+    assert b["tokens_ratio"] < 1 and b["tokens_ratio_ci95"][0] < 1 < b["tokens_ratio_ci95"][1]
+    assert "tokens_ratio_ci95" not in sc.compare(sure, base, ranges=False)
+
+
+def test_tune_does_not_trust_a_saving_that_is_just_under_the_reader():
+    """The first tuned Mac run picked a weight at tokens x0.99 on training that came out x1.025 on the test set. A
+    saving inside the noise must not count as cheaper."""
+    tasks, _ = dev(seed=4, per_task=20)
+    sizes = Counter(bucket(t) for t in tasks)
+    target = max(sorted(sizes), key=lambda b: sizes[b])
+    table = {"reader": {}, "noisy": {}}
+    for j, t in enumerate(tasks):
+        b = bucket(t)
+        table["reader"][t.id] = sc.Outcome(t.id, t.kind, b, "reader", "A", 1.0 if j % 5 else 0.0, 100, 100.0,
+                                           10.0, 0.0, 1)
+        # better on one kind, and on average a hair cheaper, but up and down a lot from question to question
+        good = b == target
+        table["noisy"][t.id] = sc.Outcome(t.id, t.kind, b, "noisy", "A", 1.0 if good else 0.0,
+                                          40 if j % 2 else 158, 99.0, 3.0 if j % 2 else 16.8, 0.0, 1)
+    w, rows = ln.tune(table, tasks, k=4)
+    light = rows[0]
+    assert light["tokens_ratio"] < 1 and light["seconds_ratio"] < 1      # the old rule would have taken this
+    assert light["tokens_ratio_ci95"][1] >= 1
+    assert w.tokens == 0.02 and light["picked"] and light["why"].startswith("no weight was surely cheaper")

@@ -168,7 +168,14 @@ def k_fold(table: Table, tasks: Sequence[Task], k: int = 5, seed: int = 20261102
     return out
 
 
-COST_GRID = (0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0)
+COST_GRID = (0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 1.0)
+
+
+def _sure_cheaper(r: Mapping[str, Any]) -> bool:
+    """Cheaper on tokens and on time with confidence: the whole 95% range of each ratio under 1. A ratio just under
+    1 on the training questions can land just over 1 on new ones (the first tuned run picked x0.99 on training and
+    got x1.025 on the test set)."""
+    return all((r.get(f) or [9, 9])[1] < 1 for f in ("tokens_ratio_ci95", "seconds_ratio_ci95"))
 
 
 def tune(table: Table, train: Sequence[Task], grid: Sequence[float] = COST_GRID, k: int = 5, baseline: str = "reader",
@@ -176,9 +183,16 @@ def tune(table: Table, train: Sequence[Task], grid: Sequence[float] = COST_GRID,
     """Pick how hard to push on cost, using the training questions only.
 
     For each weight in ``grid`` (applied to tokens and to time alike), route every training question by k-fold, so
-    each is routed by a policy that never saw it, and compare with ``baseline`` on those same questions. Pick the
-    weight that is cheaper than the baseline on both tokens and time with the best accuracy; if none is cheaper on
-    both, keep the lightest weight. The test questions are never looked at, so the score on them stays honest."""
+    each is routed by a policy that never saw it, and compare with ``baseline`` on those same questions. Then pick,
+    in this order:
+
+    1. the most accurate weight that beats the baseline on all three with confidence: the accuracy gap's 95% range
+       above 0 and the tokens and time ratios' 95% ranges under 1;
+    2. else the most accurate weight that is cheaper on both with confidence and not surely less accurate (its
+       accuracy range reaches above 0);
+    3. else the lightest weight (accuracy first).
+
+    The test questions are never looked at, so the score on them stays honest."""
     names, keep = common(table, train)
     base = {t.id: table[baseline][t.id] for t in keep}
     rows: List[Dict[str, Any]] = []
@@ -188,7 +202,20 @@ def tune(table: Table, train: Sequence[Task], grid: Sequence[float] = COST_GRID,
         cmp = compare(routed, list(base.values()))
         acc = sum(o.right for o in routed if o.right is not None) / max(1, len(routed))
         rows.append({"weight": c, "accuracy": round(acc, 4), "gain": cmp.get("accuracy_gain"),
-                     "tokens_ratio": cmp.get("tokens_ratio"), "seconds_ratio": cmp.get("seconds_ratio")})
-    cheaper = [r for r in rows if (r["tokens_ratio"] or 9) < 1 and (r["seconds_ratio"] or 9) < 1]
-    pick = max(cheaper, key=lambda r: (r["accuracy"], -r["weight"])) if cheaper else rows[0]
+                     "gain_ci95": cmp.get("accuracy_ci95"), "tokens_ratio": cmp.get("tokens_ratio"),
+                     "seconds_ratio": cmp.get("seconds_ratio"), "tokens_ratio_ci95": cmp.get("tokens_ratio_ci95"),
+                     "seconds_ratio_ci95": cmp.get("seconds_ratio_ci95")})
+    def best(rs: List[Dict[str, Any]]) -> Dict[str, Any]:
+        return max(rs, key=lambda r: (r["accuracy"], -r["weight"]))
+    wins = [r for r in rows if _sure_cheaper(r) and (r["gain_ci95"] or [0, 0])[0] > 0]
+    ties = [r for r in rows if _sure_cheaper(r) and (r["gain_ci95"] or [-1, -1])[1] > 0]
+    if wins:
+        pick, why = best(wins), "beats the reader on all three with confidence"
+    elif ties:
+        pick, why = best(ties), "cheaper on both with confidence, not surely less accurate"
+    else:
+        pick, why = rows[0], "no weight was surely cheaper on both, so accuracy first"
+    for r in rows:
+        r["picked"] = r is pick
+        r["why"] = why if r is pick else None
     return Weights(tokens=pick["weight"], seconds=pick["weight"], usd=usd), rows

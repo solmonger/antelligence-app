@@ -227,8 +227,50 @@ average tokens a call by tool: ant0 525, ant1 531, ant2 571, ant3 533, ant4 589,
 The learner weighs accuracy against cost with a small fixed weight (0.02), so it nearly always prefers accuracy. It
 now also tries a range of cost weights (0.02 to 1.0), each judged by 5-fold on the training sets only, and keeps the
 one that is cheaper than the reader on both tokens and time with the best accuracy. If none is cheaper on both, it
-keeps 0.02. The test set is scored once, with the weight it picked, so the result stays honest. `mac` prints this as
+keeps 0.02 (tightened later; see "Tuner that only trusts savings that hold up"). The test set is scored once, with
+the weight it picked, so the result stays honest. `mac` prints this as
 an extra "cost-tuned" part after the usual one.
+
+## First cost-tuned rescore (same day)
+
+The tuner kept 0.02, the same policy as before, so nothing changed on the test set: still +6.9 points but tokens
+x1.025. On the training sets 0.02 looked cheaper (tokens x0.99), and the rule took that at face value. A saving of 1%
+on 320 questions is inside the noise, and on new questions it came out 2.5% dearer.
+
+The training rows show where the real trade is. At 0.05 the harness gives up about one point on the training sets
+(84.4% against 85.3%) for 14% fewer tokens and 60% less time. Past 0.1 it starts losing to the reader on accuracy.
+
+```
+import: set1 160q 100.0% priced 9 loads, 86 blank answers read from their saved reply, 93 cut-off replies billed at their limit; set2 160q 100.0% priced 8 loads, 86 blank answers read from their saved reply, 80 cut-off replies billed at their limit; set3 160q 100.0% priced 10 loads, 84 blank answers read from their saved reply, 91 cut-off replies billed at their limit
+saved night-run answers: learned on set1+set2 (320), scored on set3 (160); 26 recipes compared
+  harness 89.4% vs reader 82.5%: +6.9 points (range +3.1 to +10.6); tokens x1.025, time x0.844, size-weighted tokens x0.839; VERDICT more accurate, but not cheaper on both tokens and time
+  policy: default reader; by kind of request {"rules+categorical:must": "dm:jev:dm1"}
+  top recipes by value: dm:jev:dm1 80.6%, 500 tok, 0.2s; reader 82.5%, 588 tok, 20.0s; seq:alone:m4>reader 87.5%, 2281 tok, 24.7s; seq:alone:m3>reader 84.4%, 2261 tok, 22.2s; dm:d1-3b:dm1 68.1%, 194 tok, 0.1s
+  on the accuracy/tokens/time frontier: harness, reader, dm:jev:dm1, dm:d1-3b:dm1
+  by dev kind (reader vs harness): arith 97.5% vs 97.5%; assign 72.5% vs 72.5%; order 87.5% vs 87.5%; syllogism 72.5% vs 100.0%
+cost-tuned: the cost weight was picked by 5-fold on set1+set2 only (the test set unseen); picked 0.02
+  tried on the training sets: 0.02: 85.3%, tokens x0.99, time x0.723; 0.05: 84.4%, tokens x0.861, time x0.401; 0.1: 82.2%, tokens x0.704, time x0.16; 0.2: 80.0%, tokens x0.647, time x0.16; 0.3: 76.6%, tokens x0.508, time x0.145; 0.5: 72.2%, tokens x0.435, time x0.12; 1.0: 57.8%, tokens x0.324, time x0.005
+  harness 89.4% vs reader 82.5%: +6.9 points (range +3.1 to +10.6); tokens x1.025, time x0.844, size-weighted tokens x0.839; VERDICT more accurate, but not cheaper on both tokens and time
+  policy: default reader; by kind of request {"rules+categorical:must": "dm:jev:dm1"}
+DEV NUMBERS ONLY: code-made puzzles and saved dev answers, not the final test. They prove nothing yet.
+```
+
+## Tuner that only trusts savings that hold up
+
+What changed (commit after 41f20a0):
+
+* The scorecard now gives a 95% range for the tokens and time ratios too, by resampling questions in pairs, the same
+  way the accuracy gap gets its range.
+* The tuner picks, in this order: the most accurate weight that beats the reader on all three *with confidence*
+  (accuracy range above 0, tokens and time ranges under 1); else the most accurate weight that is surely cheaper on
+  both and not surely less accurate; else 0.02. A ratio of x0.99 whose range reaches past 1 no longer counts.
+* The grid is finer between 0.02 and 0.2 (0.02, 0.03, 0.05, 0.07, 0.1, 0.15, 0.2, 0.3, 0.5, 1.0).
+* The block prints each weight's gain and ranges, why the weight was picked, and tokens and seconds per dev kind for
+  the reader and the harness, so we can see where the tokens go.
+
+An honest caveat: this rule was changed after seeing set 3's first tuned result. The rule itself uses no set 3
+numbers, but set 3 has now been looked at twice, so it is a weaker check than a fresh set. That is fine for dev
+work. It is exactly why the real test set stays hidden until last.
 
 ## The first result block
 

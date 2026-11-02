@@ -18,10 +18,11 @@ for the accuracy gap. The verdict "beats it on all three" needs all of:
 from __future__ import annotations
 
 import json
+import random
 import statistics as st
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 from antelligence.experiments import fair_test as ft
 from antelligence.harness.core import Step, Task, bucket
@@ -98,7 +99,28 @@ def totals(outs: Sequence[Outcome]) -> Dict[str, Any]:
             "calls": round(_mean(o.calls for o in outs), 2)}
 
 
-def compare(outs: Sequence[Outcome], base: Sequence[Outcome]) -> Dict[str, Any]:
+def ratio_ranges(pairs: Sequence[Tuple[Outcome, Outcome]], reps: int = 2000, seed: int = 20261102
+                 ) -> Dict[str, List[float]]:
+    """95% bootstrap ranges for the tokens and time ratios (ours over the baseline's), resampling questions in
+    pairs. A ratio whose whole range sits under 1 is cheaper with confidence, not just on this draw of questions."""
+    rng = random.Random(seed)
+    n = len(pairs)
+    tok: List[float] = []
+    sec: List[float] = []
+    for _ in range(reps):
+        idx = [rng.randrange(n) for _ in range(n)]
+        tb, tp = sum(pairs[i][1].tokens for i in idx), sum(pairs[i][0].tokens for i in idx)
+        sb, sp = sum(pairs[i][1].seconds for i in idx), sum(pairs[i][0].seconds for i in idx)
+        tok.append(tp / tb if tb else 1.0)
+        sec.append(sp / sb if sb else 1.0)
+    tok.sort()
+    sec.sort()
+    lo, hi = int(0.025 * reps), int(0.975 * reps) - 1
+    return {"tokens_ratio_ci95": [round(tok[lo], 3), round(tok[hi], 3)],
+            "seconds_ratio_ci95": [round(sec[lo], 3), round(sec[hi], 3)]}
+
+
+def compare(outs: Sequence[Outcome], base: Sequence[Outcome], ranges: bool = True) -> Dict[str, Any]:
     """Paired comparison on the tasks both have."""
     b = {o.task: o for o in base}
     pairs = [(o, b[o.task]) for o in outs if o.task in b and o.right is not None and b[o.task].right is not None]
@@ -111,7 +133,8 @@ def compare(outs: Sequence[Outcome], base: Sequence[Outcome]) -> Dict[str, Any]:
     return {"n": len(pairs), "accuracy_gain": round(gain, 4), "accuracy_ci95": [round(lo, 4), round(hi, 4)],
             "tokens_ratio": round(tp / tb, 3) if tb else None, "seconds_ratio": round(sp / sb, 3) if sb else None,
             "weighted_tokens_ratio": round(wp / wb, 3) if wb else None,
-            "verdict": verdict(lo, hi, tp / tb if tb else 1.0, sp / sb if sb else 1.0)}
+            "verdict": verdict(lo, hi, tp / tb if tb else 1.0, sp / sb if sb else 1.0),
+            **(ratio_ranges(pairs) if ranges else {})}
 
 
 def verdict(lo: float, hi: float, tokens_ratio: float, seconds_ratio: float) -> str:
