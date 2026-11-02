@@ -112,9 +112,13 @@ class Seq(Recipe):
             if not self.escalate and m > left:
                 return vote(answers)                 # the rest can't change the leader
         if self.escalate:
-            up = (await ctx.call(self.escalate)).answer
-            if up is not None:
-                return up
+            got = await ctx.call(self.escalate)
+            if got.answer is not None:
+                return got.answer
+            if got.passes:                           # the code checker narrowed it down: vote inside that
+                inside = [x for x in answers if x in got.passes]
+                if inside:
+                    return vote(inside)
         return vote(answers)
 
 

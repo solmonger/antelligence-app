@@ -24,7 +24,7 @@ from antelligence.experiments import fair_test as ft
 from antelligence.experiments import shared_read as sr
 from antelligence.harness.core import Step, Task
 from antelligence.harness.resilience import read_text
-from antelligence.harness.tools import ARMS, AntInfo, ant_tool
+from antelligence.harness.tools import ARMS, AntInfo, ant_tool, read_answer
 
 LOAD_FACTOR = 10.0          # a call this many times slower than its model's median is treated as a model load
 LOAD_MIN_S = 30.0
@@ -110,6 +110,7 @@ def import_run(run: Path, cfg: sr.Config, prefix: str) -> Tuple[List[Task], Dict
     cache = _cache(run / "cache.jsonl")
     pairs, roster = roster_of(run, cfg)
     pricer = _Pricer()
+    reparsed = 0
     tasks: List[Task] = []
     reader = cfg.reader
     for qid, raw in raws.items():
@@ -125,8 +126,19 @@ def import_run(run: Path, cfg: sr.Config, prefix: str) -> Tuple[List[Task], Dict
         def look(req) -> Optional[Dict[str, Any]]:
             return cache.get(req.request_hash)
 
+        def answer(recorded: Optional[str], row: Optional[Mapping[str, Any]]) -> Optional[str]:
+            """The run's own answer; when it had none, the harness's reader of the same saved reply (it maps an
+            answer given as the option's text, like "15", to that option's letter)."""
+            nonlocal reparsed
+            if recorded is not None or not row or row.get("error") not in (None, "Unusable"):
+                return recorded
+            got = read_answer(row.get("content") or "", task, cfg.parser)
+            reparsed += got is not None
+            return got
+
         req = sr.make_request(reader, sr.reader_answer_messages(item, reader), qid, "reader", 0, ft.MAX_TOKENS)
-        pricer.add(tid, "reader", f"{reader.tag}:reader", look(req), {"answer": r.get("reader"), "weight": reader.gb})
+        pricer.add(tid, "reader", f"{reader.tag}:reader", look(req),
+                   {"answer": answer(r.get("reader"), look(req)), "weight": reader.gb})
         req = sr.make_request(reader, sr.notes_messages(item, reader), qid, "notes", 0, sr.READER_MAX_TOKENS)
         pricer.add(tid, "notes", f"{reader.tag}:notes", look(req),
                    {"answer": None, "weight": reader.gb, "payload": {"notes": notes, "leak": bool(r.get("leak"))}})
@@ -138,12 +150,14 @@ def import_run(run: Path, cfg: sr.Config, prefix: str) -> Tuple[List[Task], Dict
                 req = sr.make_request(spec, sr.ant_messages(item, arm, lens, spec, notes or None), qid,
                                       f"{arm}:{spec.tag}", lens, sr.ANT_MAX_TOKENS)
                 pricer.add(tid, ant_tool(col, arm), f"{spec.tag}:{arm}", look(req),
-                           {"answer": answers[col] if col < len(answers) else None, "weight": spec.gb})
+                           {"answer": answer(answers[col] if col < len(answers) else None, look(req)),
+                            "weight": spec.gb})
     dm_report = _import_dms(run, raws, rows, prefix, pricer)
     steps = pricer.steps()
     total = pricer.found + pricer.missing
     report = {"run": str(run), "set": prefix, "tasks": len(tasks), "steps": total,
               "priced": round(pricer.found / total, 4) if total else 0.0, "load_outliers": pricer.loads,
+              "reparsed": reparsed,
               "roster": [[a.tag, a.lens] for a in roster], "decision_models": dm_report}
     return tasks, key, steps, roster, report
 

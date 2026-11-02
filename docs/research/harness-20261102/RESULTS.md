@@ -44,7 +44,76 @@ of this repo, so nothing here proves the harness works.
 
 The real test set still comes last.
 
-## The block
+## Diagnose (same day)
+
+Eshaan ran `DIAGNOSE_PROMPT.md` (no model calls). What it showed, in plain words:
+
+- **Most failures were replies that ran out of room.** The reader model (Gemma 12B) hit its length limit 25 times,
+  mostly while writing code-checker programs. The provider then threw the whole reply away, so the checker saw nothing
+  and said "did not come back as a program". That, not bad logic, is why 8 of 12 puzzles didn't settle. (The replay
+  says "a try was missing" because a thrown-away reply was never saved.) Granite ran out of room 4 times. Those calls
+  were not billed either, so the token counts were a little low.
+- **The smallest ant (LFM2.5 1.2B) gave the answer as the option's value instead of its letter** 13 times, like
+  `"answer": "15"` when an option reads 15. Those were thrown away as blank.
+- **A few replies refused to pick**: "None" or "None of the above" (Gemma E2B twice, Gemma 12B once).
+- Blanks were mostly on word problems (12 of 75) and assignment puzzles (8 of 75).
+
+```
+HARNESS DIAGNOSE (paste this back to Claude in Duet)
+saved calls: 346, failed: 47
+failed replies by model:
+  LiquidAI/LFM2.5-1.2B-Instruct-MLX-4bit: 13 of 72; Unusable (stop stop) x13; reply length up to 45 tokens
+    e.g. ...{"reason": "Calculate combined rates and solve step by step.", "answer": "15"}
+    e.g. ...{"reason": "Calculate total salt step by step, then compute the percentage.", "answer": "35"}
+  ibm-granite/granite-4.2-3b-q4-mlx: 4 of 72; ProviderTruncated (stop -) x4
+    e.g. ...generation did not finish normally (length)
+    e.g. ...generation did not finish normally (length)
+  mlx-community/Qwen3.5-4B-MLX-4bit: 1 of 72; Unusable (stop stop) x1; reply length up to 242 tokens
+    e.g. ...g. D: PJ wrong. E: PJ wrong. Only A has PJ. Check A: V(3), T(4) ok. R(6), L(5) ok. V/R not adj ok. All good."}
+  mlx-community/gemma-4-12B-it-4bit: 27 of 58; ProviderTruncated (stop -) x25, Unusable (stop stop) x2; reply length up to 132 tokens
+    e.g. ...generation did not finish normally (length)
+    e.g. ...anes' is a subset of that. However, none of the options A-E follow logically.", "answer": "None of the above"}
+  mlx-community/gemma-4-e2b-it-4bit: 2 of 72; Unusable (stop stop) x2; reply length up to 59 tokens
+    e.g. ... Tuesday, and Pell does not wear Grey. This limits Pell's day and color possibilities.", "answer": "None"} ```
+    e.g. ...ell cannot be on Thursday or Tuesday, and Quinn/Lio/Jory have sequential constraints.", "answer": "None" } ```
+blank answers by tool (of 12 puzzles): ant0:notes 1, ant1:notes 1, ant2:notes 1, ant4:both 1, ant5:both 2, ant5:notes 1, ant6:alone 3, ant6:both 2, ant6:notes 2, ant7:alone 1, ant7:both 3, ant7:notes 2, reader 2
+blank answers by kind: arith 12/75; assign 8/75; order 1/75; syllogism 1/75
+code checker, try by try (replayed from the saved programs):
+  order (answer C): right; did not come back as a program in a ```python block | settled on C (a try was missing from the saved calls)
+  assign (answer E): unsettled; did not come back as a program in a ```python block | did not come back as a program in a ```python block | did not come back as a program in a ```python block (a try was missing from the saved calls)
+  arith (answer A): right; did not come back as a program in a ```python block | settled on A (a try was missing from the saved calls)
+  syllogism (answer A): unsettled; did not come back as a program in a ```python block | did not come back as a program in a ```python block | did not come back as a program in a ```python block (a try was missing from the saved calls)
+  order (answer A): unsettled; did not come back as a program in a ```python block | did not come back as a program in a ```python block | did not come back as a program in a ```python block (a try was missing from the saved calls)
+  assign (answer E): unsettled; did not come back as a program in a ```python block | did not come back as a program in a ```python block | did not come back as a program in a ```python block (a try was missing from the saved calls)
+  arith (answer C): unsettled; did not come back as a program in a ```python block | marked 0 options as correct (none), but exactly one option is correct, so a rule or the question's ask is coded wrong | marked 0 options as correct (none), but exactly one option is correct, so a rule or the question's ask is coded wrong (a try was missing from the saved calls)
+  syllogism (answer B): right; settled on B
+  order (answer A): unsettled; did not come back as a program in a ```python block | did not come back as a program in a ```python block | did not come back as a program in a ```python block (a try was missing from the saved calls)
+  assign (answer C): unsettled; did not come back as a program in a ```python block | did not come back as a program in a ```python block | did not come back as a program in a ```python block (a try was missing from the saved calls)
+  arith (answer C): right; settled on C
+  syllogism (answer D): unsettled; did not come back as a program in a ```python block | did not come back as a program in a ```python block | did not come back as a program in a ```python block (a try was missing from the saved calls)
+average tokens a call by tool: ant0 508, ant1 514, ant2 548, ant3 533, ant4 506, ant5 545, ant6 453, ant7 455, code 995, notes 582, reader 419
+```
+
+## Fixes (same day, on PR 27)
+
+1. A reply that runs out of room now comes back with its text, is billed, and is marked "cut off", instead of being
+   thrown away.
+2. When an answer names no option (cut off, "None", or the wrong form), the harness asks once more, briefly: pick
+   exactly one, reply with just the letter (30 tokens at most). Both calls are billed.
+3. An answer given as an option's text or number ("15" for "15 hours") counts as that option's letter, but only when
+   exactly one option matches. "None of the above" and a number two options share stay blank. The same reading is used
+   on the saved night-run replies, for free.
+4. The code checker's ask is shorter and clearer: under 60 lines, no comments, a three-step shape (list every case,
+   keep the ones that fit the rules, test each option the way the question asks), and fractions instead of decimals
+   for numbers. When a program is cut off, the next try is told to write a much shorter one.
+5. When the code checker narrows a puzzle down to a few options without settling it, the ants' vote is taken among
+   those options only.
+6. Diagnose now shows cut-off replies as cut off.
+
+Check: `CHECK_PROMPT.md` reruns the same 12 puzzles (seed 258388501). It reuses every saved call that still fits and
+only asks again where a fix changes the call.
+
+## The first result block
 
 ```
 HARNESS RESULT (paste this back to Claude in Duet)

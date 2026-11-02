@@ -113,7 +113,8 @@ def cmd_import(a: argparse.Namespace) -> int:
     save_bundle(a.out, tasks, key, steps, roster, {"source": "import", "sets": reports})
     for r in reports:
         print(f"{r['set']}: {r['tasks']} questions, {r['steps']} steps, {r['priced']:.1%} priced from the caches, "
-              f"{r['load_outliers']} load-time outliers; decision models {r['decision_models']}")
+              f"{r['load_outliers']} load-time outliers, {r.get('reparsed', 0)} blank answers read from their "
+              f"saved reply; decision models {r['decision_models']}")
     return 0
 
 
@@ -294,8 +295,10 @@ def cmd_run(a: argparse.Namespace) -> int:
 def openai_provider(a: argparse.Namespace) -> Any:
     from antelligence.providers.openai_compat import OpenAICompatProvider
 
+    # require_stop=False: a reply cut off at the length limit comes back with its text (finish reason "length")
+    # instead of as an error with nothing in it, so the harness can see it, bill it and re-ask for the letter
     return OpenAICompatProvider(a.base_url, timeout_s=a.timeout, max_concurrency=a.concurrency,
-                                require_model_match=False)
+                                require_model_match=False, require_stop=False)
 
 
 def fake_provider(tasks: Sequence[Task], key: Mapping[str, str], cfg: sr.Config) -> Any:
@@ -388,7 +391,8 @@ def cmd_mac(a: argparse.Namespace) -> int:
         tasks, key, steps, roster, reports = import_sets(sets, cfg)
         save_bundle(a.out / "saved", tasks, key, steps, roster, {"source": "import", "sets": reports})
         blocks.append("import: " + "; ".join(f"{r['set']} {r['tasks']}q {r['priced']:.1%} priced "
-                                             f"{r['load_outliers']} loads" for r in reports))
+                                             f"{r['load_outliers']} loads, {r.get('reparsed', 0)} blank answers read from their saved "
+                                             f"reply" for r in reports))
         names = sorted(sets)
         train, test = (names[:-1], names[-1:]) if len(names) > 1 else ((), ())
         rep = learn_report(tasks, key, steps, roster, train=train, test=test, folds=5)
@@ -449,9 +453,12 @@ def smoke(a: argparse.Namespace) -> List[str]:
         settled = [c for c, t in zip(code, tasks) if c.answer is not None]
         right = sum(1 for t in tasks if "code" in steps[t.id] and steps[t.id]["code"].answer == key[t.id])
         calls = sum(s.calls for per in steps.values() for s in per.values())
+        asked = sum(1 for per in steps.values() for s in per.values() if "re-ask" in (s.note or ""))
+        fixed = sum(1 for per in steps.values() for s in per.values() if "fixed by a short re-ask" in (s.note or ""))
         lines.append(f"smoke sweep: {len(tasks)} new dev puzzles (seed {seed}), {len(sweep_tools(box))} tools, "
                      f"{calls} calls in {secs / 60:.1f} min wall; {loads} load-time outliers counted at the median; {box.runner.failed} unusable "
-                     f"replies; code checker settled {len(settled)}/{len(code)}, right on {right}")
+                     f"replies; {fixed}/{asked} blank answers fixed by a short re-ask; code checker settled "
+                     f"{len(settled)}/{len(code)}, right on {right}")
         rep = learn_report(tasks, key, steps, box.roster, folds=min(4, max(2, len(tasks) // 4)))
         (out / "learn.json").write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n")
         lines.append(learn_lines(rep, "smoke (tiny, k-fold)"))
@@ -474,12 +481,23 @@ def smoke(a: argparse.Namespace) -> List[str]:
 # --------------------------------------------------------------------- diagnose
 
 class _SavedOnly:
-    """A provider for replays: every call must already be in the saved call log."""
+    """A provider for replays: a call the run saved as failed fails the same way again; any other call that isn't
+    in the saved log fails and is counted in ``missing``."""
+
+    def __init__(self, rows: Sequence[Mapping[str, Any]] = ()) -> None:
+        self.failed = {r["request_hash"]: r for r in rows if r.get("error") and r.get("request_hash")}
+        self.missing = 0
 
     async def complete(self, request: ChatRequest) -> Any:
-        from antelligence.providers.base import ProviderError
+        from antelligence.providers.base import ProviderError, ProviderTruncated
 
-        raise ProviderError("not in the saved calls")
+        row = self.failed.get(request.request_hash)
+        if row is None:
+            self.missing += 1
+            raise ProviderError("not in the saved calls")
+        if row["error"] == "ProviderTruncated":
+            raise ProviderTruncated(row.get("reason") or "generation did not finish normally (length)")
+        raise ProviderError(row.get("reason") or row["error"])
 
     def describe(self) -> Dict[str, Any]:
         return {"provider": "saved calls only"}
@@ -499,7 +517,13 @@ def diagnose(run: Path, models: Path) -> List[str]:
     names = {cfg.reader.tag: "reader"}
     for info in roster:
         names.setdefault(info.tag, f"ant{info.index}")
-    rows = [json.loads(line) for line in (d / "cache.jsonl").read_text().splitlines() if line.strip()]
+    every = [json.loads(line) for line in (d / "cache.jsonl").read_text().splitlines() if line.strip()]
+    latest: Dict[str, Dict[str, Any]] = {}       # one row per call: a usable reply wins, else the newest try
+    for r in every:
+        h = r.get("request_hash") or str(id(r))
+        if not r.get("error") or h not in latest or latest[h].get("error"):
+            latest[h] = r
+    rows = list(latest.values())
     lines = ["HARNESS DIAGNOSE (paste this back to Claude in Duet)",
              f"saved calls: {len(rows)}, failed: {sum(1 for r in rows if r.get('error'))}"]
 
@@ -534,21 +558,26 @@ def diagnose(run: Path, models: Path) -> List[str]:
 
     tmp = Path(tempfile.mkdtemp(prefix="harness-diag-")) / "cache.jsonl"
     shutil.copyfile(d / "cache.jsonl", tmp)
-    runner = sr.Runner(_SavedOnly(), tmp, check_names=False, max_fail_streak=10 ** 6)
+    saved = _SavedOnly(every)
+    runner = sr.Runner(saved, tmp, check_names=False, max_fail_streak=10 ** 6)
     box = LiveBox(runner, cfg.reader, cfg.ants, parser=cfg.parser, code=True,
                   patience=Patience(waits=()))
     lines.append("code checker, try by try (replayed from the saved programs):")
     for t in tasks:
         if "code" not in steps.get(t.id, {}):
             continue
-        before = runner.calls
+        before = saved.missing
         step = asyncio.run(box._code(t))
-        gone = " (a try was missing from the saved calls)" if runner.calls > before else ""
+        gone = " (a try was missing from the saved calls)" if saved.missing > before else ""
         mark = "right" if step.answer == key.get(t.id) else ("wrong" if step.answer else "unsettled")
         tries = " | ".join(p[:120] for p in box.code_trace.get(t.id, []))
         lines.append(f"  {t.kind} (answer {key.get(t.id)}): {mark}; {tries}{gone}")
     shutil.rmtree(tmp.parent, ignore_errors=True)
 
+    notes = Counter(s.note.split(";")[-1].strip() for per in steps.values() for s in per.values()
+                    if "re-ask" in (s.note or ""))
+    if notes:
+        lines.append("short re-asks for the letter: " + ", ".join(f"{k} x{n}" for k, n in notes.most_common()))
     tok: Dict[str, List[int]] = {}
     for per in steps.values():
         for name, s in per.items():

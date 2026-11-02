@@ -550,3 +550,132 @@ def test_trim_loads_counts_model_load_waits_at_the_median():
     assert "load-time outlier" in out["t5"]["reader"].note
     assert out["t6"]["reader"].latency_s == 25.0
     assert steps["t5"]["reader"].latency_s == 95.0   # the input is left alone
+
+
+# ------------------------------------------------------- blank replies (Mac diagnose, Nov 2)
+
+def _opt_task():
+    return Task("q1", "", "How many hours?", ("(A)12 hours", "(B)15 hours", "(C)$1,200", "(D)None of these",
+                                               "(E)3/4"), "arith")
+
+
+def test_read_answer_maps_an_option_text_answer_to_its_letter():
+    from antelligence.harness.tools import read_answer
+
+    t = _opt_task()
+    assert read_answer('{"reason": "x", "answer": "B"}', t) == "B"
+    assert read_answer('{"reason": "rates", "answer": "15"}', t) == "B"          # LFM2.5's habit
+    assert read_answer('{"reason": "x", "answer": "1200"}', t) == "C"
+    assert read_answer('{"reason": "x", "answer": "0.75"}', t) == "E"
+    assert read_answer('{"reason": "x", "answer": "(D)"}', t) == "D"
+    assert read_answer('{"reason": "x", "answer": "None of these"}', t) == "D"   # it is an option here
+    assert read_answer('{"reason": "x", "answer": "None"}', t) is None
+    assert read_answer('{"reason": "x", "answer": "None of the above"}', t) is None
+    assert read_answer('{"reason": "x", "answer": "7"}', t) is None               # no option says 7
+    two = Task("q2", "", "?", ("(A)15 hours", "(B)15 minutes"), "arith")
+    assert read_answer('{"answer": "15"}', two) is None                          # two options share it: no guess
+    assert read_answer("", t) is None
+
+
+class _Scripted:
+    """A provider that answers from a function of the request and keeps every request it saw."""
+
+    def __init__(self, fn):
+        self.fn, self.seen = fn, []
+
+    async def complete(self, req):
+        from antelligence.providers.base import ChatResponse
+
+        self.seen.append(req)
+        content, finish = self.fn(req, len(self.seen))
+        return ChatResponse(content=content, model=req.model, request_hash=req.request_hash, prompt_tokens=100,
+                            completion_tokens=10, finish_reason=finish, elapsed_s=1.0)
+
+    def describe(self):
+        return {"provider": "scripted"}
+
+
+def _scripted_box(tmp_path, fn, **kw):
+    prov = _Scripted(fn)
+    runner = sr.Runner(prov, tmp_path / "c.jsonl", check_names=False, max_fail_streak=10 ** 6)
+    return LiveBox(runner, CFG.reader, CFG.ants, parser=CFG.parser, **kw), prov
+
+
+def test_a_reply_with_no_option_gets_one_short_re_ask_and_both_are_billed(tmp_path):
+    t = _opt_task()
+
+    def fn(req, n):
+        if req.max_tokens == 30:                                 # the re-ask
+            return '{"answer": "B"}', "stop"
+        return '{"reason": "none fit", "answer": "None"}', "stop"
+
+    box, prov = _scripted_box(tmp_path, fn)
+    s = asyncio.run(box.run("ant0:alone", t, {}))
+    assert s.answer == "B" and s.calls == 2 and s.tokens_in == 200 and s.tokens_out == 20
+    assert "fixed by a short re-ask" in s.note
+    ask = prov.seen[-1].messages
+    assert ask[-2]["role"] == "assistant" and "none fit" in ask[-2]["content"]
+    assert "exactly one of the options" in ask[-1]["content"]
+
+    (tmp_path / "off").mkdir()
+    off, prov2 = _scripted_box(tmp_path / "off", fn, repair=False)
+    s = asyncio.run(off.run("ant0:alone", t, {}))
+    assert s.answer is None and s.calls == 1 and len(prov2.seen) == 1
+
+
+def test_a_cut_off_reply_is_billed_and_re_asked(tmp_path):
+    t = _opt_task()
+
+    def fn(req, n):
+        if req.max_tokens == 30:
+            return '{"answer": "A"}', "stop"
+        return '{"reason": "first the rate is 12 per hour, then', "length"
+
+    box, _ = _scripted_box(tmp_path, fn)
+    s = asyncio.run(box.run("reader", t, {}))
+    assert s.answer == "A" and s.calls == 2 and s.note.startswith("cut off")
+
+
+def test_the_code_checker_is_told_to_write_less_when_cut_off(tmp_path):
+    t = _opt_task()
+    good = '```python\nimport json\nprint(json.dumps({"A": False, "B": True, "C": False, "D": False, "E": False}))\n```'
+
+    def fn(req, n):
+        return ("```python\nimport itertools\nfor x in", "length") if n == 1 else (good, "stop")
+
+    box, prov = _scripted_box(tmp_path, fn)
+    s = asyncio.run(box.run("code", t, {}))
+    assert s.answer == "B" and s.calls == 2 and s.tokens_in == 200
+    assert box.code_trace[t.id][0].startswith("cut off")
+    retry = prov.seen[1].messages
+    assert "cut off at the length limit" in retry[-1]["content"] and "under 60 lines" in retry[-1]["content"]
+
+
+def test_seq_votes_inside_what_the_code_checker_narrowed_to():
+    roster = tuple(AntInfo(i, f"m{i}", "f", 0, 1.0) for i in range(3))
+    t = _opt_task()
+    st = lambda tool, a, **kw: Step(tool, a, 1, 1, 1.0, **kw)  # noqa: E731
+    box = ReplayBox({t.id: {"ant0:alone": st("ant0:alone", "C"), "ant1:alone": st("ant1:alone", "A"),
+                            "ant2:alone": st("ant2:alone", "C"),
+                            "code": st("code", None, passes=("A", "B"))}}, roster)
+    seq = Seq("s", ("ant0:alone", "ant1:alone", "ant2:alone", "code"), "alone", 3, "code", 3, (0, 1, 2))
+    assert asyncio.run(seq.run(Ctx(box, t))) == "A"      # C has more votes, but the code ruled C out
+
+
+def test_import_reads_a_blank_answer_from_its_saved_reply(tmp_path):
+    run, tasks, key, steps = _saved_set(tmp_path, 7, "set1")
+    t = tasks[0]
+    item = sr.Item(t.id, t.kind, t.passage, t.stem, t.options)
+    h = sr.make_request(CFG.reader, sr.reader_answer_messages(item, CFG.reader), t.id, "reader", 0,
+                        __import__("antelligence.experiments.fair_test", fromlist=["x"]).MAX_TOKENS).request_hash
+    rows = [json.loads(line) for line in (run / "cache.jsonl").read_text().splitlines()]
+    for r in rows:
+        if r["request_hash"] == h:
+            r.update(content=json.dumps({"reason": "x", "answer": t.option_text(key[t.id])}), error="Unusable")
+    (run / "cache.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    saved = [json.loads(line) for line in (run / "rows.jsonl").read_text().splitlines()]
+    saved[0]["reader"] = None
+    (run / "rows.jsonl").write_text("".join(json.dumps(r) + "\n" for r in saved))
+    _, _, isteps, _, reports = import_sets({"set1": run}, CFG)
+    assert isteps[f"set1:{t.id}"]["reader"].answer == key[t.id]
+    assert reports[0]["reparsed"] == 1

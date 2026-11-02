@@ -25,6 +25,7 @@ import asyncio
 import json
 import re
 from dataclasses import dataclass
+from fractions import Fraction
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Protocol, Sequence, Tuple
 
@@ -83,12 +84,19 @@ class Box(Protocol):
 
 CODE_SYSTEM = "You write short, correct Python programs that check puzzles and questions by trying every case."
 CODE_ASK = (
-    "Write one Python program that decides, for each option, whether that option correctly answers the question as "
-    "asked, given every rule and fact above. Work it out by checking every possible case (for example with "
-    "itertools.permutations), not by guessing. The program must print exactly one line: a JSON object from each "
-    'option letter to true or false, like {"A": false, "B": true, "C": false, "D": false, "E": false}. Use only these '
-    "standard modules: itertools, math, fractions, collections, functools, re, json. No input, files or network. "
-    "Reply with the program in one ```python block and nothing else.")
+    "Write one short Python program (under 60 lines, no comments, no explanation) that decides, for each option, "
+    "whether that option correctly answers the question as asked, given every rule and fact above. Check every "
+    "possible case instead of guessing. A good shape:\n"
+    "1. List every possible case: every arrangement or assignment (itertools.permutations, itertools.product), or, "
+    "for statements about groups (all, some, no), every way the groups can overlap.\n"
+    "2. Keep only the cases where every rule and fact holds.\n"
+    "3. Test each option the way the question asks: 'must be true' means true in every kept case, 'could be true' "
+    "means true in at least one, 'cannot be true' or 'must be false' means true in none. For a number, work it out "
+    "with fractions.Fraction (not float) and compare it with the number in each option.\n"
+    'The program must print exactly one line: a JSON object from each option letter to true or false, like '
+    '{"A": false, "B": true, "C": false, "D": false, "E": false}. Use only these standard modules: itertools, math, '
+    "fractions, collections, functools, re, json. No input, files or network. Reply with the program in one "
+    "```python block and nothing else.")
 CODE_MAX_TOKENS = 2000
 CODE_TEMPERATURE = 0.2
 CODE_RETRIES = 2
@@ -116,6 +124,17 @@ def read_passes(stdout: str, letters: Sequence[str]) -> Optional[Tuple[str, ...]
     return None
 
 
+CODE_CUT = ("was cut off at the length limit before it ended. Write a much shorter program: under 60 lines, no "
+            "comments, no explanation")
+CUT_REPLY = "(my reply ran too long and was cut off)"
+
+
+def cut_off(row: Mapping[str, Any]) -> bool:
+    """Did the model run out of room? (A provider that raises on it leaves an error row; one that doesn't, a reply
+    whose finish reason is 'length'.)"""
+    return row.get("error") == "ProviderTruncated" or row.get("finish_reason") == "length"
+
+
 def code_problem(run: sandbox.Result, passes: Optional[Tuple[str, ...]], code: str) -> str:
     """What to tell the model when its program didn't settle the question ('' when it did)."""
     if not code:
@@ -141,6 +160,71 @@ def code_messages(task: Task, history: Sequence[Tuple[str, str]], spec: sr.Model
     return tuple(msgs)
 
 
+# ---------------------------------------------------------------- answer reading
+
+_ANSWER_VALUE = re.compile(r'"answer"\s*:\s*"?([^"\n}]*)', re.I)
+_NUMBER = re.compile(r"-?\d+(?:\.\d+)?(?:/\d+)?")
+_LETTER_VALUE = re.compile(r"(?:option\s*|choice\s*)?\(?([A-Ea-e])\)?[.)]?", re.I)
+
+
+def _norm(text: str) -> str:
+    return " ".join(re.sub(r"[^\w./%-]+", " ", text.lower()).split()).rstrip(".").strip()
+
+
+def _number(text: str) -> Optional[Fraction]:
+    """The one number in ``text`` (commas and a leading $ allowed), or None when there are none or several."""
+    found = _NUMBER.findall(text.replace(",", ""))
+    if len(found) != 1:
+        return None
+    try:
+        return Fraction(found[0])
+    except (ValueError, ZeroDivisionError):
+        return None
+
+
+def read_answer(text: str, task: Task, parser: int = 2) -> Optional[str]:
+    """The option letter a reply picks, or None. First the shared-read parser (a letter in the asked JSON form);
+    then, when the "answer" value isn't a letter, the one option whose text it matches, word for word or by its
+    number (a small model often answers "15" when option C reads "15 hours"). Never a guess: "None of the above",
+    or a value two options share, stays None."""
+    letter, _ = sr.parse_answer(text or "", parser)
+    if letter in task.letters:
+        return letter
+    values = _ANSWER_VALUE.findall(sr.strip_think(text or ""))
+    if not values:
+        return None
+    value = values[-1].strip().rstrip(".").strip()
+    m = _LETTER_VALUE.fullmatch(value)
+    if m and m.group(1).upper() in task.letters:
+        return m.group(1).upper()
+    if not value:
+        return None
+    hits = [x for x in task.letters if _norm(task.option_text(x)) == _norm(value)]
+    if len(hits) == 1:
+        return hits[0]
+    num = _number(value)
+    if num is not None and len(value) <= 40:
+        hits = [x for x in task.letters if _number(task.option_text(x)) == num]
+        if len(hits) == 1:
+            return hits[0]
+    return None
+
+
+REPAIR_ASK = ("You must choose exactly one of the options: exactly one is correct, even if none looks perfect. Reply "
+              'with only this JSON and nothing else: {{"answer": "<one letter: {letters}>"}}')
+REPAIR_MAX_TOKENS = 30
+
+
+def repair_messages(messages: Sequence[Mapping[str, str]], reply: str, task: Task, spec: sr.ModelSpec
+                    ) -> Tuple[Dict[str, str], ...]:
+    """The original ask, the model's own (possibly cut-off) reply, then one short ask for just the letter."""
+    said = sr.strip_think(reply or "").strip()
+    said = ("..." + said[-1500:]) if len(said) > 1500 else (said or CUT_REPLY)
+    return tuple(dict(m) for m in messages) + (
+        {"role": "assistant", "content": said},
+        {"role": "user", "content": sr._user(spec, REPAIR_ASK.format(letters=", ".join(task.letters)))})
+
+
 # -------------------------------------------------------------------- live box
 
 class LiveBox:
@@ -153,13 +237,15 @@ class LiveBox:
     def __init__(self, runner: sr.Runner, reader: sr.ModelSpec, ants: Sequence[sr.ModelSpec], *,
                  lenses: Sequence[int] = sr.LENS_IDS, parser: int = 2, coder: Optional[sr.ModelSpec] = None,
                  code: bool = True, dms: Optional[Mapping[str, Tuple[dm.DMSpec, dm.DMRunner]]] = None,
-                 patience: Optional[Patience] = None, sandbox_python: Optional[str] = None) -> None:
+                 patience: Optional[Patience] = None, sandbox_python: Optional[str] = None,
+                 repair: bool = True) -> None:
         self.runner, self.reader, self.parser = runner, reader, parser
         self.coder = coder or reader
         self.code_on = code
         self.dms = dict(dms or {})
         self.patience = patience or Patience()
         self.sandbox_python = sandbox_python
+        self.repair = repair                         # one short re-ask for the letter when a reply has none
         self.code_trace: Dict[str, List[str]] = {}   # task id -> what happened on each code try, for diagnose
         self.specs = [s for s, _ in sr.ant_roster(ants, lenses)]
         self.roster = tuple(AntInfo(i, s.tag, s.family, lens, s.gb)
@@ -189,12 +275,9 @@ class LiveBox:
         if not self.has(tool):
             raise Missing(tool)
         item = sr.Item(task.id, task.kind, task.passage, task.stem, task.options)
-        usable = lambda text: sr._usable_answer(text, self.parser)  # noqa: E731
         if tool == "reader":
-            row = await self._ask(f"{task.id} reader", sr.make_request(
-                self.reader, sr.reader_answer_messages(item, self.reader), task.id, "reader", 0, ft.MAX_TOKENS), usable)
-            ti, to, s = self._bill(row)
-            return Step(tool, sr._answer(row, self.parser), ti, to, s, weight=self.reader.gb)
+            return await self._answer(tool, task, self.reader, sr.make_request(
+                self.reader, sr.reader_answer_messages(item, self.reader), task.id, "reader", 0, ft.MAX_TOKENS))
         if tool == "notes":
             row = await self._ask(f"{task.id} notes", sr.make_request(
                 self.reader, sr.notes_messages(item, self.reader), task.id, "notes", 0, sr.READER_MAX_TOKENS),
@@ -211,13 +294,34 @@ class LiveBox:
                 return Step(tool, None, calls=0, weight=spec.gb, note="no notes to read")
             req = sr.make_request(spec, sr.ant_messages(item, arm, info.lens, spec, notes or None), task.id,
                                   f"{arm}:{spec.tag}", info.lens, sr.ANT_MAX_TOKENS)
-            row = await self._ask(f"{task.id} {tool}", req, usable)
-            ti, to, s = self._bill(row)
-            return Step(tool, sr._answer(row, self.parser), ti, to, s, weight=spec.gb)
+            return await self._answer(tool, task, spec, req)
         if tool == "code":
             return await self._code(task)
         _, name, arm = tool.split(":")
         return await self._dm(name, arm, task, ctx)
+
+    async def _answer(self, tool: str, task: Task, spec: sr.ModelSpec, req: ChatRequest) -> Step:
+        """One answer call; when its reply names no option (cut off, "None", the wrong form), one short re-ask for
+        just the letter, with the model's own reply in front of it. Both calls are billed."""
+        usable = lambda text: read_answer(text, task, self.parser) is not None  # noqa: E731
+        row = await self._ask(f"{task.id} {tool}", req, usable)
+        ti, to, s = self._bill(row)
+        content = row.get("content") or ""
+        got = read_answer(content, task, self.parser) if row.get("error") in (None, "Unusable") else None
+        if got is not None or not self.repair:
+            note = "cut off" if got is None and cut_off(row) else ""
+            return Step(tool, got, ti, to, s, weight=spec.gb, note=note)
+        why = "cut off" if cut_off(row) else ("call failed" if row.get("error") not in (None, "Unusable") else
+                                              "no option named")
+        fix = ChatRequest(model=spec.tag, messages=repair_messages(req.messages, content, task, spec),
+                          max_tokens=REPAIR_MAX_TOKENS, temperature=0.0,
+                          seed=sr.seed(task.id, f"repair:{tool}", 0), extra_body=spec.extra_body)
+        row2 = await self._ask(f"{task.id} {tool} re-ask", fix, usable)
+        a, b, c = self._bill(row2)
+        got = read_answer(row2.get("content") or "", task, self.parser) if row2.get("error") in (None, "Unusable") \
+            else None
+        note = f"{why}; {'fixed by' if got else 'still blank after'} a short re-ask for the letter"
+        return Step(tool, got, ti + a, to + b, s + c, calls=2, weight=spec.gb, note=note)
 
     async def _code(self, task: Task) -> Step:
         history: List[Tuple[str, str]] = []
@@ -233,6 +337,16 @@ class LiveBox:
             a, b, s = self._bill(row)
             ti, to, secs = ti + a, to + b, secs + s
             reply = row.get("content") or ""
+            if cut_off(row):
+                self.code_trace.setdefault(task.id, []).append(f"cut off at {CODE_MAX_TOKENS} tokens")
+                history.append((CUT_REPLY, CODE_CUT))
+                problem = CODE_CUT
+                continue
+            if row.get("error") not in (None, "Unusable"):
+                problem = f"did not come back (the call failed: {row.get('error')})"
+                self.code_trace.setdefault(task.id, []).append(problem)
+                history.append((reply or "(no reply came back)", problem))
+                continue
             code = extract_code(reply)
             result = (await asyncio.to_thread(sandbox.run, code, python=self.sandbox_python) if code
                       else sandbox.Result(False, "", "", 0.0))
