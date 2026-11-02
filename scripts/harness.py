@@ -210,7 +210,7 @@ def config(path: Path) -> sr.Config:
 def live_box(a: argparse.Namespace, out: Path, provider: Any, cfg: sr.Config, patience: Patience) -> LiveBox:
     runner = sr.Runner(provider, out / "cache.jsonl", concurrency=a.concurrency, check_names=False,
                        max_fail_streak=10 ** 6)
-    return LiveBox(runner, cfg.reader, cfg.ants, parser=cfg.parser, code=not a.no_code, patience=patience)
+    return LiveBox(runner, cfg.reader, cfg.ants, parser=cfg.parser, code=a.code, patience=patience)
 
 
 def merge_steps(path: Path, new: Mapping[str, Mapping[str, Step]], roster) -> Dict[str, Dict[str, Step]]:
@@ -392,7 +392,8 @@ def cmd_mac(a: argparse.Namespace) -> int:
         save_bundle(a.out / "saved", tasks, key, steps, roster, {"source": "import", "sets": reports})
         blocks.append("import: " + "; ".join(f"{r['set']} {r['tasks']}q {r['priced']:.1%} priced "
                                              f"{r['load_outliers']} loads, {r.get('reparsed', 0)} blank answers read from their saved "
-                                             f"reply" for r in reports))
+                                             f"reply, {r.get('cut_off_billed', 0)} cut-off replies billed at their "
+                                             f"limit" for r in reports))
         names = sorted(sets)
         train, test = (names[:-1], names[-1:]) if len(names) > 1 else ((), ())
         rep = learn_report(tasks, key, steps, roster, train=train, test=test, folds=5)
@@ -453,12 +454,13 @@ def smoke(a: argparse.Namespace) -> List[str]:
         settled = [c for c, t in zip(code, tasks) if c.answer is not None]
         right = sum(1 for t in tasks if "code" in steps[t.id] and steps[t.id]["code"].answer == key[t.id])
         calls = sum(s.calls for per in steps.values() for s in per.values())
-        asked = sum(1 for per in steps.values() for s in per.values() if "re-ask" in (s.note or ""))
-        fixed = sum(1 for per in steps.values() for s in per.values() if "fixed by a short re-ask" in (s.note or ""))
+        asked, fixed = reask_counts(steps)
+        checker = (f"code checker settled {len(settled)}/{len(code)}, right on {right}" if box.code_on
+                   else "code checker benched (--code turns it on)")
         lines.append(f"smoke sweep: {len(tasks)} new dev puzzles (seed {seed}), {len(sweep_tools(box))} tools, "
-                     f"{calls} calls in {secs / 60:.1f} min wall; {loads} load-time outliers counted at the median; {box.runner.failed} unusable "
-                     f"replies; {fixed}/{asked} blank answers fixed by a short re-ask; code checker settled "
-                     f"{len(settled)}/{len(code)}, right on {right}")
+                     f"{calls} calls in {secs / 60:.1f} min wall; {loads} load-time outliers counted at the median; "
+                     f"{box.runner.failed} unusable replies; {fixed}/{asked} blank answers fixed by a short re-ask; "
+                     f"{checker}")
         rep = learn_report(tasks, key, steps, box.roster, folds=min(4, max(2, len(tasks) // 4)))
         (out / "learn.json").write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n")
         lines.append(learn_lines(rep, "smoke (tiny, k-fold)"))
@@ -508,24 +510,58 @@ def _tail(text: str, n: int = 110) -> str:
     return (t[-n:] if len(t) > n else t) or "(empty)"
 
 
+class _Recording(sr.Runner):
+    """A runner that notes every call it is asked for, so a replay knows which saved calls belong to this run."""
+
+    def __init__(self, *args: Any, **kw: Any) -> None:
+        super().__init__(*args, **kw)
+        self.asked: List[str] = []
+
+    async def ask(self, req: ChatRequest, usable: Any) -> Dict[str, Any]:
+        self.asked.append(req.request_hash)
+        return await super().ask(req, usable)
+
+
+def reask_counts(steps: Mapping[str, Mapping[str, Step]]) -> Tuple[int, int]:
+    """(re-asks, fixed): answer steps that needed a short re-ask for the letter, and how many it fixed."""
+    notes = [s.note or "" for per in steps.values() for s in per.values()]
+    return (sum("re-ask" in n for n in notes), sum("fixed by a short re-ask" in n for n in notes))
+
+
 def diagnose(run: Path, models: Path) -> List[str]:
-    """Explain a smoke run from its saved files, with no model calls: which replies failed and why, which tools
-    came back blank, and what each code-checker try ran into (replayed from the saved programs)."""
+    """Explain a smoke run from its saved files, with no model calls. It replays the run's own sweep against its
+    saved call log (so calls left over from an earlier run with other prompts don't count), then says which
+    replies failed and why, which tools came back blank, and what each code-checker try ran into."""
     d = run / "smoke"
     tasks, key, steps, roster, meta = load_bundle(d)
     cfg = sr.load_config(models)
-    names = {cfg.reader.tag: "reader"}
-    for info in roster:
-        names.setdefault(info.tag, f"ant{info.index}")
     every = [json.loads(line) for line in (d / "cache.jsonl").read_text().splitlines() if line.strip()]
     latest: Dict[str, Dict[str, Any]] = {}       # one row per call: a usable reply wins, else the newest try
     for r in every:
         h = r.get("request_hash") or str(id(r))
         if not r.get("error") or h not in latest or latest[h].get("error"):
             latest[h] = r
-    rows = list(latest.values())
+
+    tools = sorted({t for per in steps.values() for t in per})
+    tmp = Path(tempfile.mkdtemp(prefix="harness-diag-")) / "cache.jsonl"
+    shutil.copyfile(d / "cache.jsonl", tmp)
+    saved = _SavedOnly(every)
+    runner = _Recording(saved, tmp, check_names=False, max_fail_streak=10 ** 6)
+    box = LiveBox(runner, cfg.reader, cfg.ants, parser=cfg.parser, code="code" in tools,
+                  patience=Patience(waits=(), log=lambda _m: None))
+    try:
+        replay = asyncio.run(sweep_batch(box, tasks, [t for t in tools if box.has(t)]))
+    finally:
+        shutil.rmtree(tmp.parent, ignore_errors=True)
+    asked = list(dict.fromkeys(runner.asked))
+    rows = [latest[h] for h in asked if h in latest]
+    same = sum(1 for tid, per in steps.items() for t, st in per.items()
+               if t in replay.get(tid, {}) and replay[tid][t].answer == st.answer)
+    total = sum(len(per) for per in steps.values())
     lines = ["HARNESS DIAGNOSE (paste this back to Claude in Duet)",
-             f"saved calls: {len(rows)}, failed: {sum(1 for r in rows if r.get('error'))}"]
+             f"this run's calls: {len(rows)} (of {len(latest)} in the saved log; the rest are from earlier runs), "
+             f"failed: {sum(1 for r in rows if r.get('error'))}; replay matched {same}/{total} saved answers"
+             + (f"; {saved.missing} calls missing from the log" if saved.missing else "")]
 
     per_model: Dict[str, List[Dict[str, Any]]] = {}
     for r in rows:
@@ -546,42 +582,32 @@ def diagnose(run: Path, models: Path) -> List[str]:
     blank = Counter(t for per in steps.values() for t, s in per.items() if s.answer is None and t not in ("code", "notes"))
     lines.append("blank answers by tool (of %d puzzles): " % len(tasks)
                  + (", ".join(f"{t} {n}" for t, n in sorted(blank.items())) or "none"))
-
     by_kind: Dict[str, List[int]] = {}
     for t in tasks:
-        per = steps.get(t.id, {})
-        got = [s for name, s in per.items() if name not in ("code", "notes")]
+        got = [s for name, s in steps.get(t.id, {}).items() if name not in ("code", "notes")]
         by_kind.setdefault(t.kind, [0, 0])
         by_kind[t.kind][0] += sum(1 for s in got if s.answer is None)
         by_kind[t.kind][1] += len(got)
     lines.append("blank answers by kind: " + "; ".join(f"{k} {b}/{n}" for k, (b, n) in sorted(by_kind.items())))
+    asked_n, fixed_n = reask_counts(steps)
+    lines.append(f"short re-asks for the letter: {asked_n}, fixed {fixed_n}, still blank {asked_n - fixed_n}")
 
-    tmp = Path(tempfile.mkdtemp(prefix="harness-diag-")) / "cache.jsonl"
-    shutil.copyfile(d / "cache.jsonl", tmp)
-    saved = _SavedOnly(every)
-    runner = sr.Runner(saved, tmp, check_names=False, max_fail_streak=10 ** 6)
-    box = LiveBox(runner, cfg.reader, cfg.ants, parser=cfg.parser, code=True,
-                  patience=Patience(waits=()))
-    lines.append("code checker, try by try (replayed from the saved programs):")
-    for t in tasks:
-        if "code" not in steps.get(t.id, {}):
-            continue
-        before = saved.missing
-        step = asyncio.run(box._code(t))
-        gone = " (a try was missing from the saved calls)" if saved.missing > before else ""
-        mark = "right" if step.answer == key.get(t.id) else ("wrong" if step.answer else "unsettled")
-        tries = " | ".join(p[:120] for p in box.code_trace.get(t.id, []))
-        lines.append(f"  {t.kind} (answer {key.get(t.id)}): {mark}; {tries}{gone}")
-    shutil.rmtree(tmp.parent, ignore_errors=True)
-
-    notes = Counter(s.note.split(";")[-1].strip() for per in steps.values() for s in per.values()
-                    if "re-ask" in (s.note or ""))
-    if notes:
-        lines.append("short re-asks for the letter: " + ", ".join(f"{k} x{n}" for k, n in notes.most_common()))
+    if "code" in tools:
+        lines.append("code checker, try by try (replayed from the saved programs):")
+        for t in tasks:
+            if "code" not in steps.get(t.id, {}):
+                continue
+            step = replay.get(t.id, {}).get("code")
+            mark = "right" if step and step.answer == key.get(t.id) else (
+                "wrong" if step and step.answer else "unsettled")
+            tries = " | ".join(p[:160] for p in box.code_trace.get(t.id, []))
+            lines.append(f"  {t.kind} (answer {key.get(t.id)}): {mark}; {tries}")
+    else:
+        lines.append("code checker: off in this run")
     tok: Dict[str, List[int]] = {}
     for per in steps.values():
-        for name, s in per.items():
-            tok.setdefault(name.split(":")[0] if name.startswith("ant") else name, []).append(s.tokens)
+        for name, st in per.items():
+            tok.setdefault(name.split(":")[0] if name.startswith("ant") else name, []).append(st.tokens)
     lines.append("average tokens a call by tool: " + ", ".join(
         f"{t} {sum(v) / len(v):.0f}" for t, v in sorted(tok.items())))
     return lines
@@ -605,7 +631,9 @@ def main(argv: Sequence[str]) -> int:
         s.add_argument("--base-url", default=f"http://127.0.0.1:{PORT}/v1")
         s.add_argument("--concurrency", type=int, default=2)
         s.add_argument("--timeout", type=float, default=600.0)
-        s.add_argument("--no-code", action="store_true", help="leave the code checker out")
+        s.add_argument("--code", action="store_true",
+                       help="turn the code checker on (benched by default: on the Mac smoke run its programs ran "
+                            "past the length limit on most tries, at about 6,000 tokens a puzzle)")
         s.add_argument("--drive", type=Path, default=None, help="a folder on the model drive, checked before retries")
         s.add_argument("--dry-run", action="store_true", help="fake models, $0")
 

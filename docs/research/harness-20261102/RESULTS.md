@@ -113,6 +113,77 @@ average tokens a call by tool: ant0 508, ant1 514, ant2 548, ant3 533, ant4 506,
 Check: `CHECK_PROMPT.md` reruns the same 12 puzzles (seed 258388501). It reuses every saved call that still fits and
 only asks again where a fix changes the call.
 
+## Check run (same day, same 12 puzzles)
+
+Eshaan ran `CHECK_PROMPT.md`. It finished first time: no stalls, no retries, both servers it started shut down.
+
+- **Blank answers fell from 22 to 5** (of 300 answer steps), and unusable replies from 46 to 8. The short re-ask was
+  used 14 times and fixed 9.
+- **The reader went from 75.0% to 83.3% on these 12 puzzles**, because its cut-off replies now count. It also costs
+  more than it looked: 892 tokens a question, not 419, because cut-off replies are now billed instead of hidden.
+- **The code checker is still stuck at 4 of 12.** Nearly every try runs to the 2,000-token limit, even when told to
+  write less, and it costs about 6,000 tokens a puzzle (15 times the reader's old figure). Asking for shorter programs
+  didn't work.
+- The live harness tied the reader (83.3%), as expected with only 12 puzzles.
+
+The two counts the Mac flagged were both diagnose bugs. The result block was right.
+
+- **Re-asks (9 of 14 fixed vs 8 fixed and 4 blank):** diagnose read only the last part of each note. Two re-asked
+  answers also had a "load-time outlier" note added after the re-ask, so they were counted under that instead. That is
+  14 in all, and 9 fixed, as the result said.
+- **392 calls and 50 failures:** diagnose counted every call in the saved log, including the first run's calls. The
+  24 thrown-away code programs from that run had a different prompt and were never asked again. This run's own calls
+  were fewer and had far fewer failures.
+
+```
+HARNESS RESULT (paste this back to Claude in Duet)
+import: set1 160q 100.0% priced 9 loads, 86 blank answers read from their saved reply; set2 160q 100.0% priced 10 loads, 86 blank answers read from their saved reply; set3 160q 100.0% priced 10 loads, 84 blank answers read from their saved reply
+saved night-run answers: learned on set1+set2 (320), scored on set3 (160); 26 recipes compared
+  harness 89.4% vs reader 82.5%: +6.9 points (range +3.1 to +10.6); tokens x1.108, time x0.799, size-weighted tokens x0.819; VERDICT more accurate, but not cheaper on both tokens and time
+  policy: default reader; by kind of request {"rules+categorical:must": "dm:jev:dm1"}
+  top recipes by value: reader 82.5%, 378 tok, 8.1s; dm:jev:dm1 80.6%, 500 tok, 0.2s; seq:alone:m4>reader 87.5%, 2061 tok, 15.4s; seq:alone:m3>reader 84.4%, 2067 tok, 14.4s; dm:d1-3b:dm1 68.1%, 194 tok, 0.1s
+  on the accuracy/tokens/time frontier: harness, reader, dm:jev:dm1, dm:d1-3b:dm1
+  by dev kind (reader vs harness): arith 97.5% vs 97.5%; assign 72.5% vs 72.5%; order 87.5% vs 87.5%; syllogism 72.5% vs 100.0%
+smoke sweep: 12 new dev puzzles (seed 258388501), 27 tools, 357 calls in 27.4 min wall; 3 load-time outliers counted at the median; 8 unusable replies; 9/14 blank answers fixed by a short re-ask; code checker settled 4/12, right on 4
+smoke (tiny, k-fold): 3-fold on 12 questions (each routed by a policy that never saw it); 34 recipes compared
+  harness 83.3% vs reader 83.3%: +0.0 points (range +0.0 to +0.0); tokens x1.0, time x1.0, size-weighted tokens x1.0; VERDICT ties it on accuracy, not cheaper on both
+  policy: default reader; by kind of request {}
+  top recipes by value: reader 83.3%, 892 tok, 13.5s; seq:alone:m3>reader 75.0%, 2233 tok, 14.3s; seq:notes:m4>reader 83.3%, 5235 tok, 32.5s; seq:alone:m4>reader 75.0%, 2847 tok, 17.5s; seq:notes:m3 75.0%, 4286 tok, 26.3s
+  on the accuracy/tokens/time frontier: harness, reader, seq:alone:m3, seq:alone:m2
+  by dev kind (reader vs harness): arith 100.0% vs 100.0%; assign 33.3% vs 33.3%; order 100.0% vs 100.0%; syllogism 100.0% vs 100.0%
+planner live on 4 more new puzzles: accuracy 100.0%, 403 tokens and 5.2s a question (model loads included, 5s wall); recipes used ['harness:reader']
+waits for a stalled drive or server: 0 (0s)
+DEV NUMBERS ONLY: code-made puzzles and saved dev answers, not the final test. They prove nothing yet.
+
+HARNESS DIAGNOSE (paste this back to Claude in Duet)
+saved calls: 392, failed: 50
+failed replies by model:
+  LiquidAI/LFM2.5-1.2B-Instruct-MLX-4bit: 15 of 79; Unusable (stop stop) x13, Unusable (stop length) x2; reply length up to 45 tokens
+  ibm-granite/granite-4.2-3b-q4-mlx: 2 of 74; Unusable (stop length) x2; reply length up to 1200 tokens
+  mlx-community/Qwen3.5-4B-MLX-4bit: 1 of 73; Unusable (stop stop) x1; reply length up to 242 tokens
+  mlx-community/gemma-4-12B-it-4bit: 28 of 92; ProviderTruncated (stop -) x24, Unusable (stop length) x2, Unusable (stop stop) x2; reply length up to 4000 tokens
+  mlx-community/gemma-4-e2b-it-4bit: 4 of 74; Unusable (stop stop) x4; reply length up to 59 tokens
+blank answers by tool (of 12 puzzles): ant0:notes 1, ant1:notes 1, ant6:notes 1, ant7:both 1, reader 1
+blank answers by kind: arith 1/75; assign 4/75; order 0/75; syllogism 0/75
+code checker, try by try: every unsettled puzzle was "cut off at 2000 tokens" on all three tries; the 4 settled ones
+  settled after one cut-off or on the first try (full lines in the Mac's harness2.log)
+short re-asks for the letter: fixed by a short re-ask for the letter x8, still blank after a short re-ask for the letter x4, load-time outlier counted at the median (107s) x1, load-time outlier counted at the median (111s) x1
+average tokens a call by tool: ant0 525, ant1 531, ant2 571, ant3 533, ant4 589, ant5 666, ant6 497, ant7 519, code 6079, notes 582, reader 892
+```
+
+## Changes after the check run
+
+1. **The code checker is benched.** It is off by default in live runs; `--code` turns it back on. When it is on, it
+   gives up after two cut-off programs instead of paying for a third. Diagnose now shows how each cut-off program
+   starts and ends, so a later try can see whether the model writes prose, loops, or just long code.
+2. **Diagnose counts only this run's calls.** It replays the run's own sweep against the saved log and counts only
+   the calls that replay asks for. It also says how many saved answers the replay matched. Re-asks are counted the
+   same way as in the result block.
+3. **The night-run replay now bills cut-off replies.** The night run's provider threw away replies that ran out of
+   room, so the replay billed them as 0 tokens and 0 seconds. They are now billed at their length limit, with the
+   usual prompt and time for that many tokens. This changes the token and time ratios, so `REPLAY_PROMPT.md` reruns
+   the free part (no models, about 2 minutes) together with the fixed diagnose.
+
 ## The first result block
 
 ```

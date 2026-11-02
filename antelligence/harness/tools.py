@@ -100,6 +100,7 @@ CODE_ASK = (
 CODE_MAX_TOKENS = 2000
 CODE_TEMPERATURE = 0.2
 CODE_RETRIES = 2
+CODE_MAX_CUTS = 2          # give up after this many cut-off programs
 _BLOCK = re.compile(r"```(?:python|py)?\s*\n(.*?)```", re.S | re.I)
 _JSON_LINE = re.compile(r"\{[^{}]*\}")
 
@@ -329,7 +330,9 @@ class LiveBox:
         secs = 0.0
         passes: Optional[Tuple[str, ...]] = None
         problem = "never ran"
+        tries = cuts = 0
         for attempt in range(CODE_RETRIES + 1):
+            tries = attempt + 1
             req = ChatRequest(model=self.coder.tag, messages=code_messages(task, history, self.coder),
                               max_tokens=CODE_MAX_TOKENS, temperature=CODE_TEMPERATURE,
                               seed=sr.seed(task.id, "code", attempt), extra_body=self.coder.extra_body)
@@ -338,9 +341,14 @@ class LiveBox:
             ti, to, secs = ti + a, to + b, secs + s
             reply = row.get("content") or ""
             if cut_off(row):
-                self.code_trace.setdefault(task.id, []).append(f"cut off at {CODE_MAX_TOKENS} tokens")
+                cuts += 1
+                flat = " ".join(sr.strip_think(reply).split())
+                seen = f" (starts: {flat[:50]!r} ... ends: {flat[-70:]!r})" if flat else ""
+                self.code_trace.setdefault(task.id, []).append(f"cut off at {CODE_MAX_TOKENS} tokens{seen}")
                 history.append((CUT_REPLY, CODE_CUT))
                 problem = CODE_CUT
+                if cuts >= CODE_MAX_CUTS:            # it ran out of room twice: a third try costs the same again
+                    break
                 continue
             if row.get("error") not in (None, "Unusable"):
                 problem = f"did not come back (the call failed: {row.get('error')})"
@@ -358,7 +366,7 @@ class LiveBox:
                 return Step("code", passes[0], ti, to, secs, calls=attempt + 1, weight=self.coder.gb, sure=1.0,
                             passes=passes, note=f"settled on try {attempt + 1}")
             history.append((reply, problem))
-        return Step("code", None, ti, to, secs, calls=CODE_RETRIES + 1, weight=self.coder.gb, sure=0.0,
+        return Step("code", None, ti, to, secs, calls=tries, weight=self.coder.gb, sure=0.0,
                     passes=passes, note=f"not settled: {problem[:160]}")
 
     async def _dm(self, name: str, arm: str, task: Task, ctx: Mapping[str, Step]) -> Step:

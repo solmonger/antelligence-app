@@ -66,7 +66,7 @@ class _Pricer:
     """Bills for steps, with the fill-in and load-time rules from the module note."""
 
     def __init__(self) -> None:
-        self.found = self.missing = self.loads = 0
+        self.found = self.missing = self.loads = self.cut = 0
         self.raw: List[Tuple[str, str, str, Optional[Dict[str, Any]], Dict[str, Any]]] = []
 
     def add(self, task_id: str, tool: str, group: str, row: Optional[Dict[str, Any]], step: Dict[str, Any]) -> None:
@@ -75,7 +75,7 @@ class _Pricer:
     def steps(self) -> Dict[str, Dict[str, Step]]:
         by_group: Dict[str, List[Dict[str, Any]]] = {}
         for _, _, g, row, _ in self.raw:
-            if row is not None:
+            if row is not None and not row.get("error"):
                 by_group.setdefault(g, []).append(row)
         med = {g: {"tin": st.median(int(r.get("prompt_tokens") or r.get("input_tokens") or 0) for r in rs),
                    "tout": st.median(int(r.get("completion_tokens") or 0) for r in rs),
@@ -87,6 +87,14 @@ class _Pricer:
             if row is None:
                 self.missing += 1
                 tin, tout, secs, usd, note = int(m["tin"]), int(m["tout"]), float(m["s"]), float(m["usd"]), "unpriced"
+            elif row.get("error") == "ProviderTruncated" and not row.get("completion_tokens") and step.get("max_tokens"):
+                # a reply the provider threw away for running out of room: it kept no counts, but it ran to its
+                # length limit, so bill that many tokens out, the usual prompt, and the time that many tokens take
+                self.found += 1
+                self.cut += 1
+                tin, tout = int(m["tin"]), int(step["max_tokens"])
+                rate = (float(m["s"]) / m["tout"]) if m["tout"] else 0.0
+                secs, usd, note = rate * tout, float(m["usd"]), "cut off: billed at its length limit"
             else:
                 self.found += 1
                 tin = int(row.get("prompt_tokens") or row.get("input_tokens") or 0)
@@ -138,10 +146,11 @@ def import_run(run: Path, cfg: sr.Config, prefix: str) -> Tuple[List[Task], Dict
 
         req = sr.make_request(reader, sr.reader_answer_messages(item, reader), qid, "reader", 0, ft.MAX_TOKENS)
         pricer.add(tid, "reader", f"{reader.tag}:reader", look(req),
-                   {"answer": answer(r.get("reader"), look(req)), "weight": reader.gb})
+                   {"answer": answer(r.get("reader"), look(req)), "weight": reader.gb, "max_tokens": ft.MAX_TOKENS})
         req = sr.make_request(reader, sr.notes_messages(item, reader), qid, "notes", 0, sr.READER_MAX_TOKENS)
         pricer.add(tid, "notes", f"{reader.tag}:notes", look(req),
-                   {"answer": None, "weight": reader.gb, "payload": {"notes": notes, "leak": bool(r.get("leak"))}})
+                   {"answer": None, "weight": reader.gb, "max_tokens": sr.READER_MAX_TOKENS,
+                    "payload": {"notes": notes, "leak": bool(r.get("leak"))}})
         for col, (spec, lens) in enumerate(pairs):
             for arm in ARMS:
                 answers = r.get(arm) or []
@@ -151,13 +160,13 @@ def import_run(run: Path, cfg: sr.Config, prefix: str) -> Tuple[List[Task], Dict
                                       f"{arm}:{spec.tag}", lens, sr.ANT_MAX_TOKENS)
                 pricer.add(tid, ant_tool(col, arm), f"{spec.tag}:{arm}", look(req),
                            {"answer": answer(answers[col] if col < len(answers) else None, look(req)),
-                            "weight": spec.gb})
+                            "weight": spec.gb, "max_tokens": sr.ANT_MAX_TOKENS})
     dm_report = _import_dms(run, raws, rows, prefix, pricer)
     steps = pricer.steps()
     total = pricer.found + pricer.missing
     report = {"run": str(run), "set": prefix, "tasks": len(tasks), "steps": total,
               "priced": round(pricer.found / total, 4) if total else 0.0, "load_outliers": pricer.loads,
-              "reparsed": reparsed,
+              "reparsed": reparsed, "cut_off_billed": pricer.cut,
               "roster": [[a.tag, a.lens] for a in roster], "decision_models": dm_report}
     return tasks, key, steps, roster, report
 

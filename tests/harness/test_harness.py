@@ -507,7 +507,8 @@ def test_mac_dry_run_imports_learns_and_smokes(tmp_path, capsys):
         _saved_set(night, 20 + i, name)
     s = _script()
     out = tmp_path / "mac"
-    assert s.main(["mac", "--night", str(night), "--out", str(out), "--smoke", "1", "--dry-run", "--seed", "9"]) == 0
+    assert s.main(["mac", "--night", str(night), "--out", str(out), "--smoke", "1", "--dry-run", "--seed", "9",
+                   "--code"]) == 0
     text = (out / "RESULT.txt").read_text()
     assert text.startswith("HARNESS RESULT")
     assert "learned on set1+set2" in text and "smoke sweep" in text and "planner live" in text
@@ -515,12 +516,22 @@ def test_mac_dry_run_imports_learns_and_smokes(tmp_path, capsys):
     assert (out / "saved" / "policy.json").exists() and (out / "smoke" / "steps.json").exists()
 
     # diagnose explains the same run from its saved files, replaying the code checker with no model calls
-    saved = (out / "smoke" / "cache.jsonl").read_text()
+    cache = out / "smoke" / "cache.jsonl"
+    stale = {"request_hash": "0" * 64, "model": CFG.reader.tag, "content": "", "error": "ProviderTruncated",
+             "reason": "an earlier run's call with another prompt"}
+    cache.write_text(cache.read_text() + json.dumps(stale) + "\n")
+    saved = cache.read_text()
     assert s.main(["diagnose", "--run", str(out)]) == 0
     diag = (out / "DIAGNOSE.txt").read_text()
     assert diag.startswith("HARNESS DIAGNOSE")
     assert "failed replies by model" in diag and "blank answers by tool" in diag
-    assert "code checker, try by try" in diag and "missing from the saved calls" not in diag
+    assert "code checker, try by try" in diag and "calls missing from the log" not in diag
+    head = diag.splitlines()[1]
+    assert "failed: 0" in head and "the rest are from earlier runs" in head   # the stale row isn't this run's
+    import re
+
+    same, total = map(int, re.search(r"replay matched (\d+)/(\d+)", head).groups())
+    assert same == total > 0                                                   # the replay is the run, exactly
     assert "settled on" in diag or "marked" in diag
     assert (out / "smoke" / "cache.jsonl").read_text() == saved   # the run's own files are left alone
 
@@ -679,3 +690,50 @@ def test_import_reads_a_blank_answer_from_its_saved_reply(tmp_path):
     _, _, isteps, _, reports = import_sets({"set1": run}, CFG)
     assert isteps[f"set1:{t.id}"]["reader"].answer == key[t.id]
     assert reports[0]["reparsed"] == 1
+
+
+def test_the_code_checker_gives_up_after_two_cut_off_programs(tmp_path):
+    t = _opt_task()
+    box, prov = _scripted_box(tmp_path, lambda req, n: ("```python\nfor a in range(9):\n    for b in", "length"))
+    s = asyncio.run(box.run("code", t, {}))
+    assert s.answer is None and s.calls == 2 and len(prov.seen) == 2
+    assert all(x.startswith("cut off") for x in box.code_trace[t.id]) and "ends:" in box.code_trace[t.id][0]
+
+
+def test_reask_counts_ignore_notes_added_after_the_re_ask():
+    s = _script()
+    st = lambda note: Step("ant0:alone", "A", 1, 1, 1.0, note=note)  # noqa: E731
+    steps = {"a": {"x": st("cut off; fixed by a short re-ask for the letter; load-time outlier counted at the "
+                           "median (107s)")},
+             "b": {"x": st("no option named; still blank after a short re-ask for the letter")},
+             "c": {"x": st("")}}
+    assert s.reask_counts(steps) == (2, 1)
+
+
+def test_live_runs_bench_the_code_checker_unless_asked(monkeypatch):
+    s = _script()
+    seen = []
+    monkeypatch.setattr(s, "cmd_sweep", lambda ns: seen.append(ns.code) or 0)
+    assert s.main(["sweep", "--dev", "d", "--out", "o"]) == 0
+    assert s.main(["sweep", "--dev", "d", "--out", "o", "--code"]) == 0
+    assert seen == [False, True]
+
+
+def test_import_bills_a_thrown_away_cut_off_reply_at_its_length_limit(tmp_path):
+    from antelligence.experiments import fair_test as ft
+
+    run, tasks, key, steps = _saved_set(tmp_path, 8, "set1")
+    t = tasks[0]
+    item = sr.Item(t.id, t.kind, t.passage, t.stem, t.options)
+    h = sr.make_request(CFG.reader, sr.reader_answer_messages(item, CFG.reader), t.id, "reader", 0,
+                        ft.MAX_TOKENS).request_hash
+    rows = [json.loads(line) for line in (run / "cache.jsonl").read_text().splitlines()]
+    rows = [r if r["request_hash"] != h else {"request_hash": h, "model": r["model"], "content": "",
+                                               "error": "ProviderTruncated",
+                                               "reason": "generation did not finish normally (length)"}
+            for r in rows]
+    (run / "cache.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
+    _, _, isteps, _, reports = import_sets({"set1": run}, CFG)
+    got = isteps[f"set1:{t.id}"]["reader"]
+    assert got.tokens_out == ft.MAX_TOKENS and got.tokens_in > 0 and got.latency_s > 0
+    assert got.note.startswith("cut off") and reports[0]["cut_off_billed"] == 1 and reports[0]["priced"] == 1.0
