@@ -737,3 +737,25 @@ def test_import_bills_a_thrown_away_cut_off_reply_at_its_length_limit(tmp_path):
     got = isteps[f"set1:{t.id}"]["reader"]
     assert got.tokens_out == ft.MAX_TOKENS and got.tokens_in > 0 and got.latency_s > 0
     assert got.note.startswith("cut off") and reports[0]["cut_off_billed"] == 1 and reports[0]["priced"] == 1.0
+
+
+def test_tune_picks_a_cost_weight_on_training_questions_that_is_cheaper_on_both():
+    tasks, _ = dev(seed=4, per_task=20)
+    kinds = sorted({t.kind for t in tasks})
+    cheap_kind = kinds[0]
+    table = {"reader": {}, "cheap": {}}
+    for j, t in enumerate(tasks):
+        b = bucket(t)
+        table["reader"][t.id] = sc.Outcome(t.id, t.kind, b, "reader", "A", 1.0 if j % 5 else 0.0, 100, 100.0,
+                                           10.0, 0.0, 1)
+        # on one kind a recipe a third the cost that is wrong a little more often; much worse elsewhere
+        right = (1.0 if j % 4 else 0.0) if t.kind == cheap_kind else 0.0
+        table["cheap"][t.id] = sc.Outcome(t.id, t.kind, b, "cheap", "A", right, 30, 30.0, 1.0, 0.0, 1)
+    w, rows = ln.tune(table, tasks, k=4)
+    light = rows[0]
+    assert light["weight"] == 0.02 and light["tokens_ratio"] == 1.0          # accuracy first: always the reader
+    assert w.tokens > 0.02 and w.tokens == w.seconds
+    picked = next(r for r in rows if r["weight"] == w.tokens)
+    assert picked["tokens_ratio"] < 1 and picked["seconds_ratio"] < 1
+    assert all(r["accuracy"] <= picked["accuracy"] for r in rows if (r["tokens_ratio"] or 9) < 1
+               and (r["seconds_ratio"] or 9) < 1)

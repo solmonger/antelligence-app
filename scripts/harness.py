@@ -201,6 +201,30 @@ def learn_lines(rep: Mapping[str, Any], label: str) -> str:
     return "\n".join(lines)
 
 
+def tuned_report(tasks: Sequence[Task], key: Mapping[str, str], steps, roster, train: Sequence[str],
+                 test: Sequence[str]) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    """Learn again with the cost weight picked by :func:`learner.tune` on the training sets only, then score the
+    test set once with it."""
+    box = ReplayBox(steps, roster)
+    table = ln.evaluate(recipes_for(box), box, tasks, key)
+    _, keep = ln.common(table, tasks)
+    w, grid = ln.tune(table, [t for t in keep if set_of(t.id) in train])
+    rep = learn_report(tasks, key, steps, roster, train=train, test=test, w=w)
+    rep["tuning"] = {"picked": w.tokens, "grid": grid}
+    return rep, grid
+
+
+def tuned_lines(rep: Mapping[str, Any], train: Sequence[str]) -> str:
+    grid = rep["tuning"]["grid"]
+    tried = "; ".join(f"{r['weight']}: {pct(r['accuracy'])}, tokens x{r['tokens_ratio']}, time x{r['seconds_ratio']}"
+                      for r in grid)
+    lines = [f"cost-tuned: the cost weight was picked by 5-fold on {'+'.join(train)} only (the test set unseen); "
+             f"picked {rep['tuning']['picked']}", f"  tried on the training sets: {tried}"]
+    full = learn_lines(rep, "cost-tuned").splitlines()
+    lines += [x for x in full[1:3]]          # the harness-vs-reader line and the policy
+    return "\n".join(lines)
+
+
 # ------------------------------------------------------------------- live work
 
 def config(path: Path) -> sr.Config:
@@ -400,6 +424,12 @@ def cmd_mac(a: argparse.Namespace) -> int:
         (a.out / "saved" / "learn.json").write_text(json.dumps(rep, indent=1, sort_keys=True) + "\n")
         (a.out / "saved" / "policy.json").write_text(json.dumps(rep["policy"], indent=1, sort_keys=True) + "\n")
         blocks.append(learn_lines(rep, "saved night-run answers"))
+        if train and test:
+            trep, _ = tuned_report(tasks, key, steps, roster, train, test)
+            (a.out / "saved" / "learn-tuned.json").write_text(json.dumps(trep, indent=1, sort_keys=True) + "\n")
+            (a.out / "saved" / "policy-tuned.json").write_text(json.dumps(trep["policy"], indent=1, sort_keys=True)
+                                                               + "\n")
+            blocks.append(tuned_lines(trep, train))
     else:
         blocks.append("import: no saved sets found (skipped)")
     if a.smoke:

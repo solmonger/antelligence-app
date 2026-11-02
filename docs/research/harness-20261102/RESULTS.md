@@ -184,6 +184,52 @@ average tokens a call by tool: ant0 525, ant1 531, ant2 571, ant3 533, ant4 589,
    usual prompt and time for that many tokens. This changes the token and time ratios, so `REPLAY_PROMPT.md` reruns
    the free part (no models, about 2 minutes) together with the fixed diagnose.
 
+## Free rescore (same day)
+
+Eshaan ran `REPLAY_PROMPT.md` (no models). Both counts now agree, and the replay of the smoke run matched every saved
+answer (324 of 324).
+
+- **The night-run win holds: +6.9 points** (89.4% vs 82.5%, range +3.1 to +10.6), from the same one move (syllogisms
+  to Jev).
+- **Counting cut-off replies honestly almost closes the token gap.** About 90 cut-off replies a set had been billed at
+  0. The reader's real cost is 588 tokens and 20 seconds a question, not 378 and 8. The harness is now 2.5% over the
+  reader on tokens (was 11%) and 16% faster.
+- **The code checker's real problem is a loop, not length.** Every cut-off program starts as proper Python and then
+  repeats a comment line ("# Let's check each option.") until it hits the limit. That is a known way small models get
+  stuck at low temperature. Asking for shorter programs can't fix it. A repetition penalty or a different coding model
+  might, so it stays benched until there is a run to test that.
+
+```
+HARNESS RESULT (paste this back to Claude in Duet)
+import: set1 160q 100.0% priced 9 loads, 86 blank answers read from their saved reply, 93 cut-off replies billed at their limit; set2 160q 100.0% priced 8 loads, 86 blank answers read from their saved reply, 80 cut-off replies billed at their limit; set3 160q 100.0% priced 10 loads, 84 blank answers read from their saved reply, 91 cut-off replies billed at their limit
+saved night-run answers: learned on set1+set2 (320), scored on set3 (160); 26 recipes compared
+  harness 89.4% vs reader 82.5%: +6.9 points (range +3.1 to +10.6); tokens x1.025, time x0.844, size-weighted tokens x0.839; VERDICT more accurate, but not cheaper on both tokens and time
+  policy: default reader; by kind of request {"rules+categorical:must": "dm:jev:dm1"}
+  top recipes by value: dm:jev:dm1 80.6%, 500 tok, 0.2s; reader 82.5%, 588 tok, 20.0s; seq:alone:m4>reader 87.5%, 2281 tok, 24.7s; seq:alone:m3>reader 84.4%, 2261 tok, 22.2s; dm:d1-3b:dm1 68.1%, 194 tok, 0.1s
+  on the accuracy/tokens/time frontier: harness, reader, dm:jev:dm1, dm:d1-3b:dm1
+  by dev kind (reader vs harness): arith 97.5% vs 97.5%; assign 72.5% vs 72.5%; order 87.5% vs 87.5%; syllogism 72.5% vs 100.0%
+DEV NUMBERS ONLY: code-made puzzles and saved dev answers, not the final test. They prove nothing yet.
+
+HARNESS DIAGNOSE (paste this back to Claude in Duet)
+this run's calls: 349 (of 392 in the saved log; the rest are from earlier runs), failed: 25; replay matched 324/324 saved answers
+blank answers by tool (of 12 puzzles): ant0:notes 1, ant1:notes 1, ant6:notes 1, ant7:both 1, reader 1
+blank answers by kind: arith 1/75; assign 4/75; order 0/75; syllogism 0/75
+short re-asks for the letter: 14, fixed 9, still blank 5
+code checker (cut-off programs, how they end): "...# Let's check each option. # Let's check each option. # Let's
+  check each o", "...# Let's write the code. # Let's write the code. # Let's write th", "...# Let's check the
+  logic: # If Day 0 is Orange, then Day 1 is", "...} # Type 2: {F, Q} # Type 3: {Q} # Type 4: {Y} # Type 5: {Q, Y}"
+  (full block in the thread; every program starts as Python)
+average tokens a call by tool: ant0 525, ant1 531, ant2 571, ant3 533, ant4 589, ant5 666, ant6 497, ant7 519, code 6079, notes 582, reader 892
+```
+
+## Cost-tuned learner
+
+The learner weighs accuracy against cost with a small fixed weight (0.02), so it nearly always prefers accuracy. It
+now also tries a range of cost weights (0.02 to 1.0), each judged by 5-fold on the training sets only, and keeps the
+one that is cheaper than the reader on both tokens and time with the best accuracy. If none is cheaper on both, it
+keeps 0.02. The test set is scored once, with the weight it picked, so the result stays honest. `mac` prints this as
+an extra "cost-tuned" part after the usual one.
+
 ## The first result block
 
 ```

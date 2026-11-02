@@ -28,7 +28,7 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from antelligence.harness.core import Task, bucket
 from antelligence.harness.recipes import Recipe
-from antelligence.harness.scorecard import Outcome, run_one
+from antelligence.harness.scorecard import Outcome, compare, run_one
 from antelligence.harness.tools import Box, Missing
 
 Table = Dict[str, Dict[str, Outcome]]           # recipe -> task id -> outcome
@@ -166,3 +166,29 @@ def k_fold(table: Table, tasks: Sequence[Task], k: int = 5, seed: int = 20261102
             continue
         out += route(learn(table, train, names=names, **kw), table, test)
     return out
+
+
+COST_GRID = (0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 1.0)
+
+
+def tune(table: Table, train: Sequence[Task], grid: Sequence[float] = COST_GRID, k: int = 5, baseline: str = "reader",
+         usd: float = Weights.usd, **kw: Any) -> Tuple[Weights, List[Dict[str, Any]]]:
+    """Pick how hard to push on cost, using the training questions only.
+
+    For each weight in ``grid`` (applied to tokens and to time alike), route every training question by k-fold, so
+    each is routed by a policy that never saw it, and compare with ``baseline`` on those same questions. Pick the
+    weight that is cheaper than the baseline on both tokens and time with the best accuracy; if none is cheaper on
+    both, keep the lightest weight. The test questions are never looked at, so the score on them stays honest."""
+    names, keep = common(table, train)
+    base = {t.id: table[baseline][t.id] for t in keep}
+    rows: List[Dict[str, Any]] = []
+    for c in grid:
+        w = Weights(tokens=c, seconds=c, usd=usd)
+        routed = k_fold(table, keep, k=k, weights=w, **kw)
+        cmp = compare(routed, list(base.values()))
+        acc = sum(o.right for o in routed if o.right is not None) / max(1, len(routed))
+        rows.append({"weight": c, "accuracy": round(acc, 4), "gain": cmp.get("accuracy_gain"),
+                     "tokens_ratio": cmp.get("tokens_ratio"), "seconds_ratio": cmp.get("seconds_ratio")})
+    cheaper = [r for r in rows if (r["tokens_ratio"] or 9) < 1 and (r["seconds_ratio"] or 9) < 1]
+    pick = max(cheaper, key=lambda r: (r["accuracy"], -r["weight"])) if cheaper else rows[0]
+    return Weights(tokens=pick["weight"], seconds=pick["weight"], usd=usd), rows
