@@ -796,3 +796,61 @@ def test_tune_does_not_trust_a_saving_that_is_just_under_the_reader():
     assert light["tokens_ratio"] < 1 and light["seconds_ratio"] < 1      # the old rule would have taken this
     assert light["tokens_ratio_ci95"][1] >= 1
     assert w.tokens == 0.02 and light["picked"] and light["why"].startswith("no weight was surely cheaper")
+
+
+def test_balanced_syllogisms_still_have_exactly_one_right_option_and_hide_the_form():
+    from antelligence.experiments import fresh_questions as fq
+    from antelligence.harness import devsets as ds
+
+    qs, ans, specs = ds.make_set(11, per_task=6)
+    assert all(fq.check(q, s) for q, s in zip(qs, specs))
+    syl = [s for s in specs if s["task"] == "syllogism"]
+    assert len(syl) == 6 and all(s["maker"] == "balanced" for s in syl)
+    for s in syl:
+        prem = [tuple(p) for p in s["premises"]]
+        sts = [tuple(x) for x in s["statements"]]
+        want = ds.surface(sts[0], prem)
+        assert all(ds.surface(w, prem)[:2] == want[:2] for w in sts[1:])    # same form, same pairing
+    # the other kinds come out exactly as the fresh-question maker makes them
+    rng_a, rng_b = random.Random(3), random.Random(3)
+    assert ds.MAKERS["order"](rng_a) == fq.MAKERS["order"](rng_b)
+
+
+def test_the_shortcut_report_catches_the_old_syllogism_maker():
+    from antelligence.experiments import fresh_questions as fq
+    from antelligence.harness import devsets as ds
+
+    old = ds.shortcut_report(fq.make_syllogism, n=300)
+    assert old["form_prior"] > 0.26 and old["surface_lookup"] > 0.38
+    new = ds.shortcut_report(ds.make_syllogism, n=50)
+    assert new["form_prior"] <= 0.21 and new["surface_lookup"] < old["surface_lookup"]
+
+
+def test_fresh_check_runs_a_frozen_policy_and_the_reader_on_new_puzzles(tmp_path, capsys):
+    s = _script()
+    pol = tmp_path / "policy.json"
+    pol.write_text(json.dumps({"default": "dm:jev:dm1", "buckets": {"num": "reader"}}))
+    out = tmp_path / "fresh"
+    assert s.main(["fresh", "--policy", str(pol), "--out", str(out), "--per-kind", "2", "--jev-cap", "0.05",
+                   "--dry-run", "--seed", "5"]) == 0
+    text = (out / "FRESH.txt").read_text()
+    assert text.startswith("FRESH CHECK") and "on 8 new puzzles" in text and "on 2 new puzzles" in text
+    assert "syllogism-old" in text and "harness:reader x" in text and "harness:dm:jev:dm1 x" in text
+    assert "of a $0.05 cap" in text and "STILL DEV NUMBERS" in text
+    qs = [json.loads(x) for x in (out / "fresh" / "questions.jsonl").read_text().splitlines()]
+    assert {q["task"] for q in qs} == {"arith", "assign", "order", "syllogism"}
+    # a rerun reuses the same puzzles and the cached calls
+    before = (out / "fresh" / "questions.jsonl").read_text()
+    assert s.main(["fresh", "--policy", str(pol), "--out", str(out), "--per-kind", "2", "--jev-cap", "0.05",
+                   "--dry-run", "--seed", "5"]) == 0
+    assert (out / "fresh" / "questions.jsonl").read_text() == before
+    assert (out / "FRESH.txt").read_text().splitlines()[2] == text.splitlines()[2]
+
+
+def test_fresh_check_refuses_a_policy_it_cannot_run(tmp_path):
+    s = _script()
+    pol = tmp_path / "policy.json"
+    pol.write_text(json.dumps({"default": "dm:nope:dm1"}))
+    with pytest.raises(SystemExit, match="can't run"):
+        s.main(["fresh", "--policy", str(pol), "--out", str(tmp_path / "f"), "--per-kind", "1", "--jev-cap", "0.01",
+                "--dry-run", "--seed", "5"])

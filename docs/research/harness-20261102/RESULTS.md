@@ -272,6 +272,88 @@ An honest caveat: this rule was changed after seeing set 3's first tuned result.
 numbers, but set 3 has now been looked at twice, so it is a weaker check than a fresh set. That is fine for dev
 work. It is exactly why the real test set stays hidden until last.
 
+## Second cost-tuned rescore: beats the reader on all three (same day)
+
+With the tightened rule the tuner picked 0.05 ("beats the reader on all three with confidence" on the training
+sets). On set 3 the harness scores 90.0% against the reader's 82.5% (+7.5 points, range +1.9 to +13.1), with tokens
+x0.786 (range x0.642 to x0.982) and time x0.209 (range x0.135 to x0.341). All three ranges are on the right side.
+
+The policy flipped: the default is now Jev, and the reader keeps three kinds of request (numbers, "could" order
+puzzles, and "must" rule puzzles). Where it came from, by dev kind:
+
+* syllogism: 72.5% to 100%, about the same tokens, 12.7s to 0.2s (Jev).
+* assign: 72.5% to 77.5%, 1151 to 658 tokens, 44.7s to 4.6s (Jev on some of them).
+* order: 87.5% to 85.0% (one puzzle lost), same cost.
+* arith: unchanged.
+
+Jev's price in the ledger is $0.042 per million input tokens, so about $0.00002 a question. The dollars don't move
+the picture, but Jev is a paid outside service and is still off in live runs.
+
+Caveats, plainly:
+
+* The rule was tightened after seeing set 3's first tuned result, so set 3 has been looked at twice. The rule uses no
+  set 3 numbers, but a fresh set is the real check.
+* Most of the gain is syllogisms, and the syllogism maker can be shortcut (next section).
+
+```
+import: set1 160q 100.0% priced 9 loads, 86 blank answers read from their saved reply, 93 cut-off replies billed at their limit; set2 160q 100.0% priced 8 loads, 86 blank answers read from their saved reply, 80 cut-off replies billed at their limit; set3 160q 100.0% priced 10 loads, 84 blank answers read from their saved reply, 91 cut-off replies billed at their limit
+saved night-run answers: learned on set1+set2 (320), scored on set3 (160); 26 recipes compared
+  harness 89.4% vs reader 82.5%: +6.9 points (range +3.1 to +10.6); tokens x1.025 (range x0.931 to x1.095), time x0.844 (range x0.684 to x0.94), size-weighted tokens x0.839; VERDICT more accurate, but not cheaper on both tokens and time
+  policy: default reader; by kind of request {"rules+categorical:must": "dm:jev:dm1"}
+  top recipes by value: dm:jev:dm1 80.6%, 500 tok, 0.2s; reader 82.5%, 588 tok, 20.0s; seq:alone:m4>reader 87.5%, 2281 tok, 24.7s; seq:alone:m3>reader 84.4%, 2261 tok, 22.2s; dm:d1-3b:dm1 68.1%, 194 tok, 0.1s
+  on the accuracy/tokens/time frontier: harness, reader, dm:jev:dm1, dm:d1-3b:dm1
+  by dev kind (reader vs harness): arith 97.5% vs 97.5%; assign 72.5% vs 72.5%; order 87.5% vs 87.5%; syllogism 72.5% vs 100.0%
+  cost by dev kind (reader vs harness, tokens/seconds): arith 263/8.4s vs 263/8.4s; assign 1151/44.7s vs 1151/44.7s; order 512/14.4s vs 512/14.4s; syllogism 427/12.7s vs 485/0.2s
+cost-tuned: the cost weight was picked by 5-fold on set1+set2 only (the test set unseen); picked 0.05 (beats the reader on all three with confidence)
+  tried on the training sets (points vs reader):
+    0.02: 85.3% (+6.6, range +3.1 to +10.0), tokens x0.99 (range x0.904 to x1.071), time x0.723 (range x0.582 to x0.849)
+    0.03: 85.3% (+6.6, range +2.8 to +10.3), tokens x0.919 (range x0.821 to x1.024), time x0.569 (range x0.418 to x0.715)
+    0.05: 84.4% (+5.6, range +1.2 to +10.0), tokens x0.861 (range x0.753 to x0.983), time x0.401 (range x0.265 to x0.549)
+    0.07: 83.4% (+4.7, range +0.3 to +9.1), tokens x0.822 (range x0.713 to x0.948), time x0.348 (range x0.221 to x0.486)
+    0.1: 82.2% (+3.4, range -1.6 to +8.1), tokens x0.704 (range x0.601 to x0.832), time x0.16 (range x0.112 to x0.231)
+    0.15: 80.6% (+1.9, range -3.1 to +6.9), tokens x0.676 (range x0.575 to x0.798), time x0.16 (range x0.112 to x0.231)
+    0.2: 80.0% (+1.2, range -3.8 to +6.2), tokens x0.647 (range x0.548 to x0.765), time x0.16 (range x0.112 to x0.231)
+    0.3: 76.6% (-2.2, range -7.5 to +2.8), tokens x0.508 (range x0.429 to x0.606), time x0.145 (range x0.101 to x0.213)
+    0.5: 72.2% (-6.6, range -12.2 to -0.9), tokens x0.435 (range x0.366 to x0.518), time x0.12 (range x0.08 to x0.18)
+    1.0: 57.8% (-20.9, range -27.5 to -14.4), tokens x0.324 (range x0.277 to x0.38), time x0.005 (range x0.004 to x0.007)
+  harness 90.0% vs reader 82.5%: +7.5 points (range +1.9 to +13.1); tokens x0.786 (range x0.642 to x0.982), time x0.209 (range x0.135 to x0.341), size-weighted tokens x0.369; VERDICT beats it on all three
+  policy: default dm:jev:dm1; by kind of request {"num": "reader", "rules+order:could": "reader", "rules:must": "reader"}
+  by dev kind (reader vs harness): arith 97.5% vs 97.5%; assign 72.5% vs 77.5%; order 87.5% vs 85.0%; syllogism 72.5% vs 100.0%
+  cost by dev kind (reader vs harness, tokens/seconds): arith 263/8.4s vs 263/8.4s; assign 1151/44.7s vs 658/4.6s; order 512/14.4s vs 512/14.4s; syllogism 427/12.7s vs 485/0.2s
+DEV NUMBERS ONLY: code-made puzzles and saved dev answers, not the final test. They prove nothing yet.
+```
+
+## The syllogism maker can be shortcut, and a harder one
+
+Most of the harness's gain is syllogisms, where Jev scores 100% and the reader 72.5%. So I checked whether those
+puzzles can be answered without logic. `antelligence/harness/devsets.py` has a `shortcut_report`: no-logic guessers
+learned on 1,000 puzzles and scored on 1,000 others (chance is 20%).
+
+| maker | options only (which form tends to be right) | surface lookup (form, word places in the premises) |
+|---|---|---|
+| fresh-question maker (the one the night sets used) | 32.8% | 60.8% |
+| balanced maker (new) | 20.0% | 26.4% |
+
+So with the old maker, a lookup with no logic at all gets about 61%, close to the reader's 72.5%. Jev's 100% may be
+partly real logic and partly these patterns. We can't tell from the saved sets.
+
+The balanced maker uses the same premises and the same brute-force check, but picks wrong options that look like the
+right one: same form, same pairing in the premises, word-place counts within one. `fresh_questions.py` is untouched
+(the fresh test's preregistration pins its hash). New dev puzzles (`make_dev`, used by `mac` and `fresh`) now use the
+balanced maker; the saved night sets are as they were.
+
+## Fresh check (built, waiting on a Mac run)
+
+`scripts/harness.py fresh` runs the frozen tuned policy (`replay/saved/policy-tuned.json`, learned on set 1 and
+set 2 before these puzzles existed) and the reader alone on brand-new puzzles:
+
+* 10 per kind with the balanced maker, every kind;
+* 10 old-maker syllogisms, so the two makers can be compared the same day with the same models.
+
+It runs only the reader and the tools the policy uses (Jev, capped by `--jev-cap`), so it is quick and costs well
+under a cent. It prints accuracy, tokens and time with ranges, by kind, and which recipes were used. This is the
+honest answer to the caveat above: nothing in it was tuned on these puzzles. Prompt: `FRESH_PROMPT.md`.
+
 ## The first result block
 
 ```

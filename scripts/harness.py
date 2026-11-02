@@ -33,9 +33,11 @@ from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
+from antelligence.experiments import dm_addon as dm  # noqa: E402
 from antelligence.experiments import fresh_questions as fq  # noqa: E402
 from antelligence.experiments import shared_read as sr  # noqa: E402
 from antelligence.providers.base import ChatRequest  # noqa: E402
+from antelligence.harness import devsets  # noqa: E402
 from antelligence.harness import learner as ln  # noqa: E402
 from antelligence.harness import scorecard as sc  # noqa: E402
 from antelligence.harness.core import Step, Task, bucket, load_key, load_tasks  # noqa: E402
@@ -46,6 +48,8 @@ from antelligence.harness.resilience import Patience  # noqa: E402
 from antelligence.harness.tools import LiveBox, ReplayBox, load_steps, parse_ant, save_steps, trim_loads  # noqa: E402
 
 MODELS = REPO / "docs/research/fresh-20261031/models.json"   # the models the saved sets were run with
+FRESH_NOTE = ("STILL DEV NUMBERS: brand-new code-made puzzles, so nothing here was tuned on them, but they are not the "
+              "final test set either.")
 DEV_NOTE = "DEV NUMBERS ONLY: code-made puzzles and saved dev answers, not the final test. They prove nothing yet."
 PORT, MLX_PORT = 11534, 8097          # not 11434/8091 (the night run's) and not 8090 (Eshaan's chat shim)
 
@@ -76,7 +80,7 @@ def load_bundle(d: Path):
 # --------------------------------------------------------------------- make-dev
 
 def make_dev(out: Path, seed: int, per_task: int) -> Tuple[List[Task], Dict[str, str]]:
-    qs, ans, specs = fq.make_set(seed, per_task)
+    qs, ans, specs = devsets.make_set(seed, per_task)
     bad = [q["id"] for q, s in zip(qs, specs) if not fq.check(q, s)]
     if bad:
         raise SystemExit(f"puzzles failed their own brute-force check: {bad}")
@@ -533,6 +537,138 @@ def smoke(a: argparse.Namespace) -> List[str]:
     return lines
 
 
+# ------------------------------------------------------------------ fresh check
+
+def _dm_addon_module():
+    spec = importlib.util.spec_from_file_location("_dm_addon_for_harness", REPO / "scripts/dm_addon.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def fresh_sets(out: Path, seed: int, per_kind: int) -> Tuple[List[Task], Dict[str, str], List[Task], Dict[str, str]]:
+    """New puzzles nobody has seen: every kind with the balanced syllogism maker, plus as many syllogisms from the old
+    maker (labelled ``syllogism-old``), so the two makers can be compared on the same day with the same models.
+    Saved under ``out``; a rerun reuses them."""
+    new, old = out / "fresh", out / "fresh-old-syllogisms"
+    if not (new / "questions.jsonl").exists():
+        make_dev(new, seed, per_kind)
+    if not (old / "questions.jsonl").exists():
+        qs, ans, specs = fq.make_set(seed + 1, per_kind, tasks=("syllogism",))
+        bad = [q["id"] for q, sp in zip(qs, specs) if not fq.check(q, sp)]
+        if bad:
+            raise SystemExit(f"puzzles failed their own brute-force check: {bad}")
+        for q, a_ in zip(qs, ans):
+            q["id"] = a_["id"] = f"old{seed}-{q['id']}"
+            q["task"] = "syllogism-old"
+        write_jsonl(old / "questions.jsonl", qs)
+        write_jsonl(old / "answers.jsonl", ans)
+        write_jsonl(old / "specs.jsonl", specs)
+    return (load_tasks(new / "questions.jsonl"), load_key(new / "answers.jsonl"),
+            load_tasks(old / "questions.jsonl"), load_key(old / "answers.jsonl"))
+
+
+def jev_dms(a: argparse.Namespace, out: Path) -> Dict[str, Any]:
+    """Jev for the fresh check, with its spend capped at ``--jev-cap`` dollars. The key is read in-process by the
+    decision-model add-on's own reader and never printed. ``--dry-run`` uses the $0 fake."""
+    da = _dm_addon_module()
+    spec = dm.DMS["jev"]
+    backend = dm.FakeDM() if a.dry_run else da.backend(spec, True, spec.url, spec.model)
+    return {"jev": (spec, dm.DMRunner(backend, out / "dm_jev.jsonl", max_usd=a.jev_cap, price=spec.price))}
+
+
+def fresh_lines(outs: Sequence[sc.Outcome], reader: Sequence[sc.Outcome], kinds: Mapping[str, str],
+                label: str) -> List[str]:
+    c = sc.compare(outs, reader)
+    if not c.get("n"):
+        return [f"{label}: nothing scored"]
+    h, r = sc.totals(outs), sc.totals(reader)
+    lo, hi = c["accuracy_ci95"]
+    lines = [f"{label}: harness {pct(h['accuracy'])} vs reader {pct(r['accuracy'])} on {c['n']} new puzzles: "
+             f"{c['accuracy_gain'] * 100:+.1f} points (range {lo * 100:+.1f} to {hi * 100:+.1f}); tokens "
+             f"x{c['tokens_ratio']}{ci(c, 'tokens')}, time x{c['seconds_ratio']}{ci(c, 'seconds')}; VERDICT "
+             f"{c['verdict']}"]
+    by = []
+    for k in sorted(set(kinds.values())):
+        hs = [o for o in outs if kinds.get(o.task) == k]
+        rs = [o for o in reader if kinds.get(o.task) == k]
+        if hs and rs:
+            th, tr = sc.totals(hs), sc.totals(rs)
+            by.append(f"{k} {pct(tr['accuracy'])} vs {pct(th['accuracy'])} ({tr['tokens']:.0f}/{tr['seconds']:.1f}s "
+                      f"vs {th['tokens']:.0f}/{th['seconds']:.1f}s)")
+    lines.append("  by kind (reader vs harness, then tokens/seconds): " + "; ".join(by))
+    lines.append("  recipes used: " + ", ".join(f"{n} x{k}" for n, k in sorted(Counter(o.recipe for o in outs).items())))
+    return lines
+
+
+def cmd_fresh(a: argparse.Namespace) -> int:
+    """The frozen policy (learned before these puzzles existed) against the reader on brand-new puzzles."""
+    a.out.mkdir(parents=True, exist_ok=True)
+    seed = a.seed or random.SystemRandom().randrange(1, 10 ** 9)
+    tasks, key, old, okey = fresh_sets(a.out, seed, a.per_kind)
+    policy = ln.Policy.from_json(json.loads(a.policy.read_text()))
+    cfg = config(a.models)
+    patience = Patience(drive=a.drive)
+    service = None
+    if a.dry_run:
+        provider: Any = fake_provider(list(tasks) + list(old), {**key, **okey}, cfg)
+    else:
+        nr = _night_module()
+        for port in (a.port, a.mlx_port):
+            if not nr.port_free(port):
+                raise SystemExit(f"something already listens on port {port}; pick others with --port/--mlx-port")
+        logs = a.out / "logs"
+        service = nr.Service("MLX stand-in", [sys.executable, str(REPO / "scripts/mlx_standin.py"), "--models",
+                                              str(a.models), "--mlx-server", a.mlx_server, "--port", str(a.port),
+                                              "--mlx-port", str(a.mlx_port), "--log", str(logs / "mlx.log")],
+                             f"http://127.0.0.1:{a.port}/v1/models", logs / "standin.log")
+        service.up(seconds=300)
+        a.base_url = f"http://127.0.0.1:{a.port}/v1"
+        provider = openai_provider(a)
+    blocks = ["FRESH CHECK (paste this back to Claude in Duet)",
+              f"policy frozen from {a.policy.name}: default {policy.default}; by kind of request "
+              f"{json.dumps(policy.buckets, sort_keys=True)}"]
+    t0 = time.monotonic()
+    try:
+        runner = sr.Runner(provider, a.out / "cache.jsonl", concurrency=a.concurrency, check_names=False,
+                           max_fail_streak=10 ** 6)
+        dms = jev_dms(a, a.out)
+        box = LiveBox(runner, cfg.reader, cfg.ants, parser=cfg.parser, code=False, dms=dms, patience=patience)
+        recipes = by_name(recipes_for(box))
+        missing = sorted({policy.default, *policy.buckets.values()} - set(recipes))
+        if missing:
+            raise SystemExit(f"the policy needs recipes this box can't run: {missing}")
+        log = sc.Log(a.out / "outcomes.jsonl")
+        reader_plan = Planner(ln.Policy("reader"), recipes, box, explore=0.0)
+        planner = Planner(policy, recipes, box, explore=0.0, log=log)
+
+        async def both(ts: Sequence[Task], k: Mapping[str, str]) -> Tuple[List[sc.Outcome], List[sc.Outcome]]:
+            # the reader first, so when the policy also picks the reader its call comes from the cache: same answer,
+            # same bill, both sides charged for it once each
+            rs = await reader_plan.answer_all(ts, k)
+            hs = await planner.answer_all(ts, k)
+            return hs, [sc.Outcome(**{**o.to_json(), "recipe": "reader"}) for o in rs]
+
+        hs, rs = asyncio.run(both(tasks, key))
+        ohs, ors = asyncio.run(both(old, okey))
+    finally:
+        if service:
+            service.down()
+    kinds = {t.id: t.kind for t in list(tasks) + list(old)}
+    blocks += fresh_lines(hs, rs, kinds, f"new puzzles, every kind (seed {seed}, {a.per_kind} per kind)")
+    blocks += fresh_lines(ohs, ors, kinds, "old-maker syllogisms (the ones a no-logic lookup gets 63% on)")
+    spent = sum(r.spent for _, r in dms.values())
+    blocks.append(f"Jev: {sum(r.calls for _, r in dms.values())} calls, ${spent:.4f} of a ${a.jev_cap:.2f} cap; "
+                  f"unusable model replies {runner.failed}; {time.monotonic() - t0:.0f}s wall; waits for a stalled "
+                  f"drive or server {len(patience.events)}")
+    blocks.append(FRESH_NOTE)
+    text = "\n".join(blocks)
+    (a.out / "FRESH.txt").write_text(text + "\n")
+    print("\n" + text)
+    return 0
+
+
 # --------------------------------------------------------------------- diagnose
 
 class _SavedOnly:
@@ -725,6 +861,16 @@ def main(argv: Sequence[str]) -> int:
     s = sub.add_parser("diagnose", help="explain a smoke run from its saved files; no model calls")
     s.add_argument("--run", type=Path, required=True, help="the --out folder of a mac run")
     s.add_argument("--models", type=Path, default=MODELS)
+    s = sub.add_parser("fresh", help="the frozen policy against the reader on brand-new puzzles (Jev capped)")
+    s.add_argument("--policy", type=Path, required=True, help="a saved policy, e.g. replay/saved/policy-tuned.json")
+    s.add_argument("--out", type=Path, required=True)
+    s.add_argument("--per-kind", type=int, default=10)
+    s.add_argument("--jev-cap", type=float, required=True, help="most dollars Jev may spend")
+    s.add_argument("--mlx-server", default="")
+    s.add_argument("--seed", type=int, default=0)
+    s.add_argument("--port", type=int, default=PORT)
+    s.add_argument("--mlx-port", type=int, default=MLX_PORT)
+    live_args(s)
     s = sub.add_parser("mac")
     s.add_argument("--night", type=Path, default=None, help="the night run's folder (holds set1/run, set2/run, ...)")
     s.add_argument("--mlx-server", default="")
@@ -737,9 +883,11 @@ def main(argv: Sequence[str]) -> int:
     a = p.parse_args(argv)
     if a.cmd == "mac" and a.smoke and not a.dry_run and not a.mlx_server:
         raise SystemExit("mac needs --mlx-server for the live smoke run (or --smoke 0, or --dry-run)")
+    if a.cmd == "fresh" and not a.dry_run and not a.mlx_server:
+        raise SystemExit("fresh needs --mlx-server (or --dry-run)")
     return {"selftest": cmd_selftest, "make-dev": cmd_make_dev, "import": cmd_import, "learn": cmd_learn,
             "sweep": cmd_sweep, "run": cmd_run, "mac": cmd_mac,
-            "diagnose": cmd_diagnose}[a.cmd](a)
+            "diagnose": cmd_diagnose, "fresh": cmd_fresh}[a.cmd](a)
 
 
 if __name__ == "__main__":
