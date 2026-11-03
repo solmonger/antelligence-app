@@ -11,6 +11,7 @@ import os
 import socket
 import stat
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -330,7 +331,9 @@ def test_live_run_against_a_fake_mlx_server(tmp_path, capsys):
     assert json.loads((out / "run" / "meta.json").read_text())["loaded"] == []   # all cached: nothing loaded
 
 
-def test_check_refuses_a_cache_on_an_external_drive_and_missing_models(tmp_path, capsys):
+def test_check_accepts_a_cache_anywhere_but_names_a_missing_folder(tmp_path, capsys):
+    """The cache stays wherever it is (Eshaan keeps it on the external WD_BLACK drive). A folder that isn't there is
+    named as such, not as a frozen drive."""
     cli = _script()
     models = _models_file(tmp_path)
     out = tmp_path / "out"
@@ -339,7 +342,51 @@ def test_check_refuses_a_cache_on_an_external_drive_and_missing_models(tmp_path,
     rc = cli.main(["check", *args, "--mlx-server", str(_launcher(tmp_path)), "--hf-cache", "/Volumes/WD_BLACK/hub",
                    "--port", str(_free_port()), "--headroom-gb", "0"])
     text = capsys.readouterr().out
-    assert rc == 1 and "external drive" in text and "not in /Volumes/WD_BLACK/hub" in text
+    assert rc == 1 and "doesn't exist or can't be read" in text and "external" not in text
+
+
+def test_check_names_the_models_missing_from_the_cache(tmp_path, capsys):
+    cli = _script()
+    models = _models_file(tmp_path)
+    reader, ants = fl.load_models(models)
+    hub = _hub(tmp_path, [reader.tag, ants[0].tag])
+    out = tmp_path / "out"
+    args = ["--out", str(out), "--models", str(models)]
+    cli.main(["freeze", *args])
+    rc = cli.main(["check", *args, "--mlx-server", str(_launcher(tmp_path)), "--hf-cache", str(hub),
+                   "--port", str(_free_port()), "--headroom-gb", "0"])
+    text = capsys.readouterr().out
+    assert rc == 1 and f"not in {hub}" in text and ants[1].tag in text and reader.tag not in text.split("not in")[1]
+
+
+def test_a_drive_that_answers_lists_and_one_that_hangs_is_abandoned(tmp_path, monkeypatch):
+    assert fl.drive_problem(tmp_path) is None
+    assert "doesn't exist" in fl.drive_problem(tmp_path / "nope")
+    fake_bin = tmp_path / "bin"
+    fake_bin.mkdir()
+    hang = fake_bin / "ls"
+    hang.write_text("#!/bin/sh\nexec sleep 30\n")         # a read stuck on a frozen drive
+    hang.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{fake_bin}{os.pathsep}{os.environ['PATH']}")
+    t0 = time.monotonic()
+    why = fl.drive_problem(tmp_path, timeout_s=0.5)
+    assert "didn't answer within" in why and time.monotonic() - t0 < 5
+
+
+def test_a_drive_that_stops_answering_mid_run_stops_before_the_next_load(tmp_path, monkeypatch, capsys):
+    cli = _script()
+    models = _models_file(tmp_path)
+    reader, ants = fl.load_models(models)
+    hub = _hub(tmp_path, [m.tag for m in (reader, *ants)])
+    out = tmp_path / "out"
+    args = ["--out", str(out), "--models", str(models)]
+    cli.main(["freeze", *args])
+    answers = iter([None, "the model folder went away"])     # fine at the check, gone before the first load
+    monkeypatch.setattr(fl, "drive_problem", lambda *_a, **_k: next(answers))
+    rc = cli.main(["run", "--live", *args, "--mlx-server", str(_launcher(tmp_path)), "--hf-cache", str(hub),
+                   "--port", str(_free_port()), "--headroom-gb", "0", "--limit", "1"])
+    text = capsys.readouterr().out
+    assert rc == 2 and f"before loading {reader.tag}: the model folder went away" in text
 
 
 def test_a_server_that_dies_on_start_stops_the_run_cleanly(tmp_path, monkeypatch, capsys):

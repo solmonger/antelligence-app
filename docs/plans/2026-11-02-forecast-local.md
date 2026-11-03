@@ -45,8 +45,10 @@ From the fair test, unchanged:
 
 - **Reply length.** Up to 800 tokens per reply, not 4,000. Thinking is off, so a JSON answer is about 100 tokens;
   800 only cuts off loops. A cut-off reply counts as unusable.
-- **The model cache must be on the internal disk.** The WD_BLACK drive that held it froze on Nov 1. The script
-  refuses a cache under `/Volumes/`. It starts `mlx_lm.server` with `HF_HUB_CACHE` set to that folder and downloads
+- **The models stay on the WD_BLACK drive, where Eshaan keeps them.** That drive froze on Nov 1, so the script
+  checks the model folder answers within 10 seconds before it starts and again before every model load, and stops
+  cleanly (keeping every finished call) if it doesn't. The check runs in a child process it can walk away from, so a
+  frozen drive can't hang the run. It starts `mlx_lm.server` with `HF_HUB_CACHE` set to that folder and downloads
   turned off, so a missing model fails at once rather than downloading somewhere else.
 - **Port 8611.** Nothing else on the Mac uses it; the night run clashed with the embedding service on 8091.
 
@@ -110,19 +112,28 @@ narrow pass with that in mind.
 
 ## How it runs
 
-1. `copy-models` copies the five models from wherever the cache is now to `~/antelligence-models/hub`. It only
-   copies, keeps the cache's links, skips a model already copied whole, and stops if the internal disk would keep
-   under 15 GB free.
-2. `check` makes no model call. It confirms that:
+1. `check` makes no model call. It confirms that:
    - the plan is unchanged;
-   - the cache is internal and holds all five models;
+   - the model folder answers within 10 seconds and holds all five models;
    - the port is free;
    - there is room on disk and in memory;
    - `mlx_lm.server` exists.
-3. `run --live` loads the reader once for all its calls, then each ant once.
+2. `run --live` loads the reader once for all its calls, then each ant once.
    - It caches every reply, so a rerun resumes, and a model whose calls are all cached is never loaded.
-   - It stops after 25 unusable replies in a row, or when memory is short, and says why.
+   - It stops after 25 unusable replies in a row, when memory is short, or when the drive stops answering, and says
+     why.
    - It never opens the answer file.
-4. `score` reads the answers and prints both verdicts and a block to paste back.
+3. `score` reads the answers and prints both verdicts and a block to paste back.
 
-The Mac prompt adds the house rules: no push, no spending, don't touch other processes, and one model at a time.
+`copy-models` also exists, to copy the five models to another folder, but the Mac prompt doesn't use it.
+
+The Mac prompt adds the house rules: no push, no spending, don't touch other processes, wait for any other local
+model run to finish, and one model at a time.
+
+## Amendment, 2026-11-03 (before any model call)
+
+The first freeze required the model cache on the internal disk and had the Mac prompt copy the models there. Eshaan
+had already said he wants the cache kept on the external WD_BLACK drive, so that rule was dropped: the run now reads
+the models where they are, with the drive checks above. Nothing about the questions, prompts, models, tests or pass
+line changed. The plan was frozen again (`prereg.json`) after this change, and no model call had been made under
+either freeze.

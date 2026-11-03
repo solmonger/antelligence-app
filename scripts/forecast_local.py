@@ -4,10 +4,11 @@ Steps, in this order:
 
 1. ``freeze`` -- writes ``prereg.json``: the SHA-256 of the forecast question and answer files, the code and the model
    file, and the tests and pass line. Done once, before any model call, and committed.
-2. ``copy-models`` -- copies the five models from the current Hugging Face cache (for example on the WD_BLACK drive)
-   to a folder on the internal disk. Copy only; the source is read, never changed.
-3. ``check`` -- no model call: the plan is unchanged, the cache is on the internal disk and holds all five models,
-   the port is free, there is disk and memory room, and ``mlx_lm.server`` exists.
+2. ``check`` -- no model call: the plan is unchanged, the model folder answers within a few seconds (it sits on
+   the external WD_BLACK drive, which froze once) and holds all five models, the port is free, there is disk and
+   memory room, and ``mlx_lm.server`` exists.
+3. ``copy-models`` (optional, only if Eshaan asks) -- copies the five models from one Hugging Face cache to another
+   folder. Copy only; the source is read, never changed.
 4. ``run`` -- ``--dry-run`` answers with a fake model (for the plumbing); ``--live`` starts ``mlx_lm.server`` on
    ``127.0.0.1`` one model at a time, reading models only from ``--hf-cache`` with downloads off. Every reply is
    cached, so a rerun resumes. Answer files are never opened here.
@@ -16,9 +17,8 @@ Steps, in this order:
 Usage::
 
     uv run python scripts/forecast_local.py freeze
-    uv run python scripts/forecast_local.py copy-models --from <current hub cache> --to ~/antelligence-models/hub
-    uv run python scripts/forecast_local.py check --mlx-server <path> --hf-cache ~/antelligence-models/hub
-    uv run python scripts/forecast_local.py run --live --mlx-server <path> --hf-cache ~/antelligence-models/hub
+    uv run python scripts/forecast_local.py check --mlx-server <path> --hf-cache ~/.cache/huggingface/hub
+    uv run python scripts/forecast_local.py run --live --mlx-server <path> --hf-cache ~/.cache/huggingface/hub
     uv run python scripts/forecast_local.py score
 """
 
@@ -140,8 +140,6 @@ def cmd_freeze(a: argparse.Namespace) -> int:
 def cmd_copy(a: argparse.Namespace) -> int:
     reader, ants = fl.load_models(a.models)
     dst = Path(a.to).expanduser()
-    if fl.on_external_disk(dst):
-        raise SystemExit(f"{dst} is on an external drive; pick a folder on the internal disk")
     sizes = fl.copy_models(Path(a.src).expanduser(), dst, (reader, *ants))
     print(f"copied {len(sizes)} models, {sum(sizes.values()) / 1e9:.1f} GB -> {dst}")
     return 0
@@ -152,18 +150,19 @@ def preflight(a: argparse.Namespace) -> List[str]:
     problems = [f"plan changed since freeze: {d}" for d in changed(a.data, a.models, a.out / "prereg.json")]
     reader, ants = fl.load_models(a.models)
     hub = Path(a.hf_cache).expanduser()
-    if fl.on_external_disk(hub) and not a.allow_external_cache:
-        problems.append(f"the model cache {hub} is on an external drive (it froze on Nov 1); copy the models to the "
-                        "internal disk with `copy-models`")
-    gone = fl.missing_models(hub, (reader, *ants)) if hub.is_dir() else ["(no such folder)"]
-    if gone:
-        problems.append(f"not in {hub}: {', '.join(gone)}")
+    drive = fl.drive_problem(hub) if a.hf_cache else None
+    if not a.hf_cache:
+        problems.append("give --hf-cache: the Hugging Face hub folder that holds the models")
+    elif drive:
+        problems.append(drive)
+    else:
+        gone = fl.missing_models(hub, (reader, *ants))
+        if gone:
+            problems.append(f"not in {hub}: {', '.join(gone)}")
     if not fl.port_free(a.port):
         problems.append(f"port {a.port} is in use; pick a free one with --port")
     if not a.mlx_server or not Path(a.mlx_server).expanduser().is_file():
         problems.append(f"no mlx_lm.server at {a.mlx_server or '(give --mlx-server)'}")
-    if not a.hf_cache:
-        problems.append("give --hf-cache: the model folder on the internal disk")
     free_disk = shutil.disk_usage(a.out if a.out.exists() else REPO).free / 1e9
     if free_disk < 5:
         problems.append(f"only {free_disk:.1f} GB free on disk for the run's files")
@@ -216,6 +215,9 @@ def cmd_run(a: argparse.Namespace) -> int:
                                                      require_model_match=False, require_stop=False), server)
 
         def guard(model: fl.Model) -> None:
+            drive = fl.drive_problem(hub)                    # the drive is checked again before every model load
+            if drive:
+                raise fl.DriveNotAnswering(f"before loading {model.tag}: {drive}")
             have = fl.free_gb()
             if have is not None and have < model.gb + a.headroom_gb:
                 raise fl.MemoryTight(f"only {have:.1f} GB free before loading {model.tag} (needs about "
@@ -268,14 +270,13 @@ def main(argv: Sequence[str]) -> int:
         p.add_argument("--models", type=Path, default=fl.MODELS_FILE)
     cp = sub.choices["copy-models"]
     cp.add_argument("--from", dest="src", required=True, help="the Hugging Face hub cache that has the models now")
-    cp.add_argument("--to", required=True, help="a folder on the internal disk")
+    cp.add_argument("--to", required=True, help="the folder to copy into")
     for name in ("check", "run"):
         p = sub.choices[name]
         p.add_argument("--mlx-server", default="")
         p.add_argument("--hf-cache", default="")
         p.add_argument("--port", type=int, default=fl.PORT)
         p.add_argument("--headroom-gb", type=float, default=6.0)
-        p.add_argument("--allow-external-cache", action="store_true")
         p.add_argument("--limit", type=int, default=0, help="first N forecasts only (a smoke test)")
     rn = sub.choices["run"]
     rn.add_argument("--live", action="store_true")

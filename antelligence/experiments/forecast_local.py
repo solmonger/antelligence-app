@@ -20,7 +20,10 @@ Two tests, each with its own verdict, both fixed before any call:
 Both use 5 calls per question, so neither gets more tries. Pass line (frozen in the fair test): Brier gain of at
 least 0.005 with the 95% range above 0.
 
-Everything here is pure except :class:`MlxServer`, which starts and stops the one ``mlx_lm.server`` this run owns.
+The models stay where Eshaan keeps them, on the external WD_BLACK drive. That drive froze once (Nov 1), so a run
+first checks the drive answers, and a model that won't load stops the run cleanly; a rerun resumes from the cache.
+
+Everything here is pure except :class:`MlxServer` (the one ``mlx_lm.server`` this run owns) and the drive check.
 """
 
 from __future__ import annotations
@@ -113,6 +116,31 @@ def missing_models(hub: Path, models: Sequence[Model]) -> List[str]:
         if not snaps.is_dir() or not any(p.is_dir() for p in snaps.iterdir()):
             out.append(m.tag)
     return out
+
+
+DRIVE_TIMEOUT_S = 10.0
+
+
+def drive_problem(path: Path, timeout_s: float = DRIVE_TIMEOUT_S) -> Optional[str]:
+    """Why the model folder can't be used, or None when it lists within ``timeout_s``.
+
+    The models live on the external WD_BLACK drive, which froze once (Nov 1). A frozen drive hangs any read, even
+    the kill of a stuck reader, so this lists the folder in a child process and walks away from it on timeout rather
+    than waiting for it to die."""
+    folder = str(Path(path).expanduser())
+    try:
+        child = subprocess.Popen(["ls", folder], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except OSError as e:
+        return f"couldn't list {folder}: {e}"
+    try:
+        code = child.wait(timeout=timeout_s)
+    except subprocess.TimeoutExpired:
+        child.kill()                                         # no wait: a reader stuck on a frozen drive may never exit
+        return (f"the model folder {folder} didn't answer within {timeout_s:.0f}s (drive asleep, unplugged or "
+                "frozen); wake or reconnect the drive, then check again")
+    if code != 0:
+        return f"the model folder {folder} doesn't exist or can't be read"
+    return None
 
 
 def on_external_disk(path: Path) -> bool:
@@ -230,7 +258,8 @@ class MlxServer:
     """The one ``mlx_lm.server`` this run starts, one model at a time, on ``127.0.0.1:port``.
 
     It reads models only from ``hub`` (``HF_HUB_CACHE``) with downloads turned off (``HF_HUB_OFFLINE=1``), so a
-    missing model fails at once instead of quietly downloading to the default cache. It never stops a process it
+    missing model fails at once instead of quietly downloading somewhere else. A model that doesn't load within
+    ``start_timeout_s`` (say, a frozen drive) stops the run; finished calls are kept. It never stops a process it
     didn't start."""
 
     def __init__(self, cmd: Sequence[str], hub: Path, *, port: int = PORT, log_dir: Optional[Path] = None,
@@ -339,6 +368,11 @@ def free_gb() -> Optional[float]:
 
 class MemoryTight(ft.BrokenRun):
     """Not enough free memory to load the next model safely. Nothing is lost: free memory and rerun."""
+
+
+class DriveNotAnswering(ft.BrokenRun):
+    """The model folder stopped answering before the next model load (the drive slept, froze or came unplugged).
+    Nothing is lost: wake or reconnect the drive, then rerun."""
 
 
 # --------------------------------------------------------------------- running
