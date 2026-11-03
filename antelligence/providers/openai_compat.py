@@ -15,6 +15,7 @@ from typing import Any, Dict, FrozenSet, Iterable, Optional
 
 import httpx
 
+from antelligence.providers import logprobs as lp
 from antelligence.providers.base import ChatRequest, ChatResponse, ProviderError, ProviderTruncated, ProviderUnavailable
 from antelligence.providers.redact import redact_body, register_secret, scrub
 
@@ -104,6 +105,13 @@ class OpenAICompatProvider:
         extra: Dict[str, Any] = {"system_fingerprint": data.get("system_fingerprint")}
         if isinstance(usage.get("cost"), (int, float)):
             extra["cost"] = usage["cost"]  # provider-reported dollars, when the endpoint says
+        cached = lp.cached_tokens(usage)
+        if cached is not None:
+            extra["cached_tokens"] = cached  # prompt tokens the server read from its prefix cache, when it says
+        if choice.get("logprobs"):
+            summary = lp.summarize(choice["logprobs"])  # a few numbers, not every token (see providers/logprobs.py)
+            if summary is not None:
+                extra["logprobs"] = summary
         return ChatResponse(content=content, model=served or request.model, request_hash=request.request_hash,
                             prompt_tokens=prompt_tokens, completion_tokens=completion_tokens, finish_reason=finish,
                             response_id=data.get("id"), elapsed_s=elapsed,

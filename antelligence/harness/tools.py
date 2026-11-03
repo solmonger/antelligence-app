@@ -24,7 +24,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from fractions import Fraction
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional, Protocol, Sequence, Tuple
@@ -35,6 +35,7 @@ from antelligence.experiments import shared_read as sr
 from antelligence.harness import sandbox
 from antelligence.harness.core import Step, Task
 from antelligence.harness.resilience import Patience
+from antelligence.providers import logprobs as lp
 from antelligence.providers.base import ChatRequest
 
 ARMS = sr.ARMS                                   # alone, notes, both
@@ -228,6 +229,47 @@ def repair_messages(messages: Sequence[Mapping[str, str]], reply: str, task: Tas
 
 # -------------------------------------------------------------------- live box
 
+class OddsRunner(sr.Runner):
+    """The shared-read runner, also keeping what a server says beyond the reply: how many prompt tokens it read from
+    its prefix cache (``cached_tokens``) and a summary of the answer odds (``logprobs``), when it sends them.
+
+    ``shared_read.py`` is fingerprinted by a frozen test plan, so it stays as it is: the extras go in a side file next
+    to the cache (``<cache>.extras.jsonl``, one row per request hash), are read back with it (the seed caches' side
+    files too) and are merged into the row a call returns, so a resumed run keeps them."""
+
+    def __init__(self, provider: Any, cache_path: Path, **kw: Any) -> None:
+        super().__init__(provider, cache_path, **kw)
+        self.extras_path = self.extras_of(self.cache_path)
+        self.extras: Dict[str, Dict[str, Any]] = {}
+        for path in [*map(Path, kw.get("seed_paths") or ()), self.cache_path]:
+            side = self.extras_of(path)
+            if side.exists():
+                for line in side.read_text().splitlines():
+                    if line.strip():
+                        row = json.loads(line)
+                        self.extras[row.pop("request_hash")] = row
+        self._side_lock = asyncio.Lock()
+
+    @staticmethod
+    def extras_of(cache_path: Path) -> Path:
+        return Path(cache_path).with_name(Path(cache_path).name + ".extras.jsonl")
+
+    async def _complete(self, req: ChatRequest) -> Any:
+        resp = await super()._complete(req)
+        got = {k: (resp.extra or {})[k] for k in ("cached_tokens", "logprobs") if (resp.extra or {}).get(k) is not None}
+        if got:
+            self.extras[req.request_hash] = got
+            async with self._side_lock:
+                with self.extras_path.open("a") as fh:
+                    fh.write(json.dumps({"request_hash": req.request_hash, **got}, sort_keys=True) + "\n")
+        return resp
+
+    async def ask(self, req: ChatRequest, usable: Any) -> Dict[str, Any]:
+        row = await super().ask(req, usable)
+        extra = self.extras.get(req.request_hash)
+        return {**row, **extra} if extra else row
+
+
 class LiveBox:
     """Calls real (or fake) models through an OpenAI-shaped provider, with the shared-read caching runner, so a
     stopped run resumes and a second run of the same question costs nothing.
@@ -239,7 +281,7 @@ class LiveBox:
                  lenses: Sequence[int] = sr.LENS_IDS, parser: int = 2, coder: Optional[sr.ModelSpec] = None,
                  code: bool = True, dms: Optional[Mapping[str, Tuple[dm.DMSpec, dm.DMRunner]]] = None,
                  patience: Optional[Patience] = None, sandbox_python: Optional[str] = None,
-                 repair: bool = True) -> None:
+                 repair: bool = True, logprobs: int = 0, ant_messages: Optional[Any] = None) -> None:
         self.runner, self.reader, self.parser = runner, reader, parser
         self.coder = coder or reader
         self.code_on = code
@@ -247,6 +289,8 @@ class LiveBox:
         self.patience = patience or Patience()
         self.sandbox_python = sandbox_python
         self.repair = repair                         # one short re-ask for the letter when a reply has none
+        self.logprobs = logprobs                     # >0: ants also send back their top-k token chances (the gate)
+        self.ant_messages = ant_messages or sr.ant_messages   # same signature; the prompt search swaps in its own
         self.code_trace: Dict[str, List[str]] = {}   # task id -> what happened on each code try, for diagnose
         self.specs = [s for s, _ in sr.ant_roster(ants, lenses)]
         self.roster = tuple(AntInfo(i, s.tag, s.family, lens, s.gb)
@@ -264,6 +308,24 @@ class LiveBox:
             parts = tool.split(":")
             return len(parts) == 3 and parts[1] in self.dms and parts[2] in ("dm1", "read")
         return False
+
+    def ant_spec(self, i: int) -> sr.ModelSpec:
+        """Ant ``i``'s model, asking for its top ``logprobs`` token chances too when that is on (the request, and so
+        its cache key, changes, so saved calls without them are not reused)."""
+        spec = self.specs[i]
+        if not self.logprobs:
+            return spec
+        return replace(spec, extra_body={**(spec.extra_body or {}), "logprobs": True, "top_logprobs": self.logprobs})
+
+    @staticmethod
+    def _extras(row: Mapping[str, Any], got: Optional[str]) -> Tuple[Optional[float], Dict[str, Any]]:
+        """(how sure the model was of its letter, what to keep from the row) from a call's saved row."""
+        keep: Dict[str, Any] = {}
+        if row.get("logprobs") is not None:
+            keep["lp"] = row["logprobs"]
+        if row.get("cached_tokens") is not None:
+            keep["cached_in"] = int(row["cached_tokens"])
+        return lp.letter_sure(row.get("logprobs"), got), keep
 
     async def _ask(self, what: str, req: ChatRequest, usable) -> Dict[str, Any]:
         return await self.patience.run(what, lambda: self.runner.ask(req, usable))
@@ -285,15 +347,16 @@ class LiveBox:
                 sr._usable_notes)
             ti, to, s = self._bill(row)
             notes = sr.clean_notes(row["content"]) if not row.get("error") else ""
-            return Step(tool, None, ti, to, s, weight=self.reader.gb, payload={"notes": notes, "leak": sr.leaks(notes)})
+            return Step(tool, None, ti, to, s, weight=self.reader.gb,
+                        payload={"notes": notes, "leak": sr.leaks(notes), **self._extras(row, None)[1]})
         a = parse_ant(tool)
         if a:
             i, arm = a
-            spec, info = self.specs[i], self.roster[i]
+            spec, info = self.ant_spec(i), self.roster[i]
             notes = (ctx.get("notes").payload.get("notes") if ctx.get("notes") else "") or ""
             if arm != "alone" and not notes:
                 return Step(tool, None, calls=0, weight=spec.gb, note="no notes to read")
-            req = sr.make_request(spec, sr.ant_messages(item, arm, info.lens, spec, notes or None), task.id,
+            req = sr.make_request(spec, self.ant_messages(item, arm, info.lens, spec, notes or None), task.id,
                                   f"{arm}:{spec.tag}", info.lens, sr.ANT_MAX_TOKENS)
             return await self._answer(tool, task, spec, req)
         if tool == "code":
@@ -311,7 +374,8 @@ class LiveBox:
         got = read_answer(content, task, self.parser) if row.get("error") in (None, "Unusable") else None
         if got is not None or not self.repair:
             note = "cut off" if got is None and cut_off(row) else ""
-            return Step(tool, got, ti, to, s, weight=spec.gb, note=note)
+            sure, keep = self._extras(row, got)
+            return Step(tool, got, ti, to, s, weight=spec.gb, sure=sure, note=note, payload=keep)
         why = "cut off" if cut_off(row) else ("call failed" if row.get("error") not in (None, "Unusable") else
                                               "no option named")
         fix = ChatRequest(model=spec.tag, messages=repair_messages(req.messages, content, task, spec),
@@ -322,7 +386,11 @@ class LiveBox:
         got = read_answer(row2.get("content") or "", task, self.parser) if row2.get("error") in (None, "Unusable") \
             else None
         note = f"{why}; {'fixed by' if got else 'still blank after'} a short re-ask for the letter"
-        return Step(tool, got, ti + a, to + b, s + c, calls=2, weight=spec.gb, note=note)
+        sure, keep = self._extras(row2, got)
+        first = self._extras(row, None)[1]
+        if "cached_in" in first or "cached_in" in keep:
+            keep["cached_in"] = first.get("cached_in", 0) + keep.get("cached_in", 0)
+        return Step(tool, got, ti + a, to + b, s + c, calls=2, weight=spec.gb, sure=sure, note=note, payload=keep)
 
     async def _code(self, task: Task) -> Step:
         history: List[Tuple[str, str]] = []
