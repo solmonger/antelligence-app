@@ -38,6 +38,42 @@ def _distance(a: Tuple[Any, ...], b: Tuple[Any, ...]) -> int:
     return 4 * (a[0] != b[0]) + 2 * (a[1] != b[1]) + sum(abs(u - v) for u, v in zip(a[2:], b[2:]))
 
 
+def reworded_text(st: Statement, words: Sequence[str]) -> str:
+    """The same four statement forms, written another way, so a model can't lean on the fresh-question wording."""
+    form, x, y = st
+    a, b = words[x], words[y]
+    return {"all": f"Each one of the {a} is one of the {b}.", "no": f"Not a single one of the {a} is one of the {b}.",
+            "some": f"At least one of the {a} is also one of the {b}.",
+            "some_not": f"At least one of the {a} is not one of the {b}."}[form]
+
+
+REWORDED_PASSAGE = "Here is everything that is known about a box of objects:\n"
+REWORDED_QUESTION = "Going only by these facts, which one of the following has to be the case?"
+
+
+def make_reworded_syllogism(rng: random.Random) -> fq.Made:
+    """A balanced syllogism (see :func:`make_syllogism`) in different words: other phrasings of "all", "no", "some"
+    and "some ... not", another opening line and another question."""
+    m = make_syllogism(rng)
+    words = m.spec["words"]
+    prem = [tuple(p) for p in m.spec["premises"]]
+    sts = [tuple(x) for x in m.spec["statements"]]
+    passage = REWORDED_PASSAGE + "\n".join(reworded_text(p, words) for p in prem)
+    return fq.Made("syllogism", passage, REWORDED_QUESTION, tuple(reworded_text(x, words) for x in sts), 0,
+                   {**m.spec, "maker": "balanced", "wording": "reworded"})
+
+
+def check_syllogism(q: Mapping[str, Any], spec: Mapping[str, Any]) -> bool:
+    """Re-solve a syllogism from its spec by brute force, in either wording: exactly the labelled option follows
+    from the premises with and without assuming every kind exists."""
+    text = reworded_text if spec.get("wording") == "reworded" else fq.syl_text
+    prem = [tuple(p) for p in spec["premises"]]
+    by_text = {text(tuple(x), spec["words"]): tuple(x) for x in spec["statements"]}
+    right = [i for i, o in enumerate(q["options"])
+             if fq.syl_follows(by_text[o[3:]], prem, False) and fq.syl_follows(by_text[o[3:]], prem, True)]
+    return len(right) == 1 and fq.LETTERS[right[0]] == spec["label"]
+
+
 def make_syllogism(rng: random.Random, max_distance: int = 1) -> fq.Made:
     """A syllogism whose four wrong options each match the right one's form and pairing and differ in at most
     ``max_distance`` word-place counts. Wrong options follow on neither reading (with or without assuming every

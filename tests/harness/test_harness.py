@@ -836,6 +836,9 @@ def test_fresh_check_runs_a_frozen_policy_and_the_reader_on_new_puzzles(tmp_path
     text = (out / "FRESH.txt").read_text()
     assert text.startswith("FRESH CHECK") and "on 8 new puzzles" in text and "on 2 new puzzles" in text
     assert "syllogism-old" in text and "harness:reader x" in text and "harness:dm:jev:dm1 x" in text
+    assert "syllogism-reworded" in text and text.count("on 2 new puzzles") == 2
+    rew = [json.loads(x) for x in (out / "fresh-reworded-syllogisms" / "questions.jsonl").read_text().splitlines()]
+    assert len(rew) == 2 and all(q["passage"].startswith("Here is everything") for q in rew)
     assert "of a $0.05 cap" in text and "STILL DEV NUMBERS" in text
     qs = [json.loads(x) for x in (out / "fresh" / "questions.jsonl").read_text().splitlines()]
     assert {q["task"] for q in qs} == {"arith", "assign", "order", "syllogism"}
@@ -854,3 +857,21 @@ def test_fresh_check_refuses_a_policy_it_cannot_run(tmp_path):
     with pytest.raises(SystemExit, match="can't run"):
         s.main(["fresh", "--policy", str(pol), "--out", str(tmp_path / "f"), "--per-kind", "1", "--jev-cap", "0.01",
                 "--dry-run", "--seed", "5"])
+
+
+def test_reworded_syllogisms_re_solve_and_share_no_sentence_with_the_old_wording():
+    from antelligence.experiments import fresh_questions as fq
+    from antelligence.harness import devsets as ds
+
+    qs, _, specs = ds.make_set(8, per_task=4, tasks=("syllogism",), makers={"syllogism": ds.make_reworded_syllogism})
+    assert all(ds.check_syllogism(q, sp) for q, sp in zip(qs, specs))
+    for q, sp in zip(qs, specs):
+        old = {fq.syl_text(tuple(x), sp["words"]) for x in sp["statements"] + sp["premises"]}
+        assert not old & set(q["passage"].splitlines()) and not old & {o[3:] for o in q["options"]}
+        assert q["question"] == ds.REWORDED_QUESTION
+    # a wrong label is caught
+    bad = dict(specs[0], label="E" if specs[0]["label"] != "E" else "A")
+    assert not ds.check_syllogism(qs[0], bad)
+    # the old wording is re-solved too
+    oq, _, osp = fq.make_set(2, per_task=2, tasks=("syllogism",))
+    assert all(ds.check_syllogism(q, sp) for q, sp in zip(oq, osp))

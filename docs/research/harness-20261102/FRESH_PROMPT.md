@@ -1,6 +1,7 @@
 Check the harness on brand-new puzzles: the policy frozen from the last rescore (learned before these puzzles
-existed) against the reader alone. Print one block for me to paste back. It's free except Jev, which the script caps
-at 5 cents (it should use well under 1 cent). It should take about 20 to 40 minutes.
+existed) against the reader alone, on 40 new puzzles of every kind plus 20 extra syllogisms (10 from the old maker, 10
+written in other words). Print one block for me to paste back. It's free except Jev, which the script caps at 5 cents
+(it should use well under 1 cent). It should take about 30 to 50 minutes.
 
 Hard rules:
 - Don't push, commit, open a PR or change any git remote.

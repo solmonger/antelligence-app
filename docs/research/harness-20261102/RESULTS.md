@@ -348,7 +348,11 @@ balanced maker; the saved night sets are as they were.
 set 2 before these puzzles existed) and the reader alone on brand-new puzzles:
 
 * 10 per kind with the balanced maker, every kind;
-* 10 old-maker syllogisms, so the two makers can be compared the same day with the same models.
+* 10 old-maker syllogisms, so the two makers can be compared the same day with the same models;
+* 10 reworded syllogisms (added Nov 3): balanced, and written in other words. "All A are B" becomes "Each one of
+  the A is one of the B", "Some A are not B" becomes "At least one of the A is not one of the B", and the opening
+  line and the question are new too. None of their sentences appears in the old wording. If the gain holds on
+  these, it isn't tied to how our maker phrases things.
 
 It runs only the reader and the tools the policy uses (Jev, capped by `--jev-cap`), so it is quick and costs well
 under a cent. It prints accuracy, tokens and time with ranges, by kind, and which recipes were used. This is the

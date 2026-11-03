@@ -547,26 +547,38 @@ def _dm_addon_module():
     return mod
 
 
+def _syllogism_set(path: Path, seed: int, per_kind: int, label: str, prefix: str, maker) -> None:
+    if (path / "questions.jsonl").exists():
+        return
+    qs, ans, specs = devsets.make_set(seed, per_kind, tasks=("syllogism",), makers={"syllogism": maker})
+    bad = [q["id"] for q, sp in zip(qs, specs) if not devsets.check_syllogism(q, sp)]
+    if bad:
+        raise SystemExit(f"puzzles failed their own brute-force check: {bad}")
+    for q, a_ in zip(qs, ans):
+        q["id"] = a_["id"] = f"{prefix}{seed}-{q['id']}"
+        q["task"] = label
+    write_jsonl(path / "questions.jsonl", qs)
+    write_jsonl(path / "answers.jsonl", ans)
+    write_jsonl(path / "specs.jsonl", specs)
+
+
 def fresh_sets(out: Path, seed: int, per_kind: int) -> Tuple[List[Task], Dict[str, str], List[Task], Dict[str, str]]:
-    """New puzzles nobody has seen: every kind with the balanced syllogism maker, plus as many syllogisms from the old
-    maker (labelled ``syllogism-old``), so the two makers can be compared on the same day with the same models.
-    Saved under ``out``; a rerun reuses them."""
-    new, old = out / "fresh", out / "fresh-old-syllogisms"
+    """New puzzles nobody has seen: every kind with the balanced syllogism maker, plus two extra syllogism sets so
+    the makers can be compared on the same day with the same models: ``syllogism-old`` from the fresh-question
+    maker (the one a no-logic lookup gets 61% on) and ``syllogism-reworded``, balanced and written in other words
+    (other phrasings, opening line and question). Saved under ``out``; a rerun reuses them."""
+    new = out / "fresh"
     if not (new / "questions.jsonl").exists():
         make_dev(new, seed, per_kind)
-    if not (old / "questions.jsonl").exists():
-        qs, ans, specs = fq.make_set(seed + 1, per_kind, tasks=("syllogism",))
-        bad = [q["id"] for q, sp in zip(qs, specs) if not fq.check(q, sp)]
-        if bad:
-            raise SystemExit(f"puzzles failed their own brute-force check: {bad}")
-        for q, a_ in zip(qs, ans):
-            q["id"] = a_["id"] = f"old{seed}-{q['id']}"
-            q["task"] = "syllogism-old"
-        write_jsonl(old / "questions.jsonl", qs)
-        write_jsonl(old / "answers.jsonl", ans)
-        write_jsonl(old / "specs.jsonl", specs)
-    return (load_tasks(new / "questions.jsonl"), load_key(new / "answers.jsonl"),
-            load_tasks(old / "questions.jsonl"), load_key(old / "answers.jsonl"))
+    _syllogism_set(out / "fresh-old-syllogisms", seed + 1, per_kind, "syllogism-old", "old", fq.make_syllogism)
+    _syllogism_set(out / "fresh-reworded-syllogisms", seed + 2, per_kind, "syllogism-reworded", "rew",
+                   devsets.make_reworded_syllogism)
+    extra: List[Task] = []
+    ekey: Dict[str, str] = {}
+    for d in ("fresh-old-syllogisms", "fresh-reworded-syllogisms"):
+        extra += load_tasks(out / d / "questions.jsonl")
+        ekey.update(load_key(out / d / "answers.jsonl"))
+    return load_tasks(new / "questions.jsonl"), load_key(new / "answers.jsonl"), extra, ekey
 
 
 def jev_dms(a: argparse.Namespace, out: Path) -> Dict[str, Any]:
@@ -657,7 +669,10 @@ def cmd_fresh(a: argparse.Namespace) -> int:
             service.down()
     kinds = {t.id: t.kind for t in list(tasks) + list(old)}
     blocks += fresh_lines(hs, rs, kinds, f"new puzzles, every kind (seed {seed}, {a.per_kind} per kind)")
-    blocks += fresh_lines(ohs, ors, kinds, "old-maker syllogisms (the ones a no-logic lookup gets 63% on)")
+    for label, what in (("syllogism-old", "old-maker syllogisms (the kind a no-logic lookup gets 61% on)"),
+                        ("syllogism-reworded", "reworded syllogisms (balanced, and written in other words)")):
+        keep = {t.id for t in old if t.kind == label}
+        blocks += fresh_lines([o for o in ohs if o.task in keep], [o for o in ors if o.task in keep], kinds, what)
     spent = sum(r.spent for _, r in dms.values())
     blocks.append(f"Jev: {sum(r.calls for _, r in dms.values())} calls, ${spent:.4f} of a ${a.jev_cap:.2f} cap; "
                   f"unusable model replies {runner.failed}; {time.monotonic() - t0:.0f}s wall; waits for a stalled "
