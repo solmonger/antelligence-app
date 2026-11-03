@@ -1,0 +1,35 @@
+{
+ "benchmark": "AGIEval v1.1 (English multiple choice)",
+ "exam_answers.jsonl": "f50fdf39d5687938e936a637bcd41e38312eff51daa5cdf151128ab7a1b474ab",
+ "exam_questions.jsonl": "7a45f6c1f9d51a770f91f2be70402c287c3507002b816d3a934a4727ac029672",
+ "per_task": 60,
+ "seed": 20261029,
+ "sources": {
+  "aqua-rat": {
+   "sha256": "cff42e946e6082dacb27285dae19cb4be98408ab760fe43c6c462e543be50572",
+   "url": "https://raw.githubusercontent.com/ruixiangcui/AGIEval/main/data/v1_1/aqua-rat.jsonl",
+   "usable_rows": 254
+  },
+  "logiqa-en": {
+   "sha256": "63d0e8efaca1944e7eac5037903650f92ca9c036155a66b4e95bf2aa06da1702",
+   "url": "https://raw.githubusercontent.com/ruixiangcui/AGIEval/main/data/v1_1/logiqa-en.jsonl",
+   "usable_rows": 651
+  },
+  "lsat-ar": {
+   "sha256": "3b3e3fe09a07c695326adb82f38da0d67d5bbaadab41551f198c3102f1ea9dc8",
+   "url": "https://raw.githubusercontent.com/ruixiangcui/AGIEval/main/data/v1_1/lsat-ar.jsonl",
+   "usable_rows": 230
+  },
+  "lsat-lr": {
+   "sha256": "c6acb4d843db7b515da4d853e52bb8e6e5f776910f2e35a1805634db24bf94ea",
+   "url": "https://raw.githubusercontent.com/ruixiangcui/AGIEval/main/data/v1_1/lsat-lr.jsonl",
+   "usable_rows": 510
+  }
+ },
+ "tasks": [
+  "lsat-ar",
+  "lsat-lr",
+  "logiqa-en",
+  "aqua-rat"
+ ]
+}

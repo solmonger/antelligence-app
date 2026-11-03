@@ -1,0 +1,510 @@
+{
+ "check": "alone_vs_seen_check",
+ "gold_tasks": 59,
+ "results": [
+  {
+   "blind": {
+    "agent_accuracy": 0.8874,
+    "completed": 0.8444,
+    "team_accuracy": 0.7667,
+    "unanimous": 0.8425,
+    "unanimous_and_wrong": 0.0479,
+    "wrong_together": 0.551
+   },
+   "blind_arm": "independent_vote",
+   "domain": "all",
+   "model": "qwen38-27b-q3k",
+   "pairs": 180,
+   "pairs_both_completed": 146,
+   "seen": {
+    "agent_accuracy": 0.8851,
+    "completed": 0.8222,
+    "team_accuracy": 0.7444,
+    "unanimous": 0.9521,
+    "unanimous_and_wrong": 0.0548,
+    "wrong_together": 0.9
+   },
+   "seen_arm": "signal_board",
+   "seen_helped": 3,
+   "seen_helped_completed": 2,
+   "seen_hurt": 7,
+   "seen_hurt_completed": 2
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.8644,
+    "completed": 0.7333,
+    "team_accuracy": 0.6778,
+    "unanimous": 0.7,
+    "unanimous_and_wrong": 0.0333,
+    "wrong_together": 0.25
+   },
+   "blind_arm": "independent_vote",
+   "domain": "finance",
+   "model": "qwen38-27b-q3k",
+   "pairs": 90,
+   "pairs_both_completed": 60,
+   "seen": {
+    "agent_accuracy": 0.8644,
+    "completed": 0.6778,
+    "team_accuracy": 0.6333,
+    "unanimous": 0.9667,
+    "unanimous_and_wrong": 0.05,
+    "wrong_together": 0.9167
+   },
+   "seen_arm": "signal_board",
+   "seen_helped": 2,
+   "seen_helped_completed": 1,
+   "seen_hurt": 6,
+   "seen_hurt_completed": 1
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.9031,
+    "completed": 0.9556,
+    "team_accuracy": 0.8556,
+    "unanimous": 0.9419,
+    "unanimous_and_wrong": 0.0581,
+    "wrong_together": 0.84
+   },
+   "blind_arm": "independent_vote",
+   "domain": "medical",
+   "model": "qwen38-27b-q3k",
+   "pairs": 90,
+   "pairs_both_completed": 86,
+   "seen": {
+    "agent_accuracy": 0.8992,
+    "completed": 0.9667,
+    "team_accuracy": 0.8556,
+    "unanimous": 0.9419,
+    "unanimous_and_wrong": 0.0581,
+    "wrong_together": 0.8846
+   },
+   "seen_arm": "signal_board",
+   "seen_helped": 1,
+   "seen_helped_completed": 1,
+   "seen_hurt": 1,
+   "seen_hurt_completed": 1
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.457,
+    "completed": 0.35,
+    "team_accuracy": 0.1222,
+    "unanimous": 0.0645,
+    "unanimous_and_wrong": 0.0,
+    "wrong_together": 0.4455
+   },
+   "blind_arm": "evidence_isolated",
+   "domain": "all",
+   "model": "qwen38-27b-q3k",
+   "pairs": 180,
+   "pairs_both_completed": 62,
+   "seen": {
+    "agent_accuracy": 0.8871,
+    "completed": 0.55,
+    "team_accuracy": 0.5056,
+    "unanimous": 0.871,
+    "unanimous_and_wrong": 0.0484,
+    "wrong_together": 0.619
+   },
+   "seen_arm": "evidence_exchange",
+   "seen_helped": 72,
+   "seen_helped_completed": 39,
+   "seen_hurt": 3,
+   "seen_hurt_completed": 2
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.0,
+    "completed": 0.0111,
+    "team_accuracy": 0.0,
+    "unanimous": 0.0,
+    "unanimous_and_wrong": 0.0,
+    "wrong_together": 1.0
+   },
+   "blind_arm": "evidence_isolated",
+   "domain": "finance",
+   "model": "qwen38-27b-q3k",
+   "pairs": 90,
+   "pairs_both_completed": 1,
+   "seen": {
+    "agent_accuracy": 0.0,
+    "completed": 0.2556,
+    "team_accuracy": 0.2111,
+    "unanimous": 1.0,
+    "unanimous_and_wrong": 0.0,
+    "wrong_together": 1.0
+   },
+   "seen_arm": "evidence_exchange",
+   "seen_helped": 19,
+   "seen_helped_completed": 1,
+   "seen_hurt": 0,
+   "seen_hurt_completed": 0
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.4645,
+    "completed": 0.6889,
+    "team_accuracy": 0.2444,
+    "unanimous": 0.0656,
+    "unanimous_and_wrong": 0.0,
+    "wrong_together": 0.4286
+   },
+   "blind_arm": "evidence_isolated",
+   "domain": "medical",
+   "model": "qwen38-27b-q3k",
+   "pairs": 90,
+   "pairs_both_completed": 61,
+   "seen": {
+    "agent_accuracy": 0.9016,
+    "completed": 0.8444,
+    "team_accuracy": 0.8,
+    "unanimous": 0.8689,
+    "unanimous_and_wrong": 0.0492,
+    "wrong_together": 0.5556
+   },
+   "seen_arm": "evidence_exchange",
+   "seen_helped": 53,
+   "seen_helped_completed": 38,
+   "seen_hurt": 3,
+   "seen_hurt_completed": 2
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.8734,
+    "completed": 0.9556,
+    "team_accuracy": 0.8833,
+    "unanimous": 0.9503,
+    "unanimous_and_wrong": 0.0683,
+    "wrong_together": 0.8667
+   },
+   "blind_arm": "independent_vote",
+   "domain": "all",
+   "model": "claude-haiku-5.5",
+   "pairs": 180,
+   "pairs_both_completed": 161,
+   "seen": {
+    "agent_accuracy": 0.8797,
+    "completed": 0.8944,
+    "team_accuracy": 0.8222,
+    "unanimous": 0.9876,
+    "unanimous_and_wrong": 0.0745,
+    "wrong_together": 0.9649
+   },
+   "seen_arm": "signal_board",
+   "seen_helped": 0,
+   "seen_helped_completed": 0,
+   "seen_hurt": 11,
+   "seen_hurt_completed": 1
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.8272,
+    "completed": 0.9889,
+    "team_accuracy": 0.9222,
+    "unanimous": 0.9286,
+    "unanimous_and_wrong": 0.0714,
+    "wrong_together": 0.8571
+   },
+   "blind_arm": "independent_vote",
+   "domain": "finance",
+   "model": "claude-haiku-5.5",
+   "pairs": 90,
+   "pairs_both_completed": 84,
+   "seen": {
+    "agent_accuracy": 0.8477,
+    "completed": 0.9333,
+    "team_accuracy": 0.8667,
+    "unanimous": 0.9881,
+    "unanimous_and_wrong": 0.0714,
+    "wrong_together": 0.973
+   },
+   "seen_arm": "signal_board",
+   "seen_helped": 0,
+   "seen_helped_completed": 0,
+   "seen_hurt": 5,
+   "seen_hurt_completed": 0
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.9221,
+    "completed": 0.9222,
+    "team_accuracy": 0.8444,
+    "unanimous": 0.974,
+    "unanimous_and_wrong": 0.0649,
+    "wrong_together": 0.8889
+   },
+   "blind_arm": "independent_vote",
+   "domain": "medical",
+   "model": "claude-haiku-5.5",
+   "pairs": 90,
+   "pairs_both_completed": 77,
+   "seen": {
+    "agent_accuracy": 0.9134,
+    "completed": 0.8556,
+    "team_accuracy": 0.7778,
+    "unanimous": 0.987,
+    "unanimous_and_wrong": 0.0779,
+    "wrong_together": 0.95
+   },
+   "seen_arm": "signal_board",
+   "seen_helped": 0,
+   "seen_helped_completed": 0,
+   "seen_hurt": 6,
+   "seen_hurt_completed": 1
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.6667,
+    "completed": 0.0056,
+    "team_accuracy": 0.0056,
+    "unanimous": 0.0,
+    "unanimous_and_wrong": 0.0,
+    "wrong_together": 0.0
+   },
+   "blind_arm": "evidence_isolated",
+   "domain": "all",
+   "model": "claude-haiku-5.5",
+   "pairs": 180,
+   "pairs_both_completed": 1,
+   "seen": {
+    "agent_accuracy": 1.0,
+    "completed": 0.6667,
+    "team_accuracy": 0.6389,
+    "unanimous": 1.0,
+    "unanimous_and_wrong": 0.0,
+    "wrong_together": null
+   },
+   "seen_arm": "evidence_exchange",
+   "seen_helped": 114,
+   "seen_helped_completed": 0,
+   "seen_hurt": 0,
+   "seen_hurt_completed": 0
+  },
+  {
+   "blind": {
+    "agent_accuracy": null,
+    "completed": 0.0,
+    "team_accuracy": 0.0,
+    "unanimous": null,
+    "unanimous_and_wrong": null,
+    "wrong_together": null
+   },
+   "blind_arm": "evidence_isolated",
+   "domain": "finance",
+   "model": "claude-haiku-5.5",
+   "pairs": 90,
+   "pairs_both_completed": 0,
+   "seen": {
+    "agent_accuracy": null,
+    "completed": 0.5556,
+    "team_accuracy": 0.5444,
+    "unanimous": null,
+    "unanimous_and_wrong": null,
+    "wrong_together": null
+   },
+   "seen_arm": "evidence_exchange",
+   "seen_helped": 49,
+   "seen_helped_completed": 0,
+   "seen_hurt": 0,
+   "seen_hurt_completed": 0
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.6667,
+    "completed": 0.0111,
+    "team_accuracy": 0.0111,
+    "unanimous": 0.0,
+    "unanimous_and_wrong": 0.0,
+    "wrong_together": 0.0
+   },
+   "blind_arm": "evidence_isolated",
+   "domain": "medical",
+   "model": "claude-haiku-5.5",
+   "pairs": 90,
+   "pairs_both_completed": 1,
+   "seen": {
+    "agent_accuracy": 1.0,
+    "completed": 0.7778,
+    "team_accuracy": 0.7333,
+    "unanimous": 1.0,
+    "unanimous_and_wrong": 0.0,
+    "wrong_together": null
+   },
+   "seen_arm": "evidence_exchange",
+   "seen_helped": 65,
+   "seen_helped_completed": 0,
+   "seen_hurt": 0,
+   "seen_hurt_completed": 0
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.9189,
+    "completed": 0.6833,
+    "team_accuracy": 0.65,
+    "unanimous": 1.0,
+    "unanimous_and_wrong": 0.0526,
+    "wrong_together": 1.0
+   },
+   "blind_arm": "independent_vote",
+   "domain": "all",
+   "model": "claude-sonnet-5.5",
+   "pairs": 60,
+   "pairs_both_completed": 38,
+   "seen": {
+    "agent_accuracy": 0.9189,
+    "completed": 0.6333,
+    "team_accuracy": 0.6,
+    "unanimous": 1.0,
+    "unanimous_and_wrong": 0.0526,
+    "wrong_together": 1.0
+   },
+   "seen_arm": "signal_board",
+   "seen_helped": 0,
+   "seen_helped_completed": 0,
+   "seen_hurt": 3,
+   "seen_hurt_completed": 0
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.8,
+    "completed": 0.3667,
+    "team_accuracy": 0.3333,
+    "unanimous": 1.0,
+    "unanimous_and_wrong": 0.0909,
+    "wrong_together": 1.0
+   },
+   "blind_arm": "independent_vote",
+   "domain": "finance",
+   "model": "claude-sonnet-5.5",
+   "pairs": 30,
+   "pairs_both_completed": 11,
+   "seen": {
+    "agent_accuracy": 0.8,
+    "completed": 0.3667,
+    "team_accuracy": 0.3333,
+    "unanimous": 1.0,
+    "unanimous_and_wrong": 0.0909,
+    "wrong_together": 1.0
+   },
+   "seen_arm": "signal_board",
+   "seen_helped": 0,
+   "seen_helped_completed": 0,
+   "seen_hurt": 0,
+   "seen_hurt_completed": 0
+  },
+  {
+   "blind": {
+    "agent_accuracy": 0.963,
+    "completed": 1.0,
+    "team_accuracy": 0.9667,
+    "unanimous": 1.0,
+    "unanimous_and_wrong": 0.037,
+    "wrong_together": 1.0
+   },
+   "blind_arm": "independent_vote",
+   "domain": "medical",
+   "model": "claude-sonnet-5.5",
+   "pairs": 30,
+   "pairs_both_completed": 27,
+   "seen": {
+    "agent_accuracy": 0.963,
+    "completed": 0.9,
+    "team_accuracy": 0.8667,
+    "unanimous": 1.0,
+    "unanimous_and_wrong": 0.037,
+    "wrong_together": 1.0
+   },
+   "seen_arm": "signal_board",
+   "seen_helped": 0,
+   "seen_helped_completed": 0,
+   "seen_hurt": 3,
+   "seen_hurt_completed": 0
+  },
+  {
+   "blind": {
+    "agent_accuracy": null,
+    "completed": 0.0,
+    "team_accuracy": 0.0,
+    "unanimous": null,
+    "unanimous_and_wrong": null,
+    "wrong_together": null
+   },
+   "blind_arm": "evidence_isolated",
+   "domain": "all",
+   "model": "claude-sonnet-5.5",
+   "pairs": 60,
+   "pairs_both_completed": 0,
+   "seen": {
+    "agent_accuracy": null,
+    "completed": 0.4667,
+    "team_accuracy": 0.4333,
+    "unanimous": null,
+    "unanimous_and_wrong": null,
+    "wrong_together": null
+   },
+   "seen_arm": "evidence_exchange",
+   "seen_helped": 26,
+   "seen_helped_completed": 0,
+   "seen_hurt": 0,
+   "seen_hurt_completed": 0
+  },
+  {
+   "blind": {
+    "agent_accuracy": null,
+    "completed": 0.0,
+    "team_accuracy": 0.0,
+    "unanimous": null,
+    "unanimous_and_wrong": null,
+    "wrong_together": null
+   },
+   "blind_arm": "evidence_isolated",
+   "domain": "finance",
+   "model": "claude-sonnet-5.5",
+   "pairs": 30,
+   "pairs_both_completed": 0,
+   "seen": {
+    "agent_accuracy": null,
+    "completed": 0.2667,
+    "team_accuracy": 0.2333,
+    "unanimous": null,
+    "unanimous_and_wrong": null,
+    "wrong_together": null
+   },
+   "seen_arm": "evidence_exchange",
+   "seen_helped": 7,
+   "seen_helped_completed": 0,
+   "seen_hurt": 0,
+   "seen_hurt_completed": 0
+  },
+  {
+   "blind": {
+    "agent_accuracy": null,
+    "completed": 0.0,
+    "team_accuracy": 0.0,
+    "unanimous": null,
+    "unanimous_and_wrong": null,
+    "wrong_together": null
+   },
+   "blind_arm": "evidence_isolated",
+   "domain": "medical",
+   "model": "claude-sonnet-5.5",
+   "pairs": 30,
+   "pairs_both_completed": 0,
+   "seen": {
+    "agent_accuracy": null,
+    "completed": 0.6667,
+    "team_accuracy": 0.6333,
+    "unanimous": null,
+    "unanimous_and_wrong": null,
+    "wrong_together": null
+   },
+   "seen_arm": "evidence_exchange",
+   "seen_helped": 19,
+   "seen_helped_completed": 0,
+   "seen_hurt": 0,
+   "seen_hurt_completed": 0
+  }
+ ]
+}

@@ -1,0 +1,182 @@
+{
+ "check": "deep_on_split_check",
+ "deep_stand_in": "haiku",
+ "results": {
+  "finance": {
+   "_n_replays": {
+    "items": 50,
+    "replays": 200
+   },
+   "deep once": {
+    "accuracy": 0.88,
+    "accuracy_on_split_items": null,
+    "cheap_calls_per_item": 0.0,
+    "deep_calls_per_item": 1.0,
+    "split_items": 0
+   },
+   "mixed: cheap vote": {
+    "accuracy": 0.745,
+    "accuracy_on_split_items": 0.7385,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.0,
+    "split_items": 195
+   },
+   "mixed: cheap vote, earned trust": {
+    "accuracy": 0.765,
+    "accuracy_on_split_items": 0.759,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.0,
+    "split_items": 195
+   },
+   "mixed: deep decides where split": {
+    "accuracy": 0.88,
+    "accuracy_on_split_items": 0.8769,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.975,
+    "split_items": 195
+   },
+   "mixed: deep is one vote everywhere": {
+    "accuracy": 0.885,
+    "accuracy_on_split_items": 0.8821,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 1.0,
+    "split_items": 195
+   },
+   "mixed: deep is one vote where split": {
+    "accuracy": 0.885,
+    "accuracy_on_split_items": 0.8821,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.975,
+    "split_items": 195
+   },
+   "qwen x3: cheap vote": {
+    "accuracy": 0.78,
+    "accuracy_on_split_items": 0.6024,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.0,
+    "split_items": 83
+   },
+   "qwen x3: cheap vote, earned trust": {
+    "accuracy": 0.78,
+    "accuracy_on_split_items": 0.6024,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.0,
+    "split_items": 83
+   },
+   "qwen x3: deep decides where split": {
+    "accuracy": 0.875,
+    "accuracy_on_split_items": 0.8313,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.415,
+    "split_items": 83
+   },
+   "qwen x3: deep is one vote everywhere": {
+    "accuracy": 0.89,
+    "accuracy_on_split_items": 0.8675,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 1.0,
+    "split_items": 83
+   },
+   "qwen x3: deep is one vote where split": {
+    "accuracy": 0.89,
+    "accuracy_on_split_items": 0.8675,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.415,
+    "split_items": 83
+   }
+  },
+  "medical": {
+   "_n_replays": {
+    "items": 50,
+    "replays": 200
+   },
+   "deep once": {
+    "accuracy": 0.82,
+    "accuracy_on_split_items": null,
+    "cheap_calls_per_item": 0.0,
+    "deep_calls_per_item": 1.0,
+    "split_items": 0
+   },
+   "mixed: cheap vote": {
+    "accuracy": 0.8,
+    "accuracy_on_split_items": 0.7611,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.0,
+    "split_items": 113
+   },
+   "mixed: cheap vote, earned trust": {
+    "accuracy": 0.825,
+    "accuracy_on_split_items": 0.8053,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.0,
+    "split_items": 113
+   },
+   "mixed: deep decides where split": {
+    "accuracy": 0.83,
+    "accuracy_on_split_items": 0.8142,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.565,
+    "split_items": 113
+   },
+   "mixed: deep is one vote everywhere": {
+    "accuracy": 0.84,
+    "accuracy_on_split_items": 0.8319,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 1.0,
+    "split_items": 113
+   },
+   "mixed: deep is one vote where split": {
+    "accuracy": 0.84,
+    "accuracy_on_split_items": 0.8319,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.565,
+    "split_items": 113
+   },
+   "qwen x3: cheap vote": {
+    "accuracy": 0.83,
+    "accuracy_on_split_items": 0.3913,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.0,
+    "split_items": 23
+   },
+   "qwen x3: cheap vote, earned trust": {
+    "accuracy": 0.83,
+    "accuracy_on_split_items": 0.3913,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.0,
+    "split_items": 23
+   },
+   "qwen x3: deep decides where split": {
+    "accuracy": 0.855,
+    "accuracy_on_split_items": 0.6087,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.115,
+    "split_items": 23
+   },
+   "qwen x3: deep is one vote everywhere": {
+    "accuracy": 0.83,
+    "accuracy_on_split_items": 0.3913,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 1.0,
+    "split_items": 23
+   },
+   "qwen x3: deep is one vote where split": {
+    "accuracy": 0.83,
+    "accuracy_on_split_items": 0.3913,
+    "cheap_calls_per_item": 3.0,
+    "deep_calls_per_item": 0.115,
+    "split_items": 23
+   }
+  }
+ },
+ "trust_weights": {
+  "gemma/finance": 0.0,
+  "gemma/medical": 0.8348,
+  "haiku/finance": 1.4028,
+  "haiku/medical": 0.9628,
+  "phi/finance": 0.0,
+  "phi/medical": 0.1054,
+  "qwen/finance": 1.2443,
+  "qwen/medical": 0.9628
+ }
+}
