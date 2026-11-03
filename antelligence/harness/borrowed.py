@@ -598,6 +598,29 @@ def _side(outs: Sequence[sc.Outcome], base: Sequence[sc.Outcome]) -> Dict[str, A
             "weighted_tokens_ratio": c.get("weighted_tokens_ratio"), "verdict": c.get("verdict")}
 
 
+def switch_use(choice: Mapping[str, str], tabs: Tables) -> Dict[str, int]:
+    """On how many of the routed questions each switch actually did something: a stop-rule recipe was picked, a gate
+    recipe was picked, or the picked route read fewer fresh prompt tokens than it was sent (the cache count changed
+    its bill). A switch that is on but at zero here was never used on those questions, so its row says nothing about
+    whether it helps."""
+    def cached(i: str, r: str) -> bool:
+        raw, fresh = tabs.raw.get(r, {}), tabs.fresh.get(r, {})
+        return i in raw and i in fresh and fresh[i].tokens < raw[i].tokens
+    picks = list(choice.items())
+    return {"questions": len(picks),
+            "reader": sum(r == "reader" for _, r in picks),
+            "stop": sum(r.startswith("ac:") for _, r in picks),
+            "gate": sum(r.startswith(("gate:", "cvote:")) for _, r in picks),
+            "cache": sum(cached(i, r) for i, r in picks)}
+
+
+def use_text(use: Mapping[str, int], on: Sequence[str]) -> str:
+    """'stop 0, cache 0 of 160' for the switches that are on ('-' for today's harness). The router has no count: it
+    changes every pick, so its effect is the row itself."""
+    parts = [f"{f} {use.get(f, 0)}" for f in on if f in ("stop", "gate", "cache")]
+    return f"{', '.join(parts)} of {use.get('questions', 0)}" if parts else "-"
+
+
 def score_config(cfg: Config, tabs: Tables, pool: Mapping[str, Sequence[Recipe]], train: Sequence[Task],
                  test: Sequence[Task], fit_names: Sequence[str], k: int = 5) -> Dict[str, Any]:
     """Tune the cost weight and learn on ``train`` only, route ``test`` once. Reports the test score both ways: every
@@ -618,7 +641,7 @@ def score_config(cfg: Config, tabs: Tables, pool: Mapping[str, Sequence[Recipe]]
             "train": {k2: pick.get(k2) for k2 in ("accuracy", "gain", "gain_ci95", "tokens_ratio", "seconds_ratio",
                                                   "tokens_ratio_ci95", "seconds_ratio_ci95", "rank", "why")},
             "test": _side(out_raw, base_raw), "test_fresh": _side(out_fresh, base_fresh),
-            "used": dict(sorted(used.items(), key=lambda kv: -kv[1])[:6]),
+            "used": dict(sorted(used.items(), key=lambda kv: -kv[1])[:6]), "switch_use": switch_use(choice, tabs),
             "policy": pol.to_json() if hasattr(pol, "to_json") else {}, "grid": grid}
 
 
@@ -700,13 +723,13 @@ def table_lines(rep: Mapping[str, Any], title: str) -> List[str]:
              + ("" if rep["gate_data"] else " (gate needs the answer-odds sweep)"),
              f"  reader: {pct(r['accuracy'])}, {r['tokens']:.0f} tokens, {r['seconds']:.1f}s a question",
              "  mix | test accuracy (points vs reader, range) | tokens vs reader (range) | fresh tokens vs reader | "
-             "time vs reader (range) | verdict"]
+             "time vs reader (range) | verdict | switch used on (test questions)"]
     for row in rep["rows"]:
         t, f = row["test"], row["test_fresh"]
         lines.append(f"  {row['config']} | {pct(t['accuracy'])} ({(t['gain'] or 0) * 100:+.1f}, "
                      f"{_rng(t['gain_ci95'], 100)}) | x{t['tokens_ratio']} ({_rng(t['tokens_ratio_ci95'], 1, '{}')}) | "
                      f"x{f['tokens_ratio']} | x{t['seconds_ratio']} ({_rng(t['seconds_ratio_ci95'], 1, '{}')}) | "
-                     f"{t['verdict']}")
+                     f"{t['verdict']} | {use_text(row.get('switch_use', {}), row['on'])}")
     if rep.get("best_mix"):
         lines.append(f"  best mix: {rep['best_mix']} ({rep['best_mix_why']})")
     return lines

@@ -355,8 +355,18 @@ def test_evaluate_features_scores_each_switch_alone_and_mixed(tmp_path):
     for r in rep["rows"]:
         assert r["test_fresh"]["tokens"] <= r["test"]["tokens"] + 1e-9
     assert rep["best_mix"] in labels and rep["best_mix"] != "harness (today)"
+    # each row says on how many test questions its switches did anything; a switch that is off is never used
+    for r in rep["rows"]:
+        use = r["switch_use"]
+        assert use["questions"] == len(test)
+        if "stop" not in r["on"]:
+            assert use["stop"] == 0
+        if "gate" not in r["on"]:
+            assert use["gate"] == 0
     lines = bw.table_lines(rep, "T")
     assert len(lines) == 3 + 16 + 1 and "best mix" in lines[-1]
+    assert lines[2].endswith("| switch used on (test questions)") and lines[3].endswith("| -")
+    assert lines[3 + labels.index("harness +stop +cache")].endswith(f" of {len(test)}")
     pub = bw.public(rep)
     json.dumps(pub)
     assert all("choice" not in r for r in pub["rows"]) and "_tabs" not in pub
@@ -372,6 +382,48 @@ def test_evaluate_features_without_odds_skips_the_gate(tmp_path):
     test = [t.id for t in tasks if t.id.startswith("set3:")]
     rep = bw.evaluate_features(tasks, key, steps, roster, train, test, features=("stop", "router"), k=3)
     assert not rep["gate_data"] and rep["available"] == ["stop", "router"] and len(rep["rows"]) == 4
+
+
+def _out(task, recipe, tokens):
+    return sc.Outcome(task, "exam", "b", recipe, "A", 1.0, tokens, float(tokens), 1.0, 0.0, 1)
+
+
+def test_switch_use_counts_only_what_a_switch_changed():
+    names = ("reader", "ac:alone:c90", "gate:alone:p85:t1>reader", "cvote:alone:c90")
+    raw = {n: {f"q{i}": _out(f"q{i}", n, 100) for i in range(4)} for n in names}
+    fresh = {n: {q: _out(q, n, 100) for q in raw[n]} for n in names}
+    fresh["ac:alone:c90"]["q1"] = _out("q1", "ac:alone:c90", 60)          # a shared prompt start read once
+    tabs = bw.Tables(raw, fresh, list(names))
+    choice = {"q0": "reader", "q1": "ac:alone:c90", "q2": "gate:alone:p85:t1>reader", "q3": "cvote:alone:c90"}
+    use = bw.switch_use(choice, tabs)
+    assert use == {"questions": 4, "reader": 1, "stop": 1, "gate": 2, "cache": 1}
+    assert bw.switch_use({"q0": "reader"}, tabs) == {"questions": 1, "reader": 1, "stop": 0, "gate": 0, "cache": 0}
+    assert bw.use_text(use, ("stop", "router", "cache")) == "stop 1, cache 1 of 4"
+    assert bw.use_text(use, ("router",)) == "-" and bw.use_text(use, ()) == "-"
+
+
+def test_sure_by_model_compares_each_model_with_the_reader_on_the_same_questions():
+    s = _features_script()
+    roster = (AntInfo(0, "small", "f", 0, 1.0), AntInfo(1, "small", "f", 1, 1.0), AntInfo(2, "big", "f", 0, 2.0))
+    key = {f"q{i}": "A" for i in range(40)}
+    steps = {}
+    for i in range(40):
+        steps[f"q{i}"] = {
+            # "small" is very sure on every question but right only half the time; "big" is very sure on 35 and
+            # right on all of them; the reader is right on 30 of those 35
+            "ant0:alone": Step("ant0:alone", "A" if i % 2 else "B", sure=0.99),
+            "ant1:alone": Step("ant1:alone", "A" if i % 2 else "B", sure=0.97),
+            "ant2:alone": Step("ant2:alone", "A", sure=0.99 if i < 35 else 0.5),
+            "reader": Step("reader", "A" if i < 30 or i >= 35 else "C"),
+        }
+    got = s.sure_by_model(steps, key, roster, key)
+    assert got["small"]["answers"] == 80 and got["small"]["very_sure"] == 80
+    assert got["small"]["right_when_very_sure"] == 0.5
+    assert got["big"]["very_sure"] == 35 and got["big"]["right_when_very_sure"] == 1.0
+    assert got["big"]["reader_right_there"] == round(30 / 35, 4)
+    assert s.gate_worthy(got["big"]) and not s.gate_worthy(got["small"])
+    assert not s.gate_worthy({**got["big"], "very_sure": 5})                # too few to judge
+    assert s.sure_by_model(steps, key, roster, ["q0"])["big"]["very_sure"] == 1
 
 
 def test_tune_fit_matches_the_bucket_learners_tune(tmp_path):
@@ -447,7 +499,8 @@ def test_features_script_dry_run_end_to_end(tmp_path):
     assert s.main(["mac", "--dry-run", "--out", str(out), "--po-train", "8", "--po-rounds", "1"]) == 0
     text = (out / "RESULT.txt").read_text()
     for part in ("FREE (saved night answers", "PROBE: mlx-lm fake", "answer odds readable: yes", "CONFSWEEP:",
-                 "how sure vs how often right", "GATE (saved answers", "harness +gate", "PROMPT: tried",
+                 "how sure vs how often right", "GATE (saved answers", "harness +gate", "CALIB (no model calls)",
+                 "switch used on (test questions)", "PROMPT: tried",
                  "hidden final test set was not used"):
         assert part in text, part
     assert "failed:" not in text
@@ -456,6 +509,13 @@ def test_features_script_dry_run_end_to_end(tmp_path):
     # a second run reuses every call: nothing new is asked
     assert s.main(["mac", "--dry-run", "--out", str(out), "--stages", "confsweep", "--po-train", "8"]) == 0
     assert "CONFSWEEP: 0 new ant calls" in (out / "RESULT.txt").read_text()
+    # the free rescore of a saved sweep, somewhere else, needs no model server at all
+    out2 = tmp_path / "recheck"
+    assert s.main(["mac", "--dry-run", "--out", str(out2), "--stages", "free,gate,calib",
+                   "--confsweep", str(out / "confsweep")]) == 0
+    text2 = (out2 / "RESULT.txt").read_text()
+    assert "PROBE" not in text2 and "failed:" not in text2 and "GATE: skipped" not in text2
+    assert "CALIB (no model calls)" in text2 and (out2 / "calib" / "calib.json").exists()
 
 
 def test_features_script_remaps_ants_to_the_saved_column_order(tmp_path):

@@ -8,6 +8,8 @@ Commands::
     python scripts/harness_features.py free --night NIGHT --out OUT          # stop, router, cache on saved answers, $0
     python scripts/harness_features.py mac --night NIGHT --mlx-server PATH --out OUT   # every stage, one paste-back
     python scripts/harness_features.py mac --dry-run --out OUT               # the same with fake models, seconds, $0
+    python scripts/harness_features.py mac --night NIGHT --stages free,gate,calib --confsweep SWEEP --out OUT
+                                                    # rescore a saved answer-odds sweep: no model server, $0
 
 ``mac`` runs these stages in order (``--stages`` picks some; each one's result is written as soon as it is done):
 
@@ -18,7 +20,10 @@ Commands::
 3. ``confsweep``: every ant alone on every saved question again, now with answer odds (the reader's answers are
    kept). Local models only: no cost, a few hours.
 4. ``gate``: free again on the saved answers with the new ant answers in, now with the confidence gate as well.
-5. ``promptopt``: a small GEPA-style search for shorter ant instructions on 30 training questions, then every ant on
+5. ``calib``: no model calls. From the answer-odds sweep, for each ant model: how often it is very sure, how often
+   it is right then, and how often the reader is right on those same questions (a gate on a model pays only if
+   those two are close). Judged on sets 1 and 2, then checked on set 3.
+6. ``promptopt``: a small GEPA-style search for shorter ant instructions on 30 training questions, then every ant on
    set 3 with the pick, at the ant level and inside the harness. Local models only, a few hours.
 
 The final test set is not here: set 3 is the night run's own third set, and the hidden final test stays unseen.
@@ -38,7 +43,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
@@ -64,7 +69,7 @@ def _harness_cli():
 
 
 H = _harness_cli()
-STAGES = ("free", "probe", "confsweep", "gate", "promptopt")
+STAGES = ("free", "probe", "confsweep", "gate", "calib", "promptopt")
 TRAIN, TEST = ("set1", "set2"), ("set3",)
 TOP_LOGPROBS = 8              # mlx_lm.server takes up to 11; 8 holds every option letter's chance at the answer
 HEADER = "BORROWED PARTS RESULT (paste this back to Claude in Duet)"
@@ -444,6 +449,81 @@ async def stage_confsweep(a: argparse.Namespace, st: State, provider: Any, base:
     return lines
 
 
+# ------------------------------------------------------------------ calib: which ant model is right when sure
+
+SURE_AT = 0.95       # "very sure": the top bin, where most ant answers sit
+CALIB_MIN = 30       # fewer very-sure answers than this on the training sets tells us nothing
+
+
+def sure_by_model(steps: Mapping[str, Mapping[str, Step]], key: Mapping[str, str], roster: Sequence[AntInfo],
+                  ids: Iterable[str], sure_at: float = SURE_AT) -> Dict[str, Dict[str, Any]]:
+    """For each ant model (its ants asked alone, the way the gate asks them): how often it is very sure, how often
+    it is right then, and how often the reader is right on those same questions. A gate on a model can only pay if,
+    where that model is very sure, it is about as right as the reader there: then the reader's call can be
+    skipped."""
+    tag_of = {a.index: a.tag for a in roster}
+    want = set(ids)
+    acc: Dict[str, Dict[str, int]] = {}
+    for tid, per in steps.items():
+        if tid not in want or tid not in key:
+            continue
+        reader = per.get("reader")
+        for tool, s in per.items():
+            a = parse_ant(tool)
+            if not a or a[1] != "alone" or s.answer is None or s.sure is None:
+                continue
+            m = acc.setdefault(tag_of.get(a[0], f"ant{a[0]}"), {"n": 0, "sure": 0, "right": 0, "reader": 0,
+                                                                 "reader_n": 0})
+            m["n"] += 1
+            if s.sure >= sure_at:
+                m["sure"] += 1
+                m["right"] += s.answer == key[tid]
+                if reader is not None and reader.answer is not None:
+                    m["reader_n"] += 1
+                    m["reader"] += reader.answer == key[tid]
+    out = {}
+    for tag, m in sorted(acc.items()):
+        out[tag] = {"answers": m["n"], "very_sure": m["sure"],
+                    "very_sure_share": round(m["sure"] / m["n"], 4) if m["n"] else None,
+                    "right_when_very_sure": round(m["right"] / m["sure"], 4) if m["sure"] else None,
+                    "reader_right_there": round(m["reader"] / m["reader_n"], 4) if m["reader_n"] else None}
+    return out
+
+
+def gate_worthy(row: Mapping[str, Any], slack: float = 0.02, min_n: int = CALIB_MIN) -> bool:
+    """Very sure often enough to judge, and then within ``slack`` of the reader on the same questions."""
+    r, b = row.get("right_when_very_sure"), row.get("reader_right_there")
+    return row.get("very_sure", 0) >= min_n and r is not None and b is not None and r >= b - slack
+
+
+def stage_calib(st: State, out: Path) -> List[str]:
+    """No model calls: reads the answer-odds sweep. Models are judged on sets 1 and 2; any that pass are then checked
+    once on set 3."""
+    if not st.conf:
+        return ["CALIB: skipped (no answer-odds sweep found)"]
+    steps = bw.overlay(st.steps, st.conf)
+    train = sure_by_model(steps, st.key, st.roster, st.ids(TRAIN))
+    test = sure_by_model(steps, st.key, st.roster, st.ids(TEST))
+    picked = [m for m, row in train.items() if gate_worthy(row)]
+    save_json(out / "calib" / "calib.json", {"sure_at": SURE_AT, "min_n": CALIB_MIN, "train": train, "test": test,
+                                             "picked": picked})
+    f = lambda x: "n/a" if x is None else f"{100 * x:.0f}%"  # noqa: E731
+    lines = [f"CALIB (no model calls): each ant model asked alone, judged on sets 1 and 2; 'very sure' = at least "
+             f"{SURE_AT:.2f} sure of its letter",
+             "  model | very sure on | right when very sure | reader right on those same questions"]
+    for m, row in train.items():
+        lines.append(f"  {m} | {row['very_sure']} of {row['answers']} ({f(row['very_sure_share'])}) | "
+                     f"{f(row['right_when_very_sure'])} | {f(row['reader_right_there'])}")
+    if not picked:
+        lines.append(f"  no model passes: none is within 2 points of the reader when very sure, on {CALIB_MIN} or "
+                     "more answers, so a gate on any one of them would trade accuracy for tokens")
+    for m in picked:
+        t = test.get(m, {})
+        lines.append(f"  worth a gate: {m}; on set 3 it was very sure on {t.get('very_sure', 0)} answers, right "
+                     f"{f(t.get('right_when_very_sure'))} vs the reader's {f(t.get('reader_right_there'))}")
+    return lines
+
+
 # ------------------------------------------------------------------ 5: promptopt
 
 def train_sample(st: State, n: int, seed: int = 20261102) -> List[Task]:
@@ -604,8 +684,9 @@ def cmd_mac(a: argparse.Namespace) -> int:
         res.add(["DRY RUN: fake models and fake saved sets, so these numbers mean nothing; it checks the plumbing"])
     if "free" in stages:
         run_stage(res, "free", lambda: stage_free(st, a.out))
-    if (a.out / "confsweep" / "steps.json").exists() and "confsweep" not in stages:
-        _, _, conf, _, _ = H.load_bundle(a.out / "confsweep")
+    sweep = a.confsweep or a.out / "confsweep"
+    if (sweep / "steps.json").exists() and "confsweep" not in stages:
+        _, _, conf, _, _ = H.load_bundle(sweep)
         st.conf, st.odds = conf, True
     live = [s for s in ("probe", "confsweep", "promptopt") if s in stages]
     if live:
@@ -629,11 +710,16 @@ def cmd_mac(a: argparse.Namespace) -> int:
                         res.add(["CONFSWEEP: skipped (this server sends no answer odds the gate can read)"])
                 if "gate" in stages:
                     run_stage(res, "gate", lambda: stage_gate(st, a.out))
+                if "calib" in stages:
+                    run_stage(res, "calib", lambda: stage_calib(st, a.out))
                 if "promptopt" in stages:
                     run_stage(res, "promptopt", lambda: stage_promptopt(a, st, provider, base, a.out))
             break
-    elif "gate" in stages:
-        run_stage(res, "gate", lambda: stage_gate(st, a.out))
+    else:
+        if "gate" in stages:
+            run_stage(res, "gate", lambda: stage_gate(st, a.out))
+        if "calib" in stages:
+            run_stage(res, "calib", lambda: stage_calib(st, a.out))
     res.add([H.DEV_NOTE])
     print("\n" + res.text())
     return 0
@@ -667,6 +753,8 @@ def main(argv: Sequence[str]) -> int:
     s.add_argument("--mlx-server", default="", help="the mlx_lm.server command (a path, or a command line)")
     s.add_argument("--odds-server", default="",
                    help="a second mlx_lm.server command to try if the first sends no answer odds")
+    s.add_argument("--confsweep", type=Path, default=None,
+                   help="a saved answer-odds sweep to reuse (default: <out>/confsweep)")
     s.add_argument("--port", type=int, default=H.PORT)
     s.add_argument("--mlx-port", type=int, default=H.MLX_PORT)
     s.add_argument("--concurrency", type=int, default=2)
