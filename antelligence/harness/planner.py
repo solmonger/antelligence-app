@@ -53,15 +53,33 @@ def batch_order(box: Box, tools: Optional[Sequence[str]] = None) -> List[List[st
 
 async def sweep_batch(box: Box, tasks: Sequence[Task], tools: Optional[Sequence[str]] = None,
                       between: Optional[Callable[[List[str]], Awaitable[None]]] = None,
-                      on_group: Optional[Callable[[List[str]], None]] = None) -> Dict[str, Dict[str, Step]]:
+                      on_group: Optional[Callable[[List[str]], None]] = None, order: str = "tool",
+                      workers: int = 2) -> Dict[str, Dict[str, Step]]:
     """Every tool on every task, one model group at a time (see :func:`batch_order`). ``between`` runs after each
-    group, e.g. to unload that model."""
+    group, e.g. to unload that model.
+
+    ``order`` is how the calls inside a group are lined up. ``tool``: one tool on every task, then the next tool.
+    ``question``: every tool of the group on one task, then the next task. The second keeps the calls that share a
+    long start (the same question to the same model with another way of looking) next to each other, so a server
+    with a prefix cache (``mlx_lm.server`` keeps the last 10 prompts by default) reads that start once, not twice."""
+    if order not in ("tool", "question"):
+        raise ValueError("order must be 'tool' or 'question'")
     ctxs = {t.id: Ctx(box, t) for t in tasks}
     for group in batch_order(box, tools):
         if on_group:
             on_group(group)
-        for tool in group:
-            await asyncio.gather(*(ctxs[t.id].call(tool) for t in tasks))
+        if order == "tool":
+            for tool in group:
+                await asyncio.gather(*(ctxs[t.id].call(tool) for t in tasks))
+        else:
+            queue = list(tasks)
+
+            async def worker() -> None:          # a few workers, each taking one whole task at a time, so a
+                while queue:                     # task's calls stay together instead of queueing behind every
+                    t = queue.pop(0)             # other task's first call
+                    for tool in group:
+                        await ctxs[t.id].call(tool)
+            await asyncio.gather(*(worker() for _ in range(max(1, workers))))
         if between:
             await between(group)
     return {tid: dict(c.done) for tid, c in ctxs.items()}
